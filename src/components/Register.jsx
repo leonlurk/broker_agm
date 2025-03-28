@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { registerUser } from '../firebase/auth';
+import { useNavigate } from 'react-router-dom';
 
 const Register = ({ onLoginClick }) => {
   const [username, setUsername] = useState('');
@@ -6,11 +8,40 @@ const Register = ({ onLoginClick }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add registration logic here
-    console.log('Register attempt with:', { username, email, password, confirmPassword });
+    setError('');
+    
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      return setError('Las contraseñas no coinciden');
+    }
+    
+    setLoading(true);
+    
+    try {
+      const { user, error } = await registerUser(username, email, password);
+      
+      if (error) {
+        throw new Error(error.message || 'Error al registrar');
+      }
+      
+      console.log('Registration successful:', user);
+      setMessage('¡Registro exitoso! Por favor verifica tu correo electrónico para activar tu cuenta.');
+      setTimeout(() => {
+        navigate('/login');
+      }, 5000);
+    } catch (err) {
+      console.error('Registration error:', err);
+      setError(err.message || 'Error al registrar');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -18,6 +49,18 @@ const Register = ({ onLoginClick }) => {
       <div className="flex justify-center mb-8">
         <img src="/logo.png" alt="AGM Logo" className="h-25" />
       </div>
+      
+      {error && (
+        <div className="bg-red-500 bg-opacity-20 border border-red-600 text-white px-4 py-2 rounded-lg mb-4">
+          {error}
+        </div>
+      )}
+      
+      {message && (
+        <div className="bg-green-500 bg-opacity-20 border border-green-600 text-white px-4 py-2 rounded-lg mb-4">
+          {message}
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
@@ -93,10 +136,11 @@ const Register = ({ onLoginClick }) => {
 
         <button
             type="submit"
+            disabled={loading}
             className="w-full py-3 px-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium shadow-lg relative overflow-hidden group"
             >
             <span className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-            <span className="relative z-10">Continuar</span>
+            <span className="relative z-10">{loading ? 'Procesando...' : 'Continuar'}</span>
         </button>
 
         <div className="mt-4 text-center">

@@ -1,15 +1,37 @@
 import { useState } from 'react';
+import { loginUser } from '../firebase/auth';
 
 const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add login logic here
-    console.log('Login attempt with:', { username, password, rememberMe });
-    onLoginSuccess(); // Add this line to simulate successful login
+    setError('');
+    setLoading(true);
+    
+    try {
+      // Check if username is email format or just username
+      const isEmail = /\S+@\S+\.\S+/.test(username);
+      const email = isEmail ? username : `${username}@example.com`; // Adjust as needed
+      
+      const { user, error } = await loginUser(email, password);
+      
+      if (error) {
+        throw new Error(error.message || 'Error al iniciar sesión');
+      }
+      
+      console.log('Login successful:', user);
+      onLoginSuccess();
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message || 'Error al iniciar sesión');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -17,6 +39,12 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
       <div className="flex justify-center mb-8">
         <img src="/logo.png" alt="AGM Logo" className="h-25" />
       </div>
+      
+      {error && (
+        <div className="bg-red-500 bg-opacity-20 border border-red-600 text-white px-4 py-2 rounded-lg mb-4">
+          {error}
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
@@ -26,7 +54,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20"
-              placeholder="Usuario"
+              placeholder="Usuario o Email"
               required
             />
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,10 +101,11 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
 
         <button
             type="submit"
+            disabled={loading}
             className="w-full py-3 px-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium shadow-lg relative overflow-hidden group"
             >
             <span className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-            <span className="relative z-10">Iniciar Sesión</span>
+            <span className="relative z-10">{loading ? 'Iniciando...' : 'Iniciar Sesión'}</span>
         </button>
 
         <div className="mt-4 text-center">
