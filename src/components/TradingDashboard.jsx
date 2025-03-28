@@ -51,7 +51,7 @@ const TradingDashboard = ({ accountId, onBack }) => {
                 <img src="/IconoPerfil.png" alt="Avatar" />
               </div>
               <div>
-                <h1 className="text-xl md:text-2xl font-semibold">Hola, Santiago</h1>
+                <h1 className="text-xl md:text-2xl font-semibold">Hola, Isaac</h1>
                 <p className="text-sm md:text-base text-gray-400">
                   Cuenta #{657230 + accountId} - Challenge de 100k
                 </p>

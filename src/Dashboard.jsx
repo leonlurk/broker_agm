@@ -6,6 +6,8 @@ import PipCalculator from './components/PipCalculator';
 import CertificateComponent from './components/CertificateComponent';
 import LeaderboardModal from './components/LeaderboardModal';
 import TradingDashboard from './components/TradingDashboard';
+import OperationsHistory from './components/OperationsHistory';
+import Descargas from './components/Descargas';
 
 const Dashboard = ({ onLogout }) => {
   const [selectedOption, setSelectedOption] = useState("Dashboard");
@@ -63,6 +65,8 @@ const Dashboard = ({ onLogout }) => {
           return <Home onViewDetails={handleViewAccountDetails} />;
       case "Certificados":
           return <CertificateComponent />;
+      case "Pagos":
+          return <OperationsHistory />;
       case "Desafio":
             return <TradingChallenge />;
       case "Leaderboard":
@@ -70,12 +74,7 @@ const Dashboard = ({ onLogout }) => {
       case "Calculadora":
             return <PipCalculator />;
       case "Descargas":
-        return (
-          <div className="p-6 bg-[#232323] text-white">
-            <h1 className="text-2xl font-semibold mb-4">Descargas</h1>
-            <p className="text-gray-400">Contenido en construcción.</p>
-          </div>
-        );
+        return <Descargas />;
       case "Noticias":
         return (
           <div className="p-6 bg-[#232323] text-white">
