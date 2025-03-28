@@ -5,11 +5,13 @@ import TradingChallenge from './components/TradingChallenge';
 import PipCalculator from './components/PipCalculator';
 import CertificateComponent from './components/CertificateComponent';
 import LeaderboardModal from './components/LeaderboardModal';
+import TradingDashboard from './components/TradingDashboard';
 
 const Dashboard = ({ onLogout }) => {
   const [selectedOption, setSelectedOption] = useState("Dashboard");
   const [isMobile, setIsMobile] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState(null);
   
   // Detectar tamaño de pantalla
   useEffect(() => {
@@ -38,18 +40,33 @@ const Dashboard = ({ onLogout }) => {
     setSelectedOption("Dashboard"); // Regresar a Dashboard al cerrar
   };
 
+  // Manejador para visualizar los detalles de una cuenta
+  const handleViewAccountDetails = (accountId) => {
+    setSelectedAccount(accountId);
+    // No cambiamos de pestaña, solo mostramos los detalles
+  };
+  
+  // Volver a la vista de Home
+  const handleBackToAccounts = () => {
+    setSelectedAccount(null);
+  };
+
   // Función para renderizar el contenido según la opción seleccionada
   const renderContent = () => {
+    // Si estamos en Dashboard y hay una cuenta seleccionada, mostrar TradingDashboard
+    if (selectedOption === "Dashboard" && selectedAccount !== null) {
+      return <TradingDashboard accountId={selectedAccount} onBack={handleBackToAccounts} />;
+    }
+    
     switch (selectedOption) {
       case "Dashboard":
-          return <Home />;
+          return <Home onViewDetails={handleViewAccountDetails} />;
       case "Certificados":
           return <CertificateComponent />;
       case "Desafio":
             return <TradingChallenge />;
       case "Leaderboard":
-          // Aquí ya no renderizamos nada porque usamos el modal
-          return <Home />; // Mantenemos Home como contenido de fondo
+          return <Home onViewDetails={handleViewAccountDetails} />;
       case "Calculadora":
             return <PipCalculator />;
       case "Descargas":
@@ -68,9 +85,9 @@ const Dashboard = ({ onLogout }) => {
         );
       case "Cuentas":
         return (
-          <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Cuentas</h1>
-            <p className="text-gray-600">Gestiona tus cuentas aquí.</p>
+          <div className="p-6 bg-[#232323] text-white">
+            <h1 className="text-2xl font-semibold mb-4">Cuentas</h1>
+            <p className="text-gray-400">Selecciona una cuenta desde el Dashboard para ver detalles.</p>
           </div>
         );
       case "Plataformas":
@@ -80,7 +97,6 @@ const Dashboard = ({ onLogout }) => {
             <p className="text-gray-600">Conecta y gestiona tus plataformas.</p>
           </div>
         );
-      // Puedes añadir más casos según necesites
       default:
         return (
           <div className="p-6">

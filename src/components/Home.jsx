@@ -1,7 +1,7 @@
 import React from 'react';
 const fondoTarjetaUrl = "/fondoTarjeta.png";
 
-const Home = () => {
+const Home = ({ onViewDetails }) => {
   return (
     <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen flex flex-col">
       {/* Header con saludo y fecha */}
@@ -81,15 +81,18 @@ const Home = () => {
         
         {/* Tarjetas de cuentas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 flex-grow">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="bg-gradient-to-br from-[#232323] to-[#2d2d2d] p-3 md:p-4 rounded-md border border-[#333] flex flex-col h-full">
+          {[1, 2, 3].map((accountId) => (
+            <div key={accountId} className="bg-gradient-to-br from-[#232323] to-[#2d2d2d] p-3 md:p-4 rounded-md border border-[#333] flex flex-col h-full">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2">
                 <h3 className="font-medium text-lg md:text-2xl lg:text-4xl mb-1 sm:mb-0">ONE STEP CHALLENGE 100K</h3>
-                <span className="text-gray-400 text-base md:text-xl">#657237</span>
+                <span className="text-gray-400 text-base md:text-xl">#{657230 + accountId}</span>
               </div>
               <div className="flex justify-center mt-auto pt-4">
-                <button className="border border-cyan-500 border-opacity-50 text-white py-1 md:py-2 px-3 md:px-4 rounded-full hover:bg-gray-800 transition"
-                style={{ outline: 'none' }}>
+                <button 
+                  className="border border-cyan-500 border-opacity-50 text-white py-1 md:py-2 px-3 md:px-4 rounded-full hover:bg-gray-800 transition"
+                  style={{ outline: 'none' }}
+                  onClick={() => onViewDetails && onViewDetails(accountId)}
+                >
                   Ver Detalles
                 </button>
               </div>
