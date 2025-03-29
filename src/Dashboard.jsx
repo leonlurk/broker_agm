@@ -8,6 +8,7 @@ import LeaderboardModal from './components/LeaderboardModal';
 import TradingDashboard from './components/TradingDashboard';
 import OperationsHistory from './components/OperationsHistory';
 import Descargas from './components/Descargas';
+import AfiliadosDashboard from './components/AfiliadosDashboard';
 
 const Dashboard = ({ onLogout }) => {
   const [selectedOption, setSelectedOption] = useState("Dashboard");
@@ -75,6 +76,8 @@ const Dashboard = ({ onLogout }) => {
             return <PipCalculator />;
       case "Descargas":
         return <Descargas />;
+      case "Afiliados":
+        return <AfiliadosDashboard />;
       case "Noticias":
         return (
           <div className="p-6 bg-[#232323] text-white">
