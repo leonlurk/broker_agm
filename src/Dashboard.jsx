@@ -9,12 +9,14 @@ import TradingDashboard from './components/TradingDashboard';
 import OperationsHistory from './components/OperationsHistory';
 import Descargas from './components/Descargas';
 import AfiliadosDashboard from './components/AfiliadosDashboard';
+import Settings from './components/Settings';
 
 const Dashboard = ({ onLogout }) => {
   const [selectedOption, setSelectedOption] = useState("Dashboard");
   const [isMobile, setIsMobile] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
   
   // Detectar tamaño de pantalla
   useEffect(() => {
@@ -54,8 +56,23 @@ const Dashboard = ({ onLogout }) => {
     setSelectedAccount(null);
   };
 
+  // Manejador para mostrar la pantalla de configuración
+  const handleSettingsClick = () => {
+    setShowSettings(true);
+  };
+
+  // Manejador para volver de la pantalla de configuración
+  const handleBackFromSettings = () => {
+    setShowSettings(false);
+  };
+
   // Función para renderizar el contenido según la opción seleccionada
   const renderContent = () => {
+    // Si estamos mostrando la configuración
+    if (showSettings) {
+      return <Settings onBack={handleBackFromSettings} />;
+    }
+    
     // Si estamos en Dashboard y hay una cuenta seleccionada, mostrar TradingDashboard
     if (selectedOption === "Dashboard" && selectedAccount !== null) {
       return <TradingDashboard accountId={selectedAccount} onBack={handleBackToAccounts} />;
@@ -63,7 +80,10 @@ const Dashboard = ({ onLogout }) => {
     
     switch (selectedOption) {
       case "Dashboard":
-          return <Home onViewDetails={handleViewAccountDetails} />;
+          return <Home 
+            onViewDetails={handleViewAccountDetails} 
+            onSettingsClick={handleSettingsClick}
+          />;
       case "Certificados":
           return <CertificateComponent />;
       case "Pagos":
@@ -71,7 +91,10 @@ const Dashboard = ({ onLogout }) => {
       case "Desafio":
             return <TradingChallenge />;
       case "Leaderboard":
-          return <Home onViewDetails={handleViewAccountDetails} />;
+          return <Home 
+            onViewDetails={handleViewAccountDetails}
+            onSettingsClick={handleSettingsClick}
+          />;
       case "Calculadora":
             return <PipCalculator />;
       case "Descargas":
@@ -117,7 +140,7 @@ const Dashboard = ({ onLogout }) => {
         onLogout={onLogout}
       />
       <main className={`flex-1 overflow-y-auto w-full p-4 ${isMobile ? 'ml-0' : ''} transition-all duration-300`}>
-        <div className="border border-[#333] rounded-xl">
+        <div className="border border-[#333] rounded-3xl">
           {renderContent()}
         </div>
       </main>
