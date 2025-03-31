@@ -10,7 +10,8 @@ import {
 
 const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     const [expandedOptions, setExpandedOptions] = useState({
-        Herramientas: false
+        Herramientas: false,
+        Plataformas: false
     });
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -31,11 +32,11 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     }, []);
 
     const handleNavigation = (option) => {
-        if (option === "Herramientas") {
-            // Toggle expandido para Herramientas sin cambiar la selección actual
+        if (option === "Herramientas" || option === "Plataformas") {
+            // Toggle expandido sin cambiar la selección actual
             setExpandedOptions({
                 ...expandedOptions,
-                Herramientas: !expandedOptions.Herramientas
+                [option]: !expandedOptions[option]
             });
         } else {
             setSelectedOption(option);
@@ -116,18 +117,60 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                     />
                 </div>
                 
-                {/* Plataformas button - fixed */}
-                <button
-                    onClick={() => handleNavigation("Plataformas")}
-                    className={`flex items-center space-x-3 py-3 px-6 mx-4 rounded-full border border-[#333] text-lg bg-gradient-to-br from-[#232323] to-[#2d2d2d]
-                        ${selectedOption === "Plataformas" 
-                            ? "bg-[#232323]" 
-                            : "hover:bg-[#232323]"}`}
-                    style={{ outline: 'none' }}
-                >
-                    <img src="./Widget.png" className="w-8 h-8" alt="Widget" />
-                    <span className="font-regular">Plataformas</span>
-                </button>
+                {/* Plataformas button - ahora con flecha y desplegable */}
+                <div className="mx-4">
+                    <button
+                        onClick={() => handleNavigation("Plataformas")}
+                        className={`flex items-center justify-between py-3 px-6 w-full rounded-full border border-[#333] text-lg bg-gradient-to-br from-[#232323] to-[#2d2d2d]
+                            ${expandedOptions.Plataformas 
+                                ? "bg-[#232323]" 
+                                : "hover:bg-[#232323]"}`}
+                        style={{ outline: 'none' }}
+                    >
+                        <div className="flex items-center">
+                            <img src="./Widget.png" className="w-8 h-8 mr-3" alt="Widget" />
+                            <span className="font-regular">Plataformas</span>
+                        </div>
+                        <RiArrowRightSLine 
+                            className={`w-5 h-5 transition-transform duration-300 ease-in-out ${
+                                expandedOptions.Plataformas ? 'rotate-90' : ''
+                            }`} 
+                        />
+                    </button>
+                    
+                    {/* Subopciones para Plataformas */}
+                    <div 
+                        className={`pl-8 space-y-1 overflow-hidden transition-all duration-500 ease-in-out w-full
+                            ${expandedOptions.Plataformas ? 'max-h-40 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}
+                    >
+                        <button
+                            onClick={() => handleSubOptionClick("PropFirm")}
+                            className={`flex items-center py-2 px-4 w-full text-md font-regular rounded-lg transition-colors
+                                ${selectedOption === "PropFirm" 
+                                    ? "bg-transparent border-cyan-500" 
+                                    : "text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5"}`}
+                            style={{ outline: 'none' }}
+                        >
+                            <span className="w-5 h-5 mr-3 flex items-center justify-center">
+                                <img src="./candlestick.png" alt="Prop Firm" className="w-7 h-7" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M4 4h16v2H4v-2zm0 3h16v2H4V7zm0 3h16v2H4v-2zm0 3h10v2H4v-2z'/%3E%3C/svg%3E"} />
+                            </span>
+                            <span>Prop Firm</span>
+                        </button>
+                        <button
+                            onClick={() => handleSubOptionClick("Broker")}
+                            className={`flex items-center py-2 px-4 w-full text-md font-regular rounded-lg transition-colors
+                                ${selectedOption === "Broker" 
+                                    ? "bg-transparent border-cyan-500" 
+                                    : "text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5"}`}
+                            style={{ outline: 'none' }}
+                        >
+                            <span className="w-5 h-5 mr-3 flex items-center justify-center">
+                                <img src="./waterfall.png" alt="Broker" className="w-7 h-7" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M21 18v1c0 1.1-.9 2-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14c1.1 0 2 .9 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8z'/%3E%3C/svg%3E"} />
+                            </span>
+                            <span>Broker</span>
+                        </button>
+                    </div>
+                </div>
                 
                 <div className="h-px w-full bg-gray-700 my-4"></div>
                 

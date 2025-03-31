@@ -10,6 +10,9 @@ import OperationsHistory from './components/OperationsHistory';
 import Descargas from './components/Descargas';
 import AfiliadosDashboard from './components/AfiliadosDashboard';
 import Settings from './components/Settings';
+import Noticias from './components/Noticias';
+import TradingAccounts from "./components/TradingAccounts";
+import CompetitionCards from "./components/CompetitionCards";
 
 const Dashboard = ({ onLogout }) => {
   const [selectedOption, setSelectedOption] = useState("Dashboard");
@@ -89,39 +92,38 @@ const Dashboard = ({ onLogout }) => {
       case "Pagos":
           return <OperationsHistory />;
       case "Desafio":
-            return <TradingChallenge />;
+          return <TradingChallenge />;
       case "Leaderboard":
           return <Home 
             onViewDetails={handleViewAccountDetails}
             onSettingsClick={handleSettingsClick}
           />;
       case "Calculadora":
-            return <PipCalculator />;
+          return <PipCalculator />;
+      case "Competicion":
+          return <CompetitionCards />;
       case "Descargas":
-        return <Descargas />;
+          return <Descargas />;
       case "Afiliados":
-        return <AfiliadosDashboard />;
+          return <AfiliadosDashboard />;
       case "Noticias":
-        return (
-          <div className="p-6 bg-[#232323] text-white">
-            <h1 className="text-2xl font-semibold mb-4">Noticias</h1>
-            <p className="text-gray-400">Contenido en construcción.</p>
-          </div>
-        );
+          return <Noticias />;
       case "Cuentas":
-        return (
-          <div className="p-6 bg-[#232323] text-white">
-            <h1 className="text-2xl font-semibold mb-4">Cuentas</h1>
-            <p className="text-gray-400">Selecciona una cuenta desde el Dashboard para ver detalles.</p>
-          </div>
-        );
-      case "Plataformas":
-        return (
-          <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Plataformas</h1>
-            <p className="text-gray-600">Conecta y gestiona tus plataformas.</p>
-          </div>
-        );
+          return <TradingAccounts />;
+      case "PropFirm":
+          return (
+            <div className="p-6 bg-[#232323] text-white">
+              <h1 className="text-2xl font-semibold mb-4">Prop Firm</h1>
+              <p className="text-gray-400">Gestiona tus cuentas de Prop Firm.</p>
+            </div>
+          );
+      case "Broker":
+          return (
+            <div className="p-6 bg-[#232323] text-white">
+              <h1 className="text-2xl font-semibold mb-4">Broker</h1>
+              <p className="text-gray-400">Gestiona tus cuentas de Broker.</p>
+            </div>
+          );
       default:
         return (
           <div className="p-6">
