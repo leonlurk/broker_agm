@@ -66,16 +66,14 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     const menuItems = [
         { name: "Dashboard", icon: <RiDashboardLine className="w-8 h-8" /> },
         { name: "Cuentas", icon: <img src="./Flag.png" className="w-8 h-8" alt="Cuentas" /> },
-        { name: "Afiliados", icon: <img src="./Afiliados.png" className="w-8 h-8" alt="Afiliados" /> },
+        { name: "Wallet", icon: <img src="./Afiliados.png" className="w-8 h-8" alt="Wallet" /> },
         { 
             name: "Herramientas", 
             icon: <img src="./Tools.png" className="w-8 h-8" alt="Herramientas" />,
             subOptions: ["Calculadora", "Descargas", "Noticias"]
         },
-        { name: "Certificados", icon: <img src="./Certs.png" className="w-8 h-8" alt="Certificados" /> },
-        { name: "Competicion", icon: <img src="./elements.png" className="w-5 h-7" alt="Competicion" /> },
-        { name: "Leaderboard", icon: <img src="./leader.png" className="w-7 h-7" alt="Leaderboard" /> },
-        { name: "Pagos", icon: <img src="./Money.png" className="w-8 h-8" alt="Pagos" /> },
+        { name: "Afiliados", icon: <img src="./Afiliados.png" className="w-8 h-8" alt="Afiliados" /> },
+        { name: "Pamm", icon: <img src="./leader.png" className="w-7 h-7" alt="Pamm" /> },
     ];
 
     return (
@@ -107,7 +105,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                 transition-all duration-300 ease-in-out overflow-hidden`}
             >
                 {/* Logo section - fixed */}
-                <div className="flex justify-center px-4 pt-8 pb-4">
+                <div className="flex justify-center px-4 pt-8 pb-6">
                     <img 
                         src="/logo.png" 
                         alt="AGM Logo" 
@@ -119,10 +117,10 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                 </div>
                 
                 {/* Plataformas button - ahora con flecha y desplegable */}
-                <div className="mx-4">
+                <div className="mx-4 mb-6">
                     <button
                         onClick={() => handleNavigation("Plataformas")}
-                        className={`flex items-center justify-between py-3 px-6 w-full rounded-full border border-[#333] text-lg bg-gradient-to-br from-[#232323] to-[#2d2d2d]
+                        className={`flex items-center justify-between py-3.5 px-6 w-full rounded-full border border-[#333] text-lg bg-gradient-to-br from-[#232323] to-[#2d2d2d]
                             ${expandedOptions.Plataformas 
                                 ? "bg-[#232323]" 
                                 : "hover:bg-[#232323]"}`}
@@ -146,7 +144,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                     >
                         <button
                             onClick={() => handleSubOptionClick("PropFirm")}
-                            className={`flex items-center py-2 px-4 w-full text-md font-regular rounded-lg transition-colors
+                            className={`flex items-center py-2.5 px-4 w-full text-md font-regular rounded-lg transition-colors
                                 ${selectedOption === "PropFirm" 
                                     ? "bg-transparent border-cyan-500" 
                                     : "text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5"}`}
@@ -159,7 +157,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                         </button>
                         <button
                             onClick={() => handleSubOptionClick("Broker")}
-                            className={`flex items-center py-2 px-4 w-full text-md font-regular rounded-lg transition-colors
+                            className={`flex items-center py-2.5 px-4 w-full text-md font-regular rounded-lg transition-colors
                                 ${selectedOption === "Broker" 
                                     ? "bg-transparent border-cyan-500" 
                                     : "text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5"}`}
@@ -173,18 +171,18 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                     </div>
                 </div>
                 
-                <div className="h-px w-full bg-gray-700 my-4"></div>
+                <div className="h-px w-full bg-gray-700 mb-6"></div>
                 
                 {/* Scrollable menu section */}
                 <div className="flex-1 overflow-y-auto transition-all duration-500 ease-in-out" style={{ scrollbarWidth: 'thin', scrollbarColor: '#555 #333' }}>
-                    <nav className="space-y-2 px-1">
+                    <nav className="space-y-4 px-4">
                         {menuItems.map((item) => (
                             <div key={item.name}>
                                 <button
                                     onClick={() => handleNavigation(item.name)}
-                                    className={`flex items-center justify-between py-3 px-6 w-full bg-[#232323] text-lg font-regular
+                                    className={`flex items-center justify-between py-4 px-6 w-full rounded-xl bg-transparent border text-lg font-regular
                                         ${selectedOption === item.name || (item.subOptions && item.subOptions.includes(selectedOption))
-                                            ? "bg-[#191919]" 
+                                            ? "bg-[#191919] border-cyan-500 border-opacity-30" 
                                             : "hover:bg-[#191919]"}`}
                                     style={{ outline: 'none' }}
                                 >
@@ -206,8 +204,8 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                 {/* Subopciones para Herramientas con transición suave */}
                                 {item.subOptions && (
                                     <div 
-                                        className={`pl-8 space-y-1 overflow-hidden transition-all duration-500 ease-in-out w-full
-                                            ${expandedOptions[item.name] ? 'max-h-40 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}
+                                        className={`pl-8 space-y-2 overflow-hidden transition-all duration-500 ease-in-out w-full
+                                            ${expandedOptions[item.name] ? 'max-h-48 opacity-100 mt-3 mb-3' : 'max-h-0 opacity-0'}`}
                                     >
                                         {item.subOptions.map(subOption => {
                                             // Iconos para cada subopción
@@ -230,9 +228,9 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                                 <button
                                                     key={subOption}
                                                     onClick={() => handleSubOptionClick(subOption)}
-                                                    className={`flex items-center py-2 px-4 w-full text-md font-regular rounded-lg transition-colors
+                                                    className={`flex items-center py-3 px-4 w-full text-md font-regular rounded-lg transition-colors
                                                         ${selectedOption === subOption 
-                                                            ? "bg-transparent border-cyan-500" 
+                                                            ? "bg-transparent border-l-2 border-cyan-500" 
                                                             : "text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5"}`}
                                                     style={{ outline: 'none' }}
                                                 >
@@ -251,11 +249,11 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                 </div>
                 
                 {/* Bottom section - fixed */}
-                <div className="mt-2 px-4">
+                <div className="mt-auto px-4">
                     <div className="h-px w-full bg-gray-700 my-4"></div>
                     <button
                         onClick={() => handleNavigation("Desafio")}
-                        className="flex items-center justify-center space-x-2 py-3 px-4 rounded-md w-full bg-gradient-to-r from-[#0F7490] to-[#0A5A72] hover:opacity-90 transition text-lg"
+                        className="flex items-center justify-center space-x-2 py-4 px-4 rounded-md w-full bg-gradient-to-r from-[#0F7490] to-[#0A5A72] hover:opacity-90 transition text-lg"
                         style={{ outline: 'none' }}
                     >
                         <span className="text-xl mr-2">+</span>
@@ -264,8 +262,9 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                     <div className="h-px w-full bg-[#333] my-4"></div>
                     
                     <button onClick={handleLogout} 
-                        className="w-full bg-transparent flex items-center space-x-3 py-3 px-6 text-gray-300 hover:bg-gray-700 mb-6 md:mb-2 style={{ outline: 'none' }}"
-                        >
+                        className="w-full bg-transparent flex items-center space-x-3 py-3 px-6 text-gray-300 hover:bg-gray-700 mb-6 rounded-lg"
+                        style={{ outline: 'none' }}
+                    >
                         <img src="./logout.png" className="w-8 h-8" alt="Logout" />
                         <span className="text-lg">Cerrar Sesion</span>
                     </button>

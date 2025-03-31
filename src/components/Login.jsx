@@ -37,7 +37,12 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   return (
     <div className="w-[420px] h-[900px] sm:w-full md:w-[620px] p-6 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">
       <div className="flex justify-center mb-8">
-        <img src="/logo.png" alt="AGM Logo" className="h-25" />
+        <img src="/logo-broker.png" alt="Broker Logo" className="h-25" />
+      </div>
+      
+      <div className="mb-6 text-center">
+        <h1 className="text-white text-xl font-bold">Plataforma de Broker</h1>
+        <p className="text-gray-400 text-sm">Inicia sesión con tu cuenta de broker</p>
       </div>
       
       {error && (
@@ -109,15 +114,8 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
         </button>
 
         <div className="mt-4 text-center">
-          <button
-            type="button"
-            onClick={onRegisterClick}
-            className="text-gray-300 hover:text-white bg-transparent"
-          >
-            Verificar Ahora
-          </button>
           <p className="text-gray-400 mt-1">
-            ¿No tienes cuenta? <button type="button" onClick={onRegisterClick} className="text-white font-semibold bg-transparent">Regístrate</button>
+            ¿No tienes cuenta de broker? <button type="button" onClick={onRegisterClick} className="text-white font-semibold bg-transparent">Regístrate</button>
           </p>
         </div>
       </form>

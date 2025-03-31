@@ -13,6 +13,7 @@ import Settings from './components/Settings';
 import Noticias from './components/Noticias';
 import TradingAccounts from "./components/TradingAccounts";
 import CompetitionCards from "./components/CompetitionCards";
+import WithdrawComponent from "./components/WithdrawComponent";
 
 const Dashboard = ({ onLogout }) => {
   const [selectedOption, setSelectedOption] = useState("Dashboard");
@@ -106,6 +107,8 @@ const Dashboard = ({ onLogout }) => {
           />;
       case "Certificados":
           return <CertificateComponent />;
+      case "Wallet":
+          return <WithdrawComponent />;
       case "Pagos":
           return <OperationsHistory />;
       case "Desafio":
