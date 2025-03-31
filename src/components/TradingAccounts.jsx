@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 
-const TradingAccounts = () => {
+const TradingAccounts = ({ setSelectedOption, setSelectedAccount }) => {
   const [activeTab, setActiveTab] = useState('Fase 1');
   
   const accounts = [
@@ -69,9 +69,15 @@ const TradingAccounts = () => {
               <span className={`px-4 py-1 rounded-full text-sm ${getStatusBadgeClass(account.status)}`}>
                 {account.status}
               </span>
-              <button className="px-4 py-2 rounded-full bg-[#232323] border border-[#333] hover:bg-[#2a2a2a] transition focus:outline-none">
-                Ver Detalles
-              </button>
+              <button 
+              className="px-4 py-2 rounded-full bg-[#232323] border border-[#333] hover:bg-[#2a2a2a] transition focus:outline-none"
+              onClick={() => {
+                setSelectedAccount && setSelectedAccount(account.id);
+                setSelectedOption && setSelectedOption("Dashboard");
+                  }}
+                >
+                  Ver Detalles
+                </button>
             </div>
           </div>
         ))}

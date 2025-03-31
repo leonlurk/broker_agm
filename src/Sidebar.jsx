@@ -39,6 +39,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                 [option]: !expandedOptions[option]
             });
         } else {
+            // Llamamos a la función pasada como prop, que ahora maneja diferente el caso de Leaderboard
             setSelectedOption(option);
             if (isMobile) {
                 setIsMobileMenuOpen(false);

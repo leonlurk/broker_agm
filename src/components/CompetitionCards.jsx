@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 
-const CompetitionCards = () => {
+const CompetitionCards = ({ onShowLeaderboard }) => {
   const [activeTab, setActiveTab] = useState('Gratuitas');
   
   const competitions = [
@@ -160,10 +161,13 @@ const CompetitionCards = () => {
             
             {/* Buttons */}
             <div className="flex mt-6 space-x-2">
-              <button className="focus:outline-none flex-1 py-2 rounded-md bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333]">
+              <button 
+                className="focus:outline-none flex-1 py-2 rounded-md bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] hover:bg-gradient-to-br hover:from-[#262626] hover:to-[#303030] transition-all"
+                onClick={onShowLeaderboard} // Añadimos el evento para abrir el modal Leaderboard
+              >
                 Detalles
               </button>
-              <button className="focus:outline-none flex-1 py-2 rounded-md bg-gradient-to-br from-[#0a5a72] to-[#202c36] text-white">
+              <button className="focus:outline-none flex-1 py-2 rounded-md bg-gradient-to-br from-[#0a5a72] to-[#202c36] text-white hover:opacity-90 transition-all">
                 Ingresar
               </button>
             </div>
@@ -172,6 +176,16 @@ const CompetitionCards = () => {
       </div>
     </div>
   );
+};
+
+// Definimos las PropTypes para validar props
+CompetitionCards.propTypes = {
+  onShowLeaderboard: PropTypes.func
+};
+
+// Valores predeterminados para evitar errores si no se pasa la prop
+CompetitionCards.defaultProps = {
+  onShowLeaderboard: () => {}
 };
 
 export default CompetitionCards;

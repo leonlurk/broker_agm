@@ -20,6 +20,7 @@ const Dashboard = ({ onLogout }) => {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [previousSection, setPreviousSection] = useState("Dashboard");
   
   // Detectar tamaño de pantalla
   useEffect(() => {
@@ -35,29 +36,40 @@ const Dashboard = ({ onLogout }) => {
     };
   }, []);
 
-  // Abre el modal cuando la opción Leaderboard es seleccionada
-  useEffect(() => {
-    if (selectedOption === "Leaderboard") {
-      setIsLeaderboardOpen(true);
+  // Crear una función para abrir el modal que podemos pasar a cualquier componente
+  const openLeaderboardModal = () => {
+    setIsLeaderboardOpen(true);
+  };
+
+  // Modificamos el Sidebar para controlar directamente la apertura del modal
+  // en lugar de cambiar la sección seleccionada
+  const handleSidebarOptionChange = (option) => {
+    if (option === "Leaderboard") {
+      // Si selecciona Leaderboard, solo abrimos el modal sin cambiar la sección actual
+      openLeaderboardModal();
+    } else {
+      // Para las demás opciones, cambiamos la sección normalmente
+      setSelectedOption(option);
     }
-  }, [selectedOption]);
+  };
 
   // Cambia de opción al cerrar el modal
   const handleCloseLeaderboard = () => {
     setIsLeaderboardOpen(false);
-    setSelectedOption("Dashboard"); // Regresar a Dashboard al cerrar
+    // No necesitamos cambiar la sección al cerrar porque nunca la cambiamos al abrir
   };
 
   // Manejador para visualizar los detalles de una cuenta
   const handleViewAccountDetails = (accountId) => {
+    setPreviousSection(selectedOption); 
     setSelectedAccount(accountId);
-    // No cambiamos de pestaña, solo mostramos los detalles
   };
   
   // Volver a la vista de Home
-  const handleBackToAccounts = () => {
-    setSelectedAccount(null);
-  };
+    const handleBackToAccounts = () => {
+      setSelectedAccount(null);
+      setSelectedOption(previousSection); // Return to previous section
+    };
 
   // Manejador para mostrar la pantalla de configuración
   const handleSettingsClick = () => {
@@ -78,7 +90,11 @@ const Dashboard = ({ onLogout }) => {
     
     // Si estamos en Dashboard y hay una cuenta seleccionada, mostrar TradingDashboard
     if (selectedOption === "Dashboard" && selectedAccount !== null) {
-      return <TradingDashboard accountId={selectedAccount} onBack={handleBackToAccounts} />;
+      return <TradingDashboard 
+      accountId={selectedAccount} 
+      onBack={handleBackToAccounts}
+      previousSection={previousSection}
+    />;
     }
     
     switch (selectedOption) {
@@ -86,6 +102,7 @@ const Dashboard = ({ onLogout }) => {
           return <Home 
             onViewDetails={handleViewAccountDetails} 
             onSettingsClick={handleSettingsClick}
+            setSelectedOption={setSelectedOption}
           />;
       case "Certificados":
           return <CertificateComponent />;
@@ -93,15 +110,10 @@ const Dashboard = ({ onLogout }) => {
           return <OperationsHistory />;
       case "Desafio":
           return <TradingChallenge />;
-      case "Leaderboard":
-          return <Home 
-            onViewDetails={handleViewAccountDetails}
-            onSettingsClick={handleSettingsClick}
-          />;
       case "Calculadora":
           return <PipCalculator />;
       case "Competicion":
-          return <CompetitionCards />;
+          return <CompetitionCards onShowLeaderboard={openLeaderboardModal} />;
       case "Descargas":
           return <Descargas />;
       case "Afiliados":
@@ -109,7 +121,10 @@ const Dashboard = ({ onLogout }) => {
       case "Noticias":
           return <Noticias />;
       case "Cuentas":
-          return <TradingAccounts />;
+        return <TradingAccounts 
+        setSelectedOption={setSelectedOption}
+        setSelectedAccount={setSelectedAccount}
+      />;
       case "PropFirm":
           return (
             <div className="p-6 bg-[#232323] text-white">
@@ -138,7 +153,7 @@ const Dashboard = ({ onLogout }) => {
     <div className="flex h-screen w-full bg-[#232323] overflow-hidden">
       <Sidebar 
         selectedOption={selectedOption} 
-        setSelectedOption={setSelectedOption}
+        setSelectedOption={handleSidebarOptionChange} // Cambiamos a nuestra nueva función
         onLogout={onLogout}
       />
       <main className={`flex-1 overflow-y-auto w-full p-4 ${isMobile ? 'ml-0' : ''} transition-all duration-300`}>
