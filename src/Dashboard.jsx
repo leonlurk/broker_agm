@@ -14,6 +14,7 @@ import Noticias from './components/Noticias';
 import TradingAccounts from "./components/TradingAccounts";
 import CompetitionCards from "./components/CompetitionCards";
 import WithdrawComponent from "./components/WithdrawComponent";
+import Inversor from "./components/Inversor";
 
 const Dashboard = ({ onLogout }) => {
   const [selectedOption, setSelectedOption] = useState("Dashboard");
@@ -128,6 +129,15 @@ const Dashboard = ({ onLogout }) => {
         setSelectedOption={setSelectedOption}
         setSelectedAccount={setSelectedAccount}
       />;
+      case "Inversor":
+          return <Inversor />;
+      case "Gestor":
+          return (
+            <div className="p-6 bg-[#232323] text-white">
+              <h1 className="text-2xl font-semibold mb-4">Copytrading - Gestor</h1>
+              <p className="text-gray-400">Gestiona tu perfil como gestor de trading.</p>
+            </div>
+          );
       case "PropFirm":
           return (
             <div className="p-6 bg-[#232323] text-white">

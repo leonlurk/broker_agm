@@ -11,7 +11,8 @@ import {
 const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     const [expandedOptions, setExpandedOptions] = useState({
         Herramientas: false,
-        Plataformas: false
+        Plataformas: false,
+        Copytrading: false
     });
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -32,7 +33,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     }, []);
 
     const handleNavigation = (option) => {
-        if (option === "Herramientas" || option === "Plataformas") {
+        if (option === "Herramientas" || option === "Plataformas" || option === "Copytrading") {
             // Toggle expandido sin cambiar la selección actual
             setExpandedOptions({
                 ...expandedOptions,
@@ -64,16 +65,21 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     };
 
     const menuItems = [
-        { name: "Dashboard", icon: <RiDashboardLine className="w-8 h-8" /> },
-        { name: "Cuentas", icon: <img src="./Flag.png" className="w-8 h-8" alt="Cuentas" /> },
-        { name: "Wallet", icon: <img src="./Afiliados.png" className="w-8 h-8" alt="Wallet" /> },
+        { name: "Dashboard", icon: <img src="./darhboard_alt.svg" className="w-8 h-8" /> },
+        { name: "Cuentas", icon: <img src="./Flag_finish_alt.svg" className="w-8 h-8" alt="Cuentas" /> },
+        { name: "Wallet", icon: <img src="./wallet-line.svg" className="w-8 h-8" alt="Wallet" /> },
         { 
             name: "Herramientas", 
-            icon: <img src="./Tools.png" className="w-8 h-8" alt="Herramientas" />,
+            icon: <img src="./Setting_alt_line.svg" className="w-8 h-8" alt="Herramientas" />,
             subOptions: ["Calculadora", "Descargas", "Noticias"]
         },
-        { name: "Afiliados", icon: <img src="./Afiliados.png" className="w-8 h-8" alt="Afiliados" /> },
-        { name: "Pamm", icon: <img src="./leader.png" className="w-7 h-7" alt="Pamm" /> },
+        { name: "Afiliados", icon: <img src="./Group_light.svg" className="w-8 h-8" alt="Afiliados" /> },
+        { 
+            name: "Copytrading", 
+            icon: <img src="./copy-linear.svg" className="w-8 h-8" alt="Copytrading" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z'/%3E%3C/svg%3E"} />,
+            subOptions: ["Inversor", "Gestor"]
+        },
+        { name: "Pamm", icon: <img src="./elements.svg" className="w-8 h-8" alt="Pamm" /> },
     ];
 
     return (
@@ -127,7 +133,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                         style={{ outline: 'none' }}
                     >
                         <div className="flex items-center">
-                            <img src="./Widget.png" className="w-8 h-8 mr-3" alt="Widget" />
+                         <img src="./Widget.svg" className="w-8 h-8 mr-3" alt="Widget" />
                             <span className="font-regular">Plataformas</span>
                         </div>
                         <RiArrowRightSLine 
@@ -201,7 +207,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                     )}
                                 </button>
                                 
-                                {/* Subopciones para Herramientas con transición suave */}
+                                {/* Subopciones para elementos con subOptions */}
                                 {item.subOptions && (
                                     <div 
                                         className={`pl-8 space-y-2 overflow-hidden transition-all duration-500 ease-in-out w-full
@@ -219,6 +225,12 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                                     break;
                                                 case "Noticias":
                                                     icon = <img src="./news.png" alt="Noticias" className="w-5 h-5" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z'/%3E%3C/svg%3E"} />;
+                                                    break;
+                                                case "Inversor":
+                                                    icon = <img src="./money-safe.svg" alt="Inversor" className="w-5 h-5" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M21 18v1c0 1.1-.9 2-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14c1.1 0 2 .9 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8z'/%3E%3C/svg%3E"} />;
+                                                    break;
+                                                case "Gestor":
+                                                    icon = <img src="./Calculadora-1.svg" alt="Gestor" className="w-5 h-5" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z M7 10h2v2H7v-2zm0 4h2v2H7v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2z'/%3E%3C/svg%3E"} />;
                                                     break;
                                                 default:
                                                     icon = null;
@@ -265,7 +277,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                         className="w-full bg-transparent flex items-center space-x-3 py-3 px-6 text-gray-300 hover:bg-gray-700 mb-6 rounded-lg"
                         style={{ outline: 'none' }}
                     >
-                        <img src="./logout.png" className="w-8 h-8" alt="Logout" />
+                        <img src="./Sign_out_circle_light.svg" className="w-8 h-8" alt="Logout" />
                         <span className="text-lg">Cerrar Sesion</span>
                     </button>
                 </div>
