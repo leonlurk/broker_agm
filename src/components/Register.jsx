@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { registerUser } from '../firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Register = ({ onLoginClick }) => {
   const [username, setUsername] = useState('');
@@ -11,7 +11,18 @@ const Register = ({ onLoginClick }) => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [refId, setRefId] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      setRefId(ref);
+      console.log("Referral ID detectado:", ref);
+    }
+  }, [location.search]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +36,7 @@ const Register = ({ onLoginClick }) => {
     setLoading(true);
     
     try {
-      const { user, error } = await registerUser(username, email, password);
+      const { user, error } = await registerUser(username, email, password, refId);
       
       if (error) {
         throw new Error(error.message || 'Error al registrar');

@@ -14,7 +14,7 @@ import { doc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp
 const BROKER_USERS_COLLECTION = "users_broker";
 
 // Register a new broker user
-export const registerUser = async (username, email, password) => {
+export const registerUser = async (username, email, password, refId = null) => {
   try {
     // Create user with email and password
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -28,18 +28,31 @@ export const registerUser = async (username, email, password) => {
     // Send email verification
     await sendEmailVerification(user);
     
-    // Store additional user data in Firestore in the broker collection
-    await setDoc(doc(db, BROKER_USERS_COLLECTION, user.uid), {
-      uid: user.uid,
-      username,
-      email,
-      display_name: username,
-      created_time: serverTimestamp(),
-      user_type: "broker",
-    });
+    // Prepare base user data
+    const userData = {
+        uid: user.uid,
+        username,
+        email,
+        display_name: username,
+        created_time: serverTimestamp(),
+        user_type: "broker",
+        referralCount: 0,
+    };
+
+    // If there is a referrer ID, add referredBy field
+    if (refId) {
+        userData.referredBy = refId; 
+    }
+
+    // Store the new user's data in Firestore
+    await setDoc(doc(db, BROKER_USERS_COLLECTION, user.uid), userData);
+    
+    // La lógica de incremento se moverá a una Cloud Function
     
     return { user };
   } catch (error) {
+    // Handle Auth errors (e.g., email already in use)
+    console.error("Registration main error:", error);
     return { error };
   }
 };
