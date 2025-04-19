@@ -12,7 +12,6 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [userData, setUserData] = useState(null);
-  const [isBroker, setIsBroker] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,11 +19,10 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChange(async (user) => {
       console.log("[AuthContext] onAuthStateChange callback received user:", user ? user.uid : null);
       setCurrentUser(user);
-      setIsBroker(false);
       setUserData(null);
       
       if (user) {
-        console.log(`[AuthContext] User ${user.uid} passed initial auth check. Fetching Firestore data...`);
+        console.log(`[AuthContext] User ${user.uid} is authenticated and exists in users collection. Fetching Firestore data...`);
         try {
           const userDocRef = doc(db, 'users', user.uid);
           const userDocSnap = await getDoc(userDocRef);
@@ -33,18 +31,8 @@ export const AuthProvider = ({ children }) => {
             const fetchedData = userDocSnap.data();
             console.log(`[AuthContext] Firestore data fetched for ${user.uid}:`, fetchedData);
             setUserData(fetchedData);
-            if (fetchedData.user_type === 'broker') {
-              console.log(`[AuthContext] User ${user.uid} confirmed as broker type.`);
-              setIsBroker(true);
-            } else {
-              console.warn(`[AuthContext] User ${user.uid} is authenticated but Firestore data type is NOT 'broker' (type: ${fetchedData.user_type}). Forcing sign out.`);
-              await auth.signOut();
-              setCurrentUser(null);
-              setIsBroker(false);
-              setUserData(null);
-            }
           } else {
-            console.error(`[AuthContext] Firestore document missing for authenticated user ${user.uid}. This should have been caught by onAuthStateChange in auth.js. Forcing sign out.`);
+            console.error(`[AuthContext] Firestore document unexpectedly missing for authenticated user ${user.uid}. Forcing sign out.`);
             await auth.signOut();
             setCurrentUser(null);
           }
@@ -71,8 +59,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     currentUser,
     userData,
-    isAuthenticated: !!currentUser && isBroker,
-    isBrokerUser: isBroker,
+    isAuthenticated: !!currentUser,
   };
 
   return (

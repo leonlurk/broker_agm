@@ -58,7 +58,7 @@ export const registerUser = async (username, email, password, refId = null) => {
   }
 };
 
-// Sign in existing user (email or username), verifying they are a broker user in the 'users' collection
+// Sign in existing user (email or username), verifying they exist in the 'users' collection
 export const loginUser = async (identifier, password) => {
   console.log(`[loginUser] Attempting login with identifier: ${identifier}`);
   let emailToUse = identifier;
@@ -98,26 +98,20 @@ export const loginUser = async (identifier, password) => {
     const user = userCredential.user;
     console.log(`[loginUser] Auth successful: UID=${user.uid}`);
     
-    // Use the unified USERS_COLLECTION for verification
-    console.log(`[loginUser] Verifying user type in Firestore (${USERS_COLLECTION}/${user.uid})...`);
+    // Verification step: Check if user document exists in the 'users' collection
+    console.log(`[loginUser] Verifying user existence in Firestore (${USERS_COLLECTION}/${user.uid})...`);
     const userDocRef = doc(db, USERS_COLLECTION, user.uid);
     const userDocSnap = await getDoc(userDocRef);
     
     if (!userDocSnap.exists()) {
+      // If user authenticated but their document is MISSING in 'users', sign out & deny
       console.warn(`[loginUser] Firestore document DOES NOT EXIST in ${USERS_COLLECTION} for authenticated user UID=${user.uid}. Signing out.`);
       await signOut(auth);
-      return { error: { message: "Autenticación fallida: Datos de usuario no encontrados en el sistema correcto." } };
-    }
-
-    const firestoreUserData = userDocSnap.data();
-    console.log(`[loginUser] Firestore document found for UID=${user.uid}. User type: ${firestoreUserData.user_type}`);
-    if (firestoreUserData.user_type !== 'broker') {
-      console.warn(`[loginUser] User UID=${user.uid} is NOT type 'broker' (type: ${firestoreUserData.user_type}). Signing out.`);
-       await signOut(auth);
-       return { error: { message: "Esta cuenta no es de tipo broker." } };
+      return { error: { message: "Autenticación fallida: Datos de usuario no encontrados en el sistema." } };
     }
     
-    console.log(`[loginUser] User UID=${user.uid} verified as broker. Login successful.`);
+    // Document exists, user is valid for this system (regardless of user_type now)
+    console.log(`[loginUser] Firestore document found for UID=${user.uid}. Login successful.`);
     return { user };
 
   } catch (error) {
@@ -165,56 +159,54 @@ export const getCurrentUser = () => {
   return auth.currentUser;
 };
 
-// Check if current user is a broker user in the 'users' collection
-export const isBrokerUser = async (userId) => {
-  console.log(`[isBrokerUser] Checking if UID=${userId} is a broker user...`);
+// Check if user exists in the 'users' collection (renamed conceptually)
+// We might rename this function later if needed, but keeping it for now to minimize breaking changes
+export const isBrokerUser = async (userId) => { // Function name might be misleading now
+  console.log(`[isBrokerUser/userExistsCheck] Checking if UID=${userId} exists in ${USERS_COLLECTION}...`);
   if (!userId) {
-    console.log(`[isBrokerUser] No userId provided.`);
+    console.log(`[isBrokerUser/userExistsCheck] No userId provided.`);
     return false;
   }
   
   try {
-    // Use the unified USERS_COLLECTION
     const docRef = doc(db, USERS_COLLECTION, userId);
-    console.log(`[isBrokerUser] Reading Firestore document: ${USERS_COLLECTION}/${userId}...`);
+    console.log(`[isBrokerUser/userExistsCheck] Reading Firestore document: ${USERS_COLLECTION}/${userId}...`);
     const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      const isBrokerType = data.user_type === 'broker';
-      console.log(`[isBrokerUser] Document found for UID=${userId}. Data:`, data, `Is broker type: ${isBrokerType}`);
-      return isBrokerType;
-    } else {
-      console.log(`[isBrokerUser] Document NOT found in ${USERS_COLLECTION} for UID=${userId}.`);
-      return false;
-    }
+    const exists = docSnap.exists();
+    console.log(`[isBrokerUser/userExistsCheck] Document ${exists ? 'found' : 'NOT found'} for UID=${userId}.`);
+    // REMOVED: user_type check. Return true if the document exists.
+    return exists; 
   } catch (error) {
-    console.error(`[isBrokerUser] Error reading Firestore for UID=${userId}:`, error);
+    console.error(`[isBrokerUser/userExistsCheck] Error reading Firestore for UID=${userId}:`, error);
     throw error; 
   }
 };
 
-// Set up auth state listener, verifying against the 'users' collection
+// Set up auth state listener, verifying user exists in the 'users' collection
 export const onAuthStateChange = (callback) => {
   console.log("[onAuthStateChange] Setting up listener...");
   return onAuthStateChanged(auth, async (user) => {
     console.log("[onAuthStateChange] Listener triggered. Auth user:", user ? `UID=${user.uid}, Email=${user.email}` : null);
     if (user) {
       try {
-        console.log(`[onAuthStateChange] User authenticated (UID=${user.uid}). Checking broker status via isBrokerUser...`);
-        const isBroker = await isBrokerUser(user.uid); // isBrokerUser now checks 'users' collection
-        console.log(`[onAuthStateChange] isBrokerUser check returned: ${isBroker} for UID=${user.uid}`);
+        // Use the modified check: does the user document exist in 'users'?
+        console.log(`[onAuthStateChange] User authenticated (UID=${user.uid}). Checking user existence in ${USERS_COLLECTION}...`);
+        const userExists = await isBrokerUser(user.uid); // Using the repurposed function name
+        console.log(`[onAuthStateChange] User existence check returned: ${userExists} for UID=${user.uid}`);
         
-        if (!isBroker) {
-          console.warn(`[onAuthStateChange] User UID=${user.uid} is NOT a verified broker user (based on check in ${USERS_COLLECTION}). Signing out...`);
+        if (!userExists) {
+          // If user authenticated but no document in 'users', sign out
+          console.warn(`[onAuthStateChange] User UID=${user.uid} authenticated but NO document found in ${USERS_COLLECTION}. Signing out...`);
           await signOut(auth);
-          console.log(`[onAuthStateChange] Sign out complete for non-broker UID=${user.uid}. Calling callback with null.`);
+          console.log(`[onAuthStateChange] Sign out complete for non-existent user UID=${user.uid}. Calling callback with null.`);
           callback(null);
           return;
         }
-        console.log(`[onAuthStateChange] User UID=${user.uid} IS a verified broker user. Calling callback with user object.`);
+        // User is authenticated AND their document exists in the 'users' collection
+        console.log(`[onAuthStateChange] User UID=${user.uid} IS verified (exists in ${USERS_COLLECTION}). Calling callback with user object.`);
         callback(user);
       } catch (error) {
-        console.error(`[onAuthStateChange] Error during broker verification for UID=${user.uid}:`, error);
+        console.error(`[onAuthStateChange] Error during user existence verification for UID=${user.uid}:`, error);
         console.warn(`[onAuthStateChange] Signing out user UID=${user.uid} due to verification error.`);
         await signOut(auth);
         callback(null);
