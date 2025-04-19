@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "./contexts/AuthContext";
 import Sidebar from "./Sidebar";
 import Home from "./components/Home";
 import TradingChallenge from './components/TradingChallenge';
@@ -17,6 +18,7 @@ import WithdrawComponent from "./components/WithdrawComponent";
 import Inversor from "./components/Inversor";
 
 const Dashboard = ({ onLogout }) => {
+  const { currentUser, userData } = useAuth();
   const [selectedOption, setSelectedOption] = useState("Dashboard");
   const [isMobile, setIsMobile] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
@@ -105,6 +107,7 @@ const Dashboard = ({ onLogout }) => {
             onViewDetails={handleViewAccountDetails} 
             onSettingsClick={handleSettingsClick}
             setSelectedOption={setSelectedOption}
+            user={userData}
           />;
       case "Certificados":
           return <CertificateComponent />;
@@ -166,8 +169,9 @@ const Dashboard = ({ onLogout }) => {
     <div className="flex h-screen w-full bg-[#232323] overflow-hidden">
       <Sidebar 
         selectedOption={selectedOption} 
-        setSelectedOption={handleSidebarOptionChange} // Cambiamos a nuestra nueva función
+        setSelectedOption={handleSidebarOptionChange}
         onLogout={onLogout}
+        user={userData}
       />
       <main className={`flex-1 overflow-y-auto w-full p-4 ${isMobile ? 'ml-0' : ''} transition-all duration-300`}>
         <div className="border border-[#333] rounded-3xl">

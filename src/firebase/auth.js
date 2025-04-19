@@ -57,29 +57,68 @@ export const registerUser = async (username, email, password, refId = null) => {
   }
 };
 
-// Sign in existing user with verification for broker users only
-export const loginUser = async (email, password) => {
+// Sign in existing user with email or username, verifying they are a broker user
+export const loginUser = async (identifier, password) => {
+  let emailToUse = identifier;
+  const isEmailFormat = /\S+@\S+\.\S+/.test(identifier);
+
   try {
-    // First sign in to get the user
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    // If identifier is not an email, assume it's a username and find the email
+    if (!isEmailFormat) {
+      const usersRef = collection(db, BROKER_USERS_COLLECTION);
+      const q = query(usersRef, where("username", "==", identifier));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        return { error: { message: "Usuario no encontrado." } };
+      }
+      
+      if (querySnapshot.size > 1) {
+        // This shouldn't happen if usernames are unique, but handle it just in case
+        console.warn(`Multiple users found with username: ${identifier}`);
+        return { error: { message: "Error: Múltiples usuarios encontrados con ese nombre de usuario." } };
+      }
+      
+      // Get the email from the found user document
+      const userDoc = querySnapshot.docs[0].data();
+      emailToUse = userDoc.email;
+      if (!emailToUse) {
+           console.error(`User document for username ${identifier} is missing email field.`);
+           return { error: { message: "Error interno: No se pudo encontrar el email del usuario." } };
+      }
+    }
+
+    // Proceed with sign-in using the determined email
+    const userCredential = await signInWithEmailAndPassword(auth, emailToUse, password);
     const user = userCredential.user;
     
-    // Check if this user exists in the broker users collection
+    // IMPORTANT: Verify the logged-in user (by UID) exists in the broker collection
     const brokerUserDoc = await getDoc(doc(db, BROKER_USERS_COLLECTION, user.uid));
     
     if (!brokerUserDoc.exists()) {
-      // If user doesn't exist in broker collection, sign them out and return error
+      // If user authenticated but isn't in our broker list, sign out & deny access
       await signOut(auth);
       return { 
         error: { 
-          message: "Esta cuenta no está registrada en el sistema de broker. Por favor regístrese primero." 
+          message: "Autenticación exitosa pero la cuenta no pertenece al sistema de broker." 
         } 
       };
     }
     
+    // User is authenticated and verified as a broker user
     return { user };
+
   } catch (error) {
-    return { error };
+    // Handle Firebase Auth errors (wrong password, user not found by email, etc.)
+    console.error("Login process error:", error);
+    let friendlyMessage = "Error al iniciar sesión. Verifique sus credenciales.";
+    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        friendlyMessage = "Email/Usuario o contraseña incorrectos.";
+    } else if (error.message) {
+        // Use specific error messages if available and reasonable
+        // friendlyMessage = error.message; 
+    }
+    return { error: { message: friendlyMessage } };
   }
 };
 

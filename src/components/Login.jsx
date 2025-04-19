@@ -14,11 +14,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
     setLoading(true);
     
     try {
-      // Check if username is email format or just username
-      const isEmail = /\S+@\S+\.\S+/.test(username);
-      const email = isEmail ? username : `${username}@example.com`; // Adjust as needed
-      
-      const { user, error } = await loginUser(email, password);
+      const { user, error } = await loginUser(username, password);
       
       if (error) {
         throw new Error(error.message || 'Error al iniciar sesión');
@@ -27,8 +23,8 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
       console.log('Login successful:', user);
       onLoginSuccess();
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message || 'Error al iniciar sesión');
+      console.error('Login component error:', err);
+      setError(err.message || 'Ocurrió un error inesperado.');
     } finally {
       setLoading(false);
     }

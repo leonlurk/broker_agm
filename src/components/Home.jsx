@@ -6,7 +6,7 @@ import { ChevronDown, ArrowDown, ArrowUp } from 'lucide-react';
 
 const fondoTarjetaUrl = "/fondoTarjeta.png";
 
-const Home = ({ onViewDetails, onSettingsClick, setSelectedOption }) => {
+const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('ES');
   const [showUserInfo, setShowUserInfo] = useState(false);
@@ -54,7 +54,7 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption }) => {
         <div className="absolute inset-0 border-solid border-t border-l border-r border-cyan-500  rounded-xl"></div>
 
         <div className="mb-3 sm:mb-0">
-          <h1 className="text-xl md:text-2xl font-semibold">Hola, Isaac</h1>
+          <h1 className="text-xl md:text-2xl font-semibold">Hola, {user?.username || 'Usuario'}</h1>
           <p className="text-sm md:text-base text-gray-400">Miércoles, 8 de diciembre 2025</p>
         </div>
         <div className="flex items-center space-x-3 md:space-x-4 w-full sm:w-auto justify-end">
