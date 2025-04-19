@@ -51,16 +51,16 @@ const maxDrawdownData = [
 
 // --- DATOS DE EJEMPLO (Simulados como si vinieran de API) --- 
 const ALL_ACCOUNTS_DATA = [
-  { 
-    id: 1, 
-    nombre: 'Fxzio test', 
-    porcentaje: '-29.88%', 
-    imagen: './Icono.svg',
-    type: 'Premium',
-    since: 'Enero 2023',
-    profit: '+12.4%',
-    riesgo: 'Alto',
-    rentabilidad: '+187.4%',
+    { 
+      id: 1, 
+      nombre: 'Fxzio test', 
+      porcentaje: '-29.88%', 
+      imagen: './Icono.svg',
+      type: 'Premium',
+      since: 'Enero 2023',
+      profit: '+12.4%',
+      riesgo: 'Alto',
+      rentabilidad: '+187.4%',
     activoDias: 51,
     accountNumber: '657237', 
     server: 'MT5', 
@@ -86,43 +86,43 @@ const ALL_ACCOUNTS_DATA = [
     maxProfitTrade: 1915.17,
     minProfitTrade: -124.75,
     activeSubscribers: 8,
-  },
-  { 
-    id: 2, 
-    nombre: 'Trading Master', 
-    porcentaje: '+32.7%', 
-    imagen: './Icono.svg',
-    type: 'Verificado',
-    since: 'Marzo 2023',
-    profit: '+8.2%',
-    riesgo: 'Medio',
+    },
+    { 
+      id: 2, 
+      nombre: 'Trading Master', 
+      porcentaje: '+32.7%', 
+      imagen: './Icono.svg',
+      type: 'Verificado',
+      since: 'Marzo 2023',
+      profit: '+8.2%',
+      riesgo: 'Medio',
     rentabilidad: '+142.7%',
     activoDias: 250,
     maxDrawdown: -15.5
     // ... (añadir más datos si es necesario para los filtros)
-  },
-  { 
-    id: 3, 
-    nombre: 'ForexPro', 
-    porcentaje: '+18.5%', 
-    imagen: './Icono.svg',
-    type: 'Premium',
-    since: 'Junio 2023',
-    profit: '+5.7%',
-    riesgo: 'Medio-Alto',
+    },
+    { 
+      id: 3, 
+      nombre: 'ForexPro', 
+      porcentaje: '+18.5%', 
+      imagen: './Icono.svg',
+      type: 'Premium',
+      since: 'Junio 2023',
+      profit: '+5.7%',
+      riesgo: 'Medio-Alto',
     rentabilidad: '+156.3%',
     activoDias: 180,
     maxDrawdown: -22.0
-  },
-  { 
-    id: 4, 
-    nombre: 'TradingAlpha', 
-    porcentaje: '+9.2%', 
-    imagen: './Icono.svg',
-    type: 'Nuevo',
-    since: 'Septiembre 2024',
-    profit: '+4.1%',
-    riesgo: 'Bajo',
+    },
+    { 
+      id: 4, 
+      nombre: 'TradingAlpha', 
+      porcentaje: '+9.2%', 
+      imagen: './Icono.svg',
+      type: 'Nuevo',
+      since: 'Septiembre 2024',
+      profit: '+4.1%',
+      riesgo: 'Bajo',
     rentabilidad: '+21.4%',
     activoDias: 100,
     maxDrawdown: -8.0
@@ -139,14 +139,29 @@ const ALL_TRADE_HISTORY_DATA = [
     { id: '505678', position: 'NQM25', entryValue: 18000, entryTime: '28/11/2024 09:00:00', exitValue: 18050, exitTime: '28/11/2024 11:00:00', profit: 100.00, date: new Date(2024, 10, 28) }, // Mes 10 = Noviembre
 ];
 
-// Datos de ejemplo para gráficos (se usarán para simular filtrado)
-const generateChartData = (numPoints = 12, type = 'rentabilidad') => {
+// Datos de ejemplo para gráficos (modificado para manejar meses en 'Año')
+const generateChartData = (period = 'Mes', type = 'rentabilidad') => {
   const data = [];
   let value = 0;
   let balance = 50000;
   let equity = 50000;
+  
+  let numPoints = 30;
+  let labels = Array.from({ length: numPoints }, (_, i) => `Día ${i + 1}`);
+  
+  if (period === 'Año') {
+    numPoints = 12;
+    labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  } else if (period === 'Semana') {
+    numPoints = 7;
+    labels = Array.from({ length: numPoints }, (_, i) => `Día ${i + 1}`); // O podrían ser nombres de días
+  } else if (period === 'Día') {
+    numPoints = 24; // Podrían ser horas del día
+    labels = Array.from({ length: numPoints }, (_, i) => `${String(i).padStart(2, '0')}:00`);
+  } // 'Mes' usa el default de 30 días
+
   for (let i = 0; i < numPoints; i++) {
-    const date = `Día ${i + 1}`; // Simplificado para simulación
+    const date = labels[i]; // Usar las etiquetas correctas
     if (type === 'rentabilidad') {
       value += (Math.random() - 0.4) * 10;
       data.push({ date, value: parseFloat(value.toFixed(2)) });
@@ -154,12 +169,12 @@ const generateChartData = (numPoints = 12, type = 'rentabilidad') => {
       value += (Math.random() - 0.45) * 5000;
       data.push({ date, value: parseFloat(value.toFixed(2)) });
     } else if (type === 'drawdown') {
-      value += (Math.random() - 0.6) * 5; // Bias hacia negativo
-      if (value > 0) value = 0; // No puede ser positivo
+      value += (Math.random() - 0.6) * 5;
+      if (value > 0) value = 0;
       data.push({ date, value: parseFloat(value.toFixed(2)) });
     } else if (type === 'balance') {
       balance += (Math.random() - 0.45) * 10000;
-      equity += (Math.random() - 0.45) * 10000 + (balance - equity) * 0.1; // Equity tiende a seguir balance
+      equity += (Math.random() - 0.45) * 10000 + (balance - equity) * 0.1;
       data.push({ date, balance: parseFloat(balance.toFixed(2)), equity: parseFloat(equity.toFixed(2)) });
     }
   }
@@ -226,7 +241,7 @@ const Inversor = () => {
     }
   }, [selectedTrader]);
 
-  // Filtrar datos de gráficos cuando cambia el rango
+  // Filtrar datos de gráficos cuando cambia el rango o el tab
   useEffect(() => {
     if (!selectedTrader) return;
     
@@ -235,14 +250,8 @@ const Inversor = () => {
     else if (rentabilidadTab === 'Retracción Máxima') dataType = 'drawdown';
     else if (rentabilidadTab === 'Balance y Equidad') dataType = 'balance';
 
-    // Simulación de filtrado por rango (muy básico)
-    let numPoints = 30; // Mes (default)
-    if (rentabilidadRange === 'Año') numPoints = 365;
-    else if (rentabilidadRange === 'Semana') numPoints = 7;
-    else if (rentabilidadRange === 'Día') numPoints = 1; // O lógica para obtener datos de hoy
-    // ... añadir lógica para meses específicos si es necesario ...
-
-    setFilteredChartData(generateChartData(numPoints, dataType));
+    // Llamar a generateChartData pasando el período seleccionado
+    setFilteredChartData(generateChartData(rentabilidadRange, dataType));
 
   }, [rentabilidadRange, rentabilidadTab, selectedTrader]);
 
@@ -425,7 +434,7 @@ const Inversor = () => {
                 <div key={item.label} className="flex justify-between text-sm">
                   <span className="text-gray-400">{item.label}</span>
                   <span className={`font-medium ${item.color || 'text-white'}`}>{item.value}</span> 
-                </div>
+              </div>
               ))}
             </div>
             {/* Tarjeta Derecha: Reglas (Datos de `trader`) */} 
@@ -444,7 +453,7 @@ const Inversor = () => {
                 </div>
               ))}
             </div>
-          </div>
+            </div>
             
           {/* Métricas de Rendimiento (Datos de `trader`) */} 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -464,40 +473,52 @@ const Inversor = () => {
                  {metric.value2 && (
                    <p className={`text-xs ${metric.color2 || 'text-gray-500'} ${metric.size2 || ''} truncate`}>{metric.value2}</p>
                  )}
-               </div>
+              </div>
             ))}
-          </div>
-        </div>
+              </div>
+              </div>
 
         {/* Sección Tabs Rentabilidad y Gráfico (Usa filteredChartData) */} 
         <div className="bg-[#232323] p-5 md:p-6 rounded-xl border border-[#333] mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-             {/* Tabs */} 
-             <div className="flex border-b border-[#333] overflow-x-auto sm:overflow-visible sm:border-none">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+             {/* Tabs */}
+             <div className="flex w-full border-b border-[#333] overflow-x-auto md:overflow-visible md:border-none md:w-auto focus:outline-none">
                 {['Rentabilidad', 'Beneficio Total', 'Balance y Equidad', 'Retracción Máxima'].map(tab => (
-                 <button key={tab} onClick={() => setRentabilidadTab(tab)} className={`flex-shrink-0 py-2 px-4 whitespace-nowrap text-sm ${ rentabilidadTab === tab ? 'text-cyan-400 border-b-2 border-cyan-400 font-medium' : 'text-gray-400 hover:text-white sm:border-b-2 sm:border-transparent' }`}>{tab}</button>
+                 <button 
+                    key={tab} 
+                    onClick={() => setRentabilidadTab(tab)} 
+                    className={`flex-shrink-0 py-2 px-4 whitespace-nowrap text-sm focus:outline-none ${ 
+                        rentabilidadTab === tab 
+                        ? 'text-cyan-400 border-b-2 border-cyan-400 font-medium' 
+                        : 'text-gray-400 hover:text-white md:border-b-2 md:border-transparent' 
+                    }`}
+                 >
+                    {tab}
+                 </button>
                 ))}
-             </div>
+              </div>
              {/* Dropdown de Rango */} 
-             <div className="flex-shrink-0 w-full sm:w-auto">
+             <div className="flex-shrink-0 w-full md:w-auto">
                  <CustomRangeDropdown 
                    selectedOption={rentabilidadRange}
                    options={['Día', 'Semana', 'Mes', 'Año']}
                    onSelect={setRentabilidadRange}
+                   buttonClassName="w-full sm:w-auto bg-transparent"
+                   menuClassName="w-full sm:w-40 bg-transparent"
                  />
-             </div>
+            </div>
           </div>
           {/* Contenedor del Gráfico (Usa filteredChartData) */} 
           <div className="h-64 w-full">
              {filteredChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%">
                   {chartType === 'balance' ? (
                       <LineChart data={filteredChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                           <CartesianGrid stroke="#333" strokeDasharray="3 3" horizontal={true} vertical={false} />
                           <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10 }}/>
                           <YAxis 
-                            axisLine={false} 
-                            tickLine={false} 
+                    axisLine={false} 
+                    tickLine={false}
                             tick={{ fill: '#9CA3AF', fontSize: 10 }} 
                             tickFormatter={yAxisFormatter} 
                             domain={yDomain}
@@ -513,7 +534,15 @@ const Inversor = () => {
                             height={36}
                             iconType="square"
                             wrapperStyle={{ paddingBottom: '10px' }}
-                            formatter={(value) => <span className="text-white text-xs ml-1">{value === 'balance' ? 'Balance Máximo' : 'Equidad Mínima'}</span>}
+                            formatter={(value, entry) => { 
+                              let text = value; // Fallback al valor original (dataKey)
+                              if (entry.dataKey === 'balance') {
+                                text = 'Balance Máximo';
+                              } else if (entry.dataKey === 'equity') {
+                                text = 'Equidad Mínima';
+                              }
+                              return <span className="text-white text-xs ml-1">{text}</span>;
+                            }}
                           />
                           <Line type="monotone" dataKey="balance" stroke="#22d3ee" strokeWidth={2} dot={false} name="Balance Máximo" />
                           <Line type="monotone" dataKey="equity" stroke="#FFFFFF" strokeWidth={2} dot={false} name="Equidad Mínima" />
@@ -522,28 +551,28 @@ const Inversor = () => {
                       <AreaChart data={filteredChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                           <CartesianGrid stroke="#333" strokeDasharray="3 3" horizontal={true} vertical={false} />
                           <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10 }}/>
-                          <YAxis 
-                            axisLine={false} 
-                            tickLine={false} 
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
                             tick={{ fill: '#9CA3AF', fontSize: 10 }} 
                             tickFormatter={yAxisFormatter} 
                             domain={yDomain}
-                          />
-                          <Tooltip 
+                  />
+                  <Tooltip 
                             contentStyle={{ backgroundColor: '#333', border: 'none', borderRadius: '4px', fontSize: '12px', padding: '5px' }} 
                             formatter={tooltipFormatter} 
                             labelFormatter={(label) => `Fecha: ${label}`}
                           />
                           <Area type="linear" dataKey="value" stroke="#22d3ee" strokeWidth={2} fillOpacity={0.1} fill="#22d3ee" dot={false}/>
-                      </AreaChart>
+                </AreaChart>
                   )}
-                </ResponsiveContainer>
+              </ResponsiveContainer>
               ) : (
                   <div className="flex items-center justify-center h-full text-gray-500">No hay datos disponibles para este período.</div>
               )}
           </div>
         </div>
-        
+
         {/* Sección Instrumentos de Trading (Usa filteredInstrumentData) */} 
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-5 md:p-6 rounded-xl border border-[#333] mb-6">
           <h2 className="text-lg font-medium mb-4">Instrumentos de Trading</h2>
@@ -556,9 +585,9 @@ const Inversor = () => {
                        <div style={{ width: 12, height: 12, backgroundColor: PIE_COLORS[index % PIE_COLORS.length], marginRight: 8, flexShrink: 0 }}></div>
                        <span className="text-sm text-gray-300 mr-2 truncate">{entry.name}</span>
                        <span className="text-sm text-white font-medium">{`${entry.value.toFixed(2)}%`}</span>
-                     </div>
+          </div>
                   ))}
-               </div>
+            </div>
                {/* Gráfico */} 
                <div className="w-full md:w-1/2 lg:w-2/5 h-48 md:h-56 order-1 md:order-2">
                  <ResponsiveContainer width="100%" height="100%">
@@ -578,8 +607,8 @@ const Inversor = () => {
                      </Pie>
                    </PieChart>
                  </ResponsiveContainer>
-               </div>
-             </div>
+          </div>
+          </div>
            ) : (
              <div className="text-center text-gray-500 py-10">No hay datos de instrumentos.</div>
            )}
@@ -596,12 +625,12 @@ const Inversor = () => {
                    options={['Hoy', 'Última Semana', 'Último Mes', 'Todo']}
                    onSelect={setHistorialFilter}
                    buttonClassName="w-full sm:w-auto"
-                   menuClassName="w-full sm:w-40"
+                   menuClassName="w-full sm:w-40 bg-transparent"
                  />
              </div>
            </div>
            {/* Tabla */} 
-           <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
              <table className="w-full min-w-[600px]">
                <thead className="text-left text-xs text-gray-400 border-b border-[#333]">
                   <tr>
@@ -612,8 +641,8 @@ const Inversor = () => {
                     <th className="py-2 px-2 font-normal">Hora Salida</th>
                     <th className="py-2 px-2 font-normal">Ganancia</th>
                     <th className="py-2 pr-2 font-normal text-right">ID Orden</th>
-                  </tr>
-               </thead>
+                </tr>
+              </thead>
                <tbody className="text-sm divide-y divide-[#333]">
                  {filteredHistoryData.length > 0 ? (
                     filteredHistoryData.map((trade) => (
@@ -631,24 +660,24 @@ const Inversor = () => {
                    <tr>
                      <td colSpan="7" className="py-6 text-center text-gray-500">
                        No hay operaciones registradas para este período.
-                     </td>
-                   </tr>
+                    </td>
+                  </tr>
                  )}
-               </tbody>
-             </table>
-           </div>
-         </div>
-       </div>
-     );
-   }
- 
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
    // --- Renderizado de la lista de traders --- 
-   return (
+  return (
     <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-white min-h-screen">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold mb-4">Cuentas de Copytrading</h1>
         
-        {/* Barra de búsqueda y filtros */} 
+        {/* Barra de búsqueda y filtros */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="relative flex-1">
             <input
@@ -688,16 +717,16 @@ const Inversor = () => {
              <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleFilter('riesgoAlto')}>
                  <div className={`w-4 h-4 border ${filters.riesgoAlto ? 'bg-cyan-500 border-cyan-500' : 'border-[#444]'} rounded flex items-center justify-center transition-colors`}>
                     {/* Checkmark SVG si está activo */} 
-                 </div>
+              </div>
                  <span className="text-white text-sm select-none">Riesgo alto</span>
-             </div>
+            </div>
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleFilter('premium')}>
                  <div className={`w-4 h-4 border ${filters.premium ? 'bg-cyan-500 border-cyan-500' : 'border-[#444]'} rounded flex items-center justify-center transition-colors`}>
                     {/* Checkmark SVG si está activo */} 
-                 </div>
+              </div>
                  <span className="text-white text-sm select-none">Premium</span>
-             </div>
-
+            </div>
+            
           </div>
         </div>
         

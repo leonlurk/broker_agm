@@ -10,113 +10,123 @@ import {
 import { auth, db } from "./config";
 import { doc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp } from "firebase/firestore";
 
-// Collection name for broker users
-const BROKER_USERS_COLLECTION = "users_broker";
+// Unified collection name
+const USERS_COLLECTION = "users";
 
-// Register a new broker user
+// Register a new broker user into the unified 'users' collection
 export const registerUser = async (username, email, password, refId = null) => {
+  console.log(`[registerUser] Attempting registration for email: ${email}, username: ${username}, refId: ${refId}`);
   try {
-    // Create user with email and password
+    console.log(`[registerUser] Calling createUserWithEmailAndPassword for ${email}...`);
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    console.log(`[registerUser] Auth user created successfully: UID=${user.uid}`);
     
-    // Update profile with the username
+    console.log(`[registerUser] Updating profile for UID=${user.uid} with displayName=${username}...`);
     await updateProfile(user, {
       displayName: username
     });
+    console.log(`[registerUser] Profile updated.`);
     
-    // Send email verification
+    console.log(`[registerUser] Sending verification email to ${email}...`);
     await sendEmailVerification(user);
+    console.log(`[registerUser] Verification email sent.`);
     
-    // Prepare base user data
     const userData = {
         uid: user.uid,
         username,
         email,
         display_name: username,
         created_time: serverTimestamp(),
-        user_type: "broker",
+        user_type: "broker", // Mark as broker user
         referralCount: 0,
     };
 
-    // If there is a referrer ID, add referredBy field
     if (refId) {
         userData.referredBy = refId; 
     }
 
-    // Store the new user's data in Firestore
-    await setDoc(doc(db, BROKER_USERS_COLLECTION, user.uid), userData);
-    
-    // La lógica de incremento se moverá a una Cloud Function
+    // Use the unified USERS_COLLECTION
+    console.log(`[registerUser] Preparing to write to Firestore (${USERS_COLLECTION}/${user.uid}):`, JSON.stringify(userData, null, 2));
+    await setDoc(doc(db, USERS_COLLECTION, user.uid), userData);
+    console.log(`[registerUser] Firestore document written successfully for UID=${user.uid} in ${USERS_COLLECTION}.`);
     
     return { user };
   } catch (error) {
-    // Handle Auth errors (e.g., email already in use)
-    console.error("Registration main error:", error);
+    console.error("[registerUser] Main registration error:", error);
     return { error };
   }
 };
 
-// Sign in existing user with email or username, verifying they are a broker user
+// Sign in existing user (email or username), verifying they are a broker user in the 'users' collection
 export const loginUser = async (identifier, password) => {
+  console.log(`[loginUser] Attempting login with identifier: ${identifier}`);
   let emailToUse = identifier;
   const isEmailFormat = /\S+@\S+\.\S+/.test(identifier);
 
   try {
-    // If identifier is not an email, assume it's a username and find the email
     if (!isEmailFormat) {
-      const usersRef = collection(db, BROKER_USERS_COLLECTION);
+      console.log(`[loginUser] Identifier '${identifier}' is not email format. Querying ${USERS_COLLECTION} for username...`);
+      // Use the unified USERS_COLLECTION
+      const usersRef = collection(db, USERS_COLLECTION);
       const q = query(usersRef, where("username", "==", identifier));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
+        console.log(`[loginUser] No user found in ${USERS_COLLECTION} with username: ${identifier}`);
         return { error: { message: "Usuario no encontrado." } };
       }
       
       if (querySnapshot.size > 1) {
-        // This shouldn't happen if usernames are unique, but handle it just in case
-        console.warn(`Multiple users found with username: ${identifier}`);
+        console.warn(`[loginUser] Multiple users found with username: ${identifier}`);
         return { error: { message: "Error: Múltiples usuarios encontrados con ese nombre de usuario." } };
       }
       
-      // Get the email from the found user document
       const userDoc = querySnapshot.docs[0].data();
       emailToUse = userDoc.email;
+      console.log(`[loginUser] Found email '${emailToUse}' for username '${identifier}'.`);
       if (!emailToUse) {
-           console.error(`User document for username ${identifier} is missing email field.`);
+           console.error(`[loginUser] User document for username ${identifier} is missing email field.`);
            return { error: { message: "Error interno: No se pudo encontrar el email del usuario." } };
       }
+    } else {
+      console.log(`[loginUser] Identifier '${identifier}' is email format. Proceeding directly.`);
     }
 
-    // Proceed with sign-in using the determined email
+    console.log(`[loginUser] Calling signInWithEmailAndPassword with email: ${emailToUse}...`);
     const userCredential = await signInWithEmailAndPassword(auth, emailToUse, password);
     const user = userCredential.user;
+    console.log(`[loginUser] Auth successful: UID=${user.uid}`);
     
-    // IMPORTANT: Verify the logged-in user (by UID) exists in the broker collection
-    const brokerUserDoc = await getDoc(doc(db, BROKER_USERS_COLLECTION, user.uid));
+    // Use the unified USERS_COLLECTION for verification
+    console.log(`[loginUser] Verifying user type in Firestore (${USERS_COLLECTION}/${user.uid})...`);
+    const userDocRef = doc(db, USERS_COLLECTION, user.uid);
+    const userDocSnap = await getDoc(userDocRef);
     
-    if (!brokerUserDoc.exists()) {
-      // If user authenticated but isn't in our broker list, sign out & deny access
+    if (!userDocSnap.exists()) {
+      console.warn(`[loginUser] Firestore document DOES NOT EXIST in ${USERS_COLLECTION} for authenticated user UID=${user.uid}. Signing out.`);
       await signOut(auth);
-      return { 
-        error: { 
-          message: "Autenticación exitosa pero la cuenta no pertenece al sistema de broker." 
-        } 
-      };
+      return { error: { message: "Autenticación fallida: Datos de usuario no encontrados en el sistema correcto." } };
+    }
+
+    const firestoreUserData = userDocSnap.data();
+    console.log(`[loginUser] Firestore document found for UID=${user.uid}. User type: ${firestoreUserData.user_type}`);
+    if (firestoreUserData.user_type !== 'broker') {
+      console.warn(`[loginUser] User UID=${user.uid} is NOT type 'broker' (type: ${firestoreUserData.user_type}). Signing out.`);
+       await signOut(auth);
+       return { error: { message: "Esta cuenta no es de tipo broker." } };
     }
     
-    // User is authenticated and verified as a broker user
+    console.log(`[loginUser] User UID=${user.uid} verified as broker. Login successful.`);
     return { user };
 
   } catch (error) {
-    // Handle Firebase Auth errors (wrong password, user not found by email, etc.)
-    console.error("Login process error:", error);
+    console.error("[loginUser] Login process error:", error);
     let friendlyMessage = "Error al iniciar sesión. Verifique sus credenciales.";
     if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         friendlyMessage = "Email/Usuario o contraseña incorrectos.";
     } else if (error.message) {
-        // Use specific error messages if available and reasonable
-        // friendlyMessage = error.message; 
+        // friendlyMessage = error.message;
     }
     return { error: { message: friendlyMessage } };
   }
@@ -155,39 +165,63 @@ export const getCurrentUser = () => {
   return auth.currentUser;
 };
 
-// Check if current user is a broker user
+// Check if current user is a broker user in the 'users' collection
 export const isBrokerUser = async (userId) => {
-  if (!userId) return false;
+  console.log(`[isBrokerUser] Checking if UID=${userId} is a broker user...`);
+  if (!userId) {
+    console.log(`[isBrokerUser] No userId provided.`);
+    return false;
+  }
   
   try {
-    const docRef = doc(db, BROKER_USERS_COLLECTION, userId);
+    // Use the unified USERS_COLLECTION
+    const docRef = doc(db, USERS_COLLECTION, userId);
+    console.log(`[isBrokerUser] Reading Firestore document: ${USERS_COLLECTION}/${userId}...`);
     const docSnap = await getDoc(docRef);
-    return docSnap.exists();
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const isBrokerType = data.user_type === 'broker';
+      console.log(`[isBrokerUser] Document found for UID=${userId}. Data:`, data, `Is broker type: ${isBrokerType}`);
+      return isBrokerType;
+    } else {
+      console.log(`[isBrokerUser] Document NOT found in ${USERS_COLLECTION} for UID=${userId}.`);
+      return false;
+    }
   } catch (error) {
-    console.error("Error checking broker user:", error);
-    return false;
+    console.error(`[isBrokerUser] Error reading Firestore for UID=${userId}:`, error);
+    throw error; 
   }
 };
 
-// Set up auth state listener
+// Set up auth state listener, verifying against the 'users' collection
 export const onAuthStateChange = (callback) => {
+  console.log("[onAuthStateChange] Setting up listener...");
   return onAuthStateChanged(auth, async (user) => {
+    console.log("[onAuthStateChange] Listener triggered. Auth user:", user ? `UID=${user.uid}, Email=${user.email}` : null);
     if (user) {
       try {
-        // Check if user is in broker collection
-        const isBroker = await isBrokerUser(user.uid);
+        console.log(`[onAuthStateChange] User authenticated (UID=${user.uid}). Checking broker status via isBrokerUser...`);
+        const isBroker = await isBrokerUser(user.uid); // isBrokerUser now checks 'users' collection
+        console.log(`[onAuthStateChange] isBrokerUser check returned: ${isBroker} for UID=${user.uid}`);
         
         if (!isBroker) {
-          // If not a broker user, sign out
+          console.warn(`[onAuthStateChange] User UID=${user.uid} is NOT a verified broker user (based on check in ${USERS_COLLECTION}). Signing out...`);
           await signOut(auth);
+          console.log(`[onAuthStateChange] Sign out complete for non-broker UID=${user.uid}. Calling callback with null.`);
           callback(null);
           return;
         }
+        console.log(`[onAuthStateChange] User UID=${user.uid} IS a verified broker user. Calling callback with user object.`);
+        callback(user);
       } catch (error) {
-        console.error("Error in auth state change:", error);
+        console.error(`[onAuthStateChange] Error during broker verification for UID=${user.uid}:`, error);
+        console.warn(`[onAuthStateChange] Signing out user UID=${user.uid} due to verification error.`);
+        await signOut(auth);
+        callback(null);
       }
+    } else {
+      console.log("[onAuthStateChange] No authenticated user. Calling callback with null.");
+      callback(null);
     }
-    
-    callback(user);
   });
 };

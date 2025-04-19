@@ -142,7 +142,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
   const formatPercentage = (value) => {
     return `${Number(value).toFixed(1)}%`; // Asume que el valor ya está en %
   }
-
+  
   return (
     <div className="p-4 md:p-6 bg-[#191919] text-white flex flex-col h-full space-y-6">
       {/* Header con botón de regreso */}
@@ -155,7 +155,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
           Volver
         </button>
       </div>
-
+      
       {/* Sección Principal del Perfil */}
       <div className="bg-[#232323] p-6 rounded-xl border border-[#333]">
         {/* Header del Perfil */}
@@ -167,11 +167,11 @@ const TraderProfileDetail = ({ trader, onBack }) => {
                 className="h-12 w-12 rounded-full border-2 border-cyan-500"
                 onError={(e) => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23333'/%3E%3C/svg%3E"; }}
             />
-            <div>
+              <div>
               <h1 className="text-2xl font-semibold">{trader?.nombre || 'Nombre Trader'}</h1>
               <p className="text-sm text-gray-400">Activo hace {trader?.activeSince || '51 días'}</p> 
             </div>
-          </div>
+                </div>
           <div className="flex items-center gap-2">
             <button className="p-2 text-gray-400 hover:text-white">
               <Star size={20}/>
@@ -183,8 +183,8 @@ const TraderProfileDetail = ({ trader, onBack }) => {
               <Copy size={16} />
               Copiar
             </button>
-          </div>
-        </div>
+                </div>
+              </div>
 
         {/* Información y Reglas (2 columnas) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -206,21 +206,21 @@ const TraderProfileDetail = ({ trader, onBack }) => {
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Verificado</span>
               <span className="text-green-500">{trader?.verified ? 'Sí' : 'Sí'}</span>
-            </div>
+              </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Saldo de la cuenta</span>
               <span>{formatCurrency(trader?.balance || 5000.23)} USD</span>
-            </div>
+              </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Capital administrado</span>
               <span>{formatCurrency(trader?.managedCapital || 75009.73)} USD</span>
-            </div>
+              </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Apalancamiento</span>
               <span>1:{trader?.leverage || '300'}</span>
             </div>
           </div>
-
+          
           {/* Columna Derecha: Reglas */}
           <div className="space-y-3">
             <h2 className="text-lg font-medium mb-2 border-b border-[#333] pb-1">Reglas</h2>
@@ -287,26 +287,26 @@ const TraderProfileDetail = ({ trader, onBack }) => {
           </div>
         </div>
       </div>
-
+      
       {/* Sección Tabs Rentabilidad y Gráfico */}
       <div className="bg-[#232323] p-6 rounded-xl border border-[#333]">
-         {/* Tabs */}
+      {/* Tabs */}
         <div className="flex mb-4 border-b border-[#333] overflow-x-auto">
           {['Rentabilidad', 'Beneficio Total', 'Balance y Equidad', 'Retracción Máxima'].map(tab => (
-            <button
+        <button
               key={tab}
               onClick={() => setRentabilidadTab(tab)}
               className={`py-2 px-4 whitespace-nowrap text-sm ${ 
                 rentabilidadTab === tab
                   ? 'text-cyan-400 border-b-2 border-cyan-400 font-medium'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
               {tab}
-            </button>
+        </button>
           ))}
-        </div>
-
+      </div>
+      
          {/* Contenido de Tabs (Gráfico y otros) */}
         <div>
           {rentabilidadTab === 'Rentabilidad' && (
@@ -325,57 +325,57 @@ const TraderProfileDetail = ({ trader, onBack }) => {
                     <option value="Año">Año</option>
                   </select>
                   <ChevronDown size={14} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
+            </div>
+          </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
                     data={rentabilidadData} // Usar datos dinámicos aquí
                     margin={{ top: 5, right: 5, left: -20, bottom: 5 }} // Ajustar margen izquierdo
-                  >
-                    <defs>
+                >
+                  <defs>
                        {/* Puedes definir gradientes si quieres */}
-                    </defs>
-                    <XAxis 
+                  </defs>
+                  <XAxis 
                       dataKey="date" 
-                      axisLine={false} 
-                      tickLine={false} 
+                    axisLine={false} 
+                    tickLine={false} 
                       tick={{ fill: '#9CA3AF', fontSize: 10 }}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
                       tick={{ fill: '#9CA3AF', fontSize: 10 }}
                       tickFormatter={(value) => `${value}%`} // Formato de porcentaje
-                    />
-                    <Tooltip 
+                  />
+                  <Tooltip 
                       contentStyle={{ backgroundColor: '#333', border: 'none', borderRadius: '4px', fontSize: '12px', padding: '5px' }}
                       formatter={(value, name) => [`${value}%`, rentabilidadTab]} // Formato tooltip
                       labelFormatter={(label) => `Fecha: ${label}`} // Formato label
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
                       stroke="#22d3ee" // Color Cyan
                       strokeWidth={2}
                       fillOpacity={0.1} // Poca opacidad o ninguna
                       fill="#22d3ee"
                       dot={false}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
+          </div>
           )}
           {/* TODO: Añadir contenido para las otras pestañas */}
           {rentabilidadTab !== 'Rentabilidad' && (
             <div className="text-center text-gray-500 py-10">
               Contenido para {rentabilidadTab} (Pendiente)
-            </div>
+                  </div>
           )}
-        </div>
-      </div>
-      
+                </div>
+              </div>
+              
       {/* Sección Instrumentos y Historial (Layout flexible) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          {/* Instrumentos de Trading (Pie Chart) */}
@@ -416,9 +416,9 @@ const TraderProfileDetail = ({ trader, onBack }) => {
                 <Tooltip formatter={(value) => [`${value}%`, 'Porcentaje']}/>
               </PieChart>
             </ResponsiveContainer>
-          </div>
-        </div>
-
+                </div>
+              </div>
+              
          {/* Historial de Operaciones */}
         <div className="lg:col-span-2 bg-[#232323] p-6 rounded-xl border border-[#333]">
           <div className="flex justify-between items-center mb-4">
@@ -436,8 +436,8 @@ const TraderProfileDetail = ({ trader, onBack }) => {
               <ChevronDown size={14} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
           </div>
-          
-          <div className="overflow-x-auto">
+            
+            <div className="overflow-x-auto">
             <table className="w-full min-w-[600px]"> {/* Ancho mínimo para scroll */}
               <thead className="text-left text-xs text-gray-400 border-b border-[#333]">
                 <tr>
@@ -464,14 +464,14 @@ const TraderProfileDetail = ({ trader, onBack }) => {
                         {formatCurrency(trade.profit)}
                     </td>
                     <td className="py-3 text-gray-400">{trade.id}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
              {/* TODO: Añadir botón "Cargar más" si hay muchas operaciones */}
+            </div>
           </div>
         </div>
-      </div>
     </div>
   );
 };

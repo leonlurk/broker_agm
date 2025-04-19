@@ -9,51 +9,53 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore"); // Imp
 const { FieldValue } = require("firebase-admin/firestore");
 const { logger } = require("firebase-functions"); // Importa el logger
 
-// Nombre de la colección (asegúrate que coincida con tu código cliente)
-const BROKER_USERS_COLLECTION = "users_broker";
+// Unified collection name
+const USERS_COLLECTION = "users";
 
 /**
- * Cloud Function (v2) que se dispara al crear un nuevo documento de usuario
- * en la colección BROKER_USERS_COLLECTION.
- * Si el nuevo usuario tiene un campo 'referredBy', incrementa
- * el campo 'referralCount' del usuario referente.
+ * Cloud Function (v2) triggered on new document creation in USERS_COLLECTION.
+ * If the new user has user_type === 'broker' AND a referredBy field,
+ * increments the referralCount of the referring user.
  */
-exports.incrementReferralCountV2 = onDocumentCreated(`${BROKER_USERS_COLLECTION}/{userId}`, async (event) => {
-    // Obtiene los datos del documento recién creado del evento
+exports.incrementReferralCountV2 = onDocumentCreated(`${USERS_COLLECTION}/{userId}`, async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
         logger.warn("No data associated with the event:", event);
         return;
     }
     const newUser = snapshot.data();
-    const newUserId = event.params.userId; // Obtiene el ID del nuevo usuario del contexto
+    const newUserId = event.params.userId;
 
-    // Verifica si existe el campo 'referredBy'
-    const referrerId = newUser?.referredBy;
-
-    if (!referrerId) {
-        logger.log(`Usuario ${newUserId} creado sin referente.`);
-        return; // No hay referente, termina la función.
+    // Check if the new user is of type 'broker'
+    if (newUser?.user_type !== 'broker') {
+        logger.log(`User ${newUserId} created with type ${newUser?.user_type || 'undefined'}. Skipping referral count check.`);
+        return; // Not a broker user, ignore.
     }
 
-    logger.log(`Usuario ${newUserId} referido por ${referrerId}. Intentando incrementar contador.`);
+    // Check if there's a referrer ID
+    const referrerId = newUser?.referredBy;
+    if (!referrerId) {
+        logger.log(`Broker user ${newUserId} created without referrer.`);
+        return; // No referrer, nothing to increment.
+    }
 
-    // Obtiene la referencia al documento del referente
+    logger.log(`Broker user ${newUserId} referred by ${referrerId}. Attempting to increment count.`);
+
+    // Reference to the referrer's document in the SAME collection
     const referrerDocRef = admin.firestore()
-                                 .collection(BROKER_USERS_COLLECTION)
+                                 .collection(USERS_COLLECTION) // Use the unified collection
                                  .doc(referrerId);
 
     try {
-        // Incrementa el campo 'referralCount' del referente en 1
-        // FieldValue.increment() maneja la operación atómica de forma segura
+        // Increment referralCount atomically
         await referrerDocRef.update({
             referralCount: FieldValue.increment(1)
         });
-        logger.log(`Referral count for ${referrerId} incrementado exitosamente por creación de ${newUserId}.`);
+        logger.log(`Referral count for ${referrerId} incremented successfully by broker user ${newUserId}.`);
         return;
     } catch (error) {
-        logger.error(`Error al incrementar referral count para ${referrerId} (referido por ${newUserId}):`, error);
-        // Considera añadir un mecanismo de reintento o alerta si esto falla
+        // Log error if update fails (e.g., referrer document doesn't exist)
+        logger.error(`Error incrementing referral count for ${referrerId} (referred by ${newUserId}):`, error);
         return;
     }
 });

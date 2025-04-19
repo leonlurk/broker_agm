@@ -20,37 +20,58 @@ const Register = ({ onLoginClick }) => {
     const ref = params.get('ref');
     if (ref) {
       setRefId(ref);
-      console.log("Referral ID detectado:", ref);
+      console.log("[Register] Referral ID detected:", ref);
     }
   }, [location.search]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setMessage(''); // Clear previous message
+    console.log(`[Register] handleSubmit initiated. Username: ${username}, Email: ${email}, RefId: ${refId}`);
     
-    // Validate passwords match
     if (password !== confirmPassword) {
+      console.log("[Register] Password mismatch.");
       return setError('Las contraseñas no coinciden');
     }
     
     setLoading(true);
-    
+    console.log("[Register] Calling registerUser function...");
     try {
-      const { user, error } = await registerUser(username, email, password, refId);
+      // Pass refId to registerUser
+      const { user, error } = await registerUser(username, email, password, refId); 
       
       if (error) {
-        throw new Error(error.message || 'Error al registrar');
+        console.error("[Register] registerUser returned error:", error);
+        // Handle specific Firebase errors if needed
+        let friendlyError = 'Error al registrar. Intente de nuevo.';
+        if (error.code === 'auth/email-already-in-use') {
+          friendlyError = 'El correo electrónico ya está en uso.';
+        } else if (error.code === 'auth/weak-password') {
+          friendlyError = 'La contraseña debe tener al menos 6 caracteres.';
+        } else if (error.code === 'auth/invalid-email') {
+          friendlyError = 'El formato del correo electrónico no es válido.';
+        } else if (error.message) {
+          // Use the message from the error if available (like permission denied)
+          friendlyError = error.message;
+        }
+        throw new Error(friendlyError);
       }
       
-      console.log('Registration successful:', user);
+      // Success
+      console.log('[Register] Registration successful, user object:', user);
       setMessage('¡Registro exitoso! Por favor verifica tu correo electrónico para activar tu cuenta.');
-      setTimeout(() => {
-        navigate('/login');
-      }, 5000);
+      setUsername(''); // Clear form on success
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      // Navigate immediately to the main dashboard route after successful registration
+      navigate('/'); // Changed from /login and removed setTimeout
     } catch (err) {
-      console.error('Registration error:', err);
-      setError(err.message || 'Error al registrar');
+      console.error('[Register] handleSubmit caught error:', err);
+      setError(err.message || 'Ocurrió un error inesperado durante el registro.');
     } finally {
+      console.log("[Register] handleSubmit finished.");
       setLoading(false);
     }
   };
