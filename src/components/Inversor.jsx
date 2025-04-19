@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ArrowLeft, ChevronUp, AlertTriangle, Star, Copy } from 'lucide-react';
+import { ChevronDown, ArrowLeft, ChevronUp, AlertTriangle, Star, Copy, Search, BarChart2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 
 // Colores para el PieChart (ajustar si es necesario)
@@ -54,80 +54,80 @@ const ALL_ACCOUNTS_DATA = [
     { 
       id: 1, 
       nombre: 'Fxzio test', 
-      porcentaje: '-29.88%', 
+      serverType: 'MT5',
+      accountNumber: '657237', 
       imagen: './Icono.svg',
+      pnlUSD: 22621.00,
+      rendimientoPercent: 42.13,
+      retraccionMaxPercent: -42.4,
+      cuentaAbiertaDias: 43,
+      balancePropio: 5000.23,
+      capitalAdministrado: 75009.73,
+      operacionesCount: 7,
+      inversoresCount: 1,
+      // Campos para filtros
+      isFavorite: false,
+      tasaVolumen: 0.8, // Ejemplo
+      tasaRendimiento: 42.13, // Coincide con rendimientoPercent
+      ageInWeeks: 6, // Ejemplo, corresponde a ~43 días
+      commissionRange: '0', // Ejemplo: 0 = sin comisión
+      // Otros campos existentes...
+      porcentaje: '-29.88%', 
       type: 'Premium',
       since: 'Enero 2023',
       profit: '+12.4%',
       riesgo: 'Alto',
-      rentabilidad: '+187.4%',
-    activoDias: 51,
-    accountNumber: '657237', 
-    server: 'MT5', 
-    accountType: 'CopyFX MT5 Prime', 
-    verified: true, 
-    balance: 5000.23, 
-    managedCapital: 75009.73, 
-    leverage: 300,
-    strategyName: 'Scalping Pro',
-    minDeposit: 100,
-    commissionType: '20%',
-    paymentFrequency: '1 semana',
-    copyMode: 'Proporcional',
-    totalProfitabilityPercent: 191,
-    totalProfitabilityValue: 6238.99,
-    followers: 20,
-    followersChangePercent: -34.7,
-    totalTrades: 7,
-    winRate: 85.71,
-    winningTrades: 6,
-    maxDrawdown: -48.40,
-    avgProfit: 5,
-    maxProfitTrade: 1915.17,
-    minProfitTrade: -124.75,
-    activeSubscribers: 8,
+      // ... (el resto de campos de detalle)
     },
-    { 
+    {
       id: 2, 
       nombre: 'Trading Master', 
-      porcentaje: '+32.7%', 
+      serverType: 'MT4',
+      accountNumber: '123456',
       imagen: './Icono.svg',
+      pnlUSD: 15800.50,
+      rendimientoPercent: 32.7,
+      retraccionMaxPercent: -15.5,
+      cuentaAbiertaDias: 250,
+      balancePropio: 10000.00,
+      capitalAdministrado: 120500.10,
+      operacionesCount: 150,
+      inversoresCount: 25,
+      isFavorite: true,
+      tasaVolumen: 1.2, 
+      tasaRendimiento: 32.7,
+      ageInWeeks: 35, 
+      commissionRange: '5-10',
+      porcentaje: '+32.7%', 
       type: 'Verificado',
       since: 'Marzo 2023',
-      profit: '+8.2%',
-      riesgo: 'Medio',
-    rentabilidad: '+142.7%',
-    activoDias: 250,
-    maxDrawdown: -15.5
-    // ... (añadir más datos si es necesario para los filtros)
+      // ...
     },
-    { 
+     {
       id: 3, 
       nombre: 'ForexPro', 
-      porcentaje: '+18.5%', 
+      serverType: 'MT5',
+      accountNumber: '987654',
       imagen: './Icono.svg',
+      pnlUSD: 8300.00,
+      rendimientoPercent: 18.5,
+      retraccionMaxPercent: -22.0,
+      cuentaAbiertaDias: 180,
+      balancePropio: 2500.00,
+      capitalAdministrado: 55000.00,
+      operacionesCount: 85,
+      inversoresCount: 10,
+      isFavorite: false,
+      tasaVolumen: 0.9,
+      tasaRendimiento: 18.5,
+      ageInWeeks: 25,
+      commissionRange: '1-5',
+      porcentaje: '+18.5%', 
       type: 'Premium',
       since: 'Junio 2023',
-      profit: '+5.7%',
-      riesgo: 'Medio-Alto',
-    rentabilidad: '+156.3%',
-    activoDias: 180,
-    maxDrawdown: -22.0
+      // ...
     },
-    { 
-      id: 4, 
-      nombre: 'TradingAlpha', 
-      porcentaje: '+9.2%', 
-      imagen: './Icono.svg',
-      type: 'Nuevo',
-      since: 'Septiembre 2024',
-      profit: '+4.1%',
-      riesgo: 'Bajo',
-    rentabilidad: '+21.4%',
-    activoDias: 100,
-    maxDrawdown: -8.0
-  },
-  // ... (añadir más cuentas si es necesario)
+    // Añadir más cuentas con datos variados para probar filtros
 ];
 
 const ALL_TRADE_HISTORY_DATA = [
@@ -184,11 +184,12 @@ const generateChartData = (period = 'Mes', type = 'rentabilidad') => {
 const Inversor = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
-    perdidaMax: false,
-    cantDias: false,
-    riesgoAlto: false,
-    premium: false
+    misFavoritos: false,
+    tasaVolumen: false,
+    tasaRendimiento: false,
   });
+  const [antiguedadFilter, setAntiguedadFilter] = useState(null);
+  const [comisionFilter, setComisionFilter] = useState(null);
   const [cuentas, setCuentas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTrader, setSelectedTrader] = useState(null);
@@ -265,19 +266,51 @@ const Inversor = () => {
   const toggleFilter = (filter) => {
     setFilters(prev => ({ ...prev, [filter]: !prev[filter] }));
   };
+  
+  // Handlers para filtros de Antigüedad y Comisión (tipo radio)
+  const handleAntiguedadSelect = (value) => {
+      setAntiguedadFilter(prev => prev === value ? null : value); // Toggle si se hace clic de nuevo
+  }
+  const handleComisionSelect = (value) => {
+      setComisionFilter(prev => prev === value ? null : value); // Toggle
+  }
 
+  // Convertir antigüedad seleccionada a semanas (aproximado)
+  const getWeeksFromAntiguedad = (filterValue) => {
+      if (!filterValue) return null;
+      switch (filterValue) {
+          case '1s': return 1;
+          case '2s': return 2;
+          case '1m': return 4;
+          case '3m': return 12;
+          case '6m': return 26;
+          case '1a': return 52;
+          default: return null;
+      }
+  };
+  
   const filteredCuentas = cuentas.filter(cuenta => {
-    // Filtro de búsqueda
-    let matchesSearch = cuenta.nombre.toLowerCase().includes(searchQuery.toLowerCase());
+    // 1. Filtro de búsqueda (Nombre o Número de cuenta)
+    const searchTerm = searchQuery.toLowerCase();
+    const matchesSearch = cuenta.nombre.toLowerCase().includes(searchTerm) || 
+                          cuenta.accountNumber?.toLowerCase().includes(searchTerm);
     if (!matchesSearch) return false;
 
-    // Filtros de checkboxes
-    // Asumiendo que `cuenta.porcentaje` es string como '-29.88%'
-    if (filters.perdidaMax && parseFloat(cuenta.porcentaje) > 0) return false; 
-    if (filters.cantDias && cuenta.activoDias < 90) return false; // Ejemplo: menos de 90 días activos
-    if (filters.riesgoAlto && cuenta.riesgo?.toLowerCase() !== 'alto') return false;
-    if (filters.premium && cuenta.type?.toLowerCase() !== 'premium') return false;
+    // 2. Filtros Checkbox ('Filtrar por')
+    if (filters.misFavoritos && !cuenta.isFavorite) return false;
+    // Nota: tasaVolumen y tasaRendimiento necesitarían lógica más compleja (e.g., > umbral)
+    // Por ahora, solo los activaremos si el filtro está marcado (requiere pensar cómo definir el filtro)
+    // if (filters.tasaVolumen && !ALGUNA_CONDICION_VOLUMEN) return false;
+    // if (filters.tasaRendimiento && !ALGUNA_CONDICION_RENDIMIENTO) return false;
     
+    // 3. Filtro Antigüedad
+    const minWeeks = getWeeksFromAntiguedad(antiguedadFilter);
+    if (minWeeks !== null && cuenta.ageInWeeks < minWeeks) return false;
+    
+    // 4. Filtro Comisión
+    if (comisionFilter !== null && cuenta.commissionRange !== comisionFilter) return false;
+    
+    // Si pasa todos los filtros, incluir la cuenta
     return true;
   });
 
@@ -350,7 +383,7 @@ const Inversor = () => {
   if (selectedTrader) {
     if (isLoadingDetails) {
       return (
-        <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen flex flex-col">
+        <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white min-h-screen flex flex-col">
           <div className="mb-4">
             <button onClick={handleBackToList} className="flex items-center text-cyan-500 hover:text-cyan-400 transition text-sm">
               <ArrowLeft className="h-4 w-4 mr-1" /> Volver
@@ -411,7 +444,7 @@ const Inversor = () => {
               />
               <div>
                 <h1 className="text-xl md:text-2xl font-semibold">{trader.nombre || 'Nombre Trader'}</h1>
-                <p className="text-sm text-gray-400">Activo hace {trader.activoDias || 'N/A'} días</p> 
+                <p className="text-sm text-gray-400">Activo hace {trader.cuentaAbiertaDias || 'N/A'} días</p> 
               </div>
             </div>
              {/* ... (Botones Star y Copy) ... */} 
@@ -424,12 +457,12 @@ const Inversor = () => {
               <h2 className="text-lg font-medium mb-2 border-b border-[#333] pb-1">Información</h2>
               {[
                 { label: 'Número de cuenta', value: trader.accountNumber || 'N/A' },
-                { label: 'Nombre del servidor', value: trader.server || 'N/A' },
-                { label: 'Tipo de cuenta', value: trader.accountType || 'N/A' },
-                { label: 'Verificado', value: trader.verified ? 'Sí' : 'No', color: trader.verified ? 'text-green-500' : 'text-red-500' },
-                { label: 'Saldo de la cuenta', value: `${formatCurrency(trader.balance || 0)} USD` },
-                { label: 'Capital administrado', value: `${formatCurrency(trader.managedCapital || 0)} USD` },
-                { label: 'Apalancamiento', value: `1:${trader.leverage || 'N/A'}` },
+                { label: 'Nombre del servidor', value: trader.serverType || 'N/A' },
+                { label: 'Tipo de cuenta', value: trader.type || 'N/A' },
+                { label: 'Verificado', value: trader.isFavorite ? 'Sí' : 'No', color: trader.isFavorite ? 'text-green-500' : 'text-red-500' },
+                { label: 'Saldo de la cuenta', value: `${formatCurrency(trader.balancePropio || 0)} USD` },
+                { label: 'Capital administrado', value: `${formatCurrency(trader.capitalAdministrado || 0)} USD` },
+                { label: 'Apalancamiento', value: `1:${trader.tasaVolumen || 'N/A'}` },
               ].map(item => (
                 <div key={item.label} className="flex justify-between text-sm">
                   <span className="text-gray-400">{item.label}</span>
@@ -443,7 +476,7 @@ const Inversor = () => {
               {[
                 { label: 'Nombre de la estrategia', value: trader.strategyName || 'N/A' },
                 { label: 'Depósito mínimo', value: `${formatCurrency(trader.minDeposit || 0)} USD` },
-                { label: 'Tipo de comisión', value: trader.commissionType || 'N/A' },
+                { label: 'Tipo de comisión', value: trader.commissionRange || 'N/A' },
                 { label: 'Frecuencia de pagos', value: trader.paymentFrequency || 'N/A' },
                 { label: 'Modo de copia', value: trader.copyMode || 'N/A' },
               ].map(item => (
@@ -458,20 +491,16 @@ const Inversor = () => {
           {/* Métricas de Rendimiento (Datos de `trader`) */} 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { label: 'Rentabilidad total', value1: formatPercentage(trader.totalProfitabilityPercent), value2: `${formatCurrency(trader.totalProfitabilityValue)} USD`, color1: 'text-green-500' },
-              { label: 'Seguidores actuales', value1: trader.followers, value2: formatPercentage(trader.followersChangePercent), color2: trader.followersChangePercent >= 0 ? 'text-green-500' : 'text-red-500' },
-              { label: 'Operaciones', value1: trader.totalTrades },
-              { label: 'Winrate', value1: formatPercentage(trader.winRate), value2: `${trader.winningTrades || 0} Ganadas` },
-              { label: 'Retracción Máxima', value1: formatPercentage(trader.maxDrawdown), color1: 'text-red-500' },
-              { label: 'Promedio de Ganancia', value1: formatPercentage(trader.avgProfit), color1: 'text-green-500' },
-              { label: 'Beneficio', value1: `Mayor ${formatCurrency(trader.maxProfitTrade)}`, value2: `Menor ${formatCurrency(trader.minProfitTrade)}`, color1: 'text-green-500', color2: 'text-red-500', size1: 'text-sm', size2: 'text-sm' },
-              { label: 'Suscriptores Activos', value1: trader.activeSubscribers },
+              { label: 'Rentabilidad total', value1: formatPercentage(trader.rendimientoPercent), value2: `${formatCurrency(trader.pnlUSD)} USD`, color1: 'text-green-500' },
+              { label: 'Seguidores actuales', value1: trader.inversoresCount },
+              { label: 'Operaciones', value1: trader.operacionesCount },
+              { label: 'Retracción Máxima', value1: formatPercentage(trader.retraccionMaxPercent), color1: 'text-red-500' },
             ].map(metric => (
                <div key={metric.label} className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-3 rounded-lg border border-[#333]">
                  <p className="text-xs text-gray-400 mb-1 truncate">{metric.label}</p>
-                 <p className={`text-lg font-medium ${metric.color1 || 'text-white'} ${metric.size1 || ''} truncate`}>{metric.value1 ?? 'N/A'}</p>
+                 <p className={`text-lg font-medium ${metric.color1 || 'text-white'}`}>{metric.value1 ?? 'N/A'}</p>
                  {metric.value2 && (
-                   <p className={`text-xs ${metric.color2 || 'text-gray-500'} ${metric.size2 || ''} truncate`}>{metric.value2}</p>
+                   <p className={`text-xs ${metric.color2 || 'text-gray-500'}`}>{metric.value2}</p>
                  )}
               </div>
             ))}
@@ -671,103 +700,158 @@ const Inversor = () => {
     );
   }
 
-   // --- Renderizado de la lista de traders --- 
+   // --- Renderizado de la lista de traders (NUEVO DISEÑO v3) --- 
   return (
-    <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-white min-h-screen">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold mb-4">Cuentas de Copytrading</h1>
-        
-        {/* Barra de búsqueda y filtros */}
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <div className="relative flex-1">
+    <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen">
+
+      {/* Contenedor Superior Unificado: Título, Búsqueda y Filtros */} 
+      <div className="mb-6 md:mb-8 p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-3xl border border-[#333]">
+        {/* Fila Superior: Título y Búsqueda */} 
+        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6">
+          {/* Título y Subtítulo */} 
+          <div className="mb-4 md:mb-0">
+            <h1 className="text-3xl md:text-4xl font-semibold mb-1">Copytrading</h1>
+            <p className="text-lg md:text-xl text-gray-400">Busca a quien quieres copiar</p>
+          </div>
+          {/* Barra de Búsqueda - Added flex-grow */} 
+          <div className="relative w-full md:w-auto md:max-w-md lg:max-w-lg flex-grow">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar"
-              className="w-full bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-lg pl-4 pr-10 py-2 text-white focus:outline-none focus:border-cyan-500"
+              placeholder="Buscar por nombre o número de cuenta"
+              className="w-full bg-[#2a2a2a] border border-[#444] rounded-full pl-10 pr-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 placeholder-gray-500 text-sm"
             />
-            <div className="absolute inset-y-0 right-3 flex items-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-          </div>
-          
-          <div className="flex gap-4 flex-wrap items-center">
-            <div className="text-gray-400 self-center whitespace-nowrap">Filtrar por</div>
-            
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleFilter('perdidaMax')}>
-              <div className={`w-4 h-4 border ${filters.perdidaMax ? 'bg-cyan-500 border-cyan-500' : 'border-[#444]'} rounded flex items-center justify-center transition-colors`}>
-                {filters.perdidaMax && (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
-                     <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </div>
-              <span className="text-white text-sm select-none">Pérdida máx.</span>
-            </div>
-            
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleFilter('cantDias')}>
-                 <div className={`w-4 h-4 border ${filters.cantDias ? 'bg-cyan-500 border-cyan-500' : 'border-[#444]'} rounded flex items-center justify-center transition-colors`}>
-                   {/* Checkmark SVG si está activo */} 
-                 </div>
-                 <span className="text-white text-sm select-none">Días &gt; 90</span>
-             </div>
-             <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleFilter('riesgoAlto')}>
-                 <div className={`w-4 h-4 border ${filters.riesgoAlto ? 'bg-cyan-500 border-cyan-500' : 'border-[#444]'} rounded flex items-center justify-center transition-colors`}>
-                    {/* Checkmark SVG si está activo */} 
-              </div>
-                 <span className="text-white text-sm select-none">Riesgo alto</span>
-            </div>
-              <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleFilter('premium')}>
-                 <div className={`w-4 h-4 border ${filters.premium ? 'bg-cyan-500 border-cyan-500' : 'border-[#444]'} rounded flex items-center justify-center transition-colors`}>
-                    {/* Checkmark SVG si está activo */} 
-              </div>
-                 <span className="text-white text-sm select-none">Premium</span>
-            </div>
-            
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           </div>
         </div>
-        
-        {/* Lista de cuentas (Usa filteredCuentas) */} 
-        <div className="space-y-3">
-          {filteredCuentas.map((cuenta) => (
-            <div key={cuenta.id} className="bg-[#1f1f1f] border border-[#333] rounded-xl hover:border-cyan-500 overflow-hidden transition-colors duration-200">
-              <div 
-                className="flex justify-between items-center p-4 cursor-pointer"
-                onClick={() => handleTraderSelect(cuenta)}
-              >
-                <div className="flex items-center min-w-0 mr-4">
-                  <div className="w-10 h-10 rounded-lg mr-3 flex-shrink-0 flex items-center justify-center">
-                    <img 
+
+        {/* Grid para Secciones de Filtros (Debajo de Título/Búsqueda) */} 
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 border-t border-[#333] pt-6">
+          {/* Sección Filtrar por */} 
+          <div>
+            <h3 className="text-base font-medium mb-3 text-gray-300">Filtrar por</h3>
+            <div className="space-y-2.5">
+              {[ 
+                { key: 'misFavoritos', label: 'Mis favoritos' },
+                { key: 'tasaVolumen', label: 'Tasa de volúmen' },
+                { key: 'tasaRendimiento', label: 'Tasa de rendimiento' },
+              ].map(filter => (
+                <div key={filter.key} className="flex items-center gap-2.5 cursor-pointer group" onClick={() => toggleFilter(filter.key)}>
+                  <div className={`w-4 h-4 border rounded-sm flex items-center justify-center transition-colors ${filters[filter.key] ? 'bg-cyan-500 border-cyan-500' : 'border-[#555] group-hover:border-gray-400'}`}>
+                    {filters[filter.key] && ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg> )}
+                  </div>
+                  <span className="text-sm text-gray-400 group-hover:text-gray-200 select-none transition-colors">{filter.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Sección Antigüedad (Estilo Checkbox) */} 
+          <div>
+             <h3 className="text-base font-medium mb-3 text-gray-300">Antigüedad</h3>
+             <div className="space-y-2.5">
+               {[ 
+                 { value: '1s', label: '1 semana' }, { value: '2s', label: '2 semanas' }, { value: '1m', label: '1 mes' },
+                 { value: '3m', label: '3 meses' }, { value: '6m', label: '6 meses' }, { value: '1a', label: '1 año' },
+               ].map(item => (
+                 <div key={item.value} className="flex items-center gap-2.5 cursor-pointer group" onClick={() => handleAntiguedadSelect(item.value)}>
+                    <div className={`w-4 h-4 border rounded-sm flex items-center justify-center transition-colors ${antiguedadFilter === item.value ? 'bg-cyan-500 border-cyan-500' : 'border-[#555] group-hover:border-gray-400'}`}>
+                      {antiguedadFilter === item.value && ( <div className="w-2 h-2 bg-white rounded-full"></div> )} {/* Indicador simple */} 
+                    </div>
+                    <span className={`text-sm select-none transition-colors ${antiguedadFilter === item.value ? 'text-gray-200' : 'text-gray-400 group-hover:text-gray-200'}`}>{item.label}</span>
+                  </div>
+               ))}
+             </div>
+           </div>
+
+          {/* Sección Comisión (Estilo Checkbox) */} 
+          <div>
+             <h3 className="text-base font-medium mb-3 text-gray-300">Comisión</h3>
+             <div className="space-y-2.5">
+               {[ 
+                 { value: '0', label: 'Trader sin comisión' }, { value: '1-5', label: '1%-5%' }, { value: '5-10', label: '5%-10%' }, 
+                 { value: '10-20', label: '10%-20%' }, { value: '20-30', label: '20%-30%' }, { value: '+30', label: '+30%' },
+               ].map(item => (
+                 <div key={item.value} className="flex items-center gap-2.5 cursor-pointer group" onClick={() => handleComisionSelect(item.value)}>
+                    <div className={`w-4 h-4 border rounded-sm flex items-center justify-center transition-colors ${comisionFilter === item.value ? 'bg-cyan-500 border-cyan-500' : 'border-[#555] group-hover:border-gray-400'}`}>
+                      {comisionFilter === item.value && ( <div className="w-2 h-2 bg-white rounded-full"></div> )} {/* Indicador simple */} 
+                    </div>
+                    <span className={`text-sm select-none transition-colors ${comisionFilter === item.value ? 'text-gray-200' : 'text-gray-400 group-hover:text-gray-200'}`}>{item.label}</span>
+                 </div>
+               ))}
+             </div>
+           </div>
+        </div>
+      </div> 
+
+      {/* Contenedor Lista de Traders (Se mantiene igual, debajo del contenedor superior) */} 
+      <div className="flex-1 min-w-0">
+        {/* Contenedor de la tabla con scroll horizontal si es necesario */} 
+        <div className="overflow-x-auto bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-3xl border border-[#333] p-1">
+          {/* Encabezado de la tabla */} 
+          <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] grid grid-cols-[auto,minmax(150px,2fr),repeat(9,minmax(100px,1fr))] gap-x-4 px-4 py-3 border-b border-[#333] text-xs text-gray-400 sticky top-0 bg-[#191919] z-10">
+            <div className="text-right">#</div>
+            <div className="">Traders</div>
+            <div className="text-right">PNL en USD</div>
+            <div className="text-right">Rendimiento</div>
+            <div className="text-right">Retracción máxima</div>
+            <div className="text-right">Cuenta abierta días</div>
+            <div className="text-right">Balance propio</div>
+            <div className="text-right">Capital administrado</div>
+            <div className="text-right">Operaciones</div>
+            <div className="text-right">Inversores</div>
+            <div className="text-center">Cartera</div>
+          </div>
+
+          {/* Cuerpo de la tabla */} 
+          <div className="divide-y divide-[#333]">
+            {filteredCuentas.length > 0 ? (
+              filteredCuentas.map((cuenta, index) => (
+                <div 
+                   key={cuenta.id} 
+                   className="grid grid-cols-[auto,minmax(150px,2fr),repeat(9,minmax(100px,1fr))] gap-x-4 px-4 py-3 items-center hover:bg-[#2a2a2a] cursor-pointer transition-colors text-sm"
+                   onClick={() => handleTraderSelect(cuenta)}
+                 >
+                  {/* Número */} 
+                  <div className="text-right text-gray-400">{index + 1}.</div>
+                  {/* Trader Info */} 
+                  <div className="flex items-center gap-3 min-w-0">
+                     <img 
                       src={cuenta.imagen} 
                       alt={cuenta.nombre} 
-                      className="w-12 h-12 object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%23333'/%3E%3Cpath d='M12 13c-3.3 0-6 2.7-6 6v1h12v-1c0-3.3-2.7-6-6-6z' fill='%23333'/%3E%3C/svg%3E";
-                      }}
+                      className="w-10 h-10 object-cover rounded-md flex-shrink-0"
+                      onError={(e) => { /* ... fallback */ }}
                     />
+                    <div className="min-w-0">
+                      <p className="font-medium truncate text-white">{cuenta.nombre}</p>
+                      <p className="text-xs text-gray-500 truncate">{cuenta.serverType} | Cuenta: {cuenta.accountNumber}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="font-medium truncate">{cuenta.nombre}</h3>
-                    <p className={`text-sm ${parseFloat(cuenta.porcentaje) < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                      {cuenta.porcentaje}
-                    </p>
+                  {/* Métricas */} 
+                  <div className="text-right font-medium">{formatCurrency(cuenta.pnlUSD)}</div>
+                  <div className={`text-right font-medium ${cuenta.rendimientoPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>{formatPercentage(cuenta.rendimientoPercent)}</div>
+                  <div className={`text-right font-medium ${cuenta.retraccionMaxPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>{formatPercentage(cuenta.retraccionMaxPercent)}</div>
+                  <div className="text-right">{cuenta.cuentaAbiertaDias}</div>
+                  <div className="text-right">{formatCurrency(cuenta.balancePropio)}</div>
+                  <div className="text-right">{formatCurrency(cuenta.capitalAdministrado)}</div>
+                  <div className="text-right">{cuenta.operacionesCount}</div>
+                  <div className="text-right">{cuenta.inversoresCount}</div>
+                  {/* Cartera Icon */} 
+                  <div className="flex justify-center items-center">
+                    <BarChart2 size={20} className="text-gray-400" />
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-gray-500">
+                No se encontraron traders que coincidan con los filtros.
               </div>
-            </div>
-          ))}
-          
-          {filteredCuentas.length === 0 && (
-            <div className="p-8 text-center text-gray-400">
-              No se encontraron resultados para tu búsqueda o filtros.
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      </div> 
+
     </div>
   );
  };

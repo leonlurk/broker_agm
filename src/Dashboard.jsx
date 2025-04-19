@@ -16,6 +16,7 @@ import TradingAccounts from "./components/TradingAccounts";
 import CompetitionCards from "./components/CompetitionCards";
 import WithdrawComponent from "./components/WithdrawComponent";
 import Inversor from "./components/Inversor";
+import Gestor from "./components/Gestor";
 
 const Dashboard = ({ onLogout }) => {
   const { currentUser, userData } = useAuth();
@@ -40,6 +41,11 @@ const Dashboard = ({ onLogout }) => {
     };
   }, []);
 
+  // Efecto para loguear cambios en selectedOption
+  useEffect(() => {
+    console.log("[Dashboard - src] selectedOption state updated to:", selectedOption);
+  }, [selectedOption]); 
+
   // Crear una función para abrir el modal que podemos pasar a cualquier componente
   const openLeaderboardModal = () => {
     setIsLeaderboardOpen(true);
@@ -48,11 +54,11 @@ const Dashboard = ({ onLogout }) => {
   // Modificamos el Sidebar para controlar directamente la apertura del modal
   // en lugar de cambiar la sección seleccionada
   const handleSidebarOptionChange = (option) => {
+    console.log("[Dashboard - src] handleSidebarOptionChange received:", option);
     if (option === "Leaderboard") {
-      // Si selecciona Leaderboard, solo abrimos el modal sin cambiar la sección actual
       openLeaderboardModal();
     } else {
-      // Para las demás opciones, cambiamos la sección normalmente
+      console.log("[Dashboard - src] Calling setSelectedOption with:", option);
       setSelectedOption(option);
     }
   };
@@ -87,6 +93,7 @@ const Dashboard = ({ onLogout }) => {
 
   // Función para renderizar el contenido según la opción seleccionada
   const renderContent = () => {
+    console.log("[Dashboard - src] renderContent checking selectedOption:", selectedOption); // Log antes del switch
     // Si estamos mostrando la configuración
     if (showSettings) {
       return <Settings onBack={handleBackFromSettings} />;
@@ -135,12 +142,8 @@ const Dashboard = ({ onLogout }) => {
       case "Inversor":
           return <Inversor />;
       case "Gestor":
-          return (
-            <div className="p-6 bg-[#232323] text-white">
-              <h1 className="text-2xl font-semibold mb-4">Copytrading - Gestor</h1>
-              <p className="text-gray-400">Gestiona tu perfil como gestor de trading.</p>
-            </div>
-          );
+          console.log("[Dashboard - src] Rendering Gestor component for selectedOption:", selectedOption); // Log
+          return <Gestor />;
       case "PropFirm":
           return (
             <div className="p-6 bg-[#232323] text-white">

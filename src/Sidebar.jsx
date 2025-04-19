@@ -49,6 +49,8 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     };
     
     const handleSubOptionClick = (option) => {
+        console.log("[Sidebar] handleSubOptionClick called with:", option);
+        console.log("[Sidebar] Calling setSelectedOption prop with:", option);
         setSelectedOption(option);
         if (isMobile) {
             setIsMobileMenuOpen(false);
@@ -246,7 +248,10 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                             return (
                                                 <button
                                                     key={subOption}
-                                                    onClick={() => handleSubOptionClick(subOption)}
+                                                    onClick={() => { 
+                                                        console.log(`[Sidebar] Clicked on button for: ${subOption}`);
+                                                        handleSubOptionClick(subOption);
+                                                    }}
                                                     className={`flex items-center w-full font-regular rounded-lg transition-colors
                                                         ${isMobile ? 'py-2 px-3 text-sm' : 'py-3 px-4 text-md'}
                                                         ${selectedOption === subOption 
