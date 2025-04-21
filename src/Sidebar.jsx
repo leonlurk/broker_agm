@@ -149,10 +149,15 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                             ${expandedOptions.Plataformas ? 'max-h-40 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}
                     >
                         <button
-                            onClick={() => handleSubOptionClick("PropFirm")}
+                            onClick={() => { 
+                                console.log("[Sidebar] PropFirm clicked - Redirecting...");
+                                window.location.href = 'https://cabinet.agm.club/'; 
+                                setExpandedOptions(prev => ({...prev, Plataformas: false })); 
+                                if (isMobile) setIsMobileMenuOpen(false); 
+                            }}
                             className={`flex items-center w-full font-regular rounded-lg transition-colors
                                 ${isMobile ? 'py-2 px-3 text-sm' : 'py-2.5 px-4 text-md'}
-                                ${selectedOption === "PropFirm" ? "bg-transparent border-cyan-500" : "text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5"}`}
+                                text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5`}
                             style={{ outline: 'none' }}
                         >
                             <span className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-2 flex items-center justify-center`}>
@@ -161,10 +166,14 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                             <span>Prop Firm</span>
                         </button>
                         <button
-                            onClick={() => handleSubOptionClick("Broker")}
+                            onClick={() => { 
+                                console.log("[Sidebar] Broker clicked - Closing dropdown...");
+                                setExpandedOptions(prev => ({...prev, Plataformas: false })); 
+                                if (isMobile) setIsMobileMenuOpen(false); 
+                            }}
                             className={`flex items-center w-full font-regular rounded-lg transition-colors
                                 ${isMobile ? 'py-2 px-3 text-sm' : 'py-2.5 px-4 text-md'}
-                                ${selectedOption === "Broker" ? "bg-transparent border-cyan-500" : "text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5"}`}
+                                text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5`}
                             style={{ outline: 'none' }}
                         >
                             <span className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-2 flex items-center justify-center`}>

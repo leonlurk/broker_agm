@@ -38,7 +38,7 @@ const TradingDashboard = ({ accountId, onBack, previousSection }) => {
   }));
 
   return (
-    <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-white min-h-screen flex flex-col">
+    <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-white min-h-screen flex flex-col border border-[#333] rounded-3xl">
       {/* Botón de regreso */}
       <div className="mb-4">
         <button

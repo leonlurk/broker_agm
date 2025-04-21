@@ -79,7 +79,7 @@ const ALL_ACCOUNTS_DATA = [
       riesgo: 'Alto',
       // ... (el resto de campos de detalle)
     },
-    {
+    { 
       id: 2, 
       nombre: 'Trading Master', 
       serverType: 'MT4',
@@ -103,7 +103,7 @@ const ALL_ACCOUNTS_DATA = [
       since: 'Marzo 2023',
       // ...
     },
-     {
+    { 
       id: 3, 
       nombre: 'ForexPro', 
       serverType: 'MT5',
@@ -423,7 +423,7 @@ const Inversor = () => {
     }
       
     return (
-      <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen flex flex-col">
+      <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen flex flex-col border border-[#333] rounded-3xl">
         {/* Botón Volver */} 
         <div className="mb-4">
            <button onClick={handleBackToList} className="flex items-center text-cyan-500 hover:text-cyan-400 transition text-sm">
@@ -746,7 +746,7 @@ const Inversor = () => {
               ))}
             </div>
           </div>
-
+          
           {/* Sección Antigüedad (Estilo Checkbox) */} 
           <div>
              <h3 className="text-base font-medium mb-3 text-gray-300">Antigüedad</h3>
@@ -758,13 +758,13 @@ const Inversor = () => {
                  <div key={item.value} className="flex items-center gap-2.5 cursor-pointer group" onClick={() => handleAntiguedadSelect(item.value)}>
                     <div className={`w-4 h-4 border rounded-sm flex items-center justify-center transition-colors ${antiguedadFilter === item.value ? 'bg-cyan-500 border-cyan-500' : 'border-[#555] group-hover:border-gray-400'}`}>
                       {antiguedadFilter === item.value && ( <div className="w-2 h-2 bg-white rounded-full"></div> )} {/* Indicador simple */} 
-                    </div>
+              </div>
                     <span className={`text-sm select-none transition-colors ${antiguedadFilter === item.value ? 'text-gray-200' : 'text-gray-400 group-hover:text-gray-200'}`}>{item.label}</span>
-                  </div>
+            </div>
                ))}
-             </div>
-           </div>
-
+              </div>
+            </div>
+            
           {/* Sección Comisión (Estilo Checkbox) */} 
           <div>
              <h3 className="text-base font-medium mb-3 text-gray-300">Comisión</h3>
@@ -776,12 +776,12 @@ const Inversor = () => {
                  <div key={item.value} className="flex items-center gap-2.5 cursor-pointer group" onClick={() => handleComisionSelect(item.value)}>
                     <div className={`w-4 h-4 border rounded-sm flex items-center justify-center transition-colors ${comisionFilter === item.value ? 'bg-cyan-500 border-cyan-500' : 'border-[#555] group-hover:border-gray-400'}`}>
                       {comisionFilter === item.value && ( <div className="w-2 h-2 bg-white rounded-full"></div> )} {/* Indicador simple */} 
-                    </div>
+              </div>
                     <span className={`text-sm select-none transition-colors ${comisionFilter === item.value ? 'text-gray-200' : 'text-gray-400 group-hover:text-gray-200'}`}>{item.label}</span>
-                 </div>
+            </div>
                ))}
-             </div>
-           </div>
+            </div>
+          </div>
         </div>
       </div> 
 
@@ -802,8 +802,8 @@ const Inversor = () => {
             <div className="text-right">Operaciones</div>
             <div className="text-right">Inversores</div>
             <div className="text-center">Cartera</div>
-          </div>
-
+        </div>
+        
           {/* Cuerpo de la tabla */} 
           <div className="divide-y divide-[#333]">
             {filteredCuentas.length > 0 ? (
@@ -817,7 +817,7 @@ const Inversor = () => {
                   <div className="text-right text-gray-400">{index + 1}.</div>
                   {/* Trader Info */} 
                   <div className="flex items-center gap-3 min-w-0">
-                     <img 
+                    <img 
                       src={cuenta.imagen} 
                       alt={cuenta.nombre} 
                       className="w-10 h-10 object-cover rounded-md flex-shrink-0"
@@ -848,9 +848,9 @@ const Inversor = () => {
                 No se encontraron traders que coincidan con los filtros.
               </div>
             )}
-          </div>
+            </div>
         </div>
-      </div> 
+      </div>
 
     </div>
   );

@@ -191,8 +191,8 @@ const AfiliadosDashboard = () => {
               <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333]">
                 <h3 className="text-lg font-medium text-gray-400 mb-2">Referidos Registrados</h3>
                 <p className="text-3xl md:text-4xl font-semibold">{referralCount}</p> 
-              </div>
-
+                  </div>
+                  
               {/* Conversion Card */}
               <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333]">
                 <h3 className="text-lg font-medium text-gray-400 mb-2">Conversion</h3>
@@ -263,8 +263,8 @@ const AfiliadosDashboard = () => {
                     className="px-6 py-3 bg-gradient-to-br focus:outline-none from-[#0F7490] to-[#0A5A72] text-white rounded-full hover:opacity-90 transition"
                     onClick={toggleEditMode}
                   >
-                    Editar
-                  </button>
+                  Editar
+                </button>
                 </div>
               )}
             </div>

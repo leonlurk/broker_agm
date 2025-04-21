@@ -38,7 +38,7 @@ const TradingAccounts = ({ setSelectedOption, setSelectedAccount }) => {
   ];
 
   return (
-    <div className="flex flex-col p-4 bg-[#232323] text-white min-h-screen">
+    <div className="flex flex-col p-4 bg-[#232323] text-white min-h-screen border border-[#333] rounded-3xl">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
         {/* Accounts Container - Left Side */}
         <div className="md:col-span-5 bg-gradient-to-br from-[#232323] to-[#1e1e1e] rounded-3xl p-4 min-h-[500px] border-t border-l border-r border-cyan-500 shadow-md">

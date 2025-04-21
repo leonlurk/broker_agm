@@ -446,8 +446,8 @@ const TraderProfileDetail = ({ trader, onBack }) => {
                   <th className="pb-2 font-medium">Salida</th>
                   <th className="pb-2 font-medium">Ganancia</th>
                   <th className="pb-2 font-medium">Orden</th>
-                </tr>
-              </thead>
+                  </tr>
+                </thead>
               <tbody className="text-sm divide-y divide-[#333]">
                 {tradeHistoryData.map((trade) => ( // Usar datos dinámicos trader.tradeHistory
                   <tr key={trade.id}>

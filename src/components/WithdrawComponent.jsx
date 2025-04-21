@@ -32,7 +32,7 @@ const WithdrawComponent = () => {
   };
   
   return (
-    <div className="p-4 bg-[#232323] text-white rounded-xl border border-[#333] border-opacity-50">
+    <div className="p-4 bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white border border-[#333] rounded-3xl">
       {/* Header con selección de cuenta */}
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-2">

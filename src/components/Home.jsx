@@ -1,10 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Settings from './Settings';
 import UserInformationContent from './UserInformationContent';
 import NotificationsModal from './NotificationsModal';
-import { ChevronDown, ArrowDown, ArrowUp } from 'lucide-react';
+import { ChevronDown, ArrowDown, ArrowUp, SlidersHorizontal } from 'lucide-react';
 
 const fondoTarjetaUrl = "/fondoTarjeta.png";
+
+// Datos de ejemplo para las cuentas (reemplazar con datos dinámicos)
+const exampleAccounts = {
+  'Cuentas Reales': [
+    { id: 'real1', name: 'CUENTA 1 (Real)', balance: 15050.25, change: '+3%' },
+    { id: 'real2', name: 'CUENTA 2 (Real)', balance: 25100.10, change: '+3%' },
+  ],
+  'Cuentas Demo': [
+    { id: 'demo1', name: 'DEMO A', balance: 10000, change: '+1.5%' },
+  ],
+  'Copytrading': [
+     { id: 'copy1', name: 'STRATEGY X', balance: 500, change: '+8%' },
+  ]
+};
 
 const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
@@ -13,6 +27,10 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMonthMenu, setShowMonthMenu] = useState(false);
   const [currentMonth, setCurrentMonth] = useState('Mes actual');
+  const [showAccountSelector, setShowAccountSelector] = useState(false);
+  const [activeAccountTab, setActiveAccountTab] = useState('Cuentas Reales');
+  const [selectedWalletAccount, setSelectedWalletAccount] = useState(null);
+  const dropdownRef = useRef(null);
 
   const toggleLanguageMenu = () => {
     setShowLanguageMenu(!showLanguageMenu);
@@ -35,12 +53,47 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
     setShowMonthMenu(!showMonthMenu);
   };
 
-  // Handle going back from user information
   const handleBackFromUserInfo = () => {
     setShowUserInfo(false);
   };
 
-  // If user info is being shown, display the UserInformation component
+  const handleAccountTabChange = (tabName) => {
+    setActiveAccountTab(tabName);
+  };
+
+  const toggleAccountSelector = () => {
+    setShowAccountSelector(prev => !prev);
+    console.log("Toggle account selector. New state:", !showAccountSelector);
+  };
+
+  const handleDeposit = () => {
+    console.log("Deposit button clicked");
+  };
+
+  const handleWithdraw = () => {
+    console.log("Withdraw button clicked");
+  };
+
+  const handleWalletAccountSelect = (account) => {
+    console.log("Selected wallet account:", account);
+    setSelectedWalletAccount(account);
+    setShowAccountSelector(false);
+  };
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowAccountSelector(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownRef]);
+
+  const accountsToShow = exampleAccounts[activeAccountTab] || [];
+
   if (showUserInfo) {
     return (
       <UserInformationContent onBack={handleBackFromUserInfo} />
@@ -48,10 +101,9 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
   }
 
   return (
-    <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen flex flex-col">
-      {/* Header con saludo y fecha */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 p-3 md:p-4 bg-gradient-to-br from-[#232323] to-[#202020] border border-[#333] rounded-xl relative">
-        <div className="absolute inset-0 border-solid border-t border-l border-r border-cyan-500  rounded-xl"></div>
+    <div className="border border-[#333] rounded-3xl p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white min-h-screen flex flex-col">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 p-3 md:p-4 bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl relative">
+        <div className="absolute inset-0 border-solid border-t border-l border-r border-cyan-500 rounded-2xl"></div>
 
         <div className="mb-3 sm:mb-0">
           <h1 className="text-xl md:text-2xl font-semibold">Hola, {user?.username || 'Usuario'}</h1>
@@ -93,9 +145,8 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {/* Tarjeta principal con fondo de imagen */}
         <div 
-          className="md:col-span-2 p-4 md:p-6 rounded-xl relative flex flex-col justify-center border-solid border-t border-l border-r border-cyan-500 shadow-2xl shadow-cyan-900/20"
+          className="md:col-span-2 p-4 md:p-6 rounded-2xl relative flex flex-col justify-center border-solid border-t border-l border-r border-cyan-500"
         >
           <div 
             className="absolute inset-0 rounded-md"
@@ -120,8 +171,7 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
           </div>
         </div>
 
-        {/* Tarjeta de soporte */}
-        <div className="p-4 md:p-6 rounded-xl flex flex-col justify-between border-solid border-t border-l border-r border-cyan-500 shadow-lg shadow-cyan-900/20 bg-gradient-to-br from-[#232323] to-[#202020]">
+        <div className="p-4 md:p-6 rounded-2xl flex flex-col justify-between border-solid border-t border-l border-r border-cyan-500 bg-gradient-to-br from-[#232323] to-[#2b2b2b]">
           <div>
             <h2 className="text-xl md:text-3xl font-bold mb-2">Soporte 24/7</h2>
             <p className="text-base mb-6">Contáctanos y te ayudaremos con tus preguntas.</p>
@@ -137,107 +187,119 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
         </div>
       </div>
 
-      {/* Sección de billetera */}
-      <div className="mb-6 p-4 rounded-xl border border-cyan-500 border-opacity-30 shadow-lg shadow-cyan-900/20 bg-gradient-to-br from-[#232323] to-[#202020]">
-        <div className="flex flex-col md:flex-row justify-between mb-4">
-          <div>
-            <h3 className="text-2xl text-white mb-1">ID de billetera:</h3>
-            <p className="text-xl font-medium text-gray-400">123456789</p>
+      <div className="mb-6 p-4 md:p-6 border-solid border-t border-l border-r border-cyan-500 rounded-2xl bg-gradient-to-br from-[#232323] to-[#2b2b2b]">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative">
+          <div className="flex-1 space-y-3">
+            <div className="relative inline-block w-full max-w-xs" ref={dropdownRef}>
+              <button
+                onClick={() => setShowAccountSelector(prev => !prev)}
+                className="flex items-center w-full px-9 py-3.5 rounded-full border border-[#333] bg-gradient-to-br from-[#232323] to-[#202020] hover:bg-[#2a2a2a] transition text-sm gap-x-4 md:gap-x-0 md:justify-between"
+                style={{ outline: 'none' }}
+              >
+                <span className="truncate">{selectedWalletAccount ? selectedWalletAccount.name : 'Seleccionar Cuenta'}</span>
+                <img src='/Filter.svg' width={23} />
+              </button>
+              {showAccountSelector && (
+                  <div className="absolute top-full left-0 z-10 mt-1 w-full max-w-xs bg-[#232323] border border-[#444] rounded-md shadow-lg text-sm py-1 overflow-y-auto max-h-60">
+                    {Object.keys(exampleAccounts).map(category => (
+                      <div key={category} className="px-2 pt-2">
+                        <div className="px-2 pb-1 text-xs text-gray-500 font-semibold uppercase">{category}</div>
+                        {exampleAccounts[category].map(account => (
+                          <button
+                            key={account.id}
+                            onClick={() => handleWalletAccountSelect(account)}
+                            className="w-full text-left px-2 py-1.5 rounded hover:bg-[#333] text-gray-300 hover:text-white block truncate"
+                          >
+                             {account.name} - ${account.balance.toFixed(2)}
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                    {Object.values(exampleAccounts).flat().length === 0 && (
+                         <div className="px-4 py-2 text-gray-500">No hay cuentas disponibles.</div>
+                    )}
+                  </div>
+              )}
+            </div>
+
+            <div className="space-y-1 pt-3">
+              <h3 className="text-base text-gray-400">ID de billetera:</h3>
+              <p className="text-lg font-medium text-white">{selectedWalletAccount?.id || '------- '}</p>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base text-gray-400">Balance (USD)</h3>
+              <p className="text-3xl font-bold text-white">${(selectedWalletAccount?.balance || 0).toFixed(2)}</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg text-gray-400 mb-1">Balance (USD)</h3>
-            <p className="text-3xl font-bold">$0</p>
-          </div>
-          <div className="flex flex-col gap-2 mt-4 md:mt-0">
-            <button className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] border border-cyan-500 border-opacity-50 text-white py-2 px-16 focus:outline-none rounded-md transition flex items-center justify-center gap-2">
-              Depositar
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-            </button>
-            <button className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] border border-cyan-500 border-opacity-50 text-white py-2 px-4 rounded-md focus:outline-none transition flex items-center justify-center gap-2">
-              Retirar
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-            </button>
+
+          <div className="flex flex-col gap-3 w-full md:w-auto">
+             <button
+               onClick={handleDeposit}
+               className="bg-[#2a2a2a] border border-cyan-500/50 hover:border-cyan-500/80 text-white py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base"
+               style={{ outline: 'none' }}
+             >
+               Depositar
+               <ArrowDown size={16} className="transform -rotate-90"/>
+             </button>
+             <button
+               onClick={handleWithdraw}
+               className="bg-[#2a2a2a] border-cyan-500/50 hover:border-cyan-500/80 text-gray-300 hover:text-white py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base"
+               style={{ outline: 'none' }}
+             >
+               Retirar
+                <ArrowUp size={16} className="transform -rotate-90"/>
+             </button>
           </div>
         </div>
       </div>
 
-      {/* Selector de mes */}
-      <div className="relative mb-6">
-        <button 
-          className="border border-cyan-500 border-opacity-30 bg-gradient-to-br from-[#232323] to-[#202020] rounded-md py-2 px-4 w-full md:w-64 flex items-center justify-between"
-          onClick={toggleMonthMenu}
-        >
-          <span>{currentMonth}</span>
-          <ChevronDown size={18} />
-        </button>
-        {showMonthMenu && (
-          <div className="absolute z-10 mt-1 w-full md:w-64 bg-gradient-to-br from-[#232323] to-[#202020] border border-cyan-500 border-opacity-30 rounded-md shadow-lg">
-            <button 
-              className="w-full text-left px-4 py-2 hover:bg-gray-800 transition-all duration-200"
-              onClick={() => {
-                setCurrentMonth('Mes actual');
-                setShowMonthMenu(false);
-              }}
-            >
-              Mes actual
-            </button>
-            <button 
-              className="w-full text-left px-4 py-2 hover:bg-gray-800 transition-all duration-200"
-              onClick={() => {
-                setCurrentMonth('Noviembre');
-                setShowMonthMenu(false);
-              }}
-            >
-              Noviembre
-            </button>
-            <button 
-              className="w-full text-left px-4 py-2 hover:bg-gray-800 transition-all duration-200"
-              onClick={() => {
-                setCurrentMonth('Octubre');
-                setShowMonthMenu(false);
-              }}
-            >
-              Octubre
-            </button>
-          </div>
-        )}
-      </div>
+      <div className="mb-6 p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-3xl border border-[#333]"> 
+         <h2 className="text-2xl font-semibold text-white mb-4">Tus Cuentas</h2>
+         <div className="flex flex-wrap items-center gap-3 mb-5">
+             {['Cuentas Reales', 'Cuentas Demo', 'Copytrading'].map((tab) => (
+                 <button
+                     key={tab}
+                     onClick={() => handleAccountTabChange(tab)}
+                     className={`py-2 px-6 bg-gradient-to-br from-[#232323] to-[#202020] text-sm md:text-base font-medium rounded-full transition-colors focus:outline-none border ${ 
+                         activeAccountTab === tab
+                             ? 'border-cyan-500 text-white' 
+                             : 'border-[#333] text-gray-500 hover:text-gray-300 hover:border-gray-500' 
+                     }`}
+                 >
+                     {tab}
+                 </button>
+             ))}
+         </div>
 
-      {/* Estadísticas de depósitos y retiros */}
-      <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
-        {/* Depósitos */}
-        <div className="p-6 rounded-xl border border-[#333] bg-gradient-to-br from-[#232323] to-[#202020] min-h-48">
-          <div className="flex items-center gap-2 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            <h3 className="text-xl font-medium">Depósitos</h3>
-          </div>
-          <p className="text-2xl font-bold text-green-500 mb-2">$0</p>
-          <div className="flex items-center text-gray-400">
-            <ArrowUp className="text-green-500 mr-2" size={16} />
-            <span>0% en comparación con el mes pasado</span>
-          </div>
-        </div>
-        
-        {/* Retiros */}
-        <div className="p-6 rounded-xl border border-[#333] bg-gradient-to-br from-[#232323] to-[#202020] min-h-60">
-          <div className="flex items-center gap-2 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            <h3 className="text-xl font-medium">Retiros</h3>
-          </div>
-          <p className="text-2xl font-bold text-red-500 mb-2">$0</p>
-          <div className="flex items-center text-gray-400">
-            <ArrowDown className="text-red-500 mr-2" size={16} />
-            <span>0% en comparación con el mes pasado</span>
-          </div>
-        </div>
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+             {accountsToShow.length > 0 ? accountsToShow.map((account) => (
+                 <div
+                     key={account.id}
+                     className="p-4 md:p-5 bg-gradient-to-br from-[#232323] to-[#2b2b2b] border border-[#333] flex flex-col justify-between hover:border-cyan-500 transition-colors rounded-2xl min-h-60"
+                 >
+                     <div className="mb-4">
+                         <h3 className="text-lg font-semibold text-white mb-2">{account.name}</h3>
+                         <p className="text-xl font-medium text-white">{account.balance} USD <span className={`text-sm ${account.change.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>{account.change}</span></p>
+                     </div>
+                     <button
+                         onClick={() => {
+                             console.log(`View Details clicked for account ID: ${account.id}`);
+                             if (onViewDetails) { 
+                                 onViewDetails(account.id);
+                             } else {
+                                 console.warn("onViewDetails prop not provided to Home component");
+                             }
+                         }}
+                         className="w-full bg-[#2a2a2a] border border-[#444] hover:border-cyan-600 hover:text-cyan-400 text-gray-300 py-2 rounded-full transition text-sm"
+                         style={{ outline: 'none' }}
+                     >
+                         Ver Detalles
+                     </button>
+                 </div>
+             )) : (
+                   <p className="text-gray-500 sm:col-span-2 lg:col-span-3 text-center py-4">No hay cuentas para mostrar en esta categoría.</p>
+              )}
+         </div>
       </div>
 
       {showNotifications && (

@@ -23,7 +23,7 @@ const Gestor = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen">
+    <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen border border-[#333] rounded-3xl">
 
       {/* Contenedor Superior: Título, Descripción y Botón Crear Copia */}
       <div className="mb-6 md:mb-8 p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-3xl border border-[#333]">

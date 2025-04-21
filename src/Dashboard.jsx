@@ -177,7 +177,7 @@ const Dashboard = ({ onLogout }) => {
         user={userData}
       />
       <main className={`flex-1 overflow-y-auto w-full p-4 ${isMobile ? 'ml-0' : ''} transition-all duration-300`}>
-        <div className="border border-[#333] rounded-3xl">
+        <div>
           {renderContent()}
         </div>
       </main>
