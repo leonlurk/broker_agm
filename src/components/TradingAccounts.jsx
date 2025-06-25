@@ -270,22 +270,22 @@ const TradingAccounts = ({ setSelectedOption, setSelectedAccount }) => {
                     <h3 className="font-medium">Detalles De La Cuenta</h3>
                     <span className="bg-green-800 bg-opacity-30 text-green-400 px-2 py-1 rounded text-xs">Activa</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-400">MT5 Server</span>
-                      <div className="text-white">AGM-Server01</div>
+                  <div className="grid grid-cols-2 gap-4 text-sm auto-rows-fr">
+                    <div className="flex flex-col justify-between p-2 bg-[#0f0f0f] rounded-lg">
+                      <span className="text-gray-400 text-xs mb-1">MT5 Server</span>
+                      <div className="text-white font-medium">AGM-Server01</div>
                     </div>
-                    <div>
-                      <span className="text-gray-400">Master pass.</span>
-                      <div className="text-white">••••••••</div>
+                    <div className="flex flex-col justify-between p-2 bg-[#0f0f0f] rounded-lg">
+                      <span className="text-gray-400 text-xs mb-1">Master pass.</span>
+                      <div className="text-white font-medium">••••••••</div>
                     </div>
-                    <div>
-                      <span className="text-gray-400">Account Number</span>
-                      <div className="text-white">452777</div>
+                    <div className="flex flex-col justify-between p-2 bg-[#0f0f0f] rounded-lg">
+                      <span className="text-gray-400 text-xs mb-1">Account Number</span>
+                      <div className="text-white font-medium">452777</div>
                     </div>
-                    <div>
-                      <span className="text-gray-400">Investor Pass</span>
-                      <div className="text-white">Set Password</div>
+                    <div className="flex flex-col justify-between p-2 bg-[#0f0f0f] rounded-lg">
+                      <span className="text-gray-400 text-xs mb-1">Investor Pass</span>
+                      <div className="text-white font-medium">Set Password</div>
                     </div>
                   </div>
                 </div>
