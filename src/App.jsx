@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import Login from './components/Login';
 import Register from './components/Register';
 import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
 import VerificationCode from './components/VerificationCode';
 import Dashboard from './Dashboard';
 import { useAuth } from './contexts/AuthContext';
@@ -30,9 +31,9 @@ function App() {
  
   // Common background wrapper for auth pages
   const AuthPageWrapper = ({ children }) => (
-    <div className="min-h-screen w-full flex items-center justify-end bg-black bg-no-repeat bg-cover bg-center"
+    <div className="min-h-screen w-full flex items-center justify-center bg-black bg-no-repeat bg-cover bg-center"
       style={{ backgroundImage: 'url(/fondo.png)', width: '100vw', height: '100vh' }}>
-      <div className="mr-6 md:mr-6 sm:mx-auto">
+      <div className="mx-auto">
         {children}
       </div>
     </div>
@@ -78,7 +79,19 @@ function App() {
         path="/verification" 
         element={
           <AuthPageWrapper>
-            <VerificationCode onContinue={() => navigate('/login')} />
+            <VerificationCode onContinue={() => navigate('/reset-password')} />
+          </AuthPageWrapper>
+        } 
+      />
+      
+      <Route 
+        path="/reset-password" 
+        element={
+          <AuthPageWrapper>
+            <ResetPassword 
+              onContinue={() => navigate('/login')} 
+              onLoginClick={() => navigate('/login')} 
+            />
           </AuthPageWrapper>
         } 
       />

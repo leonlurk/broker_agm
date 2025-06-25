@@ -9,14 +9,18 @@ const fondoTarjetaUrl = "/fondoTarjeta.png";
 // Datos de ejemplo para las cuentas (reemplazar con datos dinámicos)
 const exampleAccounts = {
   'Cuentas Reales': [
-    { id: 'real1', name: 'CUENTA 1 (Real)', balance: 15050.25, change: '+3%' },
-    { id: 'real2', name: 'CUENTA 2 (Real)', balance: 25100.10, change: '+3%' },
+    { id: 'real1', name: 'CUENTA 1', balance: 0.01189933, change: '+0.91%' },
+    { id: 'real2', name: 'CUENTA 2', balance: 12300, change: '+1.23%' },
+    { id: 'real3', name: 'CUENTA 3', balance: 8450, change: '-0.41%' },
   ],
   'Cuentas Demo': [
     { id: 'demo1', name: 'DEMO A', balance: 10000, change: '+1.5%' },
   ],
   'Copytrading': [
      { id: 'copy1', name: 'STRATEGY X', balance: 500, change: '+8%' },
+  ],
+  'Pamm': [
+     { id: 'pamm1', name: 'PAMM ACCOUNT', balance: 2500, change: '+5.2%' },
   ]
 };
 
@@ -144,9 +148,9 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="mb-6">
         <div 
-          className="md:col-span-2 p-4 md:p-6 rounded-2xl relative flex flex-col justify-center border-solid border-t border-l border-r border-cyan-500"
+          className="p-4 md:p-6 rounded-2xl relative flex flex-col justify-center border-solid border-t border-l border-r border-cyan-500"
         >
           <div 
             className="absolute inset-0 rounded-md"
@@ -159,29 +163,14 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
             }}
           ></div>
           <div className="relative z-10 py-4">
-            <h2 className="text-xl md:text-3xl font-bold mb-3">Impulsa tu trading con <br/>AGM Prop Firm</h2>
-            <p className="text-base md:text-lg mb-4">¡Obtén hasta un 90% de profit split y gestiona<br/>cuentas de hasta $200,000</p>
+            <h2 className="text-xl md:text-3xl font-bold mb-3">Impulsa tu trading con AGM Prop Firm</h2>
+            <p className="text-base md:text-lg mb-4">¡Obtén hasta un 90% de profit split y gestiona cuentas de hasta $200,000</p>
             <button 
               className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-4 rounded-md hover:opacity-90 transition"
               style={{ outline: 'none' }}
               onClick={() => setSelectedOption && setSelectedOption("Desafio")}
             >
-              Empezar
-            </button>
-          </div>
-        </div>
-
-        <div className="p-4 md:p-6 rounded-2xl flex flex-col justify-between border-solid border-t border-l border-r border-cyan-500 bg-gradient-to-br from-[#232323] to-[#2b2b2b]">
-          <div>
-            <h2 className="text-xl md:text-3xl font-bold mb-2">Soporte 24/7</h2>
-            <p className="text-base mb-6">Contáctanos y te ayudaremos con tus preguntas.</p>
-          </div>
-          <div>
-            <button 
-              className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-4 rounded-md hover:opacity-90 transition"
-              style={{ outline: 'none' }}
-            >
-              Contacto
+              Comenzar
             </button>
           </div>
         </div>
@@ -224,7 +213,7 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
 
             <div className="space-y-1 pt-3">
               <h3 className="text-base text-gray-400">ID de billetera:</h3>
-              <p className="text-lg font-medium text-white">{selectedWalletAccount?.id || '------- '}</p>
+              <p className="text-lg font-medium text-white">{selectedWalletAccount?.id || '123456789'}</p>
             </div>
             <div className="space-y-1">
               <h3 className="text-base text-gray-400">Balance (USD)</h3>
@@ -256,7 +245,7 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
       <div className="mb-6 p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-3xl border border-[#333]"> 
          <h2 className="text-2xl font-semibold text-white mb-4">Tus Cuentas</h2>
          <div className="flex flex-wrap items-center gap-3 mb-5">
-             {['Cuentas Reales', 'Cuentas Demo', 'Copytrading'].map((tab) => (
+             {['Cuentas Reales', 'Cuentas Demo', 'Copytrading', 'Pamm'].map((tab) => (
                  <button
                      key={tab}
                      onClick={() => handleAccountTabChange(tab)}

@@ -3,11 +3,16 @@ import { registerUser } from '../firebase/auth';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Register = ({ onLoginClick }) => {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [country, setCountry] = useState('');
+  const [countryCode, setCountryCode] = useState('+54');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,6 +38,10 @@ const Register = ({ onLoginClick }) => {
     if (password !== confirmPassword) {
       console.log("[Register] Password mismatch.");
       return setError('Las contraseñas no coinciden');
+    }
+    
+    if (!acceptTerms) {
+      return setError('Debes aceptar los Términos y Condiciones para continuar');
     }
     
     setLoading(true);
@@ -96,32 +105,118 @@ const Register = ({ onLoginClick }) => {
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
+          {/* Nombre y Apellido en una fila */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="relative">
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 bg-opacity-20"
+                placeholder="Nombre"
+                required
+              />
+            </div>
+            <div className="relative">
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 bg-opacity-20"
+                placeholder="Apellido"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Usuario y Email en una fila */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="relative">
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20"
+                placeholder="Usuario"
+                required
+              />
+              <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zm-4 7a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+            </div>
+            
+            <div className="relative">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 bg-opacity-20 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
+                placeholder="Correo Electronico"
+                required
+              />
+              <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+          </div>
+
+          {/* País de Residencia */}
           <div className="relative">
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20"
-              placeholder="Usuario"
+            <select
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20 appearance-none"
               required
-            />
+            >
+              <option value="" className="bg-gray-900">País de Residencia</option>
+              <option value="AR" className="bg-gray-900">Argentina</option>
+              <option value="BR" className="bg-gray-900">Brasil</option>
+              <option value="CL" className="bg-gray-900">Chile</option>
+              <option value="CO" className="bg-gray-900">Colombia</option>
+              <option value="MX" className="bg-gray-900">México</option>
+              <option value="PE" className="bg-gray-900">Perú</option>
+              <option value="UY" className="bg-gray-900">Uruguay</option>
+              <option value="ES" className="bg-gray-900">España</option>
+              <option value="US" className="bg-gray-900">Estados Unidos</option>
+              <option value="OTHER" className="bg-gray-900">Otro</option>
+            </select>
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zm-4 7a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9m0 9c-5 0-9-4-9-9s4-9 9-9"></path>
+            </svg>
+            <svg className="absolute top-3.5 right-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </div>
-          
-          <div className="relative">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 bg-opacity-20 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
-              placeholder="Correo Electronico"
-              required
-            />
-            <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-            </svg>
+
+          {/* Número de Teléfono */}
+          <div className="flex gap-2">
+            <div className="relative">
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="px-3 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 bg-opacity-20 appearance-none min-w-[80px]"
+              >
+                <option value="+54" className="bg-gray-900">🇦🇷 +54</option>
+                <option value="+55" className="bg-gray-900">🇧🇷 +55</option>
+                <option value="+56" className="bg-gray-900">🇨🇱 +56</option>
+                <option value="+57" className="bg-gray-900">🇨🇴 +57</option>
+                <option value="+52" className="bg-gray-900">🇲🇽 +52</option>
+                <option value="+51" className="bg-gray-900">🇵🇪 +51</option>
+                <option value="+598" className="bg-gray-900">🇺🇾 +598</option>
+                <option value="+34" className="bg-gray-900">🇪🇸 +34</option>
+                <option value="+1" className="bg-gray-900">🇺🇸 +1</option>
+              </select>
+            </div>
+            <div className="flex-1">
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 bg-opacity-20"
+                placeholder="Número de Teléfono"
+                required
+              />
+            </div>
           </div>
           
           <div className="relative">
@@ -155,14 +250,14 @@ const Register = ({ onLoginClick }) => {
 
         <div className="flex items-center">
           <input
-            id="remember_me"
+            id="accept_terms"
             type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
+            checked={acceptTerms}
+            onChange={(e) => setAcceptTerms(e.target.checked)}
             className="h-4 w-4 bg-gray-800 border-gray-700 rounded focus:ring-blue-500"
           />
-          <label htmlFor="remember_me" className="ml-2 block text-gray-300 text-sm">
-            Recuérdame
+          <label htmlFor="accept_terms" className="ml-2 block text-gray-300 text-sm">
+            Acepto los Términos y Condiciones y la Política de Privacidad.
           </label>
         </div>
 

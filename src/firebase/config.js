@@ -2,17 +2,10 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getFirebaseConfig } from "../services/config";
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyCNX9ICSG9bdJhb6nMPnyuNhbewE_smf_4",
-  authDomain: "ape-prop.firebaseapp.com",
-  projectId: "ape-prop",
-  storageBucket: "ape-prop.appspot.com",
-  messagingSenderId: "914963337229",
-  appId: "1:914963337229:web:cbfb2b1fd203c842070544",
-  measurementId: "G-CP394V00F8"
-};
+// Get Firebase configuration from centralized config service
+const firebaseConfig = getFirebaseConfig();
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

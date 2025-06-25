@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChange } from '../firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
+import { logger } from '../utils/logger';
 
 const AuthContext = createContext();
 
@@ -15,43 +16,43 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("[AuthContext] Setting up onAuthStateChange listener...");
+    logger.auth("Setting up onAuthStateChange listener...");
     const unsubscribe = onAuthStateChange(async (user) => {
-      console.log("[AuthContext] onAuthStateChange callback received user:", user ? user.uid : null);
+      logger.auth("onAuthStateChange callback received", { userPresent: !!user });
       setCurrentUser(user);
       setUserData(null);
       
       if (user) {
-        console.log(`[AuthContext] User ${user.uid} is authenticated and exists in users collection. Fetching Firestore data...`);
+        logger.auth("User is authenticated and exists in users collection. Fetching Firestore data...");
         try {
           const userDocRef = doc(db, 'users', user.uid);
           const userDocSnap = await getDoc(userDocRef);
           
           if (userDocSnap.exists()) {
             const fetchedData = userDocSnap.data();
-            console.log(`[AuthContext] Firestore data fetched for ${user.uid}:`, fetchedData);
+            logger.auth("Firestore data fetched successfully");
             setUserData(fetchedData);
           } else {
-            console.error(`[AuthContext] Firestore document unexpectedly missing for authenticated user ${user.uid}. Forcing sign out.`);
+            logger.error("Firestore document unexpectedly missing for authenticated user. Forcing sign out.");
             await auth.signOut();
             setCurrentUser(null);
           }
         } catch (error) {
-          console.error(`[AuthContext] Error fetching Firestore user data for ${user.uid}:`, error);
-          console.warn(`[AuthContext] Signing out user ${user.uid} due to Firestore fetch error.`);
+          logger.error("Error fetching Firestore user data", error);
+          logger.warn("Signing out user due to Firestore fetch error.");
           await auth.signOut();
           setCurrentUser(null);
         }
       } else {
-        console.log("[AuthContext] No authenticated user after onAuthStateChange callback.");
+        logger.auth("No authenticated user after onAuthStateChange callback.");
       }
       
-      console.log("[AuthContext] Setting loading to false.");
+      logger.auth("Setting loading to false.");
       setLoading(false);
     });
 
     return () => {
-      console.log("[AuthContext] Unsubscribing from onAuthStateChange.");
+      logger.auth("Unsubscribing from onAuthStateChange.");
       unsubscribe();
     }
   }, []);
