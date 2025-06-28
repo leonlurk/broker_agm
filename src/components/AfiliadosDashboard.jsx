@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, Copy, ArrowUpDown, Save, AlertTriangle, Loader, Lock } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
+import WithdrawalHistoryDetails from './WithdrawalHistoryDetails';
 
 // Definir los requisitos de referidos para cada tier (para pruebas)
 const TIER_REQUIREMENTS = {
-  1: 0, // Tier 1 base
-  2: 1, // Necesita 1 referido para Tier 2
-  3: 2  // Necesita 2 referidos para Tier 3
+  1: 0,
+  2: 100, // Necesita 100 referidos para Tier 2
+  3: 200  // Necesita 200 referidos para Tier 3
 };
 
 // Función para determinar el tier basado en el número de referidos
@@ -33,7 +34,42 @@ const AfiliadosDashboard = () => {
   const [referralCount, setReferralCount] = useState(0);
   const [currentTier, setCurrentTier] = useState(1);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [selectedTrader, setSelectedTrader] = useState(null);
   
+  // Mock data for the new "Cuentas Activas" table
+  const topAfiliadosData = [
+    {
+      id: 1,
+      nombre: 'Nombre trader',
+      tipoCuenta: 'Standard',
+      balance: 100,
+      equidad: 105,
+      lotesOperados: 10,
+      comisionesGeneradas: 10,
+      retirosCobrados: 3,
+    },
+    {
+      id: 2,
+      nombre: 'Nombre trader',
+      tipoCuenta: 'Zero Spread',
+      balance: 100,
+      equidad: 105,
+      lotesOperados: 10,
+      comisionesGeneradas: 10,
+      retirosCobrados: 3,
+    },
+    {
+      id: 3,
+      nombre: 'Nombre trader',
+      tipoCuenta: 'Standard',
+      balance: 100,
+      equidad: 105,
+      lotesOperados: 10,
+      comisionesGeneradas: 10,
+      retirosCobrados: 3,
+    },
+  ];
+
   // Datos para las tablas
   const referenciasData = [];
   const pagosData = [];
@@ -127,6 +163,14 @@ const AfiliadosDashboard = () => {
         console.error('Error al copiar: ', err);
         alert('Error al copiar el enlace.');
       });
+  };
+
+  const handleShowDetails = (trader) => {
+    setSelectedTrader(trader);
+  };
+
+  const handleBackToDashboard = () => {
+    setSelectedTrader(null);
   };
 
   // Renderizar el contenido según la pestaña activa
@@ -276,8 +320,8 @@ const AfiliadosDashboard = () => {
             currentTier >= 1 ? 'border-cyan-500' : 'border-[#333]'
           } space-y-2`}>
             <h3 className="text-xl font-semibold mb-1">Tier 1</h3>
-            <p className="text-gray-400">Comision 10%</p>
-            <p className="text-sm text-gray-500">Hasta {TIER_REQUIREMENTS[2]} Afiliado</p> 
+            <p className="text-gray-400">Comision Por Lote $3,00 USD</p>
+            <p className="text-sm text-gray-500">Hasta {TIER_REQUIREMENTS[2]} Afiliados</p> 
           </div>
 
           {/* Tier 2 */}
@@ -290,7 +334,7 @@ const AfiliadosDashboard = () => {
               </div>
             ) : null}
             <h3 className="text-xl font-semibold mb-1">Tier 2</h3>
-            <p className="text-gray-400">Comision 15% + 5% Tier 1</p>
+            <p className="text-gray-400">Comision Por Lote $3,50 USD</p>
             <p className="text-sm text-gray-500">Hasta {TIER_REQUIREMENTS[3]} Afiliados</p>
           </div>
 
@@ -304,31 +348,68 @@ const AfiliadosDashboard = () => {
               </div>
             ) : null}
             <h3 className="text-xl font-semibold mb-1">Tier 3</h3>
-            <p className="text-gray-400">Comision 20% + 5% Tier 1 + 10% De Pagos</p>
+            <p className="text-gray-400">Comision Por Lote $4,00 USD</p>
             <p className="text-sm text-gray-500">{TIER_REQUIREMENTS[3]}+ Afiliados</p>
           </div>
         </div>
 
-            {/* Traders Fondeados Section */}
-            <div className="space-y-4">
-              <h2 className="text-3xl font-medium mb-4">Traders Fondeados</h2>
-              <div className="relative rounded-xl border border-[#333] overflow-hidden">
-                <div className="h-60 bg-gradient-to-br from-[#1a1a1a] to-[#252525]">
-                  {/* Placeholder para tabla/contenido real */} 
-                  {currentTier === 3 && (
-                      <div className="p-4 text-center text-gray-400">Contenido desbloqueado (Tier 3)</div>
-                  )} 
-                </div>
+            {/* Cuentas activas y comisiones generadas */}
+            <div className="space-y-4 pt-6">
+              {/* Titles */}
+              <div>
+                <h2 className="text-3xl font-medium">Cuentas activas y comisiones generadas</h2>
+                <p className="text-gray-400 text-lg">Top 3 Afiliados</p>
+              </div>
 
-                {/* Overlay de bloqueo si no es Tier 3 */} 
-                {currentTier < 3 && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a]/90 to-[#252525]/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-4">
-                    <Lock size={40} className="text-gray-500 mb-3" />
-                    <h3 className="text-2xl font-semibold mb-2">Sección Por Desbloquear</h3>
-                    <p className="text-gray-400 text-sm">Accede A Esta Sección Al Alcanzar Tier 3 ({TIER_REQUIREMENTS[3]}+ Afiliados).</p>
-                    <p className="text-gray-400 text-sm">Desbloquea Nuevas Oportunidades</p>
+              {/* Headers */}
+              <div className="grid grid-cols-[minmax(150px,1.5fr)_minmax(0,3fr)_minmax(0,1.5fr)_repeat(5,minmax(0,1fr))] gap-x-4 px-4 text-sm text-gray-400 font-medium">
+                {/* Headers start from the second column to align with data */}
+                <div className="col-start-2">Usuario</div>
+                <div>Tipo de Cuenta</div>
+                <div className="text-center">Balance</div>
+                <div className="text-center">Equidad</div>
+                <div className="text-center">Lotes Operados</div>
+                <div className="text-center">Comisiones Generadas</div>
+                <div className="text-center">Retiros Cobrados</div>
+              </div>
+
+              {/* Rows */}
+              <div className="space-y-3">
+                {topAfiliadosData.map((trader) => (
+                  <div key={trader.id} className="grid grid-cols-[minmax(150px,1.5fr)_minmax(0,3fr)_minmax(0,1.5fr)_repeat(5,minmax(0,1fr))] items-center gap-x-4 p-4 rounded-xl bg-[#202020]">
+                    {/* Column 1: Button */}
+                    <button 
+                      onClick={() => handleShowDetails(trader)}
+                      className="text-sm bg-[#2d2d2d] hover:bg-[#3f3f3f] transition-colors text-white py-2 px-4 rounded-lg"
+                    >
+                      Historial De Retiro
+                    </button>
+                    
+                    {/* Column 2: User Info */}
+                    <div className="flex items-center space-x-3">
+                      <div className="text-lg font-semibold text-gray-500">{trader.id}.</div>
+                      <img src="/Foto.svg" alt="User" className="w-10 h-10 rounded-lg" />
+                      <div>
+                        <div className="font-semibold whitespace-nowrap">{trader.nombre}</div>
+                      </div>
+                    </div>
+
+                    {/* Other data columns */}
+                    <div className="text-sm">{trader.tipoCuenta}</div>
+                    <div className="text-sm text-center">{trader.balance}</div>
+                    <div className="text-sm text-center">{trader.equidad}</div>
+                    <div className="text-sm text-center">{trader.lotesOperados}</div>
+                    <div className="text-sm text-center">{trader.comisionesGeneradas}</div>
+                    <div className="text-sm text-center">{trader.retirosCobrados}</div>
                   </div>
-                )}
+                ))}
+              </div>
+
+              {/* Ver Mas Button */}
+              <div className="flex justify-center pt-4">
+                <button className="bg-[#2d2d2d] hover:bg-[#3f3f3f] transition-colors text-white font-semibold py-3 px-8 rounded-lg">
+                  Ver Más
+                </button>
               </div>
             </div>
           </div>
@@ -412,56 +493,65 @@ const AfiliadosDashboard = () => {
     }
   };
 
+  if (selectedTrader) {
+    return <WithdrawalHistoryDetails user={selectedTrader} onBack={handleBackToDashboard} />;
+  }
+
   return (
     <div className="flex flex-col min-h-screen border border-[#333] rounded-3xl bg-[#232323] text-white p-4 md:p-6">
+
       {/* Tabs */}
-      <div className="flex space-x-2 mb-6">
-        <button
-          className={`px-4 py-3 rounded-full focus:outline-none bg-gradient-to-br from-[#232323] to-[#2d2d2d] border-[#333] font-regular flex items-center space-x-2 ${
-            activeTab === 'panel' 
-              ? 'border border-cyan-500 text-white' 
-              : 'border border-[#333] text-gray-300 hover:bg-[#2a2a2a]'
-          }`}
-          onClick={() => handleTabClick('panel')}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-            <path d="M3 9h18" />
-            <path d="M9 21V9" />
-          </svg>
-          <span>Panel</span>
-        </button>
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex space-x-2">
+          <button
+            className={`px-4 py-3 rounded-full focus:outline-none bg-gradient-to-br from-[#232323] to-[#2d2d2d] border-[#333] font-regular flex items-center space-x-2 ${
+              activeTab === 'panel' 
+                ? 'border border-cyan-500 text-white' 
+                : 'border border-[#333] text-gray-300 hover:bg-[#2a2a2a]'
+            }`}
+            onClick={() => handleTabClick('panel')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Panel</span>
+          </button>
+          
+          <button
+            className={`px-4 py-3 rounded-full focus:outline-none font-regular bg-gradient-to-br from-[#232323] to-[#2d2d2d] border-[#333] flex items-center space-x-2 ${
+              activeTab === 'referencias' 
+                ? 'border border-cyan-500 text-white' 
+                : 'border border-[#333] text-gray-300 hover:bg-[#2a2a2a]'
+            }`}
+            onClick={() => handleTabClick('referencias')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 00-3-3.87" />
+              <path d="M16 3.13a4 4 0 010 7.75" />
+            </svg>
+            <span>Referencias</span>
+          </button>
+          
+          <button
+            className={`px-4 py-3 rounded-full flex focus:outline-none font-regular bg-gradient-to-br from-[#232323] to-[#2d2d2d] border-[#333] items-center space-x-2 ${
+              activeTab === 'pagos' 
+                ? 'border border-cyan-500 text-white' 
+                : 'border border-[#333] text-gray-300 hover:bg-[#2a2a2a]'
+            }`}
+            onClick={() => handleTabClick('pagos')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="2" y="5" width="20" height="14" rx="2" />
+              <path d="M2 10h20" />
+            </svg>
+            <span>Pagos</span>
+          </button>
+        </div>
         
-        <button
-          className={`px-4 py-3 rounded-full focus:outline-none font-regular bg-gradient-to-br from-[#232323] to-[#2d2d2d] border-[#333] flex items-center space-x-2 ${
-            activeTab === 'referencias' 
-              ? 'border border-cyan-500 text-white' 
-              : 'border border-[#333] text-gray-300 hover:bg-[#2a2a2a]'
-          }`}
-          onClick={() => handleTabClick('referencias')}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M22 21v-2a4 4 0 00-3-3.87" />
-            <path d="M16 3.13a4 4 0 010 7.75" />
-          </svg>
-          <span>Referencias</span>
-        </button>
-        
-        <button
-          className={`px-4 py-3 rounded-full flex focus:outline-none font-regular bg-gradient-to-br from-[#232323] to-[#2d2d2d] border-[#333] items-center space-x-2 ${
-            activeTab === 'pagos' 
-              ? 'border border-cyan-500 text-white' 
-              : 'border border-[#333] text-gray-300 hover:bg-[#2a2a2a]'
-          }`}
-          onClick={() => handleTabClick('pagos')}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="2" y="5" width="20" height="14" rx="2" />
-            <path d="M2 10h20" />
-          </svg>
-          <span>Pagos</span>
+        <button className="px-4 py-3 rounded-full focus:outline-none font-regular bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] text-gray-300 hover:bg-[#2a2a2a]">
+          Filtros
         </button>
       </div>
       

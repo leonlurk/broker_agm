@@ -17,6 +17,7 @@ import CompetitionCards from "./components/CompetitionCards";
 import WithdrawComponent from "./components/WithdrawComponent";
 import Inversor from "./components/Inversor";
 import Gestor from "./components/Gestor";
+import PammDashboard from "./components/PammDashboard";
 
 const Dashboard = ({ onLogout }) => {
   const { currentUser, userData } = useAuth();
@@ -133,6 +134,8 @@ const Dashboard = ({ onLogout }) => {
       case "Gestor":
           console.log("[Dashboard - src] Rendering Gestor component for selectedOption:", selectedOption); // Log
           return <Gestor />;
+      case "Pamm":
+        return <PammDashboard />;
       case "PropFirm":
           return (
             <div className="p-6 bg-[#232323] text-white">
