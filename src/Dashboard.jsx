@@ -6,7 +6,7 @@ import TradingChallenge from './components/TradingChallenge';
 import PipCalculator from './components/PipCalculator';
 import CertificateComponent from './components/CertificateComponent';
 import LeaderboardModal from './components/LeaderboardModal';
-import TradingDashboard from './components/TradingDashboard';
+
 import OperationsHistory from './components/OperationsHistory';
 import Descargas from './components/Descargas';
 import AfiliadosDashboard from './components/AfiliadosDashboard';
@@ -21,11 +21,10 @@ import Gestor from "./components/Gestor";
 const Dashboard = ({ onLogout }) => {
   const { currentUser, userData } = useAuth();
   const [selectedOption, setSelectedOption] = useState("Dashboard");
+  const [navigationParams, setNavigationParams] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [previousSection, setPreviousSection] = useState("Dashboard");
   
   // Detectar tamaño de pantalla
   useEffect(() => {
@@ -60,7 +59,15 @@ const Dashboard = ({ onLogout }) => {
     } else {
       console.log("[Dashboard - src] Calling setSelectedOption with:", option);
       setSelectedOption(option);
+      setNavigationParams(null); // Limpiar parámetros al cambiar de sección
     }
+  };
+
+  // Función para manejar navegación con parámetros
+  const handleNavigationWithParams = (option, params = null) => {
+    console.log("[Dashboard - src] handleNavigationWithParams:", option, params);
+    setSelectedOption(option);
+    setNavigationParams(params);
   };
 
   // Cambia de opción al cerrar el modal
@@ -69,17 +76,7 @@ const Dashboard = ({ onLogout }) => {
     // No necesitamos cambiar la sección al cerrar porque nunca la cambiamos al abrir
   };
 
-  // Manejador para visualizar los detalles de una cuenta
-  const handleViewAccountDetails = (accountId) => {
-    setPreviousSection(selectedOption); 
-    setSelectedAccount(accountId);
-  };
-  
-  // Volver a la vista de Home
-    const handleBackToAccounts = () => {
-      setSelectedAccount(null);
-      setSelectedOption(previousSection); // Return to previous section
-    };
+
 
   // Manejador para mostrar la pantalla de configuración
   const handleSettingsClick = () => {
@@ -99,21 +96,13 @@ const Dashboard = ({ onLogout }) => {
       return <Settings onBack={handleBackFromSettings} />;
     }
     
-    // Si estamos en Dashboard y hay una cuenta seleccionada, mostrar TradingDashboard
-    if (selectedOption === "Dashboard" && selectedAccount !== null) {
-      return <TradingDashboard 
-      accountId={selectedAccount} 
-      onBack={handleBackToAccounts}
-      previousSection={previousSection}
-    />;
-    }
+
     
     switch (selectedOption) {
       case "Dashboard":
           return <Home 
-            onViewDetails={handleViewAccountDetails} 
             onSettingsClick={handleSettingsClick}
-            setSelectedOption={setSelectedOption}
+            setSelectedOption={handleNavigationWithParams}
             user={userData}
           />;
       case "Certificados":
@@ -137,7 +126,7 @@ const Dashboard = ({ onLogout }) => {
       case "Cuentas":
         return <TradingAccounts 
         setSelectedOption={setSelectedOption}
-        setSelectedAccount={setSelectedAccount}
+        navigationParams={navigationParams}
       />;
       case "Inversor":
           return <Inversor />;

@@ -130,26 +130,30 @@ const WithdrawComponent = () => {
       </div>
               
         {/* Balance Card */}
-        <div className="bg-[#232323] border-2 border-[#06b6d4] rounded-2xl p-6 mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-[#9ca3af] mb-1 text-sm font-medium">Balance Disponible (USD)</p>
-              <h1 className="text-4xl font-bold text-white">${selectedAccount.balance.toLocaleString()}</h1>
-              <p className="text-xs text-[#9ca3af] mt-1">{selectedAccount.type} Account</p>
-            </div>
-            <div className="space-y-3">
-              <button className="w-44 flex justify-between items-center px-4 py-3 bg-[#374151] hover:bg-[#4b5563] rounded-lg transition-colors border border-[#4b5563]">
-                <span className="text-white font-medium">Depositar</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </button>
-              <button className="w-44 flex justify-between items-center px-4 py-3 bg-[#374151] hover:bg-[#4b5563] rounded-lg transition-colors border border-[#4b5563]">
-                <span className="text-white font-medium">Retirar</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                </svg>
-              </button>
+        <div className="relative rounded-2xl p-[2px] mb-8" style={{
+          background: 'linear-gradient(to bottom, rgba(6, 182, 212, 1) 0%, rgba(6, 182, 212, 1) 50%, rgba(6, 182, 212, 0) 100%)'
+        }}>
+          <div className="bg-[#232323] rounded-2xl p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-[#9ca3af] mb-1 text-sm font-medium">Balance Disponible (USD)</p>
+                <h1 className="text-4xl font-bold text-white">${selectedAccount.balance.toLocaleString()}</h1>
+                <p className="text-xs text-[#9ca3af] mt-1">{selectedAccount.type} Account</p>
+              </div>
+              <div className="space-y-3">
+                <button className="w-44 flex justify-between items-center px-4 py-3 bg-[#374151] hover:bg-[#4b5563] rounded-lg transition-colors border border-[#4b5563]">
+                  <span className="text-white font-medium">Depositar</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                <button className="w-44 flex justify-between items-center px-4 py-3 bg-[#374151] hover:bg-[#4b5563] rounded-lg transition-colors border border-[#4b5563]">
+                  <span className="text-white font-medium">Retirar</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>

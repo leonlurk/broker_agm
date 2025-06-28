@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, Legend, CartesianGrid, LabelList } from 'recharts';
 
-const TradingAccounts = ({ setSelectedOption, setSelectedAccount }) => {
+const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
   const [activeTab, setActiveTab] = useState('Todas');
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [viewMode, setViewMode] = useState('overview'); // 'overview' o 'details'
@@ -54,6 +54,27 @@ const TradingAccounts = ({ setSelectedOption, setSelectedAccount }) => {
   };
   
   const accounts = allAccounts[activeTab] || [];
+
+  // Manejar navegación desde Home.jsx
+  useEffect(() => {
+    if (navigationParams && navigationParams.viewMode === 'details' && navigationParams.accountId) {
+      console.log("[TradingAccounts] Processing navigation params:", navigationParams);
+      setViewMode('details');
+      setSelectedAccountId(navigationParams.accountId);
+      
+      // Determinar la pestaña correcta basada en el ID de cuenta
+      const targetAccount = Object.values(allAccounts).flat().find(acc => acc.id === navigationParams.accountId);
+      if (targetAccount) {
+        // Encontrar en qué categoría está la cuenta
+        for (const [category, accountsList] of Object.entries(allAccounts)) {
+          if (accountsList.some(acc => acc.id === navigationParams.accountId)) {
+            setActiveTab(category);
+            break;
+          }
+        }
+      }
+    }
+  }, [navigationParams]);
   
   const handleCreateAccount = () => {
     setSelectedOption && setSelectedOption("Desafio");
@@ -62,7 +83,6 @@ const TradingAccounts = ({ setSelectedOption, setSelectedAccount }) => {
   const handleViewDetails = (accountId) => {
     setSelectedAccountId(accountId);
     setViewMode('details');
-    setSelectedAccount && setSelectedAccount(accountId);
   };
 
   const handleBackToOverview = () => {
@@ -284,19 +304,14 @@ const TradingAccounts = ({ setSelectedOption, setSelectedAccount }) => {
         <div className="lg:col-span-7 space-y-6">
           {selectedAccountId ? (
             <>
-              {/* Header Hola Santiago */}
+              {/* Detalles de la Cuenta Seleccionada */}
               <div className="bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-3xl p-6 border border-[#333]">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold mr-4">
-                    S
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold">Hola, Santiago</h2>
-                    <p className="text-gray-400 text-sm">Aquí puedes ver los datos de esta cuenta</p>
-                  </div>
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold mb-2">Detalles de la Cuenta</h2>
+                  <p className="text-gray-400 text-sm">Información completa de la cuenta seleccionada</p>
                 </div>
                 
-                <div className="space-y-1 text-sm">
+                <div className="space-y-3 text-sm mb-6">
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-6 h-6 mr-2" />
                     <span className="text-gray-400">Cuenta {selectedAccountId} (ID: 3452)</span>
@@ -311,43 +326,43 @@ const TradingAccounts = ({ setSelectedOption, setSelectedAccount }) => {
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-6 h-6 mr-2" />
-                    <span className="text-gray-400">Leverage: 1500</span>
+                    <span className="text-gray-400">Leverage: 1:500</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-6 h-6 mr-2" />
-                    <span className="text-gray-400">Tipo de cuenta: Swipe</span>
+                    <span className="text-gray-400">Tipo de cuenta: Standard</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-6 h-6 mr-2" />
-                    <span className="text-gray-400">Started: 17 Jun 2025 (7 días)</span>
+                    <span className="text-gray-400">Creada: 17 Jun 2025</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-6 h-6 mr-2" />
-                    <span className="text-gray-400">Timezone: GMT +0</span>
+                    <span className="text-gray-400">Zona horaria: GMT +0</span>
                   </div>
                 </div>
 
-                <div className="mt-4 p-4 bg-[#1a1a1a] rounded-xl">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-medium">Detalles De La Cuenta</h3>
-                    <span className="bg-green-800 bg-opacity-30 text-green-400 px-2 py-1 rounded text-xs">Activa</span>
+                <div className="p-4 bg-[#1a1a1a] rounded-xl">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-medium text-white">Credenciales MT5</h3>
+                    <span className="bg-green-800 bg-opacity-30 text-green-400 px-3 py-1 rounded-full text-xs font-medium">Activa</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm auto-rows-fr">
-                    <div className="flex flex-col justify-between p-2 bg-[#0f0f0f] rounded-lg">
-                      <span className="text-gray-400 text-xs mb-1">MT5 Server</span>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="p-3 bg-[#0f0f0f] rounded-lg">
+                      <span className="text-gray-400 text-xs block mb-1">Servidor MT5</span>
                       <div className="text-white font-medium">AGM-Server01</div>
                     </div>
-                    <div className="flex flex-col justify-between p-2 bg-[#0f0f0f] rounded-lg">
-                      <span className="text-gray-400 text-xs mb-1">Master pass.</span>
+                    <div className="p-3 bg-[#0f0f0f] rounded-lg">
+                      <span className="text-gray-400 text-xs block mb-1">Contraseña Master</span>
                       <div className="text-white font-medium">••••••••</div>
                     </div>
-                    <div className="flex flex-col justify-between p-2 bg-[#0f0f0f] rounded-lg">
-                      <span className="text-gray-400 text-xs mb-1">Account Number</span>
+                    <div className="p-3 bg-[#0f0f0f] rounded-lg">
+                      <span className="text-gray-400 text-xs block mb-1">Número de Cuenta</span>
                       <div className="text-white font-medium">452777</div>
                     </div>
-                    <div className="flex flex-col justify-between p-2 bg-[#0f0f0f] rounded-lg">
-                      <span className="text-gray-400 text-xs mb-1">Investor Pass</span>
-                      <div className="text-white font-medium">Set Password</div>
+                    <div className="p-3 bg-[#0f0f0f] rounded-lg">
+                      <span className="text-gray-400 text-xs block mb-1">Contraseña Investor</span>
+                      <div className="text-cyan-400 font-medium cursor-pointer hover:text-cyan-300">Configurar</div>
                     </div>
                   </div>
                 </div>

@@ -24,7 +24,7 @@ const exampleAccounts = {
   ]
 };
 
-const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
+const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('ES');
   const [showUserInfo, setShowUserInfo] = useState(false);
@@ -72,10 +72,18 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
 
   const handleDeposit = () => {
     console.log("Deposit button clicked");
+    // Navegar a la sección Wallet
+    if (setSelectedOption) {
+      setSelectedOption("Wallet");
+    }
   };
 
   const handleWithdraw = () => {
     console.log("Withdraw button clicked");
+    // Navegar a la sección Wallet
+    if (setSelectedOption) {
+      setSelectedOption("Wallet");
+    }
   };
 
   const handleWalletAccountSelect = (account) => {
@@ -273,10 +281,12 @@ const Home = ({ onViewDetails, onSettingsClick, setSelectedOption, user }) => {
                      <button
                          onClick={() => {
                              console.log(`View Details clicked for account ID: ${account.id}`);
-                             if (onViewDetails) { 
-                                 onViewDetails(account.id);
-                             } else {
-                                 console.warn("onViewDetails prop not provided to Home component");
+                             // Navegar a TradingAccounts en modo detalles
+                             if (setSelectedOption) {
+                                 setSelectedOption("Cuentas", { 
+                                     accountId: account.id, 
+                                     viewMode: 'details' 
+                                 });
                              }
                          }}
                          className="w-full bg-[#2a2a2a] border border-[#444] hover:border-cyan-600 hover:text-cyan-400 text-gray-300 py-2 rounded-full transition text-sm"
