@@ -15,6 +15,27 @@ export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchUserData = async (user) => {
+    if (!user) {
+      setUserData(null);
+      return;
+    }
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+    if (userDocSnap.exists()) {
+      const fetchedData = userDocSnap.data();
+      setUserData(fetchedData);
+    }
+  };
+
+  const refreshUserData = async () => {
+    if (currentUser) {
+      logger.info("[AUTH] Refreshing user data...");
+      await fetchUserData(currentUser);
+      logger.info("[AUTH] User data refreshed.");
+    }
+  };
+
   useEffect(() => {
     logger.auth("Setting up onAuthStateChange listener...");
     const unsubscribe = onAuthStateChange(async (user) => {
@@ -60,6 +81,8 @@ export const AuthProvider = ({ children }) => {
   const value = {
     currentUser,
     userData,
+    loading,
+    refreshUserData,
     isAuthenticated: !!currentUser,
   };
 

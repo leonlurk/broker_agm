@@ -1,17 +1,82 @@
 import React, { useState } from 'react';
-import { ChevronDown, HelpCircle, Info } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
+import { createTradingAccount } from '../services/tradingAccounts';
+import { useAuth } from '../contexts/AuthContext';
+import { useNotifications } from '../contexts/NotificationsContext';
 
 export default function TradingChallengeUI() {
-  const [challengeAmount, setChallengeAmount] = useState('$5.000');
-  const [complementType, setComplementType] = useState('Nuevo');
-  const [selectedComplements, setSelectedComplements] = useState([]);
-  const [price, setPrice] = useState('$185.80');
+  const { currentUser } = useAuth();
+  const { notifyAccountCreated } = useNotifications();
+  const [accountType, setAccountType] = useState('Real');
+  const [accountName, setAccountName] = useState('');
+  const [accountTypeSelection, setAccountTypeSelection] = useState('Zero Spread');
+  const [leverage, setLeverage] = useState('');
+  const [showLeverageDropdown, setShowLeverageDropdown] = useState(false);
+  
+  // Loading and feedback states
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const toggleComplement = (complement) => {
-    if (selectedComplements.includes(complement)) {
-      setSelectedComplements(selectedComplements.filter(item => item !== complement));
+  const leverageOptions = ['1:50', '1:100', '1:200', '1:500', '1:1000'];
+
+  const handleLeverageSelect = (option) => {
+    setLeverage(option);
+    setShowLeverageDropdown(false);
+  };
+
+  const handleCreateAccount = async () => {
+    // Clear previous messages
+    setError('');
+    setSuccess('');
+    
+    // Validation
+    if (!accountName.trim()) {
+      setError('El nombre de la cuenta es requerido');
+      return;
+    }
+    
+    if (!leverage) {
+      setError('Debe seleccionar un apalancamiento');
+      return;
+    }
+    
+    if (!currentUser) {
+      setError('Debe estar autenticado para crear una cuenta');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const accountData = {
+        accountName: accountName.trim(),
+        accountType,
+        accountTypeSelection,
+        leverage
+      };
+
+      const result = await createTradingAccount(currentUser.uid, accountData);
+
+      if (result.success) {
+        setSuccess(`¡Cuenta creada exitosamente! Número de cuenta: ${result.accountNumber}`);
+        
+        // Crear notificación
+        notifyAccountCreated(accountName.trim(), `${accountType} - ${accountTypeSelection}`);
+        
+        // Reset form
+        setAccountName('');
+        setLeverage('');
+        setAccountType('Real');
+        setAccountTypeSelection('Zero Spread');
     } else {
-      setSelectedComplements([...selectedComplements, complement]);
+        setError(result.error || 'Error al crear la cuenta');
+      }
+    } catch (error) {
+      console.error('Error creating account:', error);
+      setError('Error inesperado al crear la cuenta');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -23,141 +88,141 @@ export default function TradingChallengeUI() {
           {/* Left Content */}
           <div className="w-full lg:w-3/4 p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-2xl border border-[#333]">
             <div className="mb-6 md:mb-10">
-              <div className="flex items-center mb-4">
-                <h2 className="text-xl md:text-2xl font-medium flex-1">Tipo Desafío</h2>
-                <HelpCircle size={16} className="text-gray-400" />
+              {/* Title */}
+              <div className="mb-6 md:mb-8">
+                <h2 className="text-xl md:text-2xl font-medium">Crear Cuenta</h2>
               </div>
               
-              <div className="flex space-x-3 md:space-x-4 mb-4 md:mb-6">
-                <button className="bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-white px-4 md:px-6 py-1 rounded-full text-base md:text-lg">1 Fase</button>
-                <button className="bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-white px-4 md:px-6 py-1 rounded-full text-base md:text-lg">2 Fase</button>
+              {/* Success/Error Messages */}
+              {success && (
+                <div className="mb-6 p-4 bg-green-900/20 border border-green-500 rounded-lg">
+                  <p className="text-green-400 text-sm md:text-base">{success}</p>
               </div>
+              )}
               
-              <div className="flex items-center mb-3 md:mb-4">
-                <h2 className="text-lg md:text-xl font-medium flex-1">Monto del desafío</h2>
-                <Info size={16} className="text-gray-400" />
+              {error && (
+                <div className="mb-6 p-4 bg-red-900/20 border border-red-500 rounded-lg">
+                  <p className="text-red-400 text-sm md:text-base">{error}</p>
               </div>
+              )}
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-3 mb-2">
+              {/* Account Type Toggle (DEMO/Real) */}
+              <div className="mb-6 md:mb-8">
+                <div className="flex space-x-2 mb-4">
                 <button 
-                  className={`px-2 md:px-6 py-2 md:py-3 rounded-full text-sm md:text-lg font-regular border focus:outline-none bg-gradient-to-br from-[#232323] to-[#2d2d2d] ${challengeAmount === '$5.000' ? 'border-cyan-500 bg-transparent' : 'border-gray-700'}`}
-                  onClick={() => setChallengeAmount('$5.000')}
-                >
-                  $5.000
+                    className={`px-6 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-base font-regular border focus:outline-none transition-colors ${
+                      accountType === 'DEMO' 
+                        ? 'border-cyan-500 bg-transparent text-white' 
+                        : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-gray-400'
+                    }`}
+                    onClick={() => setAccountType('DEMO')}
+                    disabled={isLoading}
+                  >
+                    DEMO
                 </button>
                 <button 
-                  className={`px-2 md:px-4 py-2 md:py-4 rounded-full text-sm md:text-lg font-regular border focus:outline-none bg-gradient-to-br from-[#232323] to-[#2d2d2d] ${challengeAmount === '$10.000' ? 'border-cyan-500 bg-transparent' : 'border-gray-700'}`}
-                  onClick={() => setChallengeAmount('$10.000')}
-                >
-                  $10.000
+                    className={`px-6 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-base font-regular border focus:outline-none transition-colors ${
+                      accountType === 'Real' 
+                        ? 'border-cyan-500 bg-transparent text-white' 
+                        : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-gray-400'
+                    }`}
+                    onClick={() => setAccountType('Real')}
+                    disabled={isLoading}
+                  >
+                    Real
                 </button>
-                <button 
-                  className={`px-1 md:px-1 py-2 md:py-4 rounded-full text-sm md:text-lg font-regular border focus:outline-none bg-gradient-to-br from-[#232323] to-[#2d2d2d] ${challengeAmount === '$25.000' ? 'border-cyan-500 bg-transparent' : 'border-gray-700'}`}
-                  onClick={() => setChallengeAmount('$25.000')}
-                >
-                  $25.000
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-3 mb-6 md:mb-10">
-                <button 
-                  className={`px-2 md:px-4 py-2 md:py-4 rounded-full text-sm md:text-lg font-regular border focus:outline-none bg-gradient-to-br from-[#232323] to-[#2d2d2d] ${challengeAmount === '$50.000' ? 'border-cyan-500 bg-transparent' : 'border-gray-700'}`}
-                  onClick={() => setChallengeAmount('$50.000')}
-                >
-                  $50.000
-                </button>
-                <button 
-                  className={`px-2 md:px-4 py-2 md:py-1 rounded-full text-sm md:text-lg font-regular border focus:outline-none bg-gradient-to-br from-[#232323] to-[#2d2d2d] ${challengeAmount === '$100.000' ? 'border-cyan-500 bg-transparent' : 'border-gray-700'}`}
-                  onClick={() => setChallengeAmount('$100.000')}
-                >
-                  $100.000
-                </button>
-              </div>
-              
-              <div className="mb-3">
-                <div className="flex items-center mb-2">
-                  <h2 className="text-xl md:text-2xl font-medium flex-1">Complementos</h2>
-                  <Info size={16} className="text-gray-400" />
                 </div>
-                
-                <p className="text-white font-thin text-xs md:text-sm mb-4 md:mb-6">Selecciona complementos por tipo de trader</p>
-                
-                <div className="flex flex-wrap gap-2 md:space-x-2 mb-6 md:mb-8">
+              </div>
+              
+              {/* Account Name Input */}
+              <div className="mb-6 md:mb-8">
+                <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">Nombre De La Cuenta</h3>
+                <input
+                  type="text"
+                  value={accountName}
+                  onChange={(e) => setAccountName(e.target.value)}
+                  placeholder="Nombre"
+                  disabled={isLoading}
+                  className="w-full bg-transparent border border-gray-700 rounded-lg px-4 py-3 text-base md:text-lg focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-50"
+                />
+              </div>
+              
+              {/* Account Type Selection */}
+              <div className="mb-6 md:mb-8">
+                <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">Tipo De Cuenta</h3>
+                <div className="flex space-x-3 md:space-x-4">
                   <button 
-                    className={`px-6 md:px-12 py-2 md:py-3 rounded-full text-sm md:text-md focus:outline-none bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] ${complementType === 'Nuevo' ? 'border-cyan-500 bg-transparent' : 'border-[#333]'}`}
-                    onClick={() => setComplementType('Nuevo')}
+                    className={`px-6 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-base font-regular border focus:outline-none transition-colors ${
+                      accountTypeSelection === 'Zero Spread' 
+                        ? 'border-cyan-500 bg-transparent text-white' 
+                        : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-gray-400'
+                    }`}
+                    onClick={() => setAccountTypeSelection('Zero Spread')}
+                    disabled={isLoading}
                   >
-                    Nuevo
+                    Zero Spread
                   </button>
                   <button 
-                    className={`px-6 md:px-12 py-2 md:py-3 rounded-full text-sm md:text-md focus:outline-none bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] ${complementType === 'Experto' ? 'border-cyan-500 bg-transparent' : 'border-[#333]'}`}
-                    onClick={() => setComplementType('Experto')}
+                    className={`px-6 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-base font-regular border focus:outline-none transition-colors ${
+                      accountTypeSelection === 'Standard' 
+                        ? 'border-cyan-500 bg-transparent text-white' 
+                        : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-gray-400'
+                    }`}
+                    onClick={() => setAccountTypeSelection('Standard')}
+                    disabled={isLoading}
                   >
-                    Experto
-                  </button>
-                  <button 
-                    className={`px-4 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-md focus:outline-none bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] ${complementType === 'Profesional' ? 'border-cyan-500 bg-transparent' : 'border-[#333]'}`}
-                    onClick={() => setComplementType('Profesional')}
-                  >
-                    Profesional
+                    Standard
                   </button>
                 </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 mb-6 md:mb-10">
-                  {/* Top left */}
-                  <div 
-                    className={`flex items-center px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm bg-transparent ${selectedComplements.includes('doble') ? 'border border-blue-600' : ''}`}
-                    onClick={() => toggleComplement('doble')}
-                  >
-                    <div className={`w-4 md:w-5 h-4 md:h-5 mr-2 md:mr-3 border rounded flex items-center justify-center ${selectedComplements.includes('doble') ? 'border-blue-600' : 'border-gray-600'}`}>
-                      {selectedComplements.includes('doble') && (
-                        <div className="w-2 md:w-3 h-2 md:h-3 bg-blue-600 rounded-sm"></div>
-                      )}
-                    </div>
-                    <span>Doble apalancamiento</span>
                   </div>
                   
-                  {/* Top right */}
-                  <div 
-                    className={`flex items-center px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm bg-transparent ${selectedComplements.includes('noticias') ? 'border border-blue-600' : ''}`}
-                    onClick={() => toggleComplement('noticias')}
+              {/* Leverage Selection */}
+              <div className="mb-8 md:mb-10">
+                <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">Apalancamiento</h3>
+                <div className="relative">
+                  <button
+                    onClick={() => !isLoading && setShowLeverageDropdown(!showLeverageDropdown)}
+                    disabled={isLoading}
+                    className="w-full md:w-auto min-w-[200px] flex items-center justify-between border border-gray-700 rounded-lg px-4 py-3 text-base md:text-lg focus:outline-none focus:border-cyan-500 transition-colors bg-gradient-to-br from-[#232323] to-[#2d2d2d] disabled:opacity-50"
                   >
-                    <div className={`w-4 md:w-5 h-4 md:h-5 mr-2 md:mr-3 border rounded flex items-center justify-center ${selectedComplements.includes('noticias') ? 'border-blue-600' : 'border-gray-600'}`}>
-                      {selectedComplements.includes('noticias') && (
-                        <div className="w-2 md:w-3 h-2 md:h-3 bg-blue-600 rounded-sm"></div>
-                      )}
-                    </div>
-                    <span>90/10 split de profit</span>
-                  </div>
+                    <span className={leverage ? 'text-white' : 'text-gray-400'}>
+                      {leverage || 'Seleccionar'}
+                    </span>
+                    <ChevronDown size={20} className="text-gray-400" />
+                  </button>
                   
-                  {/* Bottom (full width) */}
-                  <div 
-                    className={`col-span-1 sm:col-span-2 flex items-center px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm bg-transparent ${selectedComplements.includes('split') ? 'border border-blue-600' : ''}`}
-                    onClick={() => toggleComplement('split')}
-                  >
-                    <div className={`w-4 md:w-5 h-4 md:h-5 mr-2 md:mr-3 border rounded flex items-center justify-center ${selectedComplements.includes('split') ? 'border-blue-600' : 'border-gray-600'}`}>
-                      {selectedComplements.includes('split') && (
-                        <div className="w-2 md:w-3 h-2 md:h-3 bg-blue-600 rounded-sm"></div>
-                      )}
+                  {showLeverageDropdown && !isLoading && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-gray-700 rounded-lg shadow-lg z-10">
+                      {leverageOptions.map((option) => (
+                        <button
+                          key={option}
+                          onClick={() => handleLeverageSelect(option)}
+                          className="w-full px-4 py-3 text-left text-base md:text-lg hover:bg-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                        >
+                          {option}
+                        </button>
+                      ))}
                     </div>
-                    <span>Comercio de noticias</span>
-                  </div>
+                  )}
                 </div>
               </div>
               
-              <div className="space-y-2 md:space-y-3 text-xs md:text-sm">
-                <div className="flex justify-between items-center text-base md:text-xl">
-                  <span>Precio</span>
-                  <span className="font-regular">{price}</span>
+              {/* Create Account Button */}
+              <div className="mt-8">
+                <button 
+                  onClick={handleCreateAccount}
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-3 md:py-4 px-6 rounded-lg text-base md:text-lg font-medium transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Creando Cuenta...
                 </div>
-                <div className="text-base md:text-xl flex justify-between items-center">
-                  <span>Plataforma</span>
-                  <span className="font-regular">------</span>
-                </div>
-                <div className="flex text-base md:text-xl justify-between items-center">
-                  <span>Moneda</span>
-                  <span className="font-regular">USD</span>
-                </div>
+                  ) : (
+                    '+ Crear Cuenta'
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -168,7 +233,7 @@ export default function TradingChallengeUI() {
               <h2 className="text-base md:text-lg font-medium mb-2 md:mb-3">Codigo Promocional</h2>
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                 <input
-                  className="flex-1 bg-transparent border border-gray-700 rounded-lg px-3 py-2 text-xs md:text-sm"
+                  className="flex-1 bg-transparent border border-gray-700 rounded-lg px-3 py-2 text-xs md:text-sm focus:outline-none focus:border-cyan-500 transition-colors"
                   placeholder="Ingresar Código"
                 />
                 <button className="border-cyan-500 bg-gradient-to-br from-[#232323] to-[#2d2d2d] hover:bg-blue-700 text-white px-3 md:px-4 py-2 rounded-full text-xs md:text-sm">
@@ -179,7 +244,7 @@ export default function TradingChallengeUI() {
             
             <div className="mb-6 md:mb-10">
               <h2 className="text-base md:text-lg font-medium mb-2 md:mb-3">Metodo de pago</h2>
-              <div className="flex items-center justify-between border border-gray-700 rounded-lg px-3 md:px-4 py-2 cursor-pointer">
+              <div className="flex items-center justify-between border border-gray-700 rounded-lg px-3 md:px-4 py-2 cursor-pointer focus:border-cyan-500 transition-colors">
                 <span className="text-xs md:text-sm text-gray-400">Seleccionar</span>
                 <ChevronDown size={16} className="text-gray-400" />
               </div>

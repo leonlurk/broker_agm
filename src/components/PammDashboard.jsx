@@ -211,32 +211,26 @@ const PammDetailView = ({ trader, onBack }) => {
     return (
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white p-4 sm:p-6 md:p-8 rounded-3xl space-y-8">
             {/* Header Section */}
-            <div>
-                <div className="flex items-center mb-6">
-                    <button onClick={onBack} className="p-2 hover:bg-[#2a2a2a] rounded-full">
-                        <ChevronLeft size={24} />
-                    </button>
+            <div className="mb-4">
+              <img 
+                src="/Back.svg" 
+                alt="Back" 
+                onClick={onBack}
+                className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
+              />
                 </div>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+            
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center -mt-8">
                     <div className="flex items-center space-x-4">
-                        <img src="/Foto.svg" alt="Trader" className="w-16 h-16 rounded-lg bg-[#D9D9D9]" />
+                    <img src={trader.img} alt={trader.name} className="w-16 h-16 rounded-full border-2 border-cyan-400" />
                         <div>
-                            <h2 className="text-2xl font-bold">Nombre Trader</h2>
-                            <p className="text-sm text-gray-400 flex items-center">
-                                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                Activo hace 51 días
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center space-x-3 mt-4 md:mt-0">
-                        <button className="p-3 bg-[#2D2D2D] border border-[#333] rounded-full hover:bg-[#3f3f3f]">
-                            <Star size={20} />
-                        </button>
-                        <button className="px-8 py-3 bg-cyan-500 text-white font-bold rounded-lg hover:bg-cyan-600 transition-colors">
-                            Copiar
-                        </button>
+                        <h1 className="text-2xl font-bold">{trader.name}</h1>
+                        <p className="text-gray-400">ID de la estrategia: {trader.id}</p>
                     </div>
                 </div>
+                <button className="mt-4 md:mt-0 text-cyan-400 border border-cyan-400 rounded-full px-6 py-2 hover:bg-cyan-400 hover:text-black transition-colors">
+                    Invertir
+                </button>
             </div>
 
             {/* Informacion & Reglas Section */}

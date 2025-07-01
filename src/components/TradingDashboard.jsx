@@ -16,9 +16,9 @@ const TradingDashboard = ({ accountId, onBack, previousSection }) => {
   ];
 
   const getBackText = () => {
-    if (previousSection === "Cuentas") {
+    if (previousSection === "accounts") {
       return "Volver a cuentas";
-    } else if (previousSection === "Dashboard") {
+    } else if (previousSection === "home") {
       return "Volver a inicio";
     } else {
       return "Volver"; // Fallback
@@ -41,15 +41,12 @@ const TradingDashboard = ({ accountId, onBack, previousSection }) => {
     <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-white min-h-screen flex flex-col border border-[#333] rounded-3xl">
       {/* Botón de regreso */}
       <div className="mb-4">
-        <button
+        <img 
+          src="/Back.svg" 
+          alt="Back" 
           onClick={onBack}
-          className="flex items-center text-cyan-500 hover:text-cyan-400 transition"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-          </svg>
-          {getBackText()}
-        </button>
+          className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
+        />
       </div>
       
       {/* Header con saludo y detalles */}

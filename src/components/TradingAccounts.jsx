@@ -2,9 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, Legend, CartesianGrid, LabelList } from 'recharts';
 
 const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
+  // Determinar el estado inicial basado en los parámetros de navegación
+  // para evitar el parpadeo de la doble navegación.
+  const getInitialViewMode = () => {
+    return navigationParams?.viewMode === 'details' && navigationParams?.accountId ? 'details' : 'overview';
+  };
+
+  const getInitialSelectedAccountId = () => {
+    return navigationParams?.viewMode === 'details' ? navigationParams.accountId : null;
+  };
+  
   const [activeTab, setActiveTab] = useState('Todas');
-  const [selectedAccountId, setSelectedAccountId] = useState(null);
-  const [viewMode, setViewMode] = useState('overview'); // 'overview' o 'details'
+  const [selectedAccountId, setSelectedAccountId] = useState(getInitialSelectedAccountId());
+  const [viewMode, setViewMode] = useState(getInitialViewMode()); 
   
   const allAccounts = {
     'Todas': [
@@ -55,17 +65,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
   
   const accounts = allAccounts[activeTab] || [];
 
-  // Manejar navegación desde Home.jsx
+  // Manejar navegación desde Home.jsx y actualizar la pestaña activa
   useEffect(() => {
     if (navigationParams && navigationParams.viewMode === 'details' && navigationParams.accountId) {
       console.log("[TradingAccounts] Processing navigation params:", navigationParams);
-      setViewMode('details');
-      setSelectedAccountId(navigationParams.accountId);
       
-      // Determinar la pestaña correcta basada en el ID de cuenta
       const targetAccount = Object.values(allAccounts).flat().find(acc => acc.id === navigationParams.accountId);
       if (targetAccount) {
-        // Encontrar en qué categoría está la cuenta
         for (const [category, accountsList] of Object.entries(allAccounts)) {
           if (accountsList.some(acc => acc.id === navigationParams.accountId)) {
             setActiveTab(category);
@@ -73,11 +79,19 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
           }
         }
       }
+      
+      // Asegurarse de que la vista se actualice si los parámetros cambian después del montaje.
+      setViewMode('details');
+      setSelectedAccountId(navigationParams.accountId);
+    } else {
+        // Si no hay parámetros de navegación, volver a la vista general.
+        setViewMode('overview');
+        setSelectedAccountId(null);
     }
   }, [navigationParams]);
   
   const handleCreateAccount = () => {
-    setSelectedOption && setSelectedOption("Desafio");
+    setSelectedOption && setSelectedOption("Nueva Cuenta");
   };
 
   const handleViewDetails = (accountId) => {

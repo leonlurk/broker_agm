@@ -14,7 +14,7 @@ import Settings from './components/Settings';
 import Noticias from './components/Noticias';
 import TradingAccounts from "./components/TradingAccounts";
 import CompetitionCards from "./components/CompetitionCards";
-import WithdrawComponent from "./components/WithdrawComponent";
+import Wallet from "./components/Wallet";
 import Inversor from "./components/Inversor";
 import Gestor from "./components/Gestor";
 import PammDashboard from "./components/PammDashboard";
@@ -59,6 +59,7 @@ const Dashboard = ({ onLogout }) => {
       openLeaderboardModal();
     } else {
       console.log("[Dashboard - src] Calling setSelectedOption with:", option);
+      setShowSettings(false); // Reset settings view
       setSelectedOption(option);
       setNavigationParams(null); // Limpiar parámetros al cambiar de sección
     }
@@ -109,10 +110,10 @@ const Dashboard = ({ onLogout }) => {
       case "Certificados":
           return <CertificateComponent />;
       case "Wallet":
-          return <WithdrawComponent />;
+          return <Wallet />;
       case "Pagos":
           return <OperationsHistory />;
-      case "Desafio":
+      case "Nueva Cuenta":
           return <TradingChallenge />;
       case "Calculadora":
           return <PipCalculator />;
@@ -168,7 +169,7 @@ const Dashboard = ({ onLogout }) => {
         onLogout={onLogout}
         user={userData}
       />
-      <main className={`flex-1 overflow-y-auto w-full p-4 ${isMobile ? 'ml-0' : ''} transition-all duration-300`}>
+      <main className={`flex-1 overflow-y-auto w-full p-4 transition-all duration-300 ${isMobile ? 'ml-0 mt-16' : ''}`}>
         <div>
           {renderContent()}
         </div>

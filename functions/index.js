@@ -2,7 +2,10 @@
 
 // Importa el SDK de Admin y inicialízalo
 const admin = require("firebase-admin");
-admin.initializeApp();
+const functions = require("firebase-functions");
+
+// Comentamos esta línea para evitar conflictos con la inicialización del lado del cliente
+// admin.initializeApp();
 
 // Importa Cloud Functions v2 y FieldValue
 const { onDocumentCreated } = require("firebase-functions/v2/firestore"); // Importa el trigger v2
@@ -61,3 +64,8 @@ exports.incrementReferralCountV2 = onDocumentCreated(`${USERS_COLLECTION}/{userI
 });
 
 // Puedes añadir otras Cloud Functions aquí si las necesitas
+
+exports.helloWorld = functions.https.onRequest((request, response) => {
+  functions.logger.info("Hello logs!", {structuredData: true});
+  response.send("Hello from Firebase!");
+});

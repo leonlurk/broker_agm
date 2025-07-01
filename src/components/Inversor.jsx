@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ArrowLeft, ChevronUp, AlertTriangle, Star, Copy, Search, BarChart2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, AlertTriangle, Star, Copy, Search, BarChart2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 
 // Colores para el PieChart (ajustar si es necesario)
@@ -371,7 +371,6 @@ const Inversor = () => {
 
   const handleBackToList = () => {
     setSelectedTrader(null);
-    setSelectedTraderDetails({});
   };
 
   // Vista de Carga Principal
@@ -385,9 +384,12 @@ const Inversor = () => {
       return (
         <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white min-h-screen flex flex-col">
           <div className="mb-4">
-            <button onClick={handleBackToList} className="flex items-center text-cyan-500 hover:text-cyan-400 transition text-sm">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Volver
-            </button>
+            <img 
+              src="/Back.svg" 
+              alt="Back" 
+              onClick={handleBackToList}
+              className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
+            />
           </div>
           <div className="text-center py-10 text-gray-400">Cargando detalles del trader...</div>
         </div>
@@ -426,86 +428,16 @@ const Inversor = () => {
       <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen flex flex-col border border-[#333] rounded-3xl">
         {/* Botón Volver */} 
         <div className="mb-4">
-           <button onClick={handleBackToList} className="flex items-center text-cyan-500 hover:text-cyan-400 transition text-sm">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Volver
-           </button>
-        </div>
-
-        {/* Sección Principal del Perfil (Datos de `trader`) */} 
-        <div className="bg-[#232323] p-5 md:p-6 rounded-xl border border-[#333] mb-6">
-          {/* Header del Perfil */} 
-          <div className="flex flex-col sm:flex-row justify-between items-start mb-6 gap-4">
-            <div className="flex items-center gap-3">
-              <img 
-                  src={trader.imagen || '/default-avatar.png'}
-                  alt={trader.nombre || 'Trader'} 
-                  className="h-12 w-12 rounded-full border-2 border-cyan-500 object-cover"
-                  onError={(e) => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23333'/%3E%3C/svg%3E"; }}
-              />
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold">{trader.nombre || 'Nombre Trader'}</h1>
-                <p className="text-sm text-gray-400">Activo hace {trader.cuentaAbiertaDias || 'N/A'} días</p> 
-              </div>
-            </div>
-             {/* ... (Botones Star y Copy) ... */} 
+          <img 
+            src="/Back.svg" 
+            alt="Back" 
+            onClick={handleBackToList}
+            className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
+          />
           </div>
 
-          {/* Información y Reglas (Datos de `trader`) */} 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Tarjeta Izquierda: Información */} 
-            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-4 rounded-xl border border-[#333] space-y-2">
-              <h2 className="text-lg font-medium mb-2 border-b border-[#333] pb-1">Información</h2>
-              {[
-                { label: 'Número de cuenta', value: trader.accountNumber || 'N/A' },
-                { label: 'Nombre del servidor', value: trader.serverType || 'N/A' },
-                { label: 'Tipo de cuenta', value: trader.type || 'N/A' },
-                { label: 'Verificado', value: trader.isFavorite ? 'Sí' : 'No', color: trader.isFavorite ? 'text-green-500' : 'text-red-500' },
-                { label: 'Saldo de la cuenta', value: `${formatCurrency(trader.balancePropio || 0)} USD` },
-                { label: 'Capital administrado', value: `${formatCurrency(trader.capitalAdministrado || 0)} USD` },
-                { label: 'Apalancamiento', value: `1:${trader.tasaVolumen || 'N/A'}` },
-              ].map(item => (
-                <div key={item.label} className="flex justify-between text-sm">
-                  <span className="text-gray-400">{item.label}</span>
-                  <span className={`font-medium ${item.color || 'text-white'}`}>{item.value}</span> 
-              </div>
-              ))}
-            </div>
-            {/* Tarjeta Derecha: Reglas (Datos de `trader`) */} 
-             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-4 rounded-xl border border-[#333] space-y-2">
-              <h2 className="text-lg font-medium mb-2 border-b border-[#333] pb-1">Reglas</h2>
-              {[
-                { label: 'Nombre de la estrategia', value: trader.strategyName || 'N/A' },
-                { label: 'Depósito mínimo', value: `${formatCurrency(trader.minDeposit || 0)} USD` },
-                { label: 'Tipo de comisión', value: trader.commissionRange || 'N/A' },
-                { label: 'Frecuencia de pagos', value: trader.paymentFrequency || 'N/A' },
-                { label: 'Modo de copia', value: trader.copyMode || 'N/A' },
-              ].map(item => (
-                <div key={item.label} className="flex justify-between text-sm">
-                  <span className="text-gray-400">{item.label}</span>
-                  <span className="font-medium text-white">{item.value}</span>
-                </div>
-              ))}
-            </div>
-            </div>
-            
-          {/* Métricas de Rendimiento (Datos de `trader`) */} 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { label: 'Rentabilidad total', value1: formatPercentage(trader.rendimientoPercent), value2: `${formatCurrency(trader.pnlUSD)} USD`, color1: 'text-green-500' },
-              { label: 'Seguidores actuales', value1: trader.inversoresCount },
-              { label: 'Operaciones', value1: trader.operacionesCount },
-              { label: 'Retracción Máxima', value1: formatPercentage(trader.retraccionMaxPercent), color1: 'text-red-500' },
-            ].map(metric => (
-               <div key={metric.label} className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-3 rounded-lg border border-[#333]">
-                 <p className="text-xs text-gray-400 mb-1 truncate">{metric.label}</p>
-                 <p className={`text-lg font-medium ${metric.color1 || 'text-white'}`}>{metric.value1 ?? 'N/A'}</p>
-                 {metric.value2 && (
-                   <p className={`text-xs ${metric.color2 || 'text-gray-500'}`}>{metric.value2}</p>
-                 )}
-              </div>
-            ))}
-              </div>
-              </div>
+        {/* Perfil del Trader Detallado */}
+        <TraderProfileDetail trader={selectedTrader} onBack={handleBackToList} />
 
         {/* Sección Tabs Rentabilidad y Gráfico (Usa filteredChartData) */} 
         <div className="bg-[#232323] p-5 md:p-6 rounded-xl border border-[#333] mb-6">

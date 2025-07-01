@@ -5,10 +5,16 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   updateProfile,
-  onAuthStateChanged
+  onAuthStateChanged,
+  verifyBeforeUpdateEmail,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  signInWithPopup,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from "firebase/auth";
 import { auth, db } from "./config";
-import { doc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { logger } from "../utils/logger";
 
 // Unified collection name
@@ -219,4 +225,75 @@ export const onAuthStateChange = (callback) => {
       callback(null);
     }
   });
+};
+
+export const sendPasswordReset = async (email) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    console.log("Password reset email sent successfully.");
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending password reset email:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const verifyEmailUpdate = async (user, newEmail) => {
+  try {
+    await verifyBeforeUpdateEmail(user, newEmail);
+    console.log("Verification email sent to new address.");
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending verification email:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const signInWithGoogle = async () => {
+  try {
+    // ... existing code ...
+  } catch (error) {
+    // ... existing code ...
+  }
+};
+
+export const reauthenticateUser = async (user, password) => {
+  try {
+    const credential = EmailAuthProvider.credential(user.email, password);
+    await reauthenticateWithCredential(user, credential);
+    console.log("User re-authenticated successfully.");
+    return { success: true };
+  } catch (error) {
+    console.error("Error re-authenticating user:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const addPaymentMethod = async (userId, newMethod) => {
+  const userDocRef = doc(db, "users", userId);
+  try {
+    const methodWithId = { ...newMethod, id: `pm_${Date.now()}` };
+    await updateDoc(userDocRef, {
+      paymentMethods: arrayUnion(methodWithId)
+    });
+    console.log("Método de pago agregado exitosamente");
+    return { success: true, newMethod: methodWithId };
+  } catch (error) {
+    console.error("Error al agregar método de pago:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const deletePaymentMethod = async (userId, methodToDelete) => {
+    const userDocRef = doc(db, "users", userId);
+    try {
+        await updateDoc(userDocRef, {
+            paymentMethods: arrayRemove(methodToDelete)
+        });
+        console.log("Método de pago eliminado exitosamente");
+        return { success: true };
+    } catch (error) {
+        console.error("Error al eliminar método de pago:", error);
+        return { success: false, error: error.message };
+    }
 };

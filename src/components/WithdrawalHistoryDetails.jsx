@@ -61,11 +61,15 @@ const WithdrawalHistoryDetails = ({ user, onBack }) => {
   return (
     <div ref={topRef} className="flex flex-col min-h-screen bg-[#232323] text-white p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center space-x-4">
-        <button onClick={onBack} className="p-2 bg-[#2d2d2d] hover:bg-[#3f3f3f] rounded-full transition-colors">
-          <ChevronLeft size={24} />
-        </button>
+      <div className="mb-4">
+        <img 
+          src="/Back.svg" 
+          alt="Back" 
+          onClick={onBack}
+          className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
+        />
       </div>
+      <h1 className="text-2xl font-bold -mt-4">Historial de Retiros</h1>
 
       {/* User Info & Commissions */}
       <div className="p-6 bg-[#2d2d2d] rounded-xl space-y-6">

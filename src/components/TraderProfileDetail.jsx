@@ -6,7 +6,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
   const [activeTab, setActiveTab] = useState('statistics');
   const [showAllTrades, setShowAllTrades] = useState(false);
   const [rentabilidadTab, setRentabilidadTab] = useState('Rentabilidad');
-  const [rentabilidadRange, setRentabilidadRange] = useState('Mes');
+  const [rentabilidadRange, setRentabilidadRange] = useState('Día');
   
   // Datos de ejemplo para los gráficos
   const performanceData = [
@@ -130,34 +130,34 @@ const TraderProfileDetail = ({ trader, onBack }) => {
   
   // --- Funciones auxiliares (Placeholder) ---
   const copyTraderInfo = () => {
-    // TODO: Implementar la lógica para copiar información relevante (ej. ID, nombre)
-    alert('Información copiada (Implementación pendiente)');
+    const info = `Trader: ${trader?.nombre || 'Nombre Trader'}\nCuenta: ${getTraderStats().accountNumber}\nServidor: ${getTraderStats().server}`;
+    navigator.clipboard.writeText(info);
   };
 
   const formatCurrency = (value) => {
-    // Simple formatter, ajustar según necesidad
-    return `$${Number(value).toFixed(2)}`;
-  }
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+  };
   
   const formatPercentage = (value) => {
-    return `${Number(value).toFixed(1)}%`; // Asume que el valor ya está en %
-  }
+    return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+  };
   
   return (
-    <div className="p-4 md:p-6 bg-[#191919] text-white flex flex-col h-full space-y-6">
+    <div className="bg-[#191919] text-white p-4 md:p-6 flex flex-col h-full space-y-6">
       {/* Header con botón de regreso */}
-      <div>
-        <button
+      <div className="mb-4">
+        <img 
+          src="/Back.svg" 
+          alt="Back" 
           onClick={onBack}
-          className="flex items-center text-cyan-500 hover:text-cyan-400 transition text-sm mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Volver
-        </button>
+          className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
+        />
       </div>
       
+      {/* Perfil del Trader y Estadísticas */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       {/* Sección Principal del Perfil */}
-      <div className="bg-[#232323] p-6 rounded-xl border border-[#333]">
+        <div className="lg:col-span-8 bg-[#232323] p-6 rounded-xl border border-[#333]">
         {/* Header del Perfil */}
         <div className="flex justify-between items-start mb-6">
           <div className="flex items-center gap-3">
@@ -289,7 +289,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
       </div>
       
       {/* Sección Tabs Rentabilidad y Gráfico */}
-      <div className="bg-[#232323] p-6 rounded-xl border border-[#333]">
+        <div className="lg:col-span-4 bg-[#232323] p-6 rounded-xl border border-[#333]">
       {/* Tabs */}
         <div className="flex mb-4 border-b border-[#333] overflow-x-auto">
           {['Rentabilidad', 'Beneficio Total', 'Balance y Equidad', 'Retracción Máxima'].map(tab => (
@@ -377,7 +377,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
               </div>
               
       {/* Sección Instrumentos y Historial (Layout flexible) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
          {/* Instrumentos de Trading (Pie Chart) */}
         <div className="lg:col-span-1 bg-[#232323] p-6 rounded-xl border border-[#333]">
           <h2 className="text-lg font-medium mb-4">Instrumentos de Trading</h2>
@@ -469,6 +469,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
                 </tbody>
               </table>
              {/* TODO: Añadir botón "Cargar más" si hay muchas operaciones */}
+              </div>
             </div>
           </div>
         </div>

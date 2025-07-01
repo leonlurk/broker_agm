@@ -109,7 +109,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
 
             <div 
                 className={`${isMobile ? 'fixed left-0 top-0 z-50' : 'relative'} h-screen ${isMobile ? (isMobileMenuOpen ? 'w-[80%] max-w-[300px]' : 'w-0') : 'w-[300px]'} 
-                bg-[#232323] text-white border-r border-blue-800 border-opacity-20 flex flex-col
+                bg-[#232323] text-white border-r border-[#333] flex flex-col
                 transition-all duration-300 ease-in-out overflow-hidden`}
             >
                 {/* Logo section - fixed */}
@@ -151,7 +151,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                         <button
                             onClick={() => { 
                                 console.log("[Sidebar] PropFirm clicked - Redirecting...");
-                                window.location.href = 'https://cabinet.agm.club/'; 
+                                window.location.href = 'https://front-broker.netlify.app/login'; 
                                 setExpandedOptions(prev => ({...prev, Plataformas: false })); 
                                 if (isMobile) setIsMobileMenuOpen(false); 
                             }}
@@ -184,7 +184,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                     </div>
                 </div>
                 
-                <div className={`h-px w-full bg-gray-700 ${isMobile ? 'mb-4' : 'mb-6'}`}></div>
+                <div className={`h-px w-full bg-[#333] ${isMobile ? 'mb-4' : 'mb-6'}`}></div>
                 
                 {/* Scrollable menu section */}
                 <div className="flex-1 overflow-y-auto transition-all duration-500 ease-in-out" style={{ scrollbarWidth: 'thin', scrollbarColor: '#555 #333' }}>
@@ -284,15 +284,15 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                 
                 {/* Bottom section - fixed */}
                 <div className={`mt-auto ${isMobile ? 'px-2' : 'px-4'}`}>
-                    <div className={`h-px w-full bg-gray-700 ${isMobile ? 'my-2' : 'my-4'}`}></div>
+                    <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : 'my-4'}`}></div>
                     <button
-                        onClick={() => handleNavigation("Desafio")}
+                        onClick={() => handleNavigation("Nueva Cuenta")}
                         className={`flex items-center justify-center space-x-2 rounded-md w-full bg-gradient-to-r from-[#0F7490] to-[#0A5A72] hover:opacity-90 transition 
                                    ${isMobile ? 'py-2.5 px-3 text-base' : 'py-4 px-4 text-lg'}`}
                         style={{ outline: 'none' }}
                     >
                         <span className={`${isMobile ? 'text-lg' : 'text-xl'} mr-1`}>+</span>
-                        <span>Nuevo desafío</span>
+                        <span>Nueva Cuenta</span>
                     </button>
                     <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : 'my-4'}`}></div>
                     

@@ -7,24 +7,27 @@ const KYCVerification = ({ onBack }) => {
   return (
     <div className="p-4 md:p-6 bg-[#232323] text-white flex flex-col">
       {/* Header with back button */}
-      <div className="mb-6">
-        <div className="flex items-center mb-4">
-          <button
+      <div className="mb-4">
+        <img 
+          src="/Back.svg" 
+          alt="Back" 
             onClick={onBack}
-            className="flex items-center text-cyan-500 hover:text-cyan-400 transition mr-4"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Volver
-          </button>
-        </div>
+          className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
+        />
       </div>
       
+      <div className="flex-grow flex flex-col items-center justify-center">
+        <div className="w-full max-w-5xl bg-[#2D2D2D] p-6 md:p-8 rounded-2xl">
+          <h2 className="text-2xl font-semibold text-center mb-6">Verificación KYC</h2>
       {/* Main Container with border */}
-      <div className="border border-[#333] rounded-xl bg-gradient-to-br from-[#232323] to-[#2d2d2d] p-4 md:p-6">
+          <div className="border border-[#333] rounded-xl bg-gradient-to-br from-[#232323] to-[#2d2d2d] p-4 md:p-8">
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-12">
+              
+              {/* Columna Izquierda: Verificación */}
+              <div className="lg:border-r lg:border-gray-700 lg:pr-12 mb-8 lg:mb-0">
         {/* Title and Description */}
-        <div className="mb-8">
+                <div>
           <h1 className="text-3xl md:text-4xl font-semibold mb-2">Vamos a verificarte</h1>
           <p className="text-gray-300">Confirme su país de residencia para saber cómo se tratarán sus datos personales</p>
           
@@ -47,12 +50,15 @@ const KYCVerification = ({ onBack }) => {
             <label htmlFor="privacyAgreement" className="text-sm text-gray-300">
               Confirmo que he leído el <span className="text-cyan-500 cursor-pointer">Aviso de privacidad</span> y doy mi consentimiento al tratamiento de mis datos personales
             </label>
+                  </div>
           </div>
         </div>
         
+              {/* Columna Derecha: Documentos */}
+              <div>
         {/* Document Section */}
-        <div className="mt-8">
-          <h2 className="text-4xl font-semibold mb-2">Documento de identidad</h2>
+                <div>
+                  <h2 className="text-3xl font-semibold mb-2">Documento de identidad</h2>
           <p className="text-gray-300 mb-4">Seleccione el país emisor</p>
           
           {/* Country Selector */}
@@ -129,6 +135,11 @@ const KYCVerification = ({ onBack }) => {
               <p className="text-gray-300 text-center">
                 Subir Dorso del<br />documento
               </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

@@ -8,6 +8,7 @@ import VerificationCode from './components/VerificationCode';
 import Dashboard from './Dashboard';
 import { useAuth } from './contexts/AuthContext';
 import { logoutUser } from './firebase/auth';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const { currentUser, isAuthenticated } = useAuth();
@@ -40,76 +41,109 @@ function App() {
   );
 
   return (
-    <Routes>
-      <Route 
-        path="/login" 
-        element={
-          <AuthPageWrapper>
-            <Login 
-              onRegisterClick={() => navigate('/register')} 
-              onForgotClick={() => navigate('/forgot-password')}
-              onLoginSuccess={() => navigate('/dashboard')} 
-            />
-          </AuthPageWrapper>
-        } 
-      />
+    <>
+      <Routes>
+        <Route 
+          path="/login" 
+          element={
+            <AuthPageWrapper>
+              <Login 
+                onRegisterClick={() => navigate('/register')} 
+                onForgotClick={() => navigate('/forgot-password')}
+                onLoginSuccess={() => navigate('/dashboard')} 
+              />
+            </AuthPageWrapper>
+          } 
+        />
+        
+        <Route 
+          path="/register" 
+          element={
+            <AuthPageWrapper>
+              <Register onLoginClick={() => navigate('/login')} />
+            </AuthPageWrapper>
+          } 
+        />
+        
+        <Route 
+          path="/forgot-password" 
+          element={
+            <AuthPageWrapper>
+              <ForgotPassword 
+                onContinue={() => navigate('/verification')} 
+                onLoginClick={() => navigate('/login')} 
+              />
+            </AuthPageWrapper>
+          } 
+        />
+        
+        <Route 
+          path="/verification" 
+          element={
+            <AuthPageWrapper>
+              <VerificationCode onContinue={() => navigate('/reset-password')} />
+            </AuthPageWrapper>
+          } 
+        />
+        
+        <Route 
+          path="/reset-password" 
+          element={
+            <AuthPageWrapper>
+              <ResetPassword 
+                onContinue={() => navigate('/login')} 
+                onLoginClick={() => navigate('/login')} 
+              />
+            </AuthPageWrapper>
+          } 
+        />
+        
+        <Route 
+          path="/dashboard/*" 
+          element={
+            isAuthenticated ? (
+              <Dashboard onLogout={handleLogout} user={currentUser} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+        
+        {/* Redirect all other routes to login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
       
-      <Route 
-        path="/register" 
-        element={
-          <AuthPageWrapper>
-            <Register onLoginClick={() => navigate('/login')} />
-          </AuthPageWrapper>
-        } 
+      {/* Toast notifications */}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#1f2937',
+            color: '#ffffff',
+            border: '1px solid #374151',
+          },
+          success: {
+            style: {
+              background: '#065f46',
+              border: '1px solid #10b981',
+            },
+          },
+          error: {
+            style: {
+              background: '#7f1d1d',
+              border: '1px solid #ef4444',
+            },
+          },
+          loading: {
+            style: {
+              background: '#1e40af',
+              border: '1px solid #3b82f6',
+            },
+          },
+        }}
       />
-      
-      <Route 
-        path="/forgot-password" 
-        element={
-          <AuthPageWrapper>
-            <ForgotPassword 
-              onContinue={() => navigate('/verification')} 
-              onLoginClick={() => navigate('/login')} 
-            />
-          </AuthPageWrapper>
-        } 
-      />
-      
-      <Route 
-        path="/verification" 
-        element={
-          <AuthPageWrapper>
-            <VerificationCode onContinue={() => navigate('/reset-password')} />
-          </AuthPageWrapper>
-        } 
-      />
-      
-      <Route 
-        path="/reset-password" 
-        element={
-          <AuthPageWrapper>
-            <ResetPassword 
-              onContinue={() => navigate('/login')} 
-              onLoginClick={() => navigate('/login')} 
-            />
-          </AuthPageWrapper>
-        } 
-      />
-      
-      <Route 
-        path="/dashboard/*" 
-        element={
-          isAuthenticated ? (
-            <Dashboard onLogout={handleLogout} user={currentUser} />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        } 
-      />
-      
-      {/* Redirect all other routes to login */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+    </>
   );
 }
 
