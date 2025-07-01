@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronUp, AlertTriangle, Star, Copy, Search, BarChart2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, CartesianGrid, LineChart, Line } from 'recharts';
+import TraderProfileDetail from './TraderProfileDetail';
 
 // Colores para el PieChart (ajustar si es necesario)
 const PIE_COLORS = ['#3b82f6', '#22d3ee']; // Azul, Cyan
@@ -399,7 +400,7 @@ const Inversor = () => {
     // Usar selectedTraderDetails para la información estática
     const trader = selectedTraderDetails;
 
-    // Determinar formateadores y tipo de gráfico (sin cambios)
+    // Determinar formateadores y tipo de gráfico
     let yAxisFormatter = (value) => `${value}%`;
     let tooltipFormatter = (value, name, props) => [`${value}%`, rentabilidadTab];
     let chartType = 'area';
@@ -434,10 +435,47 @@ const Inversor = () => {
             onClick={handleBackToList}
             className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
           />
-          </div>
+        </div>
 
-        {/* Perfil del Trader Detallado */}
-        <TraderProfileDetail trader={selectedTrader} onBack={handleBackToList} />
+        {/* Perfil del Trader (solo la información básica, sin duplicar botón volver) */}
+        <div className="bg-[#191919] p-6 rounded-xl border border-[#333] mb-6">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Info del Trader */}
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-cyan-500 rounded-full flex items-center justify-center">
+                <span className="text-2xl font-bold text-white">
+                  {selectedTrader.nombre?.charAt(0) || 'T'}
+                </span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white mb-1">{selectedTrader.nombre}</h1>
+                <p className="text-gray-400">Activo hace {selectedTrader.cuentaAbiertaDias} días</p>
+              </div>
+            </div>
+            
+            {/* Stats básicos */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
+              <div>
+                <p className="text-gray-400 text-sm">Número de cuenta</p>
+                <p className="text-white font-medium">{selectedTrader.accountNumber}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Rendimiento</p>
+                <p className={`font-medium ${selectedTrader.rendimientoPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {formatPercentage(selectedTrader.rendimientoPercent)}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Balance</p>
+                <p className="text-white font-medium">{formatCurrency(selectedTrader.balancePropio)}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Inversores</p>
+                <p className="text-white font-medium">{selectedTrader.inversoresCount}</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Sección Tabs Rentabilidad y Gráfico (Usa filteredChartData) */} 
         <div className="bg-[#232323] p-5 md:p-6 rounded-xl border border-[#333] mb-6">
@@ -485,7 +523,16 @@ const Inversor = () => {
                             domain={yDomain}
                           />
                           <Tooltip 
-                            contentStyle={{ backgroundColor: '#333', border: 'none', borderRadius: '4px', fontSize: '12px', padding: '5px' }} 
+                            contentStyle={{ 
+                              backgroundColor: '#232323', 
+                              border: '1px solid #333', 
+                              borderRadius: '8px', 
+                              fontSize: '14px', 
+                              color: '#ffffff',
+                              padding: '8px'
+                            }} 
+                            labelStyle={{ color: '#ffffff' }}
+                            itemStyle={{ color: '#ffffff' }}
                             formatter={tooltipFormatter} 
                             labelFormatter={(label) => `Fecha: ${label}`}
                           />
@@ -520,7 +567,16 @@ const Inversor = () => {
                             domain={yDomain}
                   />
                   <Tooltip 
-                            contentStyle={{ backgroundColor: '#333', border: 'none', borderRadius: '4px', fontSize: '12px', padding: '5px' }} 
+                            contentStyle={{ 
+                              backgroundColor: '#232323', 
+                              border: '1px solid #333', 
+                              borderRadius: '8px', 
+                              fontSize: '14px', 
+                              color: '#ffffff',
+                              padding: '8px'
+                            }} 
+                            labelStyle={{ color: '#ffffff' }}
+                            itemStyle={{ color: '#ffffff' }}
                             formatter={tooltipFormatter} 
                             labelFormatter={(label) => `Fecha: ${label}`}
                           />
@@ -566,6 +622,19 @@ const Inversor = () => {
                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} stroke={"#232323"} strokeWidth={2} />
                        ))}
                      </Pie>
+                     <Tooltip
+                       contentStyle={{
+                         backgroundColor: '#232323',
+                         border: '1px solid #333',
+                         borderRadius: '8px',
+                         fontSize: '14px',
+                         color: '#ffffff',
+                         padding: '8px'
+                       }}
+                       labelStyle={{ color: '#ffffff' }}
+                       itemStyle={{ color: '#ffffff' }}
+                       formatter={(value, name) => [`${value.toFixed(2)}%`, name]}
+                     />
                    </PieChart>
                  </ResponsiveContainer>
           </div>
@@ -632,7 +701,7 @@ const Inversor = () => {
     );
   }
 
-   // --- Renderizado de la lista de traders (NUEVO DISEÑO v3) --- 
+  // --- Renderizado de la lista de traders (NUEVO DISEÑO v3) --- 
   return (
     <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen">
 

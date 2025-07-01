@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 
 // Modal del Leaderboard
 const LeaderboardModal = ({ isOpen, onClose }) => {
@@ -158,6 +158,19 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
                       tickLine={false}
                       tick={{ fill: '#9CA3AF', fontSize: 12 }}
                       width={40}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#232323',
+                        border: '1px solid #333',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        color: '#ffffff'
+                      }}
+                      labelStyle={{ color: '#ffffff' }}
+                      itemStyle={{ color: '#ffffff' }}
+                      formatter={(value) => [`$${value.toLocaleString()}`, 'Rendimiento']}
+                      labelFormatter={(label) => `Mes: ${label}`}
                     />
                     <Area
                       type="monotone"

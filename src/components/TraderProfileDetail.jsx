@@ -8,6 +8,9 @@ const TraderProfileDetail = ({ trader, onBack }) => {
   const [rentabilidadTab, setRentabilidadTab] = useState('Rentabilidad');
   const [rentabilidadRange, setRentabilidadRange] = useState('Día');
   
+  // Colores para el PieChart
+  const PIE_COLORS = ['#0e7490', '#2563eb', '#7c3aed', '#dc2626', '#059669', '#d97706'];
+  
   // Datos de ejemplo para los gráficos
   const performanceData = [
     { name: 'Jan', value: 8500 },
@@ -349,9 +352,18 @@ const TraderProfileDetail = ({ trader, onBack }) => {
                       tickFormatter={(value) => `${value}%`} // Formato de porcentaje
                   />
                   <Tooltip 
-                      contentStyle={{ backgroundColor: '#333', border: 'none', borderRadius: '4px', fontSize: '12px', padding: '5px' }}
-                      formatter={(value, name) => [`${value}%`, rentabilidadTab]} // Formato tooltip
-                      labelFormatter={(label) => `Fecha: ${label}`} // Formato label
+                      contentStyle={{ 
+                        backgroundColor: '#232323', 
+                        border: '1px solid #333', 
+                        borderRadius: '8px', 
+                        fontSize: '14px', 
+                        color: '#ffffff',
+                        padding: '8px'
+                      }}
+                      labelStyle={{ color: '#ffffff' }}
+                      itemStyle={{ color: '#ffffff' }}
+                      formatter={(value, name) => [`${value}%`, rentabilidadTab]}
+                      labelFormatter={(label) => `Fecha: ${label}`}
                   />
                   <Area
                     type="monotone"
@@ -413,7 +425,19 @@ const TraderProfileDetail = ({ trader, onBack }) => {
                   iconType="square"
                   formatter={(value, entry, index) => <span className="text-gray-300 text-sm ml-2">{value}</span>}
                 />
-                <Tooltip formatter={(value) => [`${value}%`, 'Porcentaje']}/>
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: '#232323',
+                    border: '1px solid #333',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    color: '#ffffff',
+                    padding: '8px'
+                  }}
+                  labelStyle={{ color: '#ffffff' }}
+                  itemStyle={{ color: '#ffffff' }}
+                  formatter={(value) => [`${value}%`, 'Porcentaje']}
+                />
               </PieChart>
             </ResponsiveContainer>
                 </div>
@@ -438,41 +462,41 @@ const TraderProfileDetail = ({ trader, onBack }) => {
           </div>
             
             <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]"> {/* Ancho mínimo para scroll */}
-              <thead className="text-left text-xs text-gray-400 border-b border-[#333]">
-                <tr>
-                  <th className="pb-2 font-medium">Posición</th>
-                  <th className="pb-2 font-medium">Entrada</th>
-                  <th className="pb-2 font-medium">Salida</th>
-                  <th className="pb-2 font-medium">Ganancia</th>
-                  <th className="pb-2 font-medium">Orden</th>
+              <table className="w-full min-w-[600px]">
+                <thead className="text-left text-xs text-gray-400 border-b border-[#333]">
+                  <tr>
+                    <th className="pb-2 font-medium">Posición</th>
+                    <th className="pb-2 font-medium">Entrada</th>
+                    <th className="pb-2 font-medium">Salida</th>
+                    <th className="pb-2 font-medium">Ganancia</th>
+                    <th className="pb-2 font-medium">Orden</th>
                   </tr>
                 </thead>
-              <tbody className="text-sm divide-y divide-[#333]">
-                {tradeHistoryData.map((trade) => ( // Usar datos dinámicos trader.tradeHistory
-                  <tr key={trade.id}>
-                    <td className="py-3">{trade.position}</td>
-                    <td className="py-3">
+                <tbody className="text-sm divide-y divide-[#333]">
+                  {tradeHistoryData.map((trade) => (
+                    <tr key={trade.id}>
+                      <td className="py-3">{trade.position}</td>
+                      <td className="py-3">
                         <div>{trade.entryValue}</div>
                         <div className="text-xs text-gray-500">{trade.entryTime}</div>
-                    </td>
-                     <td className="py-3">
+                      </td>
+                      <td className="py-3">
                         <div>{trade.exitValue}</div>
                         <div className="text-xs text-gray-500">{trade.exitTime}</div>
-                    </td>
-                    <td className={`py-3 font-medium ${trade.profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      </td>
+                      <td className={`py-3 font-medium ${trade.profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                         {formatCurrency(trade.profit)}
-                    </td>
-                    <td className="py-3 text-gray-400">{trade.id}</td>
+                      </td>
+                      <td className="py-3 text-gray-400">{trade.id}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-             {/* TODO: Añadir botón "Cargar más" si hay muchas operaciones */}
-              </div>
+              {/* TODO: Añadir botón "Cargar más" si hay muchas operaciones */}
             </div>
           </div>
         </div>
+      </div>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, Legend, CartesianGrid, LabelList } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, Legend, CartesianGrid, LabelList, Tooltip } from 'recharts';
 
 const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
   // Determinar el estado inicial basado en los parámetros de navegación
@@ -422,6 +422,19 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
                       axisLine={false} tickLine={false} 
                         tick={{ fill: '#9CA3AF', fontSize: 12 }}
                       width={30} 
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#232323',
+                          border: '1px solid #333',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          color: '#ffffff'
+                        }}
+                        labelStyle={{ color: '#ffffff' }}
+                        itemStyle={{ color: '#ffffff' }}
+                        formatter={(value) => [`$${value.toLocaleString()}`, 'Balance']}
+                        labelFormatter={(label) => `Mes: ${label}`}
                       />
                       <Area
                       type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={2}
@@ -984,6 +997,19 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
                     horizontal={true} 
                     vertical={false}
                   />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#232323',
+                      border: '1px solid #333',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      color: '#ffffff'
+                    }}
+                    labelStyle={{ color: '#ffffff' }}
+                    itemStyle={{ color: '#ffffff' }}
+                    formatter={(value) => [`$${value.toLocaleString()}`, 'Beneficio']}
+                    labelFormatter={(label) => `Fecha: ${label}`}
+                  />
                   <Line 
                     type="monotone" 
                     dataKey="value" 
@@ -1050,6 +1076,18 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
                           <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color}/>
                         ))}
                       </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#232323',
+                          border: '1px solid #333',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          color: '#ffffff'
+                        }}
+                        labelStyle={{ color: '#ffffff' }}
+                        itemStyle={{ color: '#ffffff' }}
+                        formatter={(value, name) => [`${value.toFixed(2)}%`, name]}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -1105,6 +1143,19 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
                       tick={{ fill: '#9CA3AF', fontSize: 12 }}
                       tickFormatter={(value) => `${value}%`}
                       domain={[0, 30]}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#232323',
+                        border: '1px solid #333',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        color: '#ffffff'
+                      }}
+                      labelStyle={{ color: '#ffffff' }}
+                      itemStyle={{ color: '#ffffff' }}
+                      formatter={(value) => [`${value.toFixed(1)}%`, 'Rendimiento']}
+                      labelFormatter={(label) => `Mes: ${label}`}
                     />
                     <Bar dataKey="value" barSize={35} radius={[4, 4, 0, 0]}>
                       <LabelList 

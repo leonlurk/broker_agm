@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, ChevronLeft, BarChart2, Star, ArrowUpRight, CheckCircle, LineChart, BarChartHorizontal, PieChart } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, CartesianGrid, Tooltip } from 'recharts';
 
 const PammDashboard = () => {
     const [selectedTrader, setSelectedTrader] = useState(null);
@@ -197,6 +197,19 @@ const PammDetailView = ({ trader, onBack }) => {
                         <CartesianGrid vertical={false} stroke="#373737" />
                         <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                         <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}%`} domain={[0, currentChart.max]}/>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#232323',
+                            border: '1px solid #333',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            color: '#ffffff'
+                          }}
+                          labelStyle={{ color: '#ffffff' }}
+                          itemStyle={{ color: '#ffffff' }}
+                          formatter={(value) => [`${value.toFixed(1)}%`, activeTab]}
+                          labelFormatter={(label) => `Mes: ${label}`}
+                        />
                         <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={40}>
                             {currentChart.data.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={getBarColor(entry.value, currentChart.max)} />
