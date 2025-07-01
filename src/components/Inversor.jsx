@@ -435,7 +435,7 @@ const Inversor = () => {
             onClick={handleBackToList}
             className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
           />
-        </div>
+          </div>
 
         {/* Perfil del Trader (solo la información básica, sin duplicar botón volver) */}
         <div className="bg-[#191919] p-6 rounded-xl border border-[#333] mb-6">
@@ -701,7 +701,7 @@ const Inversor = () => {
     );
   }
 
-  // --- Renderizado de la lista de traders (NUEVO DISEÑO v3) --- 
+   // --- Renderizado de la lista de traders (NUEVO DISEÑO v3) --- 
   return (
     <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen">
 
