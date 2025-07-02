@@ -68,17 +68,14 @@ const ALL_ACCOUNTS_DATA = [
       inversoresCount: 1,
       // Campos para filtros
       isFavorite: false,
-      tasaVolumen: 0.8, // Ejemplo
-      tasaRendimiento: 42.13, // Coincide con rendimientoPercent
-      ageInWeeks: 6, // Ejemplo, corresponde a ~43 días
-      commissionRange: '0', // Ejemplo: 0 = sin comisión
-      // Otros campos existentes...
+      tasaVolumen: 0.8,
+      tasaRendimiento: 42.13,
+      commissionRange: '0',
       porcentaje: '-29.88%', 
       type: 'Premium',
       since: 'Enero 2023',
       profit: '+12.4%',
       riesgo: 'Alto',
-      // ... (el resto de campos de detalle)
     },
     { 
       id: 2, 
@@ -97,12 +94,10 @@ const ALL_ACCOUNTS_DATA = [
       isFavorite: true,
       tasaVolumen: 1.2, 
       tasaRendimiento: 32.7,
-      ageInWeeks: 35, 
       commissionRange: '5-10',
       porcentaje: '+32.7%', 
       type: 'Verificado',
       since: 'Marzo 2023',
-      // ...
     },
     { 
       id: 3, 
@@ -121,14 +116,77 @@ const ALL_ACCOUNTS_DATA = [
       isFavorite: false,
       tasaVolumen: 0.9,
       tasaRendimiento: 18.5,
-      ageInWeeks: 25,
       commissionRange: '1-5',
       porcentaje: '+18.5%', 
       type: 'Premium',
       since: 'Junio 2023',
-      // ...
     },
-    // Añadir más cuentas con datos variados para probar filtros
+    { 
+      id: 4, 
+      nombre: 'CryptoKing', 
+      serverType: 'MT5',
+      accountNumber: '345678',
+      imagen: './Icono.svg',
+      pnlUSD: 35200.00,
+      rendimientoPercent: 65.30,
+      retraccionMaxPercent: -35.1,
+      cuentaAbiertaDias: 25,
+      balancePropio: 3200.50,
+      capitalAdministrado: 25800.90,
+      operacionesCount: 45,
+      inversoresCount: 2,
+      isFavorite: false,
+      tasaVolumen: 1.5,
+      tasaRendimiento: 65.30,
+      commissionRange: '20-30',
+      porcentaje: '+65.3%', 
+      type: 'Premium',
+      since: 'Diciembre 2024',
+    },
+    { 
+      id: 5, 
+      nombre: 'SafeTrader', 
+      serverType: 'MT4',
+      accountNumber: '567890',
+      imagen: './Icono.svg',
+      pnlUSD: 12850.00,
+      rendimientoPercent: 22.90,
+      retraccionMaxPercent: -8.5,
+      cuentaAbiertaDias: 95,
+      balancePropio: 6750.25,
+      capitalAdministrado: 38920.45,
+      operacionesCount: 120,
+      inversoresCount: 15,
+      isFavorite: true,
+      tasaVolumen: 0.7,
+      tasaRendimiento: 22.90,
+      commissionRange: '0',
+      porcentaje: '+22.9%', 
+      type: 'Verificado',
+      since: 'Octubre 2024',
+    },
+    { 
+      id: 6, 
+      nombre: 'RiskTaker', 
+      serverType: 'MT5',
+      accountNumber: '789012',
+      imagen: './Icono.svg',
+      pnlUSD: 8500.00,
+      rendimientoPercent: 28.40,
+      retraccionMaxPercent: -45.2,
+      cuentaAbiertaDias: 400,
+      balancePropio: 15000.00,
+      capitalAdministrado: 65000.00,
+      operacionesCount: 200,
+      inversoresCount: 8,
+      isFavorite: false,
+      tasaVolumen: 1.8,
+      tasaRendimiento: 28.40,
+      commissionRange: '10-20',
+      porcentaje: '+28.4%', 
+      type: 'Premium',
+      since: 'Enero 2024',
+    }
 ];
 
 const ALL_TRADE_HISTORY_DATA = [
@@ -276,16 +334,15 @@ const Inversor = () => {
       setComisionFilter(prev => prev === value ? null : value); // Toggle
   }
 
-  // Convertir antigüedad seleccionada a semanas (aproximado)
-  const getWeeksFromAntiguedad = (filterValue) => {
+  // Convertir antigüedad seleccionada a días (más preciso)
+  const getDaysFromAntiguedad = (filterValue) => {
       if (!filterValue) return null;
       switch (filterValue) {
-          case '1s': return 1;
-          case '2s': return 2;
-          case '1m': return 4;
-          case '3m': return 12;
-          case '6m': return 26;
-          case '1a': return 52;
+          case '1m': return 30;
+          case '2m': return 60;
+          case '3m': return 90;
+          case '6m': return 180;
+          case '1a': return 365;
           default: return null;
       }
   };
@@ -299,14 +356,18 @@ const Inversor = () => {
 
     // 2. Filtros Checkbox ('Filtrar por')
     if (filters.misFavoritos && !cuenta.isFavorite) return false;
-    // Nota: tasaVolumen y tasaRendimiento necesitarían lógica más compleja (e.g., > umbral)
-    // Por ahora, solo los activaremos si el filtro está marcado (requiere pensar cómo definir el filtro)
-    // if (filters.tasaVolumen && !ALGUNA_CONDICION_VOLUMEN) return false;
-    // if (filters.tasaRendimiento && !ALGUNA_CONDICION_RENDIMIENTO) return false;
+    
+    // Filtro por tasa de rendimiento - ordenar por rendimiento descendente
+    if (filters.tasaRendimiento) {
+      // Este filtro se aplicará como ordenamiento después del filtrado
+    }
+    
+    // Filtro por tasa de volumen - filtrar cuentas con volumen alto
+    if (filters.tasaVolumen && cuenta.tasaVolumen < 1.0) return false;
     
     // 3. Filtro Antigüedad
-    const minWeeks = getWeeksFromAntiguedad(antiguedadFilter);
-    if (minWeeks !== null && cuenta.ageInWeeks < minWeeks) return false;
+    const minDays = getDaysFromAntiguedad(antiguedadFilter);
+    if (minDays !== null && cuenta.cuentaAbiertaDias < minDays) return false;
     
     // 4. Filtro Comisión
     if (comisionFilter !== null && cuenta.commissionRange !== comisionFilter) return false;
@@ -314,6 +375,11 @@ const Inversor = () => {
     // Si pasa todos los filtros, incluir la cuenta
     return true;
   });
+
+  // Aplicar ordenamiento si el filtro de tasa de rendimiento está activo
+  if (filters.tasaRendimiento) {
+    filteredCuentas.sort((a, b) => b.rendimientoPercent - a.rendimientoPercent);
+  }
 
   // Función para filtrar historial (SIMULACIÓN)
   const filterHistoryData = (data, filter) => {
@@ -753,8 +819,8 @@ const Inversor = () => {
              <h3 className="text-base font-medium mb-3 text-gray-300">Antigüedad</h3>
              <div className="space-y-2.5">
                {[ 
-                 { value: '1s', label: '1 semana' }, { value: '2s', label: '2 semanas' }, { value: '1m', label: '1 mes' },
-                 { value: '3m', label: '3 meses' }, { value: '6m', label: '6 meses' }, { value: '1a', label: '1 año' },
+                 { value: '1m', label: '+1 mes' }, { value: '2m', label: '+2 meses' }, { value: '3m', label: '+3 meses' },
+                 { value: '6m', label: '+6 meses' }, { value: '1a', label: '+1 año' },
                ].map(item => (
                  <div key={item.value} className="flex items-center gap-2.5 cursor-pointer group" onClick={() => handleAntiguedadSelect(item.value)}>
                     <div className={`w-4 h-4 border rounded-sm flex items-center justify-center transition-colors ${antiguedadFilter === item.value ? 'bg-cyan-500 border-cyan-500' : 'border-[#555] group-hover:border-gray-400'}`}>
@@ -846,7 +912,8 @@ const Inversor = () => {
               ))
             ) : (
               <div className="p-8 text-center text-gray-500">
-                No se encontraron traders que coincidan con los filtros.
+                <p className="text-lg mb-2">No se encontraron traders</p>
+                <p className="text-sm">Intenta ajustar los filtros para ver más resultados</p>
               </div>
             )}
             </div>

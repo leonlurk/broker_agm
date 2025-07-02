@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Copy, ArrowUpDown, Save, AlertTriangle, Loader, Lock } from 'lucide-react';
+import { ChevronDown, Copy, ArrowUpDown, Save, AlertTriangle, Loader, Lock, Menu } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import WithdrawalHistoryDetails from './WithdrawalHistoryDetails';
@@ -36,6 +36,7 @@ const AfiliadosDashboard = () => {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [selectedTrader, setSelectedTrader] = useState(null);
   const [visibleAfiliados, setVisibleAfiliados] = useState(3);
+  const [isMobile, setIsMobile] = useState(false);
   
   // Mock data for the new "Cuentas Activas" table
   const topAfiliadosData = [
@@ -61,16 +62,6 @@ const AfiliadosDashboard = () => {
     },
     {
       id: 3,
-      nombre: 'Nombre trader',
-      tipoCuenta: 'Standard',
-      balance: 100,
-      equidad: 105,
-      lotesOperados: 10,
-      comisionesGeneradas: 10,
-      retirosCobrados: 3,
-    },
-    {
-      id: 4,
       nombre: 'Trader Alfa',
       tipoCuenta: 'ECN',
       balance: 1500,
@@ -80,7 +71,7 @@ const AfiliadosDashboard = () => {
       retirosCobrados: 8,
     },
     {
-      id: 5,
+      id: 4,
       nombre: 'Trader Beta',
       tipoCuenta: 'Standard',
       balance: 800,
@@ -90,7 +81,7 @@ const AfiliadosDashboard = () => {
       retirosCobrados: 4,
     },
     {
-      id: 6,
+      id: 5,
       nombre: 'Trader Gamma',
       tipoCuenta: 'Zero Spread',
       balance: 2200,
@@ -99,11 +90,35 @@ const AfiliadosDashboard = () => {
       comisionesGeneradas: 75,
       retirosCobrados: 12,
     },
+    {
+      id: 6,
+      nombre: 'Trader Delta',
+      tipoCuenta: 'ECN',
+      balance: 3000,
+      equidad: 3100,
+      lotesOperados: 90,
+      comisionesGeneradas: 90,
+      retirosCobrados: 15,
+    },
   ];
 
   // Datos para las tablas
   const referenciasData = [];
   const pagosData = [];
+
+  // Detectar si es dispositivo móvil
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
   
   // Cargar datos del usuario (wallet, referidos, etc.) desde Firebase
   useEffect(() => {
@@ -204,6 +219,57 @@ const AfiliadosDashboard = () => {
     setSelectedTrader(null);
   };
 
+  // Renderizar cards móviles para afiliados
+  const renderMobileAfiliadosCard = (trader) => (
+    <div key={trader.id} className="bg-[#202020] rounded-xl p-4 space-y-3">
+      {/* Header con usuario */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="text-lg font-semibold text-gray-500">{trader.id}.</div>
+          <img src="/Foto.svg" alt="User" className="w-10 h-10 rounded-lg" />
+          <div>
+            <div className="font-semibold">{trader.nombre}</div>
+            <div className="text-sm text-gray-400">{trader.tipoCuenta}</div>
+          </div>
+        </div>
+        <button 
+          onClick={() => handleShowDetails(trader)}
+          className="text-xs bg-[#2d2d2d] hover:bg-[#3f3f3f] transition-colors text-white py-2 px-3 rounded-lg"
+        >
+          Historial
+        </button>
+      </div>
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <div className="text-gray-400">Balance</div>
+          <div className="font-semibold">{trader.balance}</div>
+        </div>
+        <div>
+          <div className="text-gray-400">Equidad</div>
+          <div className="font-semibold">{trader.equidad}</div>
+        </div>
+        <div>
+          <div className="text-gray-400">Lotes Operados</div>
+          <div className="font-semibold">{trader.lotesOperados}</div>
+        </div>
+        <div>
+          <div className="text-gray-400">Comisiones</div>
+          <div className="font-semibold">{trader.comisionesGeneradas}</div>
+        </div>
+      </div>
+
+      {/* Retiros */}
+      <div className="pt-2 border-t border-gray-700">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400 text-sm">Retiros Cobrados</span>
+          <span className="font-semibold">{trader.retirosCobrados}</span>
+        </div>
+      </div>
+    </div>
+  );
+
   // Renderizar el contenido según la pestaña activa
   const renderContent = () => {
     if (isLoadingData) {
@@ -220,40 +286,40 @@ const AfiliadosDashboard = () => {
           <div className="space-y-6">
             {/* Rendimiento */}
             <div className="space-y-4">
-              <h2 className="text-3xl font-medium">Rendimiento</h2>
+              <h2 className="text-2xl md:text-3xl font-medium">Rendimiento</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Comisiones Totales Cobradas */}
                 <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333]">
-                  <h3 className="text-lg font-medium text-gray-400 mb-2">Comisiones Totales Cobradas</h3>
-                  <p className="text-3xl md:text-4xl font-semibold">$0.00</p> {/* Placeholder */} 
+                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">Comisiones Totales Cobradas</h3>
+                  <p className="text-2xl md:text-4xl font-semibold">$0.00</p>
                 </div>
                 
                 {/* Cantidad De Comisiones Totales */}
                 <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333]">
-                  <h3 className="text-lg font-medium text-gray-400 mb-2">Cantidad De Comisiones Totales</h3>
-                  <p className="text-3xl md:text-4xl font-semibold">0</p> {/* Placeholder */}
+                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">Cantidad De Comisiones Totales</h3>
+                  <p className="text-2xl md:text-4xl font-semibold">0</p>
                 </div>
                 
                 {/* Comisiones Promedio */}
                 <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333]">
-                  <h3 className="text-lg font-medium text-gray-400 mb-2">Comisiones Promedio</h3>
-                  <p className="text-3xl md:text-4xl font-semibold">$0.00</p> {/* Placeholder */}
+                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">Comisiones Promedio</h3>
+                  <p className="text-2xl md:text-4xl font-semibold">$0.00</p>
                 </div>
               </div>
             </div>
             
             {/* Enlace De Afiliados, Registro y Conversion */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Enlace De Afiliados Card */}
-              <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333] space-y-2">
-                <h3 className="text-lg font-medium text-gray-400">Enlace De Afiliados</h3>
-                <div className="flex items-center space-x-2">
-                  <span className="p-2 bg-[#1a1a1a] rounded-lg border border-[#333] text-gray-300 truncate text-sm flex-grow">
+            <div className="space-y-4">
+              {/* Enlace De Afiliados Card - Span completo en móvil */}
+              <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333] space-y-3">
+                <h3 className="text-base md:text-lg font-medium text-gray-400">Enlace De Afiliados</h3>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                  <div className="flex-grow p-3 bg-[#1a1a1a] rounded-lg border border-[#333] text-gray-300 text-sm break-all">
                     {userId ? `${window.location.origin}/register?ref=${userId}` : 'Generando enlace...'}
-                  </span>
+                  </div>
                   <button
-                    className="p-2 hover:bg-[#333] rounded-lg border border-[#333] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-3 hover:bg-[#333] rounded-lg border border-[#333] disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                     onClick={() => copyToClipboard(userId)}
                     disabled={!userId}
                   >
@@ -262,33 +328,36 @@ const AfiliadosDashboard = () => {
                 </div>
               </div>
 
+              {/* Registro y Conversion - Grid en desktop, stack en móvil */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Cantidad De Registro Card */}
               <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333]">
-                <h3 className="text-lg font-medium text-gray-400 mb-2">Referidos Registrados</h3>
-                <p className="text-3xl md:text-4xl font-semibold">{referralCount}</p> 
+                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">Referidos Registrados</h3>
+                  <p className="text-2xl md:text-4xl font-semibold">{referralCount}</p> 
                   </div>
                   
               {/* Conversion Card */}
               <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333]">
-                <h3 className="text-lg font-medium text-gray-400 mb-2">Conversion</h3>
-                <p className="text-3xl md:text-4xl font-semibold">N/A</p> {/* Placeholder */}
+                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">Conversion</h3>
+                  <p className="text-2xl md:text-4xl font-semibold">N/A</p>
+                </div>
               </div>
             </div>
             
             {/* Direccion De Pago USDT */}
             <div className="space-y-4">
-              <h2 className="text-3xl font-medium">Direccion De Pago USDT</h2>
-              <p className="text-gray-400">Proporcionar Una Dirección USDT TRC20 Válida</p>
+              <h2 className="text-2xl md:text-3xl font-medium">Direccion De Pago USDT</h2>
+              <p className="text-gray-400 text-sm md:text-base">Proporcionar Una Dirección USDT TRC20 Válida</p>
               
               {successMessage && (
-                <div className="bg-green-900/20 border border-green-600 text-green-400 p-3 rounded-lg mb-3">
+                <div className="bg-green-900/20 border border-green-600 text-green-400 p-3 rounded-lg mb-3 text-sm">
                   {successMessage}
                 </div>
               )}
               
               {error && (
-                <div className="bg-red-900/20 border border-red-600 text-red-400 p-3 rounded-lg mb-3 flex items-center">
-                  <AlertTriangle size={16} className="mr-2" />
+                <div className="bg-red-900/20 border border-red-600 text-red-400 p-3 rounded-lg mb-3 flex items-center text-sm">
+                  <AlertTriangle size={16} className="mr-2 flex-shrink-0" />
                   {error}
                 </div>
               )}
@@ -297,14 +366,14 @@ const AfiliadosDashboard = () => {
                 <div className="flex flex-col space-y-3">
                   <input
                     type="text"
-                    className="flex-grow p-3 bg-gradient-to-br from-[#1a1a1a] to-[#252525] rounded-lg border border-[#333] text-white"
+                    className="w-full p-3 bg-gradient-to-br from-[#1a1a1a] to-[#252525] rounded-lg border border-[#333] text-white text-sm"
                     value={editWalletAddress}
                     onChange={(e) => setEditWalletAddress(e.target.value)}
                     placeholder="Ingrese su dirección TRC20 USDT"
                   />
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button 
-                      className="px-6 py-3 bg-gradient-to-br from-[#0F7490] to-[#0A5A72] text-white rounded-full hover:opacity-90 transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-3 bg-gradient-to-br from-[#0F7490] to-[#0A5A72] text-white rounded-full hover:opacity-90 transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                       onClick={saveWalletAddress}
                       disabled={isSaving}
                     >
@@ -321,7 +390,7 @@ const AfiliadosDashboard = () => {
                       )}
                     </button>
                     <button 
-                      className="px-6 py-3 bg-[#2a2a2a] text-white rounded-full hover:bg-[#333] transition"
+                      className="px-6 py-3 bg-[#2a2a2a] text-white rounded-full hover:bg-[#333] transition text-sm"
                       onClick={toggleEditMode}
                       disabled={isSaving}
                     >
@@ -330,12 +399,12 @@ const AfiliadosDashboard = () => {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col md:flex-row gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-grow p-3 bg-gradient-to-br from-[#1a1a1a] to-[#252525] rounded-lg border border-[#333] text-gray-300 overflow-hidden flex items-center">
-                    <span className="truncate mr-2">{walletAddress || 'No se ha establecido una dirección de wallet'}</span>
+                    <span className="truncate mr-2 text-sm">{walletAddress || 'No se ha establecido una dirección de wallet'}</span>
                   </div>
                   <button 
-                    className="px-6 py-3 bg-gradient-to-br focus:outline-none from-[#0F7490] to-[#0A5A72] text-white rounded-full hover:opacity-90 transition"
+                    className="px-6 py-3 bg-gradient-to-br focus:outline-none from-[#0F7490] to-[#0A5A72] text-white rounded-full hover:opacity-90 transition text-sm flex-shrink-0"
                     onClick={toggleEditMode}
                   >
                   Editar
@@ -345,14 +414,16 @@ const AfiliadosDashboard = () => {
             </div>
 
         {/* Tiers Section */}
+            <div className="space-y-4">
+              <h2 className="text-2xl md:text-3xl font-medium">Niveles de Comisión</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Tier 1 */}
           <div className={`p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border ${
             currentTier >= 1 ? 'border-cyan-500' : 'border-[#333]'
           } space-y-2`}>
-            <h3 className="text-xl font-semibold mb-1">Tier 1</h3>
-            <p className="text-gray-400">Comision Por Lote $3,00 USD</p>
-            <p className="text-sm text-gray-500">Hasta {TIER_REQUIREMENTS[2]} Afiliados</p> 
+                  <h3 className="text-lg md:text-xl font-semibold mb-1">Tier 1</h3>
+                  <p className="text-gray-400 text-sm md:text-base">Comision Por Lote $3,00 USD</p>
+                  <p className="text-xs md:text-sm text-gray-500">Hasta {TIER_REQUIREMENTS[2]} Afiliados</p> 
           </div>
 
           {/* Tier 2 */}
@@ -364,9 +435,9 @@ const AfiliadosDashboard = () => {
                 <Lock size={18} />
               </div>
             ) : null}
-            <h3 className="text-xl font-semibold mb-1">Tier 2</h3>
-            <p className="text-gray-400">Comision Por Lote $3,50 USD</p>
-            <p className="text-sm text-gray-500">Hasta {TIER_REQUIREMENTS[3]} Afiliados</p>
+                  <h3 className="text-lg md:text-xl font-semibold mb-1">Tier 2</h3>
+                  <p className="text-gray-400 text-sm md:text-base">Comision Por Lote $3,50 USD</p>
+                  <p className="text-xs md:text-sm text-gray-500">Hasta {TIER_REQUIREMENTS[3]} Afiliados</p>
           </div>
 
           {/* Tier 3 */}
@@ -378,9 +449,10 @@ const AfiliadosDashboard = () => {
                 <Lock size={18} />
               </div>
             ) : null}
-            <h3 className="text-xl font-semibold mb-1">Tier 3</h3>
-            <p className="text-gray-400">Comision Por Lote $4,00 USD</p>
-            <p className="text-sm text-gray-500">{TIER_REQUIREMENTS[3]}+ Afiliados</p>
+                  <h3 className="text-lg md:text-xl font-semibold mb-1">Tier 3</h3>
+                  <p className="text-gray-400 text-sm md:text-base">Comision Por Lote $4,00 USD</p>
+                  <p className="text-xs md:text-sm text-gray-500">{TIER_REQUIREMENTS[3]}+ Afiliados</p>
+                </div>
           </div>
         </div>
 
@@ -388,13 +460,15 @@ const AfiliadosDashboard = () => {
             <div className="space-y-4 pt-6">
               {/* Titles */}
               <div>
-                <h2 className="text-3xl font-medium">Cuentas activas y comisiones generadas</h2>
-                <p className="text-gray-400 text-lg">Top 3 Afiliados</p>
+                <h2 className="text-2xl md:text-3xl font-medium">Cuentas activas y comisiones generadas</h2>
+                <p className="text-gray-400 text-base md:text-lg">Top {visibleAfiliados} Afiliados</p>
               </div>
 
+              {/* Desktop Table View */}
+              {!isMobile && (
+                <>
               {/* Headers */}
               <div className="grid grid-cols-[minmax(150px,1.5fr)_minmax(0,3fr)_minmax(0,1.5fr)_repeat(5,minmax(0,1fr))] gap-x-4 px-4 text-sm text-gray-400 font-medium">
-                {/* Headers start from the second column to align with data */}
                 <div className="col-start-2">Usuario</div>
                 <div>Tipo de Cuenta</div>
                 <div className="text-center">Balance</div>
@@ -435,13 +509,22 @@ const AfiliadosDashboard = () => {
                   </div>
                 ))}
               </div>
+                </>
+              )}
+
+              {/* Mobile Card View */}
+              {isMobile && (
+                <div className="space-y-3">
+                  {topAfiliadosData.slice(0, visibleAfiliados).map(trader => renderMobileAfiliadosCard(trader))}
+                </div>
+              )}
 
               {/* Ver Mas Button */}
               {visibleAfiliados < topAfiliadosData.length && (
               <div className="flex justify-center pt-4">
                 <button 
                   onClick={() => setVisibleAfiliados(prev => prev + 3)}
-                  className="bg-[#2d2d2d] hover:bg-[#3f3f3f] transition-colors text-white font-semibold py-3 px-8 rounded-lg"
+                    className="bg-[#2d2d2d] hover:bg-[#3f3f3f] transition-colors text-white font-semibold py-3 px-8 rounded-lg text-sm"
                 >
                   Ver Más
                 </button>
@@ -453,6 +536,12 @@ const AfiliadosDashboard = () => {
       case 'referencias':
         return (
           <div className="space-y-4">
+            {/* Mobile-friendly table */}
+            {isMobile ? (
+              <div className="space-y-4">
+                <p className="text-center text-gray-400 py-8">No hay referencias disponibles</p>
+              </div>
+            ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead>
@@ -485,11 +574,18 @@ const AfiliadosDashboard = () => {
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         );
       case 'pagos':
         return (
           <div className="space-y-4">
+            {/* Mobile-friendly table */}
+            {isMobile ? (
+              <div className="space-y-4">
+                <p className="text-center text-gray-400 py-8">No hay pagos disponibles</p>
+              </div>
+            ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead>
@@ -522,6 +618,7 @@ const AfiliadosDashboard = () => {
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         );
       default:
@@ -534,34 +631,34 @@ const AfiliadosDashboard = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen border border-[#333] rounded-3xl bg-[#232323] text-white p-4 md:p-6">
+    <div className="flex flex-col min-h-screen border border-[#333] rounded-3xl bg-[#232323] text-white p-3 md:p-6">
 
       {/* Tabs */}
       <div className="flex justify-between items-center mb-6">
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full">
           <button
-            className={`px-4 py-3 rounded-full focus:outline-none bg-gradient-to-br from-[#232323] to-[#2d2d2d] border-[#333] font-regular flex items-center space-x-2 ${
+            className={`px-3 md:px-4 py-2 md:py-3 rounded-full focus:outline-none bg-gradient-to-br from-[#232323] to-[#2d2d2d] border-[#333] font-regular flex items-center justify-center space-x-2 text-sm md:text-base ${
               activeTab === 'panel' 
                 ? 'border border-cyan-500 text-white' 
                 : 'border border-[#333] text-gray-300 hover:bg-[#2a2a2a]'
             }`}
             onClick={() => handleTabClick('panel')}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
             </svg>
             <span>Panel</span>
           </button>
           
           <button
-            className={`px-4 py-3 rounded-full focus:outline-none font-regular bg-gradient-to-br from-[#232323] to-[#2d2d2d] border-[#333] flex items-center space-x-2 ${
+            className={`px-3 md:px-4 py-2 md:py-3 rounded-full focus:outline-none font-regular bg-gradient-to-br from-[#232323] to-[#2d2d2d] border-[#333] flex items-center justify-center space-x-2 text-sm md:text-base ${
               activeTab === 'referencias' 
                 ? 'border border-cyan-500 text-white' 
                 : 'border border-[#333] text-gray-300 hover:bg-[#2a2a2a]'
             }`}
             onClick={() => handleTabClick('referencias')}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M22 21v-2a4 4 0 00-3-3.87" />
@@ -571,28 +668,24 @@ const AfiliadosDashboard = () => {
           </button>
           
           <button
-            className={`px-4 py-3 rounded-full flex focus:outline-none font-regular bg-gradient-to-br from-[#232323] to-[#2d2d2d] border-[#333] items-center space-x-2 ${
+            className={`px-3 md:px-4 py-2 md:py-3 rounded-full flex focus:outline-none font-regular bg-gradient-to-br from-[#232323] to-[#2d2d2d] border-[#333] items-center justify-center space-x-2 text-sm md:text-base ${
               activeTab === 'pagos' 
                 ? 'border border-cyan-500 text-white' 
                 : 'border border-[#333] text-gray-300 hover:bg-[#2a2a2a]'
             }`}
             onClick={() => handleTabClick('pagos')}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="2" y="5" width="20" height="14" rx="2" />
               <path d="M2 10h20" />
             </svg>
             <span>Pagos</span>
           </button>
         </div>
-        
-        <button className="px-4 py-3 rounded-full focus:outline-none font-regular bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] text-gray-300 hover:bg-[#2a2a2a]">
-          Filtros
-        </button>
       </div>
       
       {/* Content Container */}
-      <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333] mb-6">
+      <div className="p-3 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333] mb-6">
         {renderContent()}
       </div>
     </div>

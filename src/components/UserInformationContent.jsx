@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, storage } from '../firebase/config';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
-import { Camera, Mail, X, Loader, UploadCloud, Trash2 } from 'lucide-react';
+import { Camera, Mail, X, Loader, UploadCloud, Trash2, Search, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 import { z } from 'zod';
 
@@ -77,6 +77,12 @@ const UserInformationContent = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [formSaving, setFormSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  
+  // Country selector states
+  const [countrySearch, setCountrySearch] = useState('');
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const [filteredCountries, setFilteredCountries] = useState([]);
+  const countryDropdownRef = useRef(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -121,12 +127,39 @@ const UserInformationContent = ({ onBack }) => {
           code: `${c.idd.root}${c.idd.suffixes ? c.idd.suffixes[0] : ''}`
         })).sort((a, b) => a.name.localeCompare(b.name));
         setCountries(countryData);
+        setFilteredCountries(countryData);
       } catch (error) {
         console.error("Error fetching countries:", error);
         toast.error('No se pudieron cargar los países.');
       }
     };
     fetchCountries();
+  }, []);
+
+  // Filter countries based on search
+  useEffect(() => {
+    if (!countrySearch) {
+      setFilteredCountries(countries);
+    } else {
+      const filtered = countries.filter(country =>
+        country.name.toLowerCase().includes(countrySearch.toLowerCase())
+      );
+      setFilteredCountries(filtered);
+    }
+  }, [countrySearch, countries]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target)) {
+        setIsCountryDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const handleInputChange = (e) => {
@@ -137,16 +170,24 @@ const UserInformationContent = ({ onBack }) => {
     }
   };
   
-  const handleCountryChange = (e) => {
-    const { name, value } = e.target;
-    const selectedCountry = countries.find(c => c.name === value);
+  const handleCountrySelect = (countryName) => {
+    const selectedCountry = countries.find(c => c.name === countryName);
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      pais: countryName,
       phoneCode: selectedCountry ? selectedCountry.code : '',
       ciudad: ''
     }));
+    setCountrySearch('');
+    setIsCountryDropdownOpen(false);
     if (errors.pais) setErrors(prev => ({ ...prev, pais: null }));
+  };
+
+  const handleCountrySearchChange = (e) => {
+    setCountrySearch(e.target.value);
+    if (!isCountryDropdownOpen) {
+      setIsCountryDropdownOpen(true);
+    }
   };
 
   const onDrop = useCallback((acceptedFiles) => {
@@ -230,7 +271,7 @@ const UserInformationContent = ({ onBack }) => {
   }
 
   return (
-    <div className="bg-[#1C1C1C] text-white p-4 sm:p-6 md:p-8 rounded-2xl max-w-7xl mx-auto w-full">
+    <div className="bg-gradient-to-b from-[#232323] to-[#2b2b2b] text-white p-4 sm:p-6 md:p-8 rounded-2xl max-w-7xl mx-auto w-full">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Configuración de Perfil</h1>
         <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-700 transition-colors">
@@ -311,12 +352,62 @@ const UserInformationContent = ({ onBack }) => {
               <h3 className="text-lg font-semibold mb-4 text-cyan-400">Ubicación y Contacto</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                 {/* País */}
-                <div>
+                <div className="relative" ref={countryDropdownRef}>
                     <label htmlFor="pais" className="block text-sm text-gray-400 mb-2">País</label>
-                    <select id="pais" name="pais" value={formData.pais} onChange={handleCountryChange} className={`w-full appearance-none bg-[#1C1C1C] border ${errors.pais ? 'border-red-500' : 'border-[#333]'} rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500`}>
-                        <option value="" disabled>Seleccionar país</option>
-                        {countries.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-                    </select>
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+                            className={`w-full bg-[#1C1C1C] border ${errors.pais ? 'border-red-500' : 'border-[#333]'} rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 text-left flex items-center justify-between`}
+                        >
+                            <span className={formData.pais ? 'text-white' : 'text-gray-400'}>
+                                {formData.pais || 'Seleccionar país'}
+                            </span>
+                            <ChevronDown 
+                                size={20} 
+                                className={`text-gray-400 transition-transform ${isCountryDropdownOpen ? 'rotate-180' : ''}`} 
+                            />
+                        </button>
+                        
+                        {isCountryDropdownOpen && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-[#1C1C1C] border border-[#333] rounded-xl shadow-lg z-50 max-h-60 overflow-hidden">
+                                {/* Search input */}
+                                <div className="p-3 border-b border-[#333]">
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar país..."
+                                            value={countrySearch}
+                                            onChange={handleCountrySearchChange}
+                                            className="w-full bg-[#2D2D2D] border border-[#444] rounded-lg pl-10 pr-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
+                                            autoFocus
+                                        />
+                                        <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                    </div>
+                                </div>
+                                
+                                {/* Country list */}
+                                <div className="max-h-40 overflow-y-auto">
+                                    {filteredCountries.length > 0 ? (
+                                        filteredCountries.map((country) => (
+                                            <button
+                                                key={country.name}
+                                                type="button"
+                                                onClick={() => handleCountrySelect(country.name)}
+                                                className="w-full text-left px-3 py-2 text-sm text-white hover:bg-[#2D2D2D] transition-colors"
+                                            >
+                                                {country.name}
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="px-3 py-2 text-sm text-gray-400">
+                                            No se encontraron países
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     {errors.pais && <p className="text-red-500 text-xs mt-1">{errors.pais}</p>}
                 </div>
                 {/* Ciudad */}

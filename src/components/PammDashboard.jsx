@@ -21,54 +21,187 @@ const PammDashboard = () => {
 };
 
 const PammListView = ({ onSelectTrader }) => {
-    // Mock data based on Pamm.png
-    const pammData = [
+    // Filter states
+    const [filters, setFilters] = useState({
+        misFavoritos: false,
+        tasaRendimiento: false,
+        deposito: false
+    });
+    const [selectedAge, setSelectedAge] = useState('');
+    const [selectedCommission, setSelectedCommission] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Mock data with varied properties for filtering
+    const allPammData = [
         {
             ranking: 1,
-            nombre: 'Nombre trader',
+            nombre: 'Trader Alpha',
             serverType: 'MT5',
             cuenta: '657237',
             pnl: '22,621.00',
             rendimiento: '42.13%',
+            rendimientoNumerico: 42.13,
             retraccionMax: '-42.4%',
-            cuentaAbierta: '43 Días',
+            cuentaAbierta: '2 meses',
+            diasAbierta: 60,
             depositoMinimo: '100.00 USD',
+            depositoNumerico: 100,
             balancePropio: '5,000.23',
             capitalAdministrado: '75,009.73',
             gananciasUltimoMes: '1,000.02',
             inversores: 1,
+            comision: 20,
+            esFavorito: true
         },
         {
             ranking: 2,
-            nombre: 'Nombre trader',
+            nombre: 'Trader Beta',
             serverType: 'MT5',
-            cuenta: '657237',
-            pnl: '22,621.00',
-            rendimiento: '42.13%',
-            retraccionMax: '-42.4%',
-            cuentaAbierta: '43 Días',
-            depositoMinimo: '100.00 USD',
-            balancePropio: '5,000.23',
-            capitalAdministrado: '75,009.73',
-            gananciasUltimoMes: '1,000.02',
-            inversores: 1,
+            cuenta: '758392',
+            pnl: '15,430.00',
+            rendimiento: '28.75%',
+            rendimientoNumerico: 28.75,
+            retraccionMax: '-25.8%',
+            cuentaAbierta: '6 meses',
+            diasAbierta: 180,
+            depositoMinimo: '500.00 USD',
+            depositoNumerico: 500,
+            balancePropio: '8,500.45',
+            capitalAdministrado: '45,230.12',
+            gananciasUltimoMes: '750.30',
+            inversores: 3,
+            comision: 15,
+            esFavorito: false
         },
         {
             ranking: 3,
-            nombre: 'Nombre trader',
+            nombre: 'Trader Gamma',
             serverType: 'MT5',
-            cuenta: '657237',
-            pnl: '22,621.00',
-            rendimiento: '42.13%',
-            retraccionMax: '-42.4%',
-            cuentaAbierta: '43 Días',
-            depositoMinimo: '100.00 USD',
-            balancePropio: '5,000.23',
-            capitalAdministrado: '75,009.73',
-            gananciasUltimoMes: '1,000.02',
-            inversores: 1,
+            cuenta: '892456',
+            pnl: '8,920.00',
+            rendimiento: '18.45%',
+            rendimientoNumerico: 18.45,
+            retraccionMax: '-15.2%',
+            cuentaAbierta: '1 año',
+            diasAbierta: 365,
+            depositoMinimo: '1000.00 USD',
+            depositoNumerico: 1000,
+            balancePropio: '12,000.78',
+            capitalAdministrado: '89,450.67',
+            gananciasUltimoMes: '450.89',
+            inversores: 7,
+            comision: 25,
+            esFavorito: true
         },
+        {
+            ranking: 4,
+            nombre: 'Trader Delta',
+            serverType: 'MT5',
+            cuenta: '345678',
+            pnl: '35,200.00',
+            rendimiento: '65.30%',
+            rendimientoNumerico: 65.30,
+            retraccionMax: '-35.1%',
+            cuentaAbierta: '1 mes',
+            diasAbierta: 30,
+            depositoMinimo: '250.00 USD',
+            depositoNumerico: 250,
+            balancePropio: '3,200.50',
+            capitalAdministrado: '25,800.90',
+            gananciasUltimoMes: '1,250.75',
+            inversores: 2,
+            comision: 30,
+            esFavorito: false
+        },
+        {
+            ranking: 5,
+            nombre: 'Trader Epsilon',
+            serverType: 'MT5',
+            cuenta: '567890',
+            pnl: '12,850.00',
+            rendimiento: '32.90%',
+            rendimientoNumerico: 32.90,
+            retraccionMax: '-28.5%',
+            cuentaAbierta: '3 meses',
+            diasAbierta: 90,
+            depositoMinimo: '50.00 USD',
+            depositoNumerico: 50,
+            balancePropio: '6,750.25',
+            capitalAdministrado: '38,920.45',
+            gananciasUltimoMes: '820.60',
+            inversores: 5,
+            comision: 0,
+            esFavorito: false
+        }
     ];
+
+    // Filter logic
+    const getFilteredData = () => {
+        let filtered = [...allPammData];
+
+        // Search filter
+        if (searchTerm) {
+            filtered = filtered.filter(trader => 
+                trader.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                trader.cuenta.includes(searchTerm)
+            );
+        }
+
+        // Checkbox filters
+        if (filters.misFavoritos) {
+            filtered = filtered.filter(trader => trader.esFavorito);
+        }
+
+        if (filters.tasaRendimiento) {
+            filtered = filtered.sort((a, b) => b.rendimientoNumerico - a.rendimientoNumerico);
+        }
+
+        if (filters.deposito) {
+            filtered = filtered.sort((a, b) => a.depositoNumerico - b.depositoNumerico);
+        }
+
+        // Age filter
+        if (selectedAge) {
+            const ageFilters = {
+                '1mes': (days) => days >= 30,
+                '2meses': (days) => days >= 60,
+                '3meses': (days) => days >= 90,
+                '6meses': (days) => days >= 180,
+                '1año': (days) => days >= 365
+            };
+            
+            if (ageFilters[selectedAge]) {
+                filtered = filtered.filter(trader => ageFilters[selectedAge](trader.diasAbierta));
+            }
+        }
+
+        // Commission filter
+        if (selectedCommission) {
+            const commissionFilters = {
+                'sinComision': (comision) => comision === 0,
+                '1-5': (comision) => comision >= 1 && comision <= 5,
+                '5-10': (comision) => comision >= 5 && comision <= 10,
+                '10-20': (comision) => comision >= 10 && comision <= 20,
+                '20-30': (comision) => comision >= 20 && comision <= 30,
+                '30+': (comision) => comision > 30
+            };
+            
+            if (commissionFilters[selectedCommission]) {
+                filtered = filtered.filter(trader => commissionFilters[selectedCommission](trader.comision));
+            }
+        }
+
+        return filtered;
+    };
+
+    const pammData = getFilteredData();
+
+    const handleFilterChange = (filterName) => {
+        setFilters(prev => ({
+            ...prev,
+            [filterName]: !prev[filterName]
+        }));
+    };
 
     return (
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white p-4 sm:p-6 md:p-8 rounded-3xl">
@@ -82,7 +215,9 @@ const PammListView = ({ onSelectTrader }) => {
                     <input
                         type="text"
                         placeholder="Buscar por nombre o número de cuenta"
-                        className="bg-[#2D2D2D] border border-[#333] rounded-lg py-2 pl-10 pr-4 w-full md:w-80"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="bg-[#2D2D2D] border border-[#333] rounded-lg py-2 pl-10 pr-4 w-full md:w-80 text-white"
                     />
                     <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
@@ -93,25 +228,81 @@ const PammListView = ({ onSelectTrader }) => {
                 <div>
                     <h3 className="text-lg font-semibold mb-3">Filtrar por</h3>
                     <div className="flex flex-wrap gap-4">
-                        <label className="flex items-center space-x-2 cursor-pointer"><input type="checkbox" className="form-checkbox bg-transparent border-[#333] rounded" /><span>Mis favoritos</span></label>
-                        <label className="flex items-center space-x-2 cursor-pointer"><input type="checkbox" className="form-checkbox bg-transparent border-[#333] rounded" /><span>Tasa de rendimiento</span></label>
-                        <label className="flex items-center space-x-2 cursor-pointer"><input type="checkbox" className="form-checkbox bg-transparent border-[#333] rounded" /><span>Tasa de volúmen</span></label>
-                        <label className="flex items-center space-x-2 cursor-pointer"><input type="checkbox" className="form-checkbox bg-transparent border-[#333] rounded" /><span>Depósito</span></label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={filters.misFavoritos}
+                                onChange={() => handleFilterChange('misFavoritos')}
+                                className="form-checkbox bg-transparent border-[#333] rounded text-cyan-500 focus:ring-cyan-500" 
+                            />
+                            <span>Mis favoritos</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={filters.tasaRendimiento}
+                                onChange={() => handleFilterChange('tasaRendimiento')}
+                                className="form-checkbox bg-transparent border-[#333] rounded text-cyan-500 focus:ring-cyan-500" 
+                            />
+                            <span>Tasa de rendimiento</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={filters.deposito}
+                                onChange={() => handleFilterChange('deposito')}
+                                className="form-checkbox bg-transparent border-[#333] rounded text-cyan-500 focus:ring-cyan-500" 
+                            />
+                            <span>Depósito</span>
+                        </label>
                     </div>
                 </div>
                 <div>
                     <h3 className="text-lg font-semibold mb-3">Antiguedad</h3>
                     <div className="flex flex-wrap gap-3">
-                        {['+1 semana', '+2 semanas', '+1 mes', '+3 meses', '+6 meses', '+1 año'].map(label => (
-                            <button key={label} className="bg-[#2D2D2D] border border-[#333] px-4 py-1.5 rounded-lg text-sm hover:bg-[#3f3f3f]">{label}</button>
+                        {[
+                            { key: '1mes', label: '+1 mes' },
+                            { key: '2meses', label: '+2 meses' },
+                            { key: '3meses', label: '+3 meses' },
+                            { key: '6meses', label: '+6 meses' },
+                            { key: '1año', label: '+1 año' }
+                        ].map(age => (
+                            <button 
+                                key={age.key} 
+                                onClick={() => setSelectedAge(selectedAge === age.key ? '' : age.key)}
+                                className={`px-4 py-1.5 rounded-lg text-sm transition-colors ${
+                                    selectedAge === age.key 
+                                        ? 'bg-cyan-600 border border-cyan-500 text-white' 
+                                        : 'bg-[#2D2D2D] border border-[#333] hover:bg-[#3f3f3f]'
+                                }`}
+                            >
+                                {age.label}
+                            </button>
                         ))}
                     </div>
                 </div>
                 <div>
                     <h3 className="text-lg font-semibold mb-3">Comisión</h3>
                     <div className="flex flex-wrap gap-3">
-                        {['Trader sin comisión', '1%-5%', '5%-10%', '10%-20%', '20%-30%', '+30%'].map(label => (
-                            <button key={label} className="bg-[#2D2D2D] border border-[#333] px-4 py-1.5 rounded-lg text-sm hover:bg-[#3f3f3f]">{label}</button>
+                        {[
+                            { key: 'sinComision', label: 'Trader sin comisión' },
+                            { key: '1-5', label: '1%-5%' },
+                            { key: '5-10', label: '5%-10%' },
+                            { key: '10-20', label: '10%-20%' },
+                            { key: '20-30', label: '20%-30%' },
+                            { key: '30+', label: '+30%' }
+                        ].map(commission => (
+                            <button 
+                                key={commission.key} 
+                                onClick={() => setSelectedCommission(selectedCommission === commission.key ? '' : commission.key)}
+                                className={`px-4 py-1.5 rounded-lg text-sm transition-colors ${
+                                    selectedCommission === commission.key 
+                                        ? 'bg-cyan-600 border border-cyan-500 text-white' 
+                                        : 'bg-[#2D2D2D] border border-[#333] hover:bg-[#3f3f3f]'
+                                }`}
+                            >
+                                {commission.label}
+                            </button>
                         ))}
                     </div>
                 </div>
@@ -137,7 +328,13 @@ const PammListView = ({ onSelectTrader }) => {
                     </div>
                     {/* Body */}
                     <div className="space-y-3">
-                        {pammData.map((trader) => (
+                        {pammData.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400">
+                                <p className="text-lg mb-2">No se encontraron traders</p>
+                                <p className="text-sm">Intenta ajustar los filtros para ver más resultados</p>
+                            </div>
+                        ) : (
+                            pammData.map((trader) => (
                             <div key={trader.ranking} className="grid grid-cols-[auto_2fr_repeat(10,1fr)] gap-4 items-center p-4 rounded-xl bg-[#232323] border border-[#333] cursor-pointer hover:border-cyan-500" onClick={() => onSelectTrader(trader)}>
                                 <div className="font-semibold text-lg">{trader.ranking}.</div>
                                 <div className="flex items-center space-x-3">
@@ -163,7 +360,8 @@ const PammListView = ({ onSelectTrader }) => {
                                     </button>
                                 </div>
                             </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
             </div>
@@ -247,7 +445,7 @@ const PammDetailView = ({ trader, onBack }) => {
             
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center -mt-8">
                     <div className="flex items-center space-x-4">
-                    <img src="/iconPamm.svg" alt={trader.nombre} className="w-16 h-16 rounded-full border-2 border-cyan-400" />
+                    <img src="/Foto.svg" alt={trader.nombre} className="w-16 h-16 rounded-full border-2 border-cyan-400" />
                         <div>
                         <h1 className="text-2xl font-bold">{trader.nombre}</h1>
                         <p className="text-gray-400">ID de la estrategia: {trader.cuenta}</p>

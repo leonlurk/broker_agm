@@ -225,13 +225,13 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                             let icon;
                                             switch(subOption) {
                                                 case "Calculadora":
-                                                    icon = <img src="./calculator.png" alt="Calculadora" />;
+                                                    icon = <img src="./Calculadora2.svg" alt="Calculadora" />;
                                                     break;
                                                 case "Descargas":
-                                                    icon = <img src="./download.png" alt="Descargas" />;
+                                                    icon = <img src="./load_light.svg" alt="Descargas" />;
                                                     break;
                                                 case "Noticias":
-                                                    icon = <img src="./news.png" alt="Noticias" />;
+                                                    icon = <img src="./Book_open.svg" alt="Noticias" />;
                                                     break;
                                                 case "Inversor":
                                                     icon = <img src="./money-safe.svg" alt="Inversor" />;
