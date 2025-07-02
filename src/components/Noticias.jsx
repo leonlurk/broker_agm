@@ -102,7 +102,7 @@ const Noticias = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#232323] text-white p-2 sm:p-4 border border-[#333] rounded-3xl">
+    <div className="flex flex-col bg-[#232323] text-white p-2 sm:p-4 border border-[#333] rounded-3xl">
       {/* Days of the week tabs - Scrollable on mobile */}
       <div className="flex space-x-2 mb-4 overflow-x-auto pb-2 scrollbar-thin">
         {days.map((day) => (

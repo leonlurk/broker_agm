@@ -47,6 +47,21 @@ const Wallet = () => {
   const [transactions, setTransactions] = useState([]);
   const [historyFilter, setHistoryFilter] = useState('all');
 
+  // Función de utilidad para scroll
+  const scrollToTop = () => {
+    // Usar el mismo comportamiento que el hook global para consistencia
+    try {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'auto', // Scroll instantáneo para mejor UX en navegación interna
+      });
+    } catch (e) {
+      // Fallback para navegadores antiguos
+      window.scrollTo(0, 0);
+    }
+  };
+
   // Cargar transacciones iniciales
   useEffect(() => {
     loadTransactions();
@@ -141,14 +156,14 @@ const Wallet = () => {
   // Manejar selección de método
   const handleSelectMethod = (method) => {
     setSelectedMethod(method);
-    setCurrentStep(2);
+    goToStep(2);
     setError('');
   };
 
   // Manejar selección de moneda
   const handleSelectCoin = (coin) => {
     setSelectedCoin(coin);
-    setCurrentStep(3);
+    goToStep(3);
     setError('');
   };
 
@@ -160,7 +175,7 @@ const Wallet = () => {
     }
     setTransferToAccount(account);
     setShowTransferAccountDropdown(false);
-    setCurrentStep(3);
+    goToStep(3);
     setError('');
   };
 
@@ -266,6 +281,18 @@ const Wallet = () => {
     setAcceptTerms(false);
   };
 
+  // Wrapper para cambiar de paso y hacer scroll
+  const goToStep = (step) => {
+    setCurrentStep(step);
+    scrollToTop();
+  };
+
+  // Wrapper para cambiar de tab y hacer scroll
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
+    scrollToTop();
+  };
+
   // Opciones de métodos según la operación
   const getMethodOptions = () => {
     if (currentOperation === WALLET_OPERATIONS.DEPOSIT) {
@@ -320,37 +347,37 @@ const Wallet = () => {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Paso 1: Seleccionar cuenta destino */}
-        <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 1 ? 'border-[#06b6d4]' : 'border-[#334155]'}`}>
+        <div className={`bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-xl border-2 p-6 ${currentStep === 1 ? 'border-cyan-500' : 'border-[#333]'}`}>
           <h3 className="text-lg font-semibold mb-2 text-white">Paso 1</h3>
-          <p className="text-[#9ca3af] mb-6 text-sm">Seleccionar cuenta de destino</p>
+          <p className="text-gray-400 mb-6 text-sm">Seleccionar cuenta de destino</p>
           
           <div className="relative" ref={transferDropdownRef}>
             <button 
               onClick={() => setShowTransferAccountDropdown(!showTransferAccountDropdown)}
-              className="w-full p-4 text-left rounded-lg border-2 border-[#4b5563] bg-[#1e1e1e] hover:bg-[#374151] transition-colors"
+              className="w-full p-4 text-left rounded-lg border-2 border-[#333] bg-[#1a1a1a] hover:bg-[#2a2a2a] transition-colors"
             >
               <span className="text-white">
-                {transferToAccount ? `${transferToAccount.name} (${transferToAccount.accountNumber})` : 'Seleccionar cuenta destino'}
+                {transferToAccount ? `${transferToAccount.accountName} (${transferToAccount.accountNumber})` : 'Seleccionar cuenta destino'}
               </span>
             </button>
 
             {showTransferAccountDropdown && (
-              <div className="absolute top-full left-0 mt-2 w-full bg-[#232323] border border-[#4b5563] rounded-lg shadow-lg z-50">
+              <div className="absolute top-full left-0 mt-2 w-full bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] border border-[#333] rounded-lg shadow-xl z-50">
                 <div className="p-2 max-h-60 overflow-y-auto">
                   {availableAccounts.filter(acc => acc.id !== selectedAccount?.id).map((account) => (
                     <button
                       key={account.id}
                       onClick={() => handleSelectTransferAccount(account)}
-                      className="w-full p-3 text-left rounded-lg hover:bg-[#374151] transition-colors"
+                      className="w-full p-3 text-left rounded-lg hover:bg-[#3a3a3a] transition-colors"
                     >
                       <div className="flex justify-between items-center">
                         <div>
-                          <div className="font-medium text-white">{account.name}</div>
-                          <div className="text-xs text-[#9ca3af]">{account.type} • {account.accountNumber}</div>
+                          <div className="font-medium text-white">{account.accountName}</div>
+                          <div className="text-xs text-gray-400">{account.accountType} • {account.accountNumber}</div>
                         </div>
                         <div className="text-right">
-                          <div className="font-semibold text-white">${account.balance.toLocaleString()}</div>
-                          <div className="text-xs text-[#9ca3af]">USD</div>
+                          <div className="font-semibold text-white">${(account.balance || 0).toLocaleString()}</div>
+                          <div className="text-xs text-gray-400">USD</div>
                         </div>
                       </div>
                     </button>
@@ -362,20 +389,20 @@ const Wallet = () => {
         </div>
 
         {/* Paso 2: Vacío para transferencias */}
-        <div className={`bg-[#232323] rounded-xl border-2 p-6 opacity-60 border-[#334155]`}>
+        <div className={`bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-xl border-2 p-6 opacity-60 border-[#333]`}>
           <h3 className="text-lg font-semibold mb-2 text-white">Paso 2</h3>
-          <p className="text-[#9ca3af] mb-6 text-sm">-</p>
+          <p className="text-gray-400 mb-6 text-sm">-</p>
         </div>
 
         {/* Paso 3: Monto y confirmación */}
-        <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 3 ? 'border-[#06b6d4]' : 'border-[#334155]'} ${currentStep < 3 ? 'opacity-60' : ''}`}>
+        <div className={`bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-xl border-2 p-6 ${currentStep === 3 ? 'border-cyan-500' : 'border-[#333]'} ${currentStep < 3 ? 'opacity-60' : ''}`}>
           <h3 className="text-lg font-semibold mb-2 text-white">Paso 3</h3>
-          <p className="text-[#9ca3af] mb-6 text-sm">Monto a transferir</p>
+          <p className="text-gray-400 mb-6 text-sm">Monto a transferir</p>
           
           {currentStep >= 3 && (
             <div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-[#9ca3af] mb-2">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
                   Monto (USD)
                 </label>
                 <input
@@ -383,7 +410,7 @@ const Wallet = () => {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-4 py-3 bg-[#1e1e1e] border border-[#4b5563] rounded-lg text-white placeholder-[#6b7280] focus:border-[#06b6d4] focus:outline-none"
+                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none transition-colors"
                 />
               </div>
 
@@ -393,9 +420,9 @@ const Wallet = () => {
                   id="terms" 
                   checked={acceptTerms}
                   onChange={(e) => setAcceptTerms(e.target.checked)}
-                  className="mr-3 w-4 h-4 text-[#06b6d4] bg-[#1e1e1e] border-[#4b5563] rounded focus:ring-[#06b6d4] focus:ring-2"
+                  className="mr-3 w-4 h-4 text-cyan-500 bg-[#1a1a1a] border-[#333] rounded focus:ring-cyan-500 focus:ring-2"
                 />
-                <label htmlFor="terms" className="text-sm text-[#9ca3af] font-medium">
+                <label htmlFor="terms" className="text-sm text-gray-400 font-medium">
                   Confirmo que los datos son correctos
                 </label>
               </div>
@@ -405,8 +432,8 @@ const Wallet = () => {
                 disabled={!acceptTerms || !amount || !transferToAccount || isLoading}
                 className={`w-full py-3 rounded-lg text-center font-semibold transition-all ${
                   acceptTerms && amount && transferToAccount && !isLoading
-                    ? 'bg-gradient-to-r from-[#06b6d4] to-[#0891b2] hover:from-[#0891b2] hover:to-[#0e7490] text-white' 
-                    : 'bg-[#374151] text-[#6b7280] cursor-not-allowed'
+                    ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-700 hover:to-cyan-600 text-white' 
+                    : 'bg-[#2a2a2a] text-gray-500 cursor-not-allowed'
                 }`}
               >
                 {isLoading ? 'Procesando...' : 'Transferir'}
@@ -488,7 +515,7 @@ const Wallet = () => {
                     {selectedMethod === 'skrill' && 'Se procesará mediante Skrill'}
                   </p>
                   <button 
-                    onClick={() => setCurrentStep(3)}
+                    onClick={() => goToStep(3)}
                     className="mt-3 w-full py-2 bg-[#06b6d4] hover:bg-[#0891b2] text-white rounded-lg transition-colors"
                   >
                     Continuar
@@ -578,10 +605,10 @@ const Wallet = () => {
   // Renderizar historial de transacciones
   const renderTransactionHistory = () => {
     return (
-      <div className="bg-[#232323] rounded-2xl border border-[#334155] overflow-hidden">
+      <div className="bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-2xl border border-[#333] overflow-hidden">
         {/* Filtros */}
-        <div className="flex justify-between items-center p-6 border-b border-[#334155]">
-          <div className="flex gap-2">
+        <div className="flex flex-wrap justify-between items-center p-6 border-b border-[#333]">
+          <div className="flex flex-wrap gap-2 mb-4 lg:mb-0">
             {[
               { key: 'all', label: 'Todas' },
               { key: 'deposits', label: 'Depósitos' },
@@ -593,8 +620,8 @@ const Wallet = () => {
                 onClick={() => setHistoryFilter(filter.key)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   historyFilter === filter.key
-                    ? 'bg-[#06b6d4] text-white'
-                    : 'bg-[#374151] text-[#9ca3af] hover:text-white'
+                    ? 'bg-cyan-600 text-white'
+                    : 'bg-[#2a2a2a] text-gray-400 hover:text-white hover:bg-[#3a3a3a]'
                 }`}
               >
                 {filter.label}
@@ -603,7 +630,7 @@ const Wallet = () => {
           </div>
           <button 
             onClick={loadTransactions}
-            className="flex items-center gap-2 px-4 py-2 bg-[#374151] rounded-lg text-[#9ca3af] hover:text-white transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-[#2a2a2a] rounded-lg text-gray-400 hover:text-white hover:bg-[#3a3a3a] transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -615,27 +642,27 @@ const Wallet = () => {
         {/* Tabla de transacciones */}
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-[#374151]">
+            <thead className="bg-[#1a1a1a]">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-[#9ca3af]">Fecha</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-[#9ca3af]">Tipo</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-[#9ca3af]">Monto</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-[#9ca3af]">Método</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-[#9ca3af]">Estado</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-[#9ca3af]">Cuenta</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Fecha</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Tipo</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Monto</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Método</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Estado</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Cuenta</th>
               </tr>
             </thead>
             <tbody>
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-[#9ca3af]">
+                  <td colSpan="6" className="px-6 py-8 text-center text-gray-400">
                     No hay transacciones para mostrar
                   </td>
                 </tr>
               ) : (
                 filteredTransactions.map((transaction, index) => (
-                  <tr key={transaction.id} className={`${index % 2 === 0 ? 'bg-[#1e1e1e]' : 'bg-[#232323]'} hover:bg-[#374151] transition-colors`}>
-                    <td className="px-6 py-4 text-[#9ca3af] text-sm">
+                  <tr key={transaction.id} className={`${index % 2 === 0 ? 'bg-[#1a1a1a]' : 'bg-[#2a2a2a]'} hover:bg-[#3a3a3a] transition-colors`}>
+                    <td className="px-6 py-4 text-gray-300 text-sm">
                       {transaction.date.toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-sm">
@@ -651,22 +678,22 @@ const Wallet = () => {
                     <td className="px-6 py-4 text-white font-semibold text-sm">
                       ${transaction.amount.toLocaleString()} {transaction.currency}
                     </td>
-                    <td className="px-6 py-4 text-[#9ca3af] text-sm">
+                    <td className="px-6 py-4 text-gray-300 text-sm">
                       {transaction.method}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span className={`font-medium ${
-                        transaction.status === 'completed' ? 'text-[#10b981]' : 
-                        transaction.status === 'pending' ? 'text-[#f59e0b]' : 'text-[#ef4444]'
+                        transaction.status === 'completed' ? 'text-green-400' : 
+                        transaction.status === 'pending' ? 'text-yellow-400' : 'text-red-400'
                       }`}>
                         {transaction.status === 'completed' ? 'Completado' :
                          transaction.status === 'pending' ? 'Pendiente' : 'Rechazado'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-[#9ca3af] text-sm">
+                    <td className="px-6 py-4 text-gray-300 text-sm">
                       {transaction.account}
                       {transaction.toAccount && (
-                        <div className="text-xs text-[#6b7280]">
+                        <div className="text-xs text-gray-500">
                           → {transaction.toAccount}
                         </div>
                       )}
@@ -682,44 +709,44 @@ const Wallet = () => {
   };
 
   return (
-    <div className="p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white border border-[#334155] rounded-3xl">
-      <div className="flex-grow flex flex-col p-4 md:p-6">
-        {/* Header con título y botón de volver (si aplica) */}
-        <div className="flex items-center gap-4 mb-6">
-          {!currentOperation ? (
-            <h1 className="text-3xl font-bold">Billetera</h1>
-          ) : (
-            <>
-              <div className="flex-shrink-0">
-                <img 
-                  src="/Back.svg" 
-                  alt="Back" 
-                  onClick={() => {
-                    finishWalletOperation();
-                    resetForm();
-                  }}
-                  className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
-                />
-              </div>
-              <h1 className={`text-3xl font-bold ${getOperationColor()}`}>
-                {getOperationTitle()}
-              </h1>
-            </>
-          )}
-        </div>
+    <div className="flex flex-col p-4 text-white min-h-screen">
+      {/* Header con título y botón de volver */}
+      <div className="flex items-center gap-4 mb-6">
+        {!currentOperation ? (
+          <h1 className="text-2xl font-semibold">Billetera</h1>
+        ) : (
+          <>
+            <div className="flex-shrink-0">
+              <img 
+                src="/Back.svg" 
+                alt="Back" 
+                onClick={() => {
+                  finishWalletOperation();
+                  resetForm();
+                  scrollToTop();
+                }}
+                className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
+              />
+            </div>
+            <h1 className={`text-2xl font-semibold ${getOperationColor()}`}>
+              {getOperationTitle()}
+            </h1>
+          </>
+        )}
+      </div>
 
-        {/* Contenido principal (Formularios o Resumen) */}
-        {/* Selección de cuenta */}
+      {/* Selección de cuenta */}
+      <div className="mb-6">
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={() => setShowAccountDropdown(!showAccountDropdown)}
-            className="flex items-center gap-3 px-4 py-2 bg-[#374151] hover:bg-[#4b5563] rounded-lg border border-[#4b5563] transition-colors"
+            className="flex items-center justify-between w-full max-w-md px-4 py-3 bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] hover:from-[#3a3a3a] hover:to-[#2e2e2e] rounded-xl border border-[#333] transition-all duration-200"
           >
-            <span className="text-[#9ca3af] font-medium text-sm">
-              {selectedAccount ? `${selectedAccount.name} (${selectedAccount.accountNumber})` : 'Seleccionar Cuenta'}
+            <span className="text-white font-medium">
+              {selectedAccount ? `${selectedAccount.accountName} (${selectedAccount.accountNumber})` : 'Seleccionar Cuenta'}
             </span>
             <svg 
-              className={`h-4 w-4 text-[#9ca3af] transition-transform ${showAccountDropdown ? 'rotate-180' : ''}`} 
+              className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${showAccountDropdown ? 'rotate-180' : ''}`} 
               viewBox="0 0 20 20" 
               fill="currentColor"
             >
@@ -729,8 +756,8 @@ const Wallet = () => {
 
           {/* Dropdown de cuentas */}
           {showAccountDropdown && (
-            <div className="absolute top-full right-0 mt-2 w-80 bg-[#232323] border border-[#4b5563] rounded-lg shadow-lg z-50">
-              <div className="p-2">
+            <div className="absolute top-full left-0 mt-2 w-full max-w-md bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] border border-[#333] rounded-xl shadow-xl z-50">
+              <div className="p-2 max-h-60 overflow-y-auto">
                 {availableAccounts.map((account) => (
                   <button
                     key={account.id}
@@ -738,20 +765,20 @@ const Wallet = () => {
                       selectAccount(account);
                       setShowAccountDropdown(false);
                     }}
-                    className={`w-full p-3 text-left rounded-lg transition-colors ${
+                    className={`w-full p-4 text-left rounded-lg transition-all duration-200 ${
                       selectedAccount?.id === account.id
-                        ? 'bg-[#374151] border border-[#06b6d4]'
-                        : 'hover:bg-[#374151]'
+                        ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/20 border border-cyan-500/50'
+                        : 'hover:bg-[#3a3a3a]'
                     }`}
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <div className="font-medium text-white">{account.name}</div>
-                        <div className="text-xs text-[#9ca3af]">{account.type} • {account.accountNumber}</div>
+                        <div className="font-medium text-white">{account.accountName}</div>
+                        <div className="text-xs text-gray-400">{account.accountType} • {account.accountNumber}</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-semibold text-white">${account.balance.toLocaleString()}</div>
-                        <div className="text-xs text-[#9ca3af]">USD</div>
+                        <div className="font-semibold text-white">${(account.balance || 0).toLocaleString()}</div>
+                        <div className="text-xs text-gray-400">USD</div>
                       </div>
                     </div>
                   </button>
@@ -760,61 +787,63 @@ const Wallet = () => {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Balance Card */}
-        {selectedAccount && (
-          <div className="relative rounded-2xl p-[2px] mb-8" style={{
-            background: 'linear-gradient(to bottom, rgba(6, 182, 212, 1) 0%, rgba(6, 182, 212, 1) 50%, rgba(6, 182, 212, 0) 100%)'
-          }}>
-            <div className="bg-[#232323] rounded-2xl p-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-[#9ca3af] mb-1 text-sm font-medium">Balance Disponible</p>
-                  <h2 className="text-4xl font-bold text-white">${selectedAccount.balance.toLocaleString()}</h2>
-                  <p className="text-xs text-[#9ca3af] mt-1">{selectedAccount.type} • {selectedAccount.accountNumber}</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-[#9ca3af] mb-2">Cuenta Activa</div>
-                  <div className="text-lg font-semibold text-white">{selectedAccount.name}</div>
-                </div>
+      {/* Balance Card */}
+      {selectedAccount && (
+        <div className="mb-8">
+          <div className="bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-2xl p-6 border-t border-l border-r border-cyan-500">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-gray-400 mb-2 text-sm font-medium">Balance Disponible</p>
+                <h2 className="text-3xl font-bold text-white">${(selectedAccount.balance || 0).toLocaleString()}</h2>
+                <p className="text-xs text-gray-400 mt-2">{selectedAccount.accountType} • {selectedAccount.accountNumber}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-400 mb-2">Cuenta Activa</div>
+                <div className="text-lg font-semibold text-white">{selectedAccount.accountName}</div>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Tabs */}
-        <div className="flex border-b border-[#334155] mb-8">
+      {/* Tabs */}
+      <div className="mb-8">
+        <div className="flex border-b border-[#333]">
           <button 
-            onClick={() => setActiveTab('operations')}
-            className={`px-8 py-4 font-semibold text-sm transition-all relative ${
+            onClick={() => handleTabClick('operations')}
+            className={`px-6 py-3 font-medium text-sm transition-all relative ${
               activeTab === 'operations' 
-                ? 'text-white border-b-2 border-[#06b6d4]' 
-                : 'text-[#9ca3af] hover:text-white'
+                ? 'text-white border-b-2 border-cyan-500' 
+                : 'text-gray-400 hover:text-white'
             }`}
           >
             {getOperationTitle()}
           </button>
           <button 
-            onClick={() => setActiveTab('history')}
-            className={`px-8 py-4 font-semibold text-sm transition-all relative ${
+            onClick={() => handleTabClick('history')}
+            className={`px-6 py-3 font-medium text-sm transition-all relative ${
               activeTab === 'history' 
-                ? 'text-white border-b-2 border-[#06b6d4]' 
-                : 'text-[#9ca3af] hover:text-white'
+                ? 'text-white border-b-2 border-cyan-500' 
+                : 'text-gray-400 hover:text-white'
             }`}
           >
             Historial
           </button>
         </div>
+      </div>
 
-        {/* Contenido de tabs */}
+      {/* Contenido de tabs */}
+      <div className="flex-1">
         {activeTab === 'operations' ? (
           <div>
             {!currentOperation ? (
-              <div className="text-center py-12">
-                <div className="text-[#9ca3af] text-lg mb-4">
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="text-gray-400 text-lg mb-4 text-center">
                   Selecciona una operación desde el Dashboard
                 </div>
-                <div className="text-sm text-[#6b7280]">
+                <div className="text-sm text-gray-500 text-center">
                   Usa los botones Depositar, Retirar o Transferir para comenzar
                 </div>
               </div>
@@ -831,19 +860,19 @@ const Wallet = () => {
             {renderTransactionHistory()}
           </div>
         )}
-
-        {/* Mensajes de estado */}
-        {error && (
-          <div className="mt-4 p-4 bg-red-900/50 border border-red-500 rounded-lg text-red-200">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="mt-4 p-4 bg-green-900/50 border border-green-500 rounded-lg text-green-200">
-            {success}
-          </div>
-        )}
       </div>
+
+      {/* Mensajes de estado */}
+      {error && (
+        <div className="mt-6 p-4 bg-red-900/30 border border-red-500/50 rounded-lg text-red-200">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="mt-6 p-4 bg-green-900/30 border border-green-500/50 rounded-lg text-green-200">
+          {success}
+        </div>
+      )}
     </div>
   );
 };

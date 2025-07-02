@@ -148,6 +148,33 @@ export const updateAccountBalance = async (accountId, newBalance) => {
   }
 };
 
+// Update investor password for an account
+export const updateInvestorPassword = async (accountId, investorPassword) => {
+  logger.info('Updating investor password', { accountId });
+  
+  try {
+    const accountRef = doc(db, TRADING_ACCOUNTS_COLLECTION, accountId);
+    
+    await updateDoc(accountRef, {
+      investorPassword: investorPassword,
+      updatedAt: serverTimestamp()
+    });
+
+    logger.info('Investor password updated successfully');
+    
+    return {
+      success: true
+    };
+
+  } catch (error) {
+    logger.error('Error updating investor password', error);
+    return {
+      success: false,
+      error: error.message || 'Error al actualizar la contraseña investor'
+    };
+  }
+};
+
 // Get account statistics
 export const getAccountStats = async (userId) => {
   logger.info('Fetching account statistics', { userId });

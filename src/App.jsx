@@ -29,7 +29,7 @@ function App() {
       console.error("Logout failed", error);
     }
   };
- 
+
   // Common background wrapper for auth pages
   const AuthPageWrapper = ({ children }) => (
     <div className="min-h-screen w-full flex items-center justify-center bg-black bg-no-repeat bg-cover bg-center"

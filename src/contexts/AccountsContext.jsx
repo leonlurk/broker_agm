@@ -190,6 +190,7 @@ export const AccountsProvider = ({ children }) => {
     selectAccount,
     setActiveCategory,
     loadAccounts,
+    refreshAccounts: loadAccounts,
     startWalletOperation,
     finishWalletOperation,
     updateAccount,

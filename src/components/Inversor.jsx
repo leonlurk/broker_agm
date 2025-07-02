@@ -383,7 +383,7 @@ const Inversor = () => {
   if (selectedTrader) {
     if (isLoadingDetails) {
       return (
-        <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white min-h-screen flex flex-col">
+        <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white flex flex-col">
           <div className="mb-4">
             <img 
               src="/Back.svg" 
@@ -426,7 +426,7 @@ const Inversor = () => {
     }
       
     return (
-      <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen flex flex-col border border-[#333] rounded-3xl">
+      <div className="p-4 md:p-6 bg-[#232323] text-white flex flex-col border border-[#333] rounded-3xl">
         {/* Botón Volver */} 
         <div className="mb-4">
           <img 
@@ -703,7 +703,7 @@ const Inversor = () => {
 
    // --- Renderizado de la lista de traders (NUEVO DISEÑO v3) --- 
   return (
-    <div className="p-4 md:p-6 bg-[#232323] text-white min-h-screen">
+    <div className="p-4 md:p-6 bg-[#232323] text-white flex flex-col">
 
       {/* Contenedor Superior Unificado: Título, Búsqueda y Filtros */} 
       <div className="mb-6 md:mb-8 p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-3xl border border-[#333]">

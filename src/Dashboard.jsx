@@ -6,6 +6,7 @@ import TradingChallenge from './components/TradingChallenge';
 import PipCalculator from './components/PipCalculator';
 import CertificateComponent from './components/CertificateComponent';
 import LeaderboardModal from './components/LeaderboardModal';
+import ScrollManager from './components/utils/ScrollManager';
 
 import OperationsHistory from './components/OperationsHistory';
 import Descargas from './components/Descargas';
@@ -163,6 +164,7 @@ const Dashboard = ({ onLogout }) => {
 
   return (
     <div className="flex h-screen w-full bg-[#232323] overflow-hidden">
+      <ScrollManager navigationDependency={selectedOption} />
       <Sidebar 
         selectedOption={selectedOption} 
         setSelectedOption={handleSidebarOptionChange}

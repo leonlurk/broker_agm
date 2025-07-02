@@ -144,7 +144,7 @@ const PipCalculator = () => {
   ];
 
   return (
-    <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-white h-screen flex flex-col border border-[#333] rounded-3xl">
+    <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-white flex flex-col border border-[#333] rounded-3xl">
       {/* Tabs - Responsivos */}
       <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-6">
         <button 

@@ -173,11 +173,21 @@ const PammListView = ({ onSelectTrader }) => {
 
 const PammDetailView = ({ trader, onBack }) => {
     const [activeTab, setActiveTab] = useState('Rendimiento');
+    const [timeFilter, setTimeFilter] = useState('mensual');
 
-    const chartConfig = {
-        'Rendimiento': { data: [ { name: 'Ene', value: 3.2 }, { name: 'Feb', value: 5.0 }, { name: 'Mar', value: 4.5 }, { name: 'Abr', value: 7.9 }, { name: 'May', value: 10.0 }, { name: 'Jun', value: 8.5 }, { name: 'Jul', value: 13.2 }, { name: 'Ago', value: 15.0 }, { name: 'Sep', value: 14.4 }, { name: 'Oct', value: 18.0 }, { name: 'Nov', value: 15.2 }, { name: 'Dic', value: 19.8 } ], max: 30, step: 5 },
-        'Retracción': { data: [ { name: 'Ene', value: 2 }, { name: 'Feb', value: 3 }, { name: 'Mar', value: 2.5 }, { name: 'Abr', value: 4 }, { name: 'May', value: 5.5 }, { name: 'Jun', value: 4.2 }, { name: 'Jul', value: 6 }, { name: 'Ago', value: 7 }, { name: 'Sep', value: 6.5 }, { name: 'Oct', value: 8 }, { name: 'Nov', value: 7.2 }, { name: 'Dic', value: 9 } ], max: 15, step: 3 },
-        'Balance': { data: [ { name: 'Ene', value: 10 }, { name: 'Feb', value: 12 }, { name: 'Mar', value: 11 }, { name: 'Abr', value: 15 }, { name: 'May', value: 18 }, { name: 'Jun', value: 16 }, { name: 'Jul', value: 22 }, { name: 'Ago', value: 25 }, { name: 'Sep', value: 24 }, { name: 'Oct', value: 28 }, { name: 'Nov', value: 26 }, { name: 'Dic', value: 30 } ], max: 40, step: 10 },
+    const chartData = {
+        'Rendimiento': {
+            mensual: { data: [ { name: 'Ene', value: 3.2 }, { name: 'Feb', value: 5.0 }, { name: 'Mar', value: 4.5 }, { name: 'Abr', value: 7.9 }, { name: 'May', value: 10.0 }, { name: 'Jun', value: 8.5 }, { name: 'Jul', value: 13.2 }, { name: 'Ago', value: 15.0 }, { name: 'Sep', value: 14.4 }, { name: 'Oct', value: 18.0 }, { name: 'Nov', value: 15.2 }, { name: 'Dic', value: 19.8 } ], max: 30, step: 5 },
+            trimestral: { data: [ { name: 'Q1', value: 12.7 }, { name: 'Q2', value: 26.4 }, { name: 'Q3', value: 42.6 }, { name: 'Q4', value: 53.0 } ], max: 60, step: 10 }
+        },
+        'Retracción': {
+            mensual: { data: [ { name: 'Ene', value: 2 }, { name: 'Feb', value: 3 }, { name: 'Mar', value: 2.5 }, { name: 'Abr', value: 4 }, { name: 'May', value: 5.5 }, { name: 'Jun', value: 4.2 }, { name: 'Jul', value: 6 }, { name: 'Ago', value: 7 }, { name: 'Sep', value: 6.5 }, { name: 'Oct', value: 8 }, { name: 'Nov', value: 7.2 }, { name: 'Dic', value: 9 } ], max: 15, step: 3 },
+            trimestral: { data: [ { name: 'Q1', value: 7.5 }, { name: 'Q2', value: 13.7 }, { name: 'Q3', value: 19.5 }, { name: 'Q4', value: 24.2 } ], max: 30, step: 5 }
+        },
+        'Balance': {
+            mensual: { data: [ { name: 'Ene', value: 10 }, { name: 'Feb', value: 12 }, { name: 'Mar', value: 11 }, { name: 'Abr', value: 15 }, { name: 'May', value: 18 }, { name: 'Jun', value: 16 }, { name: 'Jul', value: 22 }, { name: 'Ago', value: 25 }, { name: 'Sep', value: 24 }, { name: 'Oct', value: 28 }, { name: 'Nov', value: 26 }, { name: 'Dic', value: 30 } ], max: 40, step: 10 },
+            trimestral: { data: [ { name: 'Q1', value: 33 }, { name: 'Q2', value: 49 }, { name: 'Q3', value: 71 }, { name: 'Q4', value: 84 } ], max: 100, step: 20 }
+        }
     };
 
     const getBarColor = (value, maxValue) => {
@@ -188,7 +198,7 @@ const PammDetailView = ({ trader, onBack }) => {
     };
 
     const renderChart = () => {
-        const currentChart = chartConfig[activeTab];
+        const currentChart = chartData[activeTab][timeFilter];
         
         return (
             <div style={{ width: '100%', height: 300 }}>
@@ -198,17 +208,19 @@ const PammDetailView = ({ trader, onBack }) => {
                         <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                         <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}%`} domain={[0, currentChart.max]}/>
                         <Tooltip
+                          cursor={false}
                           contentStyle={{
                             backgroundColor: '#232323',
                             border: '1px solid #333',
                             borderRadius: '8px',
                             fontSize: '14px',
-                            color: '#ffffff'
+                            color: '#ffffff',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                           }}
                           labelStyle={{ color: '#ffffff' }}
                           itemStyle={{ color: '#ffffff' }}
                           formatter={(value) => [`${value.toFixed(1)}%`, activeTab]}
-                          labelFormatter={(label) => `Mes: ${label}`}
+                          labelFormatter={(label) => `${timeFilter === 'mensual' ? 'Mes' : 'Trimestre'}: ${label}`}
                         />
                         <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={40}>
                             {currentChart.data.map((entry, index) => (
@@ -235,10 +247,10 @@ const PammDetailView = ({ trader, onBack }) => {
             
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center -mt-8">
                     <div className="flex items-center space-x-4">
-                    <img src={trader.img} alt={trader.name} className="w-16 h-16 rounded-full border-2 border-cyan-400" />
+                    <img src="/iconPamm.svg" alt={trader.nombre} className="w-16 h-16 rounded-full border-2 border-cyan-400" />
                         <div>
-                        <h1 className="text-2xl font-bold">{trader.name}</h1>
-                        <p className="text-gray-400">ID de la estrategia: {trader.id}</p>
+                        <h1 className="text-2xl font-bold">{trader.nombre}</h1>
+                        <p className="text-gray-400">ID de la estrategia: {trader.cuenta}</p>
                     </div>
                 </div>
                 <button className="mt-4 md:mt-0 text-cyan-400 border border-cyan-400 rounded-full px-6 py-2 hover:bg-cyan-400 hover:text-black transition-colors">
@@ -312,8 +324,13 @@ const PammDetailView = ({ trader, onBack }) => {
                         ))}
                     </div>
                     <div className="relative mt-3 sm:mt-0">
-                        <select className="bg-[#2D2D2D] border border-[#333] rounded-lg py-2 pl-4 pr-8 appearance-none focus:outline-none focus:ring-1 focus:ring-cyan-500">
-                            <option>Filtrar por</option>
+                        <select 
+                            value={timeFilter}
+                            onChange={(e) => setTimeFilter(e.target.value)}
+                            className="bg-[#2D2D2D] border border-[#333] rounded-lg py-2 pl-4 pr-8 appearance-none focus:outline-none focus:ring-1 focus:ring-cyan-500 text-white"
+                        >
+                            <option value="mensual">Mensual</option>
+                            <option value="trimestral">Trimestral</option>
                         </select>
                     </div>
                 </div>

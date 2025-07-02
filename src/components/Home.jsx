@@ -212,7 +212,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
           <h1 className="text-xl md:text-2xl font-semibold">
             Hola, {userProfileData.nombre || currentUser?.displayName?.split(' ')[0] || user?.username || 'Usuario'}
           </h1>
-          <p className="text-sm md:text-base text-gray-400">Miércoles, 8 de diciembre 2025</p>
+          <p className="text-sm md:text-base text-gray-400">{new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).replace(/^\w/, (c) => c.toUpperCase())}</p>
         </div>
         <div className="flex items-center space-x-3 md:space-x-4 w-full sm:w-auto justify-end">
           <button 
@@ -355,7 +355,11 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
           <div className="flex flex-col gap-3 w-full md:w-auto">
              <button
                onClick={handleDeposit}
-               className="bg-[#2a2a2a] border border-cyan-500/50 hover:border-cyan-500/80 text-white py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+               className={`bg-[#2a2a2a] border py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base ${
+                 selectedAccount 
+                   ? 'border-cyan-500/50 hover:border-cyan-500/80 text-white hover:bg-[#333] cursor-pointer' 
+                   : 'border-gray-600/50 text-gray-500 cursor-not-allowed opacity-50'
+               }`}
                style={{ outline: 'none' }}
                disabled={!selectedAccount}
              >
@@ -364,7 +368,11 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
              </button>
              <button
                onClick={handleWithdraw}
-               className="bg-[#2a2a2a] border border-cyan-500/50 hover:border-cyan-500/80 text-gray-300 hover:text-white py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+               className={`bg-[#2a2a2a] border py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base ${
+                 selectedAccount 
+                   ? 'border-cyan-500/50 hover:border-cyan-500/80 text-gray-300 hover:text-white hover:bg-[#333] cursor-pointer' 
+                   : 'border-gray-600/50 text-gray-500 cursor-not-allowed opacity-50'
+               }`}
                style={{ outline: 'none' }}
                disabled={!selectedAccount}
              >
@@ -373,7 +381,11 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
              </button>
              <button
                onClick={handleTransfer}
-               className="bg-[#2a2a2a] border border-cyan-500/50 hover:border-cyan-500/80 text-gray-300 hover:text-white py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base"
+               className={`bg-[#2a2a2a] border py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base ${
+                 selectedAccount 
+                   ? 'border-cyan-500/50 hover:border-cyan-500/80 text-gray-300 hover:text-white hover:bg-[#333] cursor-pointer' 
+                   : 'border-gray-600/50 text-gray-500 cursor-not-allowed opacity-50'
+               }`}
                style={{ outline: 'none' }}
                disabled={!selectedAccount}
              >

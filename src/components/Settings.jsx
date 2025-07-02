@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, X } from 'lucide-react';
 import KYCVerification from './KYCVerification';
 import { useAuth } from '../contexts/AuthContext';
-import { sendPasswordReset, verifyEmailUpdate, reauthenticateUser } from '../firebase/auth';
 import PaymentMethodSettings from './PaymentMethodSettings';
 
 const Settings = ({ onBack }) => {
   const [expandedSection, setExpandedSection] = useState(null);
   const [showKYC, setShowKYC] = useState(false);
   const [showPaymentSettings, setShowPaymentSettings] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
   
   const { currentUser } = useAuth();
 
@@ -21,55 +21,55 @@ const Settings = ({ onBack }) => {
     }
   };
   
-  const handleChangePassword = async () => {
-    if (!currentUser || !currentUser.email) {
-      setFeedbackMessage('No se pudo encontrar el email del usuario.');
-      return;
-    }
-    
-    setFeedbackMessage('Enviando correo de restablecimiento...');
-    const result = await sendPasswordReset(currentUser.email);
-    
-    if (result.success) {
-      setFeedbackMessage('¡Correo de restablecimiento enviado! Revisa tu bandeja de entrada.');
-    } else {
-      setFeedbackMessage(`Error: ${result.error}`);
-    }
+  const handleChangePassword = () => {
+    setShowPasswordModal(true);
   };
 
-  const handleUpdateEmail = async () => {
-    if (!currentUser) {
-      setFeedbackMessage('Usuario no encontrado. Por favor, inicie sesión de nuevo.');
-      return;
-    }
+  const handleUpdateEmail = () => {
+    setShowEmailModal(true);
+  };
 
-    const newEmail = prompt("Por favor, ingresa tu nuevo correo electrónico:");
-    if (!newEmail) return;
+  // Modal Component
+  const Modal = ({ isOpen, onClose, title, message }) => {
+    if (!isOpen) return null;
 
-    if (!/\S+@\S+\.\S+/.test(newEmail)) {
-      setFeedbackMessage('Error: Por favor, ingresa un formato de correo válido.');
-      return;
-    }
-    
-    const password = prompt("Por seguridad, por favor, ingresa tu contraseña actual:");
-    if (!password) return;
-
-    setFeedbackMessage('Re-autenticando...');
-    const reauthResult = await reauthenticateUser(currentUser, password);
-
-    if (!reauthResult.success) {
-      setFeedbackMessage('Error: La contraseña es incorrecta o la autenticación falló.');
-      return;
-    }
-    
-    setFeedbackMessage('Enviando correo de verificación a la nueva dirección...');
-    const result = await verifyEmailUpdate(currentUser, newEmail);
-
-    if (result.success) {
-      setFeedbackMessage(`¡Correo de verificación enviado a ${newEmail}! Revisa tu bandeja de entrada para confirmar el cambio.`);
-    } else {
-      setFeedbackMessage(`Error: ${result.error}`);
-    }
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-2xl p-6 max-w-md w-full mx-4">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-white">{title}</h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white transition-colors p-1"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          
+          {/* Content */}
+          <div className="mb-6">
+            <p className="text-gray-300 text-sm leading-relaxed mb-4">
+              {message}
+            </p>
+            <div className="bg-[#1a1a1a] border border-[#333] rounded-lg p-3">
+              <p className="text-xs text-gray-400 mb-1">Correo de soporte:</p>
+              <p className="text-cyan-400 font-medium">soporte@agmbroker.com</p>
+            </div>
+          </div>
+          
+          {/* Actions */}
+          <div className="flex justify-center">
+            <button
+              onClick={onClose}
+              className="bg-gradient-to-r from-[#0891b2] to-[#0c4a6e] text-white py-2.5 px-6 rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (showKYC) {
@@ -95,13 +95,6 @@ const Settings = ({ onBack }) => {
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-semibold">Ajustes</h1>
       </div>
-      
-      {/* Feedback Message */}
-      {feedbackMessage && (
-        <div className={`p-4 mb-4 rounded-lg text-center ${feedbackMessage.startsWith('Error') ? 'bg-red-500 bg-opacity-30 text-red-300' : 'bg-green-500 bg-opacity-30 text-green-300'}`}>
-          {feedbackMessage}
-        </div>
-      )}
       
       {/* Main Settings Container with border */}
       <div className="border border-[#333] rounded-2xl bg-gradient-to-br from-[#232323] to-[#2d2d2d] p-4 md:p-6">
@@ -196,6 +189,21 @@ const Settings = ({ onBack }) => {
         </div>
         </div>
       </div>
+
+      {/* Modales */}
+      <Modal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        title="Cambiar Contraseña"
+        message="Para cambiar tu contraseña, por favor contacta a nuestro equipo de soporte. Ellos te ayudarán de manera segura con este proceso."
+      />
+
+      <Modal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        title="Actualizar Correo Electrónico"
+        message="Para actualizar tu correo electrónico, por favor contacta a nuestro equipo de soporte. Ellos verificarán tu identidad y procesarán el cambio de manera segura."
+      />
     </div>
   );
 };

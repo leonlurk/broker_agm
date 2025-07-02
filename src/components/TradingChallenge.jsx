@@ -81,12 +81,11 @@ export default function TradingChallengeUI() {
   };
 
   return (
-    <div className="bg-[#232323] text-white bg-gradient-to-br from-[#232323] to-[#2d2d2d] min-h-screen">
-      {/* Main Content */}
-      <div className="p-4 md:p-8">
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Left Content */}
-          <div className="w-full lg:w-3/4 p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-2xl border border-[#333]">
+    <div className="bg-[#232323] text-white bg-gradient-to-br from-[#232323] to-[#2d2d2d]">
+      <div className="max-w-4xl mx-auto p-4">
+        <div className="flex justify-center">
+          {/* Main Content */}
+          <div className="w-full max-w-2xl p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-2xl border border-[#333]">
             <div className="mb-6 md:mb-10">
               {/* Title */}
               <div className="mb-6 md:mb-8">
@@ -225,38 +224,6 @@ export default function TradingChallengeUI() {
                 </button>
               </div>
             </div>
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="w-full lg:w-1/4 p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-2xl border border-[#333]">
-            <div className="mb-6 md:mb-10">
-              <h2 className="text-base md:text-lg font-medium mb-2 md:mb-3">Codigo Promocional</h2>
-              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                <input
-                  className="flex-1 bg-transparent border border-gray-700 rounded-lg px-3 py-2 text-xs md:text-sm focus:outline-none focus:border-cyan-500 transition-colors"
-                  placeholder="Ingresar Código"
-                />
-                <button className="border-cyan-500 bg-gradient-to-br from-[#232323] to-[#2d2d2d] hover:bg-blue-700 text-white px-3 md:px-4 py-2 rounded-full text-xs md:text-sm">
-                  Aplicar
-                </button>
-              </div>
-            </div>
-            
-            <div className="mb-6 md:mb-10">
-              <h2 className="text-base md:text-lg font-medium mb-2 md:mb-3">Metodo de pago</h2>
-              <div className="flex items-center justify-between border border-gray-700 rounded-lg px-3 md:px-4 py-2 cursor-pointer focus:border-cyan-500 transition-colors">
-                <span className="text-xs md:text-sm text-gray-400">Seleccionar</span>
-                <ChevronDown size={16} className="text-gray-400" />
-              </div>
-            </div>
-            
-            <button className="w-full bg-gradient-to-br border-cyan-500 from-[#232323] to-[#2d2d2d] hover:bg-blue-700 text-white py-2 md:py-3 px-3 md:px-4 rounded-full mb-2 text-xs md:text-sm">
-              Proceder al Pago
-            </button>
-            
-            <p className="text-xs text-gray-500 text-center mt-2">
-              Al proceder al pago, acepto que la compra cumple con los términos de mis documentos emitidos por el gobierno.
-            </p>
           </div>
         </div>
       </div>

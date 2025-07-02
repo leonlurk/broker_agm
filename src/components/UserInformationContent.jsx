@@ -94,7 +94,7 @@ const UserInformationContent = ({ onBack }) => {
           ciudad: userData.ciudad || '',
           phoneCode: userData.phoneCode || '+54',
           phoneNumber: userData.phoneNumber || '',
-          photoURL: userData.photoURL || currentUser.photoURL || '/IconoPerfil.png',
+          photoURL: userData.photoURL || currentUser.photoURL || '/IconoPerfil.svg',
         };
 
         setFormData(fullData);
@@ -263,10 +263,10 @@ const UserInformationContent = ({ onBack }) => {
               <span className="text-xs">PNG, JPG, WEBP hasta 5MB</span>
             </div>
           </div>
-          {preview && preview !== '/IconoPerfil.png' && (
+          {preview && preview !== '/IconoPerfil.svg' && (
              <button type="button" onClick={() => {
-                setFormData(prev => ({ ...prev, photoURL: '/IconoPerfil.png'}));
-                setPreview('/IconoPerfil.png');
+                setFormData(prev => ({ ...prev, photoURL: '/IconoPerfil.svg'}));
+                setPreview('/IconoPerfil.svg');
                 // We set the file to null, but also change formData, so hasChanges will be true
                 setProfileImageFile(null); 
              }} className="w-full flex items-center justify-center gap-2 bg-red-500/20 text-red-400 py-2 px-4 rounded-lg hover:bg-red-500/40 transition-colors">

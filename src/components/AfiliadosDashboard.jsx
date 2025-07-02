@@ -35,6 +35,7 @@ const AfiliadosDashboard = () => {
   const [currentTier, setCurrentTier] = useState(1);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [selectedTrader, setSelectedTrader] = useState(null);
+  const [visibleAfiliados, setVisibleAfiliados] = useState(3);
   
   // Mock data for the new "Cuentas Activas" table
   const topAfiliadosData = [
@@ -67,6 +68,36 @@ const AfiliadosDashboard = () => {
       lotesOperados: 10,
       comisionesGeneradas: 10,
       retirosCobrados: 3,
+    },
+    {
+      id: 4,
+      nombre: 'Trader Alfa',
+      tipoCuenta: 'ECN',
+      balance: 1500,
+      equidad: 1550,
+      lotesOperados: 50,
+      comisionesGeneradas: 50,
+      retirosCobrados: 8,
+    },
+    {
+      id: 5,
+      nombre: 'Trader Beta',
+      tipoCuenta: 'Standard',
+      balance: 800,
+      equidad: 825,
+      lotesOperados: 30,
+      comisionesGeneradas: 30,
+      retirosCobrados: 4,
+    },
+    {
+      id: 6,
+      nombre: 'Trader Gamma',
+      tipoCuenta: 'Zero Spread',
+      balance: 2200,
+      equidad: 2250,
+      lotesOperados: 75,
+      comisionesGeneradas: 75,
+      retirosCobrados: 12,
     },
   ];
 
@@ -375,7 +406,7 @@ const AfiliadosDashboard = () => {
 
               {/* Rows */}
               <div className="space-y-3">
-                {topAfiliadosData.map((trader) => (
+                {topAfiliadosData.slice(0, visibleAfiliados).map((trader) => (
                   <div key={trader.id} className="grid grid-cols-[minmax(150px,1.5fr)_minmax(0,3fr)_minmax(0,1.5fr)_repeat(5,minmax(0,1fr))] items-center gap-x-4 p-4 rounded-xl bg-[#202020]">
                     {/* Column 1: Button */}
                     <button 
@@ -406,11 +437,16 @@ const AfiliadosDashboard = () => {
               </div>
 
               {/* Ver Mas Button */}
+              {visibleAfiliados < topAfiliadosData.length && (
               <div className="flex justify-center pt-4">
-                <button className="bg-[#2d2d2d] hover:bg-[#3f3f3f] transition-colors text-white font-semibold py-3 px-8 rounded-lg">
+                <button 
+                  onClick={() => setVisibleAfiliados(prev => prev + 3)}
+                  className="bg-[#2d2d2d] hover:bg-[#3f3f3f] transition-colors text-white font-semibold py-3 px-8 rounded-lg"
+                >
                   Ver Más
                 </button>
               </div>
+              )}
             </div>
           </div>
         );
