@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import TraderProfileDetail from './TraderProfileDetail';
+import { getMasterTraders, getMySubscriptions } from '../services/copytradingService';
 
 const CopytradingDashboard = () => {
   const [activeTab, setActiveTab] = useState('traders');
@@ -10,105 +11,67 @@ const CopytradingDashboard = () => {
   const [typeFilter, setTypeFilter] = useState('');
   const [riskFilter, setRiskFilter] = useState('');
   
+  // Estados para datos de la API
+  const [availableTraders, setAvailableTraders] = useState([]);
+  const [activeSubscriptions, setActiveSubscriptions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Cargar ambas listas de datos en paralelo
+        const [traders, subscriptions] = await Promise.all([
+          getMasterTraders(),
+          getMySubscriptions()
+        ]);
+
+        // Mapear traders si es necesario (similar a Inversor.jsx)
+        const formattedTraders = traders.map(trader => ({
+          id: trader.id,
+          name: trader.name || 'N/A',
+          profit: `+${trader.performance?.monthly_pnl_percentage?.toFixed(1) || 0}%`,
+          since: new Date(trader.createdAt).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }),
+          type: trader.type || 'Verificado', // 'Premium', 'Verificado', 'Nuevo'
+          typeColor: 'bg-blue-600', // Lógica de color pendiente
+          rentabilidad: `+${trader.performance?.total_pnl_percentage?.toFixed(1) || 0}%`,
+          rentabilidadPercentage: `${trader.performance?.total_pnl_percentage || 0}%`,
+          riesgo: trader.riskLevel || 'Medio', // 'Bajo', 'Medio', 'Alto'
+          riesgoColor: 'text-yellow-400', // Lógica de color pendiente
+          riesgoPercentage: `${trader.riskScore || 50}%`,
+          riesgoBarColor: 'bg-yellow-500' // Lógica de color pendiente
+        }));
+
+        // Mapear suscripciones si es necesario
+        const formattedSubscriptions = subscriptions.map(sub => ({
+          id: sub.id,
+          traderId: sub.masterUserId,
+          name: sub.masterInfo?.name || 'Trader Desconocido',
+          invested: `$${sub.investmentAmount?.toFixed(2) || 0}`,
+          profit: `+$${sub.currentProfit?.toFixed(2) || 0}`,
+          profitPercentage: `+${sub.currentProfitPercentage?.toFixed(1) || 0}%`,
+          status: 'Activo', // El estado debería venir de la API
+          startedDate: new Date(sub.createdAt).toLocaleDateString()
+        }));
+
+        setAvailableTraders(formattedTraders);
+        setActiveSubscriptions(formattedSubscriptions);
+
+      } catch (err) {
+        setError('No se pudieron cargar los datos de Copytrading.');
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+  
   console.log("Current state:", { activeTab, selectedTrader, expandedTrader, searchTerm, typeFilter, riskFilter });
-  
-  // Datos de ejemplo para traders disponibles
-  const availableTraders = [
-    {
-      id: "trader-gold",
-      name: "Trader Gold",
-      profit: "+45.8%",
-      since: "Feb 2023",
-      type: "Premium",
-      typeColor: "bg-yellow-600",
-      rentabilidad: "+187.4%",
-      rentabilidadPercentage: "75%",
-      riesgo: "Medio",
-      riesgoColor: "text-yellow-400",
-      riesgoPercentage: "50%",
-      riesgoBarColor: "bg-yellow-500"
-    },
-    {
-      id: "forex-master",
-      name: "Forex Master",
-      profit: "+32.1%",
-      since: "Ago 2022",
-      type: "Verificado",
-      typeColor: "bg-blue-600",
-      rentabilidad: "+142.7%",
-      rentabilidadPercentage: "65%",
-      riesgo: "Alto",
-      riesgoColor: "text-red-400",
-      riesgoPercentage: "80%",
-      riesgoBarColor: "bg-red-500"
-    },
-    {
-      id: "crypto-trader",
-      name: "Crypto Trader",
-      profit: "+27.5%",
-      since: "Jun 2023",
-      type: "Nuevo",
-      typeColor: "bg-gray-600",
-      rentabilidad: "+86.2%",
-      rentabilidadPercentage: "40%",
-      riesgo: "Bajo",
-      riesgoColor: "text-green-400",
-      riesgoPercentage: "30%",
-      riesgoBarColor: "bg-green-500"
-    },
-    {
-      id: "options-expert",
-      name: "Options Expert",
-      profit: "+38.2%",
-      since: "Nov 2023",
-      type: "Premium",
-      typeColor: "bg-yellow-600",
-      rentabilidad: "+125.9%",
-      rentabilidadPercentage: "60%",
-      riesgo: "Medio-Alto",
-      riesgoColor: "text-orange-400",
-      riesgoPercentage: "65%",
-      riesgoBarColor: "bg-orange-500"
-    },
-    {
-      id: "index-trader",
-      name: "Index Trader",
-      profit: "+22.3%",
-      since: "Mar 2024",
-      type: "Nuevo",
-      typeColor: "bg-gray-600",
-      rentabilidad: "+52.1%",
-      rentabilidadPercentage: "35%",
-      riesgo: "Bajo",
-      riesgoColor: "text-green-400",
-      riesgoPercentage: "25%",
-      riesgoBarColor: "bg-green-500"
-    }
-  ];
-  
-  // Datos para las suscripciones activas
-  const activeSubscriptions = [
-    {
-      id: "sub-forex-master",
-      traderId: "forex-master",
-      name: "Forex Master",
-      invested: "$5,000",
-      profit: "+$860.50",
-      profitPercentage: "+17.2%",
-      status: "Activo",
-      startedDate: "15 Mar 2025"
-    },
-    {
-      id: "sub-trader-gold",
-      traderId: "trader-gold",
-      name: "Trader Gold",
-      invested: "$2,500",
-      profit: "+$412.75",
-      profitPercentage: "+16.5%",
-      status: "Activo",
-      startedDate: "02 Abr 2025"
-    }
-  ];
   
   const handleViewTraderDetails = (trader) => {
     console.log("Viewing trader details for:", trader);
@@ -136,6 +99,23 @@ const CopytradingDashboard = () => {
              trader={selectedTrader} 
              onBack={handleBackToTraders} 
            />;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-6 bg-[#232323] text-white text-center">
+        <h1 className="text-xl font-semibold">Cargando Datos de Copytrading...</h1>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 bg-[#232323] text-white text-center">
+        <h1 className="text-xl font-semibold text-red-500">Error al Cargar</h1>
+        <p className="text-gray-400 mt-2">{error}</p>
+      </div>
+    );
   }
 
   // Renderizar tarjeta de trader

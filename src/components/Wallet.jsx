@@ -100,9 +100,9 @@ const Wallet = () => {
   };
 
   const getOperationColor = () => {
-    if (currentOperation === WALLET_OPERATIONS.DEPOSIT) return 'text-green-400';
-    if (currentOperation === WALLET_OPERATIONS.WITHDRAW) return 'text-red-400';
-    if (currentOperation === WALLET_OPERATIONS.TRANSFER) return 'text-blue-400';
+    if (currentOperation === WALLET_OPERATIONS.DEPOSIT) return 'text-white';
+    if (currentOperation === WALLET_OPERATIONS.WITHDRAW) return 'text-white';
+    if (currentOperation === WALLET_OPERATIONS.TRANSFER) return 'text-white';
     return 'text-white';
   };
 
@@ -299,7 +299,7 @@ const Wallet = () => {
       return [
         { id: 'bank_transfer', name: 'Transferencia Bancaria', icon: '🏦' },
         { id: 'crypto', name: 'Criptomoneda', icon: '₿' },
-        { id: 'credit_card', name: 'Tarjeta de Crédito', icon: '💳' }
+        { id: 'credit_card', name: 'Tarjeta de Crédito/Débito', icon: '💳' }
       ];
     }
     if (currentOperation === WALLET_OPERATIONS.WITHDRAW) {

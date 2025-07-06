@@ -1,16 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download } from 'lucide-react'; // Opcional: icono para descargar
-
-// Datos de ejemplo para la tabla (reemplazar con datos reales)
-const placeholderInvestors = [
-  // Inicialmente vacío o con placeholders
-  // { id: 1, nombre: 'Inversor Alfa', cuenta: '123456', fecha: '2024-01-15', rentabilidad: '15.2%', rendimiento: 'Alto', bajoGestion: '$10,500', estado: 'Activo', accion: '...' },
-];
+import { getFollowers } from '../services/copytradingService';
 
 const Gestor = () => {
-  console.log("[Gestor] Component rendering started."); // <-- DEBUG LOG
-  const [investors, setInvestors] = useState(placeholderInvestors);
-  const [isLoading, setIsLoading] = useState(false); // Para futuras cargas
+  const [investors, setInvestors] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchInvestors = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const followerData = await getFollowers();
+
+        // Mapear los datos de los seguidores a la estructura de la tabla
+        const formattedInvestors = followerData.map(follower => ({
+          id: follower.id,
+          nombre: follower.userInfo?.name || 'Inversor sin nombre',
+          cuenta: follower.followerMt5AccountId,
+          fecha: new Date(follower.createdAt).toLocaleDateString(),
+          rentabilidad: `${follower.performance?.profitPercentage?.toFixed(2) || 0}%`,
+          rendimiento: follower.riskRatio >= 1.2 ? 'Agresivo' : 'Moderado', // Lógica de ejemplo
+          bajoGestion: `$${follower.investmentAmount?.toFixed(2) || 0}`,
+          estado: follower.isActive ? 'Activo' : 'Inactivo',
+        }));
+        
+        setInvestors(formattedInvestors);
+      } catch (err) {
+        setError('No se pudieron cargar los datos de los inversores.');
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchInvestors();
+  }, []);
 
   const handleCreateCopy = () => {
     console.log("Botón 'Crear Copia' presionado.");
@@ -54,7 +80,7 @@ const Gestor = () => {
             style={{ outline: 'none' }}
           >
              Descargar
-             {/* <Download size={16} /> */}
+             <Download size={16} />
           </button>
       </div>
 
@@ -76,7 +102,9 @@ const Gestor = () => {
           {/* Cuerpo de la tabla */}
           <div className="divide-y divide-[#333]">
             {isLoading ? (
-              <div className="p-8 text-center text-gray-500">Cargando inversores...</div>
+              <div className="p-8 text-center text-gray-500 col-span-full">Cargando inversores...</div>
+            ) : error ? (
+              <div className="p-8 text-center text-red-400 col-span-full">{error}</div>
             ) : investors.length > 0 ? (
               investors.map((investor) => (
                 <div
@@ -103,7 +131,7 @@ const Gestor = () => {
                 </div>
               ))
             ) : (
-              <div className="p-8 text-center text-gray-500">
+              <div className="p-8 text-center text-gray-500 col-span-full">
                 No hay inversores para mostrar.
               </div>
             )}

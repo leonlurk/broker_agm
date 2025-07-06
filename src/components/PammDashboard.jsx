@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, ChevronLeft, BarChart2, Star, ArrowUpRight, CheckCircle, LineChart, BarChartHorizontal, PieChart } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, CartesianGrid, Tooltip } from 'recharts';
+import { getPammFunds } from '../services/pammService';
 
 const PammDashboard = () => {
     const [selectedTrader, setSelectedTrader] = useState(null);
@@ -31,109 +32,51 @@ const PammListView = ({ onSelectTrader }) => {
     const [selectedCommission, setSelectedCommission] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Mock data with varied properties for filtering
-    const allPammData = [
-        {
-            ranking: 1,
-            nombre: 'Trader Alpha',
-            serverType: 'MT5',
-            cuenta: '657237',
-            pnl: '22,621.00',
-            rendimiento: '42.13%',
-            rendimientoNumerico: 42.13,
-            retraccionMax: '-42.4%',
-            cuentaAbierta: '2 meses',
-            diasAbierta: 60,
-            depositoMinimo: '100.00 USD',
-            depositoNumerico: 100,
-            balancePropio: '5,000.23',
-            capitalAdministrado: '75,009.73',
-            gananciasUltimoMes: '1,000.02',
-            inversores: 1,
-            comision: 20,
-            esFavorito: true
-        },
-        {
-            ranking: 2,
-            nombre: 'Trader Beta',
-            serverType: 'MT5',
-            cuenta: '758392',
-            pnl: '15,430.00',
-            rendimiento: '28.75%',
-            rendimientoNumerico: 28.75,
-            retraccionMax: '-25.8%',
-            cuentaAbierta: '6 meses',
-            diasAbierta: 180,
-            depositoMinimo: '500.00 USD',
-            depositoNumerico: 500,
-            balancePropio: '8,500.45',
-            capitalAdministrado: '45,230.12',
-            gananciasUltimoMes: '750.30',
-            inversores: 3,
-            comision: 15,
-            esFavorito: false
-        },
-        {
-            ranking: 3,
-            nombre: 'Trader Gamma',
-            serverType: 'MT5',
-            cuenta: '892456',
-            pnl: '8,920.00',
-            rendimiento: '18.45%',
-            rendimientoNumerico: 18.45,
-            retraccionMax: '-15.2%',
-            cuentaAbierta: '1 año',
-            diasAbierta: 365,
-            depositoMinimo: '1000.00 USD',
-            depositoNumerico: 1000,
-            balancePropio: '12,000.78',
-            capitalAdministrado: '89,450.67',
-            gananciasUltimoMes: '450.89',
-            inversores: 7,
-            comision: 25,
-            esFavorito: true
-        },
-        {
-            ranking: 4,
-            nombre: 'Trader Delta',
-            serverType: 'MT5',
-            cuenta: '345678',
-            pnl: '35,200.00',
-            rendimiento: '65.30%',
-            rendimientoNumerico: 65.30,
-            retraccionMax: '-35.1%',
-            cuentaAbierta: '1 mes',
-            diasAbierta: 30,
-            depositoMinimo: '250.00 USD',
-            depositoNumerico: 250,
-            balancePropio: '3,200.50',
-            capitalAdministrado: '25,800.90',
-            gananciasUltimoMes: '1,250.75',
-            inversores: 2,
-            comision: 30,
-            esFavorito: false
-        },
-        {
-            ranking: 5,
-            nombre: 'Trader Epsilon',
-            serverType: 'MT5',
-            cuenta: '567890',
-            pnl: '12,850.00',
-            rendimiento: '32.90%',
-            rendimientoNumerico: 32.90,
-            retraccionMax: '-28.5%',
-            cuentaAbierta: '3 meses',
-            diasAbierta: 90,
-            depositoMinimo: '50.00 USD',
-            depositoNumerico: 50,
-            balancePropio: '6,750.25',
-            capitalAdministrado: '38,920.45',
-            gananciasUltimoMes: '820.60',
-            inversores: 5,
-            comision: 0,
-            esFavorito: false
-        }
-    ];
+    // Data states
+    const [allPammData, setAllPammData] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchPammData = async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
+                const funds = await getPammFunds();
+                // El frontend espera campos como 'nombre', 'rendimiento', etc.
+                // Mapeamos la respuesta de la API a la estructura que necesita el componente.
+                const formattedFunds = funds.map((fund, index) => ({
+                    ranking: index + 1,
+                    id: fund.id, // ID del fondo PAMM
+                    nombre: fund.name || 'Estrategia sin nombre',
+                    serverType: 'MT5', // Asumimos MT5 o lo obtenemos de la API
+                    cuenta: fund.masterMt5AccountId,
+                    pnl: fund.performance?.total_pnl_usd?.toFixed(2) || '0.00',
+                    rendimiento: `${fund.performance?.total_pnl_percentage?.toFixed(2) || 0}%`,
+                    rendimientoNumerico: fund.performance?.total_pnl_percentage || 0,
+                    retraccionMax: `-${fund.performance?.max_drawdown?.toFixed(2) || 0}%`,
+                    cuentaAbierta: `${fund.performance?.age_days || 0} días`,
+                    diasAbierta: fund.performance?.age_days || 0,
+                    depositoMinimo: `${fund.min_investment?.toFixed(2) || '100.00'} USD`,
+                    depositoNumerico: fund.min_investment || 100,
+                    balancePropio: fund.performance?.balance?.toFixed(2) || '0.00',
+                    capitalAdministrado: fund.performance?.managed_capital?.toFixed(2) || '0.00',
+                    gananciasUltimoMes: '0.00', // Este dato podría necesitar un cálculo específico en el backend
+                    inversores: fund.investors_count || 0,
+                    comision: fund.performance_fee || 0,
+                    esFavorito: false // La lógica de favoritos se implementará por separado
+                }));
+                setAllPammData(formattedFunds);
+            } catch (err) {
+                setError('No se pudieron cargar los fondos PAMM. El servicio puede no estar disponible.');
+                console.error(err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchPammData();
+    }, []);
 
     // Filter logic
     const getFilteredData = () => {
@@ -202,6 +145,24 @@ const PammListView = ({ onSelectTrader }) => {
             [filterName]: !prev[filterName]
         }));
     };
+
+    if (isLoading) {
+        return (
+            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white p-8 rounded-3xl text-center">
+                <h1 className="text-2xl font-bold">Cargando fondos PAMM...</h1>
+                <p className="text-gray-400 mt-2">Por favor, espere un momento.</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white p-8 rounded-3xl text-center">
+                <h1 className="text-2xl font-bold text-red-500">Error</h1>
+                <p className="text-gray-400 mt-2">{error}</p>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white p-4 sm:p-6 md:p-8 rounded-3xl">

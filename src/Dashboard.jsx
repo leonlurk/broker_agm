@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "./contexts/AuthContext";
 import Sidebar from "./Sidebar";
 import Home from "./components/Home";
@@ -27,6 +27,7 @@ const Dashboard = ({ onLogout }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const mainContentRef = useRef(null);
   
   // Detectar tamaño de pantalla
   useEffect(() => {
@@ -130,6 +131,7 @@ const Dashboard = ({ onLogout }) => {
         return <TradingAccounts 
         setSelectedOption={setSelectedOption}
         navigationParams={navigationParams}
+        scrollContainerRef={mainContentRef}
       />;
       case "Inversor":
           return <Inversor />;
@@ -164,14 +166,14 @@ const Dashboard = ({ onLogout }) => {
 
   return (
     <div className="flex h-screen w-full bg-[#232323] overflow-hidden">
-      <ScrollManager navigationDependency={selectedOption} />
+      <ScrollManager navigationDependency={selectedOption} scrollContainerRef={mainContentRef} />
       <Sidebar 
         selectedOption={selectedOption} 
         setSelectedOption={handleSidebarOptionChange}
         onLogout={onLogout}
         user={userData}
       />
-      <main className={`flex-1 overflow-y-auto w-full p-4 transition-all duration-300 ${isMobile ? 'ml-0 mt-16' : ''}`}>
+      <main ref={mainContentRef} className={`flex-1 overflow-y-auto w-full p-4 transition-all duration-300 ${isMobile ? 'ml-0 mt-16' : ''}`}>
         <div>
           {renderContent()}
         </div>

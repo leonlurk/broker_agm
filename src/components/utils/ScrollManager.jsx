@@ -8,9 +8,10 @@ import useScrollToTop from '../../hooks/useScrollToTop';
  * No renderiza ningún elemento en el DOM.
  * 
  * @param {any} navigationDependency - Dependencia adicional para detectar navegación interna
+ * @param {React.RefObject<HTMLElement>} scrollContainerRef - Referencia al contenedor con scroll
  */
-const ScrollManager = ({ navigationDependency }) => {
-  useScrollToTop(navigationDependency);
+const ScrollManager = ({ navigationDependency, scrollContainerRef }) => {
+  useScrollToTop(navigationDependency, scrollContainerRef);
 
   return null;
 };

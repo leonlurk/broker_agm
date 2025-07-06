@@ -1,13 +1,130 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, Legend, CartesianGrid, LabelList, Tooltip } from 'recharts';
 import { useAccounts, ACCOUNT_CATEGORIES } from '../contexts/AccountsContext';
-import { Copy, Eye, EyeOff, Check, X, Settings, Menu, Filter } from 'lucide-react';
+import { Copy, Eye, EyeOff, Check, X, Settings, Menu, Filter, ArrowUpRight, Star, Search as SearchIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { updateInvestorPassword } from '../services/tradingAccounts';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
+import { db } from '../firebase/config';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import CustomDropdown from './utils/CustomDropdown';
+import CustomTooltip from './utils/CustomTooltip';
 
-const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
+// --- Instrument Lists (from PipCalculator) ---
+const forexInstruments = [
+  // Major Pairs
+  { value: 'EUR/USD', label: 'EUR/USD', type: 'forex' },
+  { value: 'GBP/USD', label: 'GBP/USD', type: 'forex' },
+  { value: 'USD/JPY', label: 'USD/JPY', type: 'forex' },
+  { value: 'USD/CHF', label: 'USD/CHF', type: 'forex' },
+  { value: 'USD/CAD', label: 'USD/CAD', type: 'forex' },
+  { value: 'AUD/USD', label: 'AUD/USD', type: 'forex' },
+  { value: 'NZD/USD', label: 'NZD/USD', type: 'forex' },
+
+  // Minor Pairs (Crosses) - EUR
+  { value: 'EUR/GBP', label: 'EUR/GBP', type: 'forex' }, { value: 'EUR/JPY', label: 'EUR/JPY', type: 'forex' },
+  { value: 'EUR/CHF', label: 'EUR/CHF', type: 'forex' }, { value: 'EUR/AUD', label: 'EUR/AUD', type: 'forex' },
+  { value: 'EUR/CAD', label: 'EUR/CAD', type: 'forex' }, { value: 'EUR/NZD', label: 'EUR/NZD', type: 'forex' },
+  { value: 'EUR/NOK', label: 'EUR/NOK', type: 'forex' }, { value: 'EUR/SEK', label: 'EUR/SEK', type: 'forex' },
+  { value: 'EUR/PLN', label: 'EUR/PLN', type: 'forex' }, { value: 'EUR/HUF', label: 'EUR/HUF', type: 'forex' },
+  { value: 'EUR/CZK', label: 'EUR/CZK', type: 'forex' }, { value: 'EUR/TRY', label: 'EUR/TRY', type: 'forex' },
+  { value: 'EUR/ZAR', label: 'EUR/ZAR', type: 'forex' }, { value: 'EUR/SGD', label: 'EUR/SGD', type: 'forex' },
+  { value: 'EUR/HKD', label: 'EUR/HKD', type: 'forex' }, { value: 'EUR/MXN', label: 'EUR/MXN', type: 'forex' },
+
+  // Minor Pairs (Crosses) - GBP
+  { value: 'GBP/JPY', label: 'GBP/JPY', type: 'forex' }, { value: 'GBP/CHF', label: 'GBP/CHF', type: 'forex' },
+  { value: 'GBP/AUD', label: 'GBP/AUD', type: 'forex' }, { value: 'GBP/CAD', label: 'GBP/CAD', type: 'forex' },
+  { value: 'GBP/NZD', label: 'GBP/NZD', type: 'forex' }, { value: 'GBP/NOK', label: 'GBP/NOK', type: 'forex' },
+  { value: 'GBP/SEK', label: 'GBP/SEK', type: 'forex' }, { value: 'GBP/PLN', label: 'GBP/PLN', type: 'forex' },
+  { value: 'GBP/ZAR', label: 'GBP/ZAR', type: 'forex' }, { value: 'GBP/SGD', label: 'GBP/SGD', type: 'forex' },
+
+  // Minor Pairs (Crosses) - AUD
+  { value: 'AUD/JPY', label: 'AUD/JPY', type: 'forex' }, { value: 'AUD/CHF', label: 'AUD/CHF', type: 'forex' },
+  { value: 'AUD/CAD', label: 'AUD/CAD', type: 'forex' }, { value: 'AUD/NZD', label: 'AUD/NZD', type: 'forex' },
+  { value: 'AUD/SGD', label: 'AUD/SGD', type: 'forex' }, { value: 'AUD/HKD', label: 'AUD/HKD', type: 'forex' },
+
+  // Minor Pairs (Crosses) - NZD
+  { value: 'NZD/JPY', label: 'NZD/JPY', type: 'forex' }, { value: 'NZD/CHF', label: 'NZD/CHF', type: 'forex' },
+  { value: 'NZD/CAD', label: 'NZD/CAD', type: 'forex' }, { value: 'NZD/SGD', label: 'NZD/SGD', type: 'forex' },
+
+  // Minor Pairs (Crosses) - CAD
+  { value: 'CAD/JPY', label: 'CAD/JPY', type: 'forex' }, { value: 'CAD/CHF', label: 'CAD/CHF', type: 'forex' },
+  { value: 'CAD/SGD', label: 'CAD/SGD', type: 'forex' },
+
+  // Minor Pairs (Crosses) - CHF
+  { value: 'CHF/JPY', label: 'CHF/JPY', type: 'forex' }, { value: 'CHF/NOK', label: 'CHF/NOK', type: 'forex' },
+  { value: 'CHF/SEK', label: 'CHF/SEK', type: 'forex' },
+
+  // Exotic Pairs
+  { value: 'USD/NOK', label: 'USD/NOK', type: 'forex' }, { value: 'USD/SEK', label: 'USD/SEK', type: 'forex' },
+  { value: 'USD/DKK', label: 'USD/DKK', type: 'forex' }, { value: 'USD/PLN', label: 'USD/PLN', type: 'forex' },
+  { value: 'USD/HUF', label: 'USD/HUF', type: 'forex' }, { value: 'USD/CZK', label: 'USD/CZK', type: 'forex' },
+  { value: 'USD/TRY', label: 'USD/TRY', type: 'forex' }, { value: 'USD/ZAR', label: 'USD/ZAR', type: 'forex' },
+  { value: 'USD/MXN', label: 'USD/MXN', type: 'forex' }, { value: 'USD/SGD', label: 'USD/SGD', type: 'forex' },
+  { value: 'USD/HKD', label: 'USD/HKD', type: 'forex' }, { value: 'USD/THB', label: 'USD/THB', type: 'forex' },
+  { value: 'USD/CNH', label: 'USD/CNH', type: 'forex' }, { value: 'USD/ILS', label: 'USD/ILS', type: 'forex' },
+  { value: 'USD/RUB', label: 'USD/RUB', type: 'forex' },
+
+  // Other common exotic crosses
+  { value: 'NOK/SEK', label: 'NOK/SEK', type: 'forex' },
+  { value: 'SEK/NOK', label: 'SEK/NOK', type: 'forex' },
+  { value: 'TRY/JPY', label: 'TRY/JPY', type: 'forex' },
+  { value: 'ZAR/JPY', label: 'ZAR/JPY', type: 'forex' },
+];
+
+const stockInstruments = [
+  { value: 'AAPL', label: 'Apple Inc. (AAPL)', type: 'stocks' },
+  { value: 'MSFT', label: 'Microsoft Corp. (MSFT)', type: 'stocks' },
+  { value: 'GOOGL', label: 'Alphabet Inc. (GOOGL)', type: 'stocks' },
+  { value: 'AMZN', label: 'Amazon.com Inc. (AMZN)', type: 'stocks' },
+  { value: 'TSLA', label: 'Tesla Inc. (TSLA)', type: 'stocks' },
+  { value: 'NVDA', label: 'NVIDIA Corp. (NVDA)', type: 'stocks' },
+  { value: 'JPM', label: 'JPMorgan Chase & Co. (JPM)', type: 'stocks' },
+  { value: 'V', label: 'Visa Inc. (V)', type: 'stocks' },
+  { value: 'XOM', label: 'Exxon Mobil Corp. (XOM)', type: 'stocks' },
+  { value: 'GS', label: 'Goldman Sachs Group Inc. (GS)', type: 'stocks' },
+];
+
+const cryptoInstruments = [
+  { value: 'BTC/USD', label: 'Bitcoin / USD (BTC/USD)', type: 'crypto' },
+  { value: 'ETH/USD', label: 'Ethereum / USD (ETH/USD)', type: 'crypto' },
+  { value: 'XRP/USD', label: 'Ripple / USD (XRP/USD)', type: 'crypto' },
+  { value: 'LTC/USD', label: 'Litecoin / USD (LTC/USD)', type: 'crypto' },
+  { value: 'ADA/USD', label: 'Cardano / USD (ADA/USD)', type: 'crypto' },
+  { value: 'SOL/USD', label: 'Solana / USD (SOL/USD)', type: 'crypto' },
+  { value: 'DOGE/USD', label: 'Dogecoin / USD (DOGE/USD)', type: 'crypto' },
+  { value: 'DOT/USD', label: 'Polkadot / USD (DOT/USD)', type: 'crypto' },
+];
+
+const allInstruments = [...forexInstruments, ...stockInstruments, ...cryptoInstruments];
+// --- End Instrument Lists ---
+
+// Options for custom dropdowns
+const typeOptions = [
+  { value: 'Todos', label: 'Todos' },
+  { value: 'Compra', label: 'Compra' },
+  { value: 'Venta', label: 'Venta' },
+];
+
+const profitLossOptions = [
+  { value: 'Todos', label: 'Todos' },
+  { value: 'Ganancia', label: 'Ganancia' },
+  { value: 'Pérdida', label: 'Pérdida' },
+];
+
+const benefitChartFilterOptions = [
+  { value: 'Último mes', label: 'Último mes' },
+  { value: 'Últimos 3 meses', label: 'Últimos 3 meses' },
+  { value: 'Último año', label: 'Último año' },
+];
+
+const rendimientoPeriodOptions = [
+  { value: 'Mensual', label: 'Mensual' },
+  { value: 'Trimestral', label: 'Trimestral' },
+];
+
+const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerRef }) => {
   const {
     accounts,
     isLoading,
@@ -60,6 +177,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
     profitLoss: 'Todos'
   });
 
+  // State for new instrument filter
+  const [showInstrumentDropdown, setShowInstrumentDropdown] = useState(false);
+  const [instrumentSearchTerm, setInstrumentSearchTerm] = useState('');
+  const [favoriteInstruments, setFavoriteInstruments] = useState([]);
+  const [instrumentFilterType, setInstrumentFilterType] = useState('forex');
+  const instrumentDropdownRef = useRef(null);
+
   // Estados para el gráfico de beneficio total
   const [benefitChartFilter, setBenefitChartFilter] = useState('Último mes');
   const [benefitChartTab, setBenefitChartTab] = useState('Beneficio Total');
@@ -69,6 +193,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
     year: '2024',
     period: 'Mensual'
   });
+  const [barChartTooltip, setBarChartTooltip] = useState(null);
 
   // Detectar dispositivo móvil
   useEffect(() => {
@@ -83,6 +208,85 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
       window.removeEventListener('resize', checkIfMobile);
     };
   }, []);
+
+  // --- Favorite Instruments Logic (from PipCalculator) ---
+  useEffect(() => {
+    if (currentUser) {
+      const userPrefsRef = doc(db, 'userPreferences', currentUser.uid);
+      getDoc(userPrefsRef).then(docSnap => {
+        if (docSnap.exists() && docSnap.data().favoritePipInstruments) {
+          setFavoriteInstruments(docSnap.data().favoritePipInstruments);
+        }
+      }).catch(error => {
+        console.error("Error fetching favorite instruments from Firestore:", error);
+      });
+    }
+    return () => {
+      if (!currentUser) setFavoriteInstruments([]);
+    };
+  }, [currentUser]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (instrumentDropdownRef.current && !instrumentDropdownRef.current.contains(event.target)) {
+        setShowInstrumentDropdown(false);
+      }
+    };
+    if (showInstrumentDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showInstrumentDropdown]);
+
+  const toggleFavorite = async (instrumentValue) => {
+    if (!currentUser) return; // Or handle local favorites for non-logged-in users
+
+    const userPrefsRef = doc(db, 'userPreferences', currentUser.uid);
+    const isCurrentlyFavorite = favoriteInstruments.includes(instrumentValue);
+
+    setFavoriteInstruments(prev =>
+      isCurrentlyFavorite
+        ? prev.filter(fav => fav !== instrumentValue)
+        : [...prev, instrumentValue]
+    );
+
+    try {
+      if (isCurrentlyFavorite) {
+        await updateDoc(userPrefsRef, { favoritePipInstruments: arrayRemove(instrumentValue) });
+      } else {
+        await setDoc(userPrefsRef, { favoritePipInstruments: arrayUnion(instrumentValue) }, { merge: true });
+      }
+    } catch (error) {
+      console.error("Error updating favorites in Firestore:", error);
+      // Revert UI on error
+      setFavoriteInstruments(prev => isCurrentlyFavorite ? [...prev, instrumentValue] : prev.filter(fav => fav !== instrumentValue));
+    }
+  };
+
+  const getFilteredInstrumentsForDropdown = () => {
+    let instrumentsToFilter = [];
+    if (instrumentFilterType === 'forex') instrumentsToFilter = forexInstruments;
+    else if (instrumentFilterType === 'stocks') instrumentsToFilter = stockInstruments;
+    else if (instrumentFilterType === 'crypto') instrumentsToFilter = cryptoInstruments;
+
+    const searched = instrumentsToFilter.filter(item =>
+      item.label.toLowerCase().includes(instrumentSearchTerm.toLowerCase())
+    );
+
+    const favorites = searched.filter(item => favoriteInstruments.includes(item.value));
+    const nonFavorites = searched.filter(item => !favoriteInstruments.includes(item.value));
+    
+    favorites.sort((a, b) => a.label.localeCompare(b.label));
+    nonFavorites.sort((a, b) => a.label.localeCompare(b.label));
+
+    return { favorites, nonFavorites };
+  };
+
+  const { favorites: favoriteFilteredInstruments, nonFavorites: nonFavoriteFilteredInstruments } = getFilteredInstrumentsForDropdown();
+  const selectedInstrumentLabel = allInstruments.find(item => item.value === historyFilters.instrument)?.label || 'Todos';
+  // --- End Favorite Instruments Logic ---
 
   // Función para copiar al portapapeles
   const copyToClipboard = async (text, fieldName) => {
@@ -213,6 +417,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
       // Asegurarse de que la vista se actualice si los parámetros cambian después del montaje.
       setViewMode('details');
       setSelectedAccountId(navigationParams.accountId);
+      scrollToTopManual(scrollContainerRef);
     } else {
         // Si no hay parámetros de navegación, volver a la vista general.
         setViewMode('overview');
@@ -227,13 +432,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
   const handleViewDetails = (accountId) => {
     setSelectedAccountId(accountId);
     setViewMode('details');
-    scrollToTopManual(); // Scroll al cambiar a vista de detalles
+    scrollToTopManual(scrollContainerRef); // Scroll al cambiar a vista de detalles
   };
 
   const handleBackToOverview = () => {
     setViewMode('overview');
     setSelectedAccountId(null);
-    scrollToTopManual(); // Scroll al volver a vista general
+    scrollToTopManual(scrollContainerRef); // Scroll al volver a vista general
   };
 
   // Función helper para obtener el estado de la cuenta
@@ -1064,7 +1269,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
 
   // Función para generar datos de instrumentos basado en filtros
   const generateInstrumentsData = () => {
-    let dataToProcess = filteredHistorialData;
+    let dataToProcess = historialData;
     
     // Agrupar por instrumento y calcular totales
     const instrumentTotals = {
@@ -1559,6 +1764,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
+                          <span className="text-gray-400">Cuenta Activa: 30 días</span>
+                  </div>
+                  <div className="flex items-center">
+                    <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
                           <span className="text-gray-400">Tipo de cuenta: {selectedAccount.accountType || 'N/A'}</span>
                   </div>
                   <div className="flex items-center">
@@ -1730,7 +1939,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
             
             {/* Balance Card - Lado izquierdo (2 columnas - menos ancho) */}
             <div className={`${isMobile ? 'w-full' : 'lg:col-span-2'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl`}>
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4">Balance</h2>
+              <CustomTooltip content="El capital total de tu cuenta, incluyendo ganancias y pérdidas no realizadas.">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4 cursor-help">Balance</h2>
+              </CustomTooltip>
               <div className="flex items-center mb-4 sm:mb-6">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3">$5,000.00</span>
                 <span className="bg-green-800 bg-opacity-30 text-green-400 px-2 py-1 rounded text-xs sm:text-sm">+24.7%</span>
@@ -1778,7 +1989,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
             <div className={`${isMobile ? 'w-full grid grid-cols-1 gap-3' : 'lg:col-span-2 flex flex-col justify-between'} space-y-3 sm:space-y-4`}>
               {/* Profit/Loss */}
               <div className={`${isMobile ? '' : 'flex-1'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex flex-col justify-center`}>
-                <h3 className="text-lg sm:text-xl font-bold mb-2">Profit/Loss</h3>
+                <CustomTooltip content="La ganancia o pérdida neta de tus operaciones cerradas en el período seleccionado.">
+                  <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">Profit/Loss</h3>
+                </CustomTooltip>
                   <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">$1,000.00</span>
                   <span className="bg-green-800 bg-opacity-30 text-green-400 px-2 py-1 rounded text-xs">+25.0%</span>
@@ -1788,7 +2001,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
 
               {/* Drawdown */}
               <div className={`${isMobile ? '' : 'flex-1'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex flex-col justify-center`}>
-                <h3 className="text-lg sm:text-xl font-bold mb-2">Drawdown</h3>
+                <CustomTooltip content="La mayor caída desde un pico hasta un valle en el capital de tu cuenta. Mide el riesgo.">
+                  <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">Drawdown</h3>
+                </CustomTooltip>
                 <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">$200.00</span>
                   <span className="bg-green-800 bg-opacity-30 text-green-400 px-2 py-1 rounded text-xs">+25.0%</span>
@@ -1798,7 +2013,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
 
               {/* Días de Trading */}
               <div className={`${isMobile ? '' : 'flex-1'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex flex-col justify-center`}>
-                <h3 className="text-lg sm:text-xl font-bold mb-2">Días de Trading</h3>
+                <CustomTooltip content="El número total de días en los que se ha realizado al menos una operación.">
+                  <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">Días de Trading</h3>
+                </CustomTooltip>
                   <div className="text-xl sm:text-2xl lg:text-3xl font-bold">5 Días</div>
               </div>
                 </div>
@@ -1810,13 +2027,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
           <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
             {/* 1. Pérdida Promedio Por Operación */}
             <div className={`p-3 sm:p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl ${isMobile ? 'flex items-center justify-between' : 'flex justify-between items-center'}`}>
-                  <div>
+              <CustomTooltip content="El monto promedio que pierdes en cada operación perdedora.">
+                <div className="cursor-help">
                 <h3 className="text-gray-400 text-xs sm:text-sm mb-1">Pérdida Promedio Por Operación</h3>
                 <div className="flex items-center">
                   <span className="text-lg sm:text-xl font-bold text-red-400">$77.61</span>
                   <span className="bg-red-800 bg-opacity-30 text-red-400 px-1 py-0.5 rounded text-xs ml-2">-25.0%</span>
                 </div>
               </div>
+              </CustomTooltip>
               <div className={`bg-[#2d2d2d] ${isMobile ? 'p-2' : 'p-4'} rounded-full`}>
                 <img src="/PerdidaIcono.svg" alt="" className={isMobile ? 'w-8 h-8' : ''} />
                   </div>
@@ -1824,13 +2043,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
 
             {/* 2. Ganancia Promedio Por Operación */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <div>
+              <CustomTooltip content="El monto promedio que ganas en cada operación ganadora.">
+                <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Ganancia Promedio Por Operación</h3>
                 <div className="flex items-center">
                   <span className="text-xl font-bold">$20.61</span>
                   <span className="bg-green-800 bg-opacity-30 text-green-400 px-1 py-0.5 rounded text-xs ml-2">+25.0%</span>
                 </div>
               </div>
+              </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
                 <img src="/GananciaIcono.svg" alt="" className="" />
                 </div>
@@ -1838,10 +2059,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
               
             {/* 3. Lotaje Promedio Por Operación */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-                  <div>
+              <CustomTooltip content="El tamaño de posición promedio que utilizas en tus operaciones.">
+                <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Lotaje Promedio Por Operación</h3>
                 <span className="text-xl font-bold">3.26</span>
                   </div>
+              </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
                 <img src="/Group.svg" alt="" className="" />
                   </div>
@@ -1849,10 +2072,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
 
             {/* 4. Duración Promedio Por Operación */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-                  <div>
+              <CustomTooltip content="El tiempo promedio que mantienes abiertas tus posiciones.">
+                <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Duración Promedio Por Operación</h3>
                 <span className="text-xl font-bold">02:25:36</span>
                   </div>
+              </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
                 <img src="/RelojIcono.svg" alt="" className="" />
                   </div>
@@ -1860,10 +2085,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
 
             {/* 5. Relación Riesgo Beneficio */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <div>
+              <CustomTooltip content="Compara la ganancia potencial con la pérdida potencial. Un ratio de 1:3 significa que arriesgas 1 para ganar 3.">
+                <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Relación Riesgo Beneficio</h3>
                 <span className="text-xl font-bold">1:3</span>
               </div>
+              </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
                 <img src="/RatioVictoria.svg" alt="" className="w-12 h-12" />
                 </div>
@@ -1871,10 +2098,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
               
             {/* 6. Ratio De Ganancia */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <div>
+              <CustomTooltip content="El porcentaje de operaciones ganadoras sobre el total de operaciones realizadas.">
+                <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Ratio De Ganancia</h3>
                 <span className="text-xl font-bold">20%</span>
               </div>
+              </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
                 <img src="/MonedaIcono.svg" alt="" className="w-12 h-12" />
               </div>
@@ -1882,10 +2111,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
 
             {/* 7. Depósitos Totales */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <div>
+              <CustomTooltip content="La suma total de todos los fondos que has depositado en esta cuenta.">
+                <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Depósitos Totales</h3>
                 <span className="text-xl font-bold">$10,000.00</span>
               </div>
+              </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
                 <img src="/hugeicons.svg" alt="" className="w-12 h-12" />
               </div>
@@ -1893,10 +2124,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
 
             {/* 8. Retiros Totales */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <div>
+              <CustomTooltip content="La suma total de todos los fondos que has retirado de esta cuenta.">
+                <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Retiros Totales</h3>
                 <span className="text-xl font-bold">$12,000.00</span>
               </div>
+              </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
                 <img src="/ph.svg" alt="" className="w-12 h-12" />
         </div>
@@ -1904,10 +2137,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
       
             {/* 9. PNL */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <div>
+              <CustomTooltip content="La ganancia o pérdida neta total de la cuenta desde su creación.">
+                <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">PNL</h3>
                 <span className="text-xl font-bold">$5,000.00 = 5%</span>
               </div>
+              </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
                 <img src="/streamline.svg" alt="" className="w-12 h-12" />
               </div>
@@ -1957,21 +2192,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
               </div>
               
               {/* Filtro Dropdown */}
-              <div className="relative">
-                <select 
-                  value={benefitChartFilter}
-                  onChange={(e) => setBenefitChartFilter(e.target.value)}
-                  className="bg-[#3a3a3a] border border-[#444] rounded-lg px-3 py-2 text-white text-xs sm:text-sm appearance-none pr-8 w-full sm:w-auto"
-                >
-                  <option value="Último mes">{isMobile ? '1 mes' : 'Último mes'}</option>
-                  <option value="Últimos 3 meses">{isMobile ? '3 meses' : 'Últimos 3 meses'}</option>
-                  <option value="Último año">{isMobile ? '1 año' : 'Último año'}</option>
-                </select>
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-                </div>
+              <div className="relative w-full sm:w-auto">
+                <CustomDropdown
+                  options={benefitChartFilterOptions}
+                  selectedValue={benefitChartFilter}
+                  onSelect={setBenefitChartFilter}
+                  dropdownClass="w-full sm:w-48"
+                />
               </div>
             </div>
 
@@ -1994,7 +2221,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={currentChartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                   <defs>
-                    <linearGradient id="colorBeneficio" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="color
+                    " x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.1} />
                       <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
                     </linearGradient>
@@ -2152,18 +2380,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
                     </button>
                   </div>
                 </div>
-                <div className="relative">
-                  <select 
-                    value={rendimientoFilters.period}
-                    onChange={(e) => updateRendimientoFilter('period', e.target.value)}
-                    className="bg-[#3a3a3a] border border-[#444] rounded-lg px-3 py-2 text-white text-xs sm:text-sm appearance-none pr-8 w-full sm:w-auto"
-                  >
-                    <option value="Mensual">{isMobile ? 'Mensual' : 'Mensual'}</option>
-                    <option value="Trimestral">{isMobile ? 'Trimest.' : 'Trimestral'}</option>
-                  </select>
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-          </div>
+                <div className="relative w-full sm:w-auto">
+                  <CustomDropdown
+                    options={rendimientoPeriodOptions}
+                    selectedValue={rendimientoFilters.period}
+                    onSelect={(value) => updateRendimientoFilter('period', value)}
+                    dropdownClass="w-full sm:w-36"
+                  />
           </div>
           </div>
           
@@ -2178,6 +2401,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
                       left: isMobile ? 10 : 0, 
                       bottom: isMobile ? 20 : 5 
                     }}
+                    onMouseLeave={() => setBarChartTooltip(null)}
                   >
                     <CartesianGrid 
                       strokeDasharray="none" 
@@ -2203,28 +2427,37 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
                       width={isMobile ? 40 : 50}
                     />
                     <Tooltip
-                      content={({ active, payload, label }) => {
-                        if (active && payload && payload.length) {
-                          const value = payload[0].value;
+                      active={!!barChartTooltip}
+                      cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                      content={() => {
+                        if (barChartTooltip) {
+                          const { bar, label } = barChartTooltip;
+                          const value = bar.value;
+                          const tooltipStyle = {
+                            position: 'absolute',
+                            left: `${bar.x + bar.width / 2}px`,
+                            top: `${bar.y}px`,
+                            transform: 'translate(-50%, -100%) translateY(-8px)',
+                            pointerEvents: 'none',
+                            zIndex: 100,
+                          };
                           return (
-                            <div className={`bg-[#232323] border border-[#333] rounded-lg px-3 py-2 text-white ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                              {rendimientoFilters.period === 'Mensual' ? 'Mes' : 'Trimestre'}: {label} - {value.toFixed(1)}%
+                            <div style={tooltipStyle}>
+                              <div className={`bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-white shadow-lg whitespace-nowrap ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                                {rendimientoFilters.period === 'Mensual' ? 'Mes' : 'Trimestre'}: {label}, {value.toFixed(1)}%
+                              </div>
                             </div>
                           );
                         }
                         return null;
                       }}
-                      cursor={false}
                     />
-                    <Bar dataKey="value" barSize={isMobile ? 25 : 35} radius={[4, 4, 0, 0]}>
-                      {!isMobile && (
-                      <LabelList 
+                    <Bar 
                         dataKey="value" 
-                        position="top" 
-                        formatter={(value) => `${value.toFixed(1)}%`}
-                        style={{ fill: '#a0a0a0', fontSize: '11px' }} 
-                      />
-                      )}
+                      barSize={isMobile ? 25 : 35} 
+                      radius={[4, 4, 0, 0]}
+                      onMouseOver={(data) => setBarChartTooltip({ bar: data, label: data.name })}
+                    >
                       {(optimizeChartDataForMobile(dynamicRendimientoData)).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={getBarColor(entry.value)} />
                       ))}
@@ -2255,157 +2488,67 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
               {/* Filtros superiores */}
               <div className={`${isMobile && !showMobileFilters ? 'hidden' : isMobile ? 'grid grid-cols-1 gap-3 mb-4' : 'grid grid-cols-1 md:grid-cols-5 gap-4'} mb-4 sm:mb-6`}>
                 {/* Instrumento */}
-                <div>
+                <div ref={instrumentDropdownRef}>
                   <label className="block text-gray-400 text-xs sm:text-sm mb-2">Instrumento</label>
                   <div className="relative">
-                    <select 
-                      value={historyFilters.instrument}
-                      onChange={(e) => updateHistoryFilter('instrument', e.target.value)}
-                      className="w-full bg-[#2a2a2a] border border-[#444] rounded-lg px-3 sm:px-4 py-2 text-white appearance-none text-sm"
+                    <button
+                      onClick={() => setShowInstrumentDropdown(!showInstrumentDropdown)}
+                      className="w-full bg-[#2a2a2a] border border-[#444] rounded-lg px-3 sm:px-4 py-2 text-white text-left flex justify-between items-center"
                     >
-                      <option value="Todos">Todos</option>
-                      
-                      {/* Pares Mayores */}
-                      <optgroup label="─── Pares Mayores ───">
-                        <option value="EUR/USD">EUR/USD</option>
-                        <option value="GBP/USD">GBP/USD</option>
-                        <option value="USD/JPY">USD/JPY</option>
-                        <option value="USD/CHF">USD/CHF</option>
-                        <option value="USD/CAD">USD/CAD</option>
-                        <option value="AUD/USD">AUD/USD</option>
-                        <option value="NZD/USD">NZD/USD</option>
-                      </optgroup>
-                      
-                      {/* Pares Menores - EUR */}
-                      <optgroup label="─── Cruces EUR ───">
-                        <option value="EUR/GBP">EUR/GBP</option>
-                        <option value="EUR/JPY">EUR/JPY</option>
-                        <option value="EUR/CHF">EUR/CHF</option>
-                        <option value="EUR/AUD">EUR/AUD</option>
-                        <option value="EUR/CAD">EUR/CAD</option>
-                        <option value="EUR/NZD">EUR/NZD</option>
-                        <option value="EUR/NOK">EUR/NOK</option>
-                        <option value="EUR/SEK">EUR/SEK</option>
-                        <option value="EUR/PLN">EUR/PLN</option>
-                        <option value="EUR/HUF">EUR/HUF</option>
-                        <option value="EUR/CZK">EUR/CZK</option>
-                        <option value="EUR/TRY">EUR/TRY</option>
-                        <option value="EUR/ZAR">EUR/ZAR</option>
-                        <option value="EUR/SGD">EUR/SGD</option>
-                        <option value="EUR/HKD">EUR/HKD</option>
-                        <option value="EUR/MXN">EUR/MXN</option>
-                      </optgroup>
-                      
-                      {/* Pares Menores - GBP */}
-                      <optgroup label="─── Cruces GBP ───">
-                        <option value="GBP/JPY">GBP/JPY</option>
-                        <option value="GBP/CHF">GBP/CHF</option>
-                        <option value="GBP/AUD">GBP/AUD</option>
-                        <option value="GBP/CAD">GBP/CAD</option>
-                        <option value="GBP/NZD">GBP/NZD</option>
-                        <option value="GBP/NOK">GBP/NOK</option>
-                        <option value="GBP/SEK">GBP/SEK</option>
-                        <option value="GBP/PLN">GBP/PLN</option>
-                        <option value="GBP/ZAR">GBP/ZAR</option>
-                        <option value="GBP/SGD">GBP/SGD</option>
-                      </optgroup>
-                      
-                      {/* Otros Cruces */}
-                      <optgroup label="─── Otros Cruces ───">
-                        <option value="AUD/JPY">AUD/JPY</option>
-                        <option value="AUD/CHF">AUD/CHF</option>
-                        <option value="AUD/CAD">AUD/CAD</option>
-                        <option value="AUD/NZD">AUD/NZD</option>
-                        <option value="AUD/SGD">AUD/SGD</option>
-                        <option value="AUD/HKD">AUD/HKD</option>
-                        <option value="NZD/JPY">NZD/JPY</option>
-                        <option value="NZD/CHF">NZD/CHF</option>
-                        <option value="NZD/CAD">NZD/CAD</option>
-                        <option value="NZD/SGD">NZD/SGD</option>
-                        <option value="CAD/JPY">CAD/JPY</option>
-                        <option value="CAD/CHF">CAD/CHF</option>
-                        <option value="CAD/SGD">CAD/SGD</option>
-                        <option value="CHF/JPY">CHF/JPY</option>
-                        <option value="CHF/NOK">CHF/NOK</option>
-                        <option value="CHF/SEK">CHF/SEK</option>
-                      </optgroup>
-                      
-                      {/* Pares Exóticos */}
-                      <optgroup label="─── Pares Exóticos ───">
-                        <option value="USD/NOK">USD/NOK</option>
-                        <option value="USD/SEK">USD/SEK</option>
-                        <option value="USD/DKK">USD/DKK</option>
-                        <option value="USD/PLN">USD/PLN</option>
-                        <option value="USD/HUF">USD/HUF</option>
-                        <option value="USD/CZK">USD/CZK</option>
-                        <option value="USD/TRY">USD/TRY</option>
-                        <option value="USD/ZAR">USD/ZAR</option>
-                        <option value="USD/MXN">USD/MXN</option>
-                        <option value="USD/SGD">USD/SGD</option>
-                        <option value="USD/HKD">USD/HKD</option>
-                        <option value="USD/THB">USD/THB</option>
-                        <option value="USD/CNH">USD/CNH</option>
-                        <option value="USD/ILS">USD/ILS</option>
-                        <option value="USD/RUB">USD/RUB</option>
-                        <option value="NOK/SEK">NOK/SEK</option>
-                        <option value="SEK/NOK">SEK/NOK</option>
-                        <option value="TRY/JPY">TRY/JPY</option>
-                        <option value="ZAR/JPY">ZAR/JPY</option>
-                      </optgroup>
-                      
-                      {/* Acciones */}
-                      <optgroup label="─── Acciones ───">
-                        <option value="AAPL">Apple Inc. (AAPL)</option>
-                        <option value="MSFT">Microsoft Corp. (MSFT)</option>
-                        <option value="GOOGL">Alphabet Inc. (GOOGL)</option>
-                        <option value="AMZN">Amazon.com Inc. (AMZN)</option>
-                        <option value="TSLA">Tesla Inc. (TSLA)</option>
-                        <option value="NVDA">NVIDIA Corp. (NVDA)</option>
-                        <option value="JPM">JPMorgan Chase & Co. (JPM)</option>
-                        <option value="V">Visa Inc. (V)</option>
-                        <option value="XOM">Exxon Mobil Corp. (XOM)</option>
-                        <option value="GS">Goldman Sachs Group Inc. (GS)</option>
-                      </optgroup>
-                      
-                      {/* Criptomonedas */}
-                      <optgroup label="─── Criptomonedas ───">
-                        <option value="BTC/USD">Bitcoin / USD (BTC/USD)</option>
-                        <option value="ETH/USD">Ethereum / USD (ETH/USD)</option>
-                        <option value="XRP/USD">Ripple / USD (XRP/USD)</option>
-                        <option value="LTC/USD">Litecoin / USD (LTC/USD)</option>
-                        <option value="ADA/USD">Cardano / USD (ADA/USD)</option>
-                        <option value="SOL/USD">Solana / USD (SOL/USD)</option>
-                        <option value="DOGE/USD">Dogecoin / USD (DOGE/USD)</option>
-                        <option value="DOT/USD">Polkadot / USD (DOT/USD)</option>
-                      </optgroup>
-                    </select>
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <span className="truncate">{selectedInstrumentLabel}</span>
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
+                    </button>
+                    
+                    {showInstrumentDropdown && (
+                      <div className="absolute z-20 mt-1 w-full bg-[#2d2d2d] border border-[#444] rounded-lg shadow-lg max-h-72 overflow-y-auto">
+                        <div className="p-2 sticky top-0 bg-[#2d2d2d] z-20 border-b border-[#444]">
+                          <div className="flex justify-between space-x-2 mb-2">
+                            <button onClick={() => setInstrumentFilterType('forex')} className={`flex-1 px-3 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'forex' ? 'border-cyan-500' : 'border-gray-700'}`}>Forex</button>
+                            <button onClick={() => setInstrumentFilterType('stocks')} className={`flex-1 px-3 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'stocks' ? 'border-cyan-500' : 'border-gray-700'}`}>Acciones</button>
+                            <button onClick={() => setInstrumentFilterType('crypto')} className={`flex-1 px-3 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'crypto' ? 'border-cyan-500' : 'border-gray-700'}`}>Cripto</button>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Buscar instrumento"
+                              value={instrumentSearchTerm}
+                              onChange={(e) => setInstrumentSearchTerm(e.target.value)}
+                              className="w-full bg-[#232323] border border-[#444] rounded-md px-3 py-2 pl-10 focus:outline-none focus:border-cyan-500"
+                            />
+                            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                          </div>
+                        </div>
+                        
+                        <div key="todos-filter" onClick={() => { updateHistoryFilter('instrument', 'Todos'); setShowInstrumentDropdown(false); }} className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer">Todos</div>
+
+                        {favoriteFilteredInstruments.map(item => (
+                          <div key={item.value + '-fav'} onClick={() => { updateHistoryFilter('instrument', item.value); setShowInstrumentDropdown(false); }} className={`px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer flex justify-between items-center ${historyFilters.instrument === item.value ? 'bg-[#3f3f3f]' : ''}`}>
+                            <span>{item.label}</span>
+                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(item.value); }} className="p-1"><Star className={`w-4 h-4 ${favoriteInstruments.includes(item.value) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500'}`} /></button>
+                          </div>
+                        ))}
+
+                        {nonFavoriteFilteredInstruments.map(item => (
+                          <div key={item.value} onClick={() => { updateHistoryFilter('instrument', item.value); setShowInstrumentDropdown(false); }} className={`px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer flex justify-between items-center ${historyFilters.instrument === item.value ? 'bg-[#3f3f3f]' : ''}`}>
+                            <span>{item.label}</span>
+                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(item.value); }} className="p-1"><Star className={`w-4 h-4 ${favoriteInstruments.includes(item.value) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500'}`} /></button>
                     </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Tipo */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Tipo</label>
-                  <div className="relative">
-                    <select 
-                      value={historyFilters.type}
-                      onChange={(e) => updateHistoryFilter('type', e.target.value)}
-                      className="w-full bg-[#2a2a2a] border border-[#444] rounded-lg px-4 py-2 text-white appearance-none"
-                    >
-                      <option value="Todos">Todos</option>
-                      <option value="Compra">Compra</option>
-                      <option value="Venta">Venta</option>
-                    </select>
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
+                  <CustomDropdown
+                    label="Tipo"
+                    options={typeOptions}
+                    selectedValue={historyFilters.type}
+                    onSelect={(value) => updateHistoryFilter('type', value)}
+                  />
                 </div>
                 
                 {/* Desde */}
@@ -2436,23 +2579,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
 
                 {/* Ganancia/Pérdida */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Ganancia/Pérdida</label>
-                  <div className="relative">
-                    <select 
-                      value={historyFilters.profitLoss}
-                      onChange={(e) => updateHistoryFilter('profitLoss', e.target.value)}
-                      className="w-full bg-[#2a2a2a] border border-[#444] rounded-lg px-4 py-2 text-white appearance-none"
-                    >
-                      <option value="Todos">Todos</option>
-                      <option value="Ganancia">Ganancia</option>
-                      <option value="Pérdida">Pérdida</option>
-                    </select>
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
+                  <CustomDropdown
+                    label="Ganancia/Pérdida"
+                    options={profitLossOptions}
+                    selectedValue={historyFilters.profitLoss}
+                    onSelect={(value) => updateHistoryFilter('profitLoss', value)}
+                  />
                 </div>
               </div>
 
@@ -2512,7 +2644,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#333]">
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">
                         <div className="flex items-center gap-1">
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
@@ -2520,7 +2652,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
                           Fecha De Apertura
                         </div>
                       </th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">
                         <div className="flex items-center gap-1">
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
@@ -2528,16 +2660,16 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
                           Fecha De Cierre
                         </div>
                       </th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">Instrumento</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">Tipo</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">Lotaje</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">Stop Loss</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">Take Profit</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">Precio De Apertura</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">Precio De Cierre</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">Pips</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">ID De Posición</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium">Resultado</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Instrumento</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Tipo</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Lotaje</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Stop Loss</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Take Profit</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Precio De Apertura</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Precio De Cierre</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Pips</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">ID De Posición</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Resultado</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2621,15 +2753,16 @@ const TradingAccounts = ({ setSelectedOption, navigationParams }) => {
 
                         {/* Resultado */}
                         <td className="py-3 px-2">
-                          <div className={`font-medium ${transaction.resultadoColor}`}>
-                            {transaction.resultado}
-                            <span className={`text-xs px-1 rounded ml-1 ${
+                          <div className={`font-medium ${transaction.resultadoColor} flex items-center gap-2 whitespace-nowrap`}>
+                            <span>{transaction.resultado}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${
                               transaction.resultadoColor === 'text-green-400' 
-                                ? 'bg-green-800 bg-opacity-30 text-green-400' 
-                                : 'bg-red-800 bg-opacity-30 text-red-400'
+                                ? 'bg-green-800 bg-opacity-30' 
+                                : 'bg-red-800 bg-opacity-30'
                             }`}>
-                              {transaction.resultadoPct} ↗
+                              {transaction.resultadoPct}
                             </span>
+                            <ArrowUpRight size={14} />
                           </div>
                         </td>
                       </tr>

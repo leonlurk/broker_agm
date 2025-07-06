@@ -430,68 +430,56 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
            </div>
          ) : (
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-             {accountsToShow.length > 0 ? accountsToShow.map((account) => {
-               // Calcular cambio porcentual (simplificado para demo)
-               const changePercent = account.accountType === 'DEMO' ? '+1.5%' : '+0.91%';
-               const isPositive = changePercent.startsWith('+');
-               
+             {accountsToShow.length > 0 ? accountsToShow.slice(0, 3).map((account) => {
                return (
                  <div
                      key={account.id}
-                     className={`p-4 md:p-5 bg-gradient-to-br from-[#232323] to-[#2b2b2b] border border-[#333] flex flex-col justify-between hover:border-cyan-500 transition-colors rounded-2xl min-h-60 ${
-                       selectedAccount?.id === account.id ? 'border-cyan-500' : ''
-                     }`}
+                   className="p-5 bg-[#1C1E1E] border border-gray-700 flex flex-col hover:border-sky-500 transition-colors rounded-2xl"
                  >
-                     <div className="mb-4">
-                         <h3 className="text-lg font-semibold text-white mb-2">
+                   <div className="flex-grow">
+                     <h3 className="text-xl font-bold text-white mb-1 uppercase">
                            {account.accountName}
                          </h3>
-                         <p className="text-sm text-gray-400 mb-2">
-                           {account.accountType} • {account.accountTypeSelection}
-                         </p>
-                         <p className="text-xl font-medium text-white">
-                           ${(account.balance || 0).toFixed(2)} USD{' '}
-                           <span className={`text-sm ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                             {changePercent}
-                           </span>
-                         </p>
-                         <p className="text-xs text-gray-500 mt-1">
-                           ID: {account.accountNumber}
-                         </p>
+                     <p className="text-sm text-gray-300">Balance total</p>
+                     <div className="flex items-baseline gap-2 mb-4">
+                       <p className="text-2xl text-white">
+                         {(account.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
+                       </p>
+                       <span className="text-sm font-semibold text-green-500">+0.5%</span>
                      </div>
-                     <div className="space-y-2">
+                     <div className="grid grid-cols-3 gap-2 text-center mb-4">
+                       <div>
+                         <p className="text-xs text-gray-300 mb-1">PNL Hoy</p>
+                         <p className="text-sm font-semibold text-green-500">+0.91%</p>
+                         <p className="text-xs text-gray-200">+$7.07</p>
+                       </div>
+                       <div>
+                         <p className="text-xs text-gray-300 mb-1">PNL 7 días</p>
+                         <p className="text-sm font-semibold text-green-500">+8.95%</p>
+                         <p className="text-xs text-gray-200">+$64.39</p>
+                       </div>
+                       <div>
+                         <p className="text-xs text-gray-300 mb-1">PNL 30 días</p>
+                         <p className="text-sm font-semibold text-green-500">+2.91%</p>
+                         <p className="text-xs text-gray-200">+$38.51</p>
+                       </div>
+                     </div>
+                   </div>
                      <button
                          onClick={() => {
-                             console.log(`View Details clicked for account ID: ${account.id}`);
                              if (setSelectedOption) {
-                                   // Navegación directa a detalles de cuenta sin pasar por la vista general
                                  setSelectedOption("Cuentas", { 
                                      accountId: account.id, 
                                        viewMode: 'details',
-                                       directNavigation: true // Flag para indicar navegación directa
+                                   directNavigation: true
                                  });
                              }
                          }}
-                         className="w-full bg-[#2a2a2a] border border-[#444] hover:border-cyan-600 hover:text-cyan-400 text-gray-300 py-2 rounded-full transition text-sm"
+                     className="w-full bg-transparent border border-sky-500 text-sky-500 py-2 rounded-full transition-colors hover:bg-sky-500 hover:text-white text-sm"
                          style={{ outline: 'none' }}
                      >
                          Ver Detalles
                      </button>
-                       <button
-                           onClick={() => {
-                               selectAccount(account);
-                               console.log(`Account selected: ${account.accountName}`);
-                           }}
-                           className={`w-full border py-2 rounded-full transition text-sm ${
-                             selectedAccount?.id === account.id 
-                               ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10' 
-                               : 'border-[#444] text-gray-300 hover:border-cyan-600 hover:text-cyan-400'
-                           }`}
-                           style={{ outline: 'none' }}
-                       >
-                           {selectedAccount?.id === account.id ? 'Seleccionada' : 'Seleccionar'}
-                       </button>
-                     </div>
                  </div>
                );
              }) : (

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronUp, AlertTriangle, Star, Copy, Search, BarChart2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, CartesianGrid, LineChart, Line } from 'recharts';
 import TraderProfileDetail from './TraderProfileDetail';
+import { getMasterTraders } from '../services/copytradingService';
 
 // Colores para el PieChart (ajustar si es necesario)
 const PIE_COLORS = ['#3b82f6', '#22d3ee']; // Azul, Cyan
@@ -51,143 +52,6 @@ const maxDrawdownData = [
 ];
 
 // --- DATOS DE EJEMPLO (Simulados como si vinieran de API) --- 
-const ALL_ACCOUNTS_DATA = [
-    { 
-      id: 1, 
-      nombre: 'Fxzio test', 
-      serverType: 'MT5',
-      accountNumber: '657237', 
-      imagen: './Icono.svg',
-      pnlUSD: 22621.00,
-      rendimientoPercent: 42.13,
-      retraccionMaxPercent: -42.4,
-      cuentaAbiertaDias: 43,
-      balancePropio: 5000.23,
-      capitalAdministrado: 75009.73,
-      operacionesCount: 7,
-      inversoresCount: 1,
-      // Campos para filtros
-      isFavorite: false,
-      tasaVolumen: 0.8,
-      tasaRendimiento: 42.13,
-      commissionRange: '0',
-      porcentaje: '-29.88%', 
-      type: 'Premium',
-      since: 'Enero 2023',
-      profit: '+12.4%',
-      riesgo: 'Alto',
-    },
-    { 
-      id: 2, 
-      nombre: 'Trading Master', 
-      serverType: 'MT4',
-      accountNumber: '123456',
-      imagen: './Icono.svg',
-      pnlUSD: 15800.50,
-      rendimientoPercent: 32.7,
-      retraccionMaxPercent: -15.5,
-      cuentaAbiertaDias: 250,
-      balancePropio: 10000.00,
-      capitalAdministrado: 120500.10,
-      operacionesCount: 150,
-      inversoresCount: 25,
-      isFavorite: true,
-      tasaVolumen: 1.2, 
-      tasaRendimiento: 32.7,
-      commissionRange: '5-10',
-      porcentaje: '+32.7%', 
-      type: 'Verificado',
-      since: 'Marzo 2023',
-    },
-    { 
-      id: 3, 
-      nombre: 'ForexPro', 
-      serverType: 'MT5',
-      accountNumber: '987654',
-      imagen: './Icono.svg',
-      pnlUSD: 8300.00,
-      rendimientoPercent: 18.5,
-      retraccionMaxPercent: -22.0,
-      cuentaAbiertaDias: 180,
-      balancePropio: 2500.00,
-      capitalAdministrado: 55000.00,
-      operacionesCount: 85,
-      inversoresCount: 10,
-      isFavorite: false,
-      tasaVolumen: 0.9,
-      tasaRendimiento: 18.5,
-      commissionRange: '1-5',
-      porcentaje: '+18.5%', 
-      type: 'Premium',
-      since: 'Junio 2023',
-    },
-    { 
-      id: 4, 
-      nombre: 'CryptoKing', 
-      serverType: 'MT5',
-      accountNumber: '345678',
-      imagen: './Icono.svg',
-      pnlUSD: 35200.00,
-      rendimientoPercent: 65.30,
-      retraccionMaxPercent: -35.1,
-      cuentaAbiertaDias: 25,
-      balancePropio: 3200.50,
-      capitalAdministrado: 25800.90,
-      operacionesCount: 45,
-      inversoresCount: 2,
-      isFavorite: false,
-      tasaVolumen: 1.5,
-      tasaRendimiento: 65.30,
-      commissionRange: '20-30',
-      porcentaje: '+65.3%', 
-      type: 'Premium',
-      since: 'Diciembre 2024',
-    },
-    { 
-      id: 5, 
-      nombre: 'SafeTrader', 
-      serverType: 'MT4',
-      accountNumber: '567890',
-      imagen: './Icono.svg',
-      pnlUSD: 12850.00,
-      rendimientoPercent: 22.90,
-      retraccionMaxPercent: -8.5,
-      cuentaAbiertaDias: 95,
-      balancePropio: 6750.25,
-      capitalAdministrado: 38920.45,
-      operacionesCount: 120,
-      inversoresCount: 15,
-      isFavorite: true,
-      tasaVolumen: 0.7,
-      tasaRendimiento: 22.90,
-      commissionRange: '0',
-      porcentaje: '+22.9%', 
-      type: 'Verificado',
-      since: 'Octubre 2024',
-    },
-    { 
-      id: 6, 
-      nombre: 'RiskTaker', 
-      serverType: 'MT5',
-      accountNumber: '789012',
-      imagen: './Icono.svg',
-      pnlUSD: 8500.00,
-      rendimientoPercent: 28.40,
-      retraccionMaxPercent: -45.2,
-      cuentaAbiertaDias: 400,
-      balancePropio: 15000.00,
-      capitalAdministrado: 65000.00,
-      operacionesCount: 200,
-      inversoresCount: 8,
-      isFavorite: false,
-      tasaVolumen: 1.8,
-      tasaRendimiento: 28.40,
-      commissionRange: '10-20',
-      porcentaje: '+28.4%', 
-      type: 'Premium',
-      since: 'Enero 2024',
-    }
-];
 
 const ALL_TRADE_HISTORY_DATA = [
     { id: '484247', position: 'XAUUSD', entryValue: 2670.89, entryTime: '10/01/2025 20:20:00', exitValue: 2670.69, exitTime: '10/01/2025 01:26:07', profit: -0.40, date: new Date(2025, 0, 10) }, // Mes 0 = Enero
@@ -251,6 +115,7 @@ const Inversor = () => {
   const [comisionFilter, setComisionFilter] = useState(null);
   const [cuentas, setCuentas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedTrader, setSelectedTrader] = useState(null);
   const [selectedTraderDetails, setSelectedTraderDetails] = useState({});
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
@@ -265,14 +130,43 @@ const Inversor = () => {
   const [filteredHistoryData, setFilteredHistoryData] = useState([]);
   const [filteredInstrumentData, setFilteredInstrumentData] = useState([]);
 
-  // Simulación de carga inicial de cuentas
+  // Carga de traders desde el servicio
   useEffect(() => {
-    setIsLoading(true);
-    // Simular llamada a API
-    setTimeout(() => {
-      setCuentas(ALL_ACCOUNTS_DATA);
-      setIsLoading(false);
-    }, 500);
+    const fetchTraders = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const traders = await getMasterTraders();
+        // Mapeo temporal si la estructura de la API es diferente a la del frontend
+        const formattedTraders = traders.map(trader => ({
+          id: trader.id, // o trader.masterUserId
+          nombre: trader.name,
+          accountNumber: trader.mt5AccountId,
+          rendimientoPercent: trader.performance?.total_pnl_percentage || 0,
+          retraccionMaxPercent: trader.performance?.max_drawdown || 0,
+          cuentaAbiertaDias: trader.performance?.age_days || 0,
+          balancePropio: trader.performance?.balance || 0,
+          inversoresCount: trader.followers_count || 0,
+          // Añadir campos que falten con valores por defecto
+          pnlUSD: trader.performance?.total_pnl_usd || 0,
+          capitalAdministrado: trader.performance?.managed_capital || 0,
+          operacionesCount: trader.performance?.trades_count || 0,
+          isFavorite: false, // Esto debería venir de la data del usuario
+          tasaVolumen: 1, // Placeholder
+          commissionRange: '0', // Placeholder
+          serverType: 'MT5', // Placeholder
+          imagen: './Icono.svg' // Placeholder
+        }));
+        setCuentas(formattedTraders);
+      } catch (err) {
+        setError('No se pudieron cargar los traders. Por favor, inténtelo de nuevo más tarde.');
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTraders();
   }, []);
 
   // Simulación de carga de detalles del trader seleccionado y sus datos
@@ -282,7 +176,7 @@ const Inversor = () => {
       // Simular llamada a API para detalles y datos asociados
       setTimeout(() => {
         // En una app real, aquí harías fetch con selectedTrader.id
-        const details = ALL_ACCOUNTS_DATA.find(c => c.id === selectedTrader.id) || {};
+        const details = cuentas.find(c => c.id === selectedTrader.id) || {};
         setSelectedTraderDetails(details);
         
         // Simular datos asociados (gráficos, historial, instrumentos)
@@ -299,7 +193,7 @@ const Inversor = () => {
         setIsLoadingDetails(false);
       }, 300);
     }
-  }, [selectedTrader]);
+  }, [selectedTrader, cuentas]);
 
   // Filtrar datos de gráficos cuando cambia el rango o el tab
   useEffect(() => {
@@ -442,7 +336,12 @@ const Inversor = () => {
 
   // Vista de Carga Principal
   if (isLoading) {
-    return <div className="p-6 text-center text-gray-400">Cargando cuentas...</div>;
+    return <div className="p-6 text-center text-gray-400">Cargando traders...</div>;
+  }
+
+  // Vista de Error
+  if (error) {
+    return <div className="p-6 text-center text-red-400">{error}</div>;
   }
 
   // Vista de Detalle del Trader

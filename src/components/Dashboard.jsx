@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../Sidebar'; 
 import Home from './Home';
 import Accounts from './Accounts';
@@ -9,11 +9,18 @@ import Gestor from './Gestor'; // Importar el nuevo componente Gestor
 import Settings from './Settings'; 
 import UserInformationContent from './UserInformationContent'; 
 import { useAuth } from '../contexts/AuthContext';
+import ScrollManager from './ScrollManager';
+import TradingAccounts from './TradingAccounts';
+import PammDashboard from './PammDashboard';
 
-const Dashboard = () => {
+const Dashboard = ({ onLogout }) => {
+  const { currentUser, userData } = useAuth();
   const [selectedOption, setSelectedOption] = useState('Dashboard');
+  const [navigationParams, setNavigationParams] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const { logout, userData } = useAuth();
+  const mainContentRef = useRef(null);
 
   // Effect to log changes in selectedOption
   useEffect(() => {
@@ -30,7 +37,11 @@ const Dashboard = () => {
       case 'Dashboard':
         return <Home user={userData} setSelectedOption={setSelectedOption} onSettingsClick={() => setShowSettings(true)} />;
       case 'Cuentas':
-        return <Accounts />;
+        return <TradingAccounts 
+          setSelectedOption={setSelectedOption}
+          navigationParams={navigationParams}
+          scrollContainerRef={mainContentRef}
+        />;
       case 'Wallet':
         return <Wallet />;
       // Añadir casos para subopciones si es necesario o manejarlos dentro de los componentes
@@ -53,7 +64,7 @@ const Dashboard = () => {
         return <Gestor />;
       case 'Pamm':
          // return <Pamm />;
-         return <div className="p-6 text-white">Pamm Component</div>; // Placeholder
+         return <PammDashboard />;
        // Casos para PropFirm y Broker (si no se manejan dentro de otro componente)
       case 'PropFirm':
          // return <PropFirm />; 
@@ -70,14 +81,18 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-900">
+    <div className="flex h-screen w-full bg-[#232323] overflow-hidden">
+      <ScrollManager navigationDependency={selectedOption} scrollContainerRef={mainContentRef} />
       <Sidebar 
         selectedOption={selectedOption} 
         setSelectedOption={setSelectedOption} 
-        onLogout={logout} 
+        onLogout={onLogout} 
+        user={userData}
       />
-      <main className="flex-1 overflow-y-auto bg-[#232323]">
-        {renderContent()}
+      <main ref={mainContentRef} className={`flex-1 overflow-y-auto w-full p-4 transition-all duration-300 ${isMobile ? 'ml-0 mt-16' : ''}`}>
+        <div>
+          {renderContent()}
+        </div>
       </main>
     </div>
   );
