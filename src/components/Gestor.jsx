@@ -14,6 +14,12 @@ const Gestor = () => {
         setError(null);
         const followerData = await getFollowers();
 
+        if (!Array.isArray(followerData)) {
+            console.warn("[Gestor] getFollowers no devolvió un array. Se recibió:", followerData);
+            setInvestors([]); // Establecer como array vacío para evitar errores
+            return;
+        }
+
         // Mapear los datos de los seguidores a la estructura de la tabla
         const formattedInvestors = followerData.map(follower => ({
           id: follower.id,

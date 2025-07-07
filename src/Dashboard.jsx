@@ -19,6 +19,7 @@ import Wallet from "./components/Wallet";
 import Inversor from "./components/Inversor";
 import Gestor from "./components/Gestor";
 import PammDashboard from "./components/PammDashboard";
+import PammGestorDashboard from "./components/PammGestorDashboard";
 
 const Dashboard = ({ onLogout }) => {
   const { currentUser, userData } = useAuth();
@@ -133,12 +134,19 @@ const Dashboard = ({ onLogout }) => {
         navigationParams={navigationParams}
         scrollContainerRef={mainContentRef}
       />;
-      case "Inversor":
+      case "Copytrading Inversor":
           return <Inversor />;
-      case "Gestor":
-          console.log("[Dashboard - src] Rendering Gestor component for selectedOption:", selectedOption); // Log
+      case "Copytrading Gestor":
           return <Gestor />;
-      case "Pamm":
+      case "Pamm Inversor":
+        return <PammDashboard />;
+      case "Pamm Gestor":
+        return <PammGestorDashboard />;
+      case "Inversor": // Fallback for old selections if any
+          return <Inversor />;
+      case "Gestor": // Fallback for old selections if any
+          return <Gestor />;
+      case "Pamm": // Fallback for old selections if any
         return <PammDashboard />;
       case "PropFirm":
           return (

@@ -12,7 +12,8 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     const [expandedOptions, setExpandedOptions] = useState({
         Herramientas: false,
         Plataformas: false,
-        Copytrading: false
+        Copytrading: false,
+        Pamm: false
     });
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -33,7 +34,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     }, []);
 
     const handleNavigation = (option) => {
-        if (option === "Herramientas" || option === "Plataformas" || option === "Copytrading") {
+        if (option === "Herramientas" || option === "Plataformas" || option === "Copytrading" || option === "Pamm") {
             // Toggle expandido sin cambiar la selección actual
             setExpandedOptions({
                 ...expandedOptions,
@@ -48,10 +49,10 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
         }
     };
     
-    const handleSubOptionClick = (option) => {
-        console.log("[Sidebar] handleSubOptionClick called with:", option);
-        console.log("[Sidebar] Calling setSelectedOption prop with:", option);
-        setSelectedOption(option);
+    const handleSubOptionClick = (option, parent) => {
+        const uniqueOption = parent ? `${parent} ${option}` : option;
+        console.log("[Sidebar] handleSubOptionClick called with:", uniqueOption);
+        setSelectedOption(uniqueOption);
         if (isMobile) {
             setIsMobileMenuOpen(false);
         }
@@ -81,7 +82,11 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
             icon: <img src="./copy-linear.svg" className="w-8 h-8" alt="Copytrading" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z'/%3E%3C/svg%3E"} />,
             subOptions: ["Inversor", "Gestor"]
         },
-        { name: "Pamm", icon: <img src="./elements.svg" className="w-8 h-8" alt="Pamm" /> },
+        { 
+            name: "Pamm", 
+            icon: <img src="./elements.svg" className="w-8 h-8" alt="Pamm" />,
+            subOptions: ["Inversor", "Gestor"]
+        },
     ];
 
     return (
@@ -237,7 +242,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                                     icon = <img src="./money-safe.svg" alt="Inversor" />;
                                                     break;
                                                 case "Gestor":
-                                                    icon = <img src="./Calculadora.svg" alt="Gestor" />;
+                                                    icon = <img src="./user-star.svg" alt="Gestor" />;
                                                     break;
                                                 default:
                                                     icon = null;
@@ -258,12 +263,12 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                                 <button
                                                     key={subOption}
                                                     onClick={() => { 
-                                                        console.log(`[Sidebar] Clicked on button for: ${subOption}`);
-                                                        handleSubOptionClick(subOption);
+                                                        console.log(`[Sidebar] Clicked on button for: ${subOption} under ${item.name}`);
+                                                        handleSubOptionClick(subOption, item.name);
                                                     }}
                                                     className={`flex items-center w-full font-regular rounded-lg transition-colors
                                                         ${isMobile ? 'py-2 px-3 text-sm' : 'py-3 px-4 text-md'}
-                                                        ${selectedOption === subOption 
+                                                        ${selectedOption === `${item.name} ${subOption}` 
                                                             ? "bg-transparent border-l-2 border-cyan-500" 
                                                             : "text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5"}`}
                                                     style={{ outline: 'none' }}

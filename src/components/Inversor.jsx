@@ -137,6 +137,13 @@ const Inversor = () => {
         setIsLoading(true);
         setError(null);
         const traders = await getMasterTraders();
+
+        if (!Array.isArray(traders)) {
+            console.warn("[Inversor] getMasterTraders no devolvió un array. Se recibió:", traders);
+            setCuentas([]); // Establecer como array vacío para evitar errores
+            return;
+        }
+
         // Mapeo temporal si la estructura de la API es diferente a la del frontend
         const formattedTraders = traders.map(trader => ({
           id: trader.id, // o trader.masterUserId

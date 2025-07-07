@@ -43,6 +43,14 @@ const PammListView = ({ onSelectTrader }) => {
                 setIsLoading(true);
                 setError(null);
                 const funds = await getPammFunds();
+                
+                // Asegurarse de que funds sea un array antes de mapear
+                if (!Array.isArray(funds)) {
+                    console.warn("[PammDashboard] getPammFunds no devolvió un array. Se recibió:", funds);
+                    setAllPammData([]); // Establecer como array vacío para evitar errores
+                    return;
+                }
+
                 // El frontend espera campos como 'nombre', 'rendimiento', etc.
                 // Mapeamos la respuesta de la API a la estructura que necesita el componente.
                 const formattedFunds = funds.map((fund, index) => ({
