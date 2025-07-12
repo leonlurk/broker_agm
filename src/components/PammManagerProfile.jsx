@@ -1,13 +1,13 @@
 import React from 'react';
-import HeroSection from './pamm-gestor/HeroSection';
-import Summary from './pamm-gestor/Summary';
-import PerformanceCharts from './pamm-gestor/PerformanceCharts';
-import RecentTrades from './pamm-gestor/RecentTrades';
-import Subscriptions from './pamm-gestor/Subscriptions';
-import ManagerInfo from './pamm-gestor/ManagerInfo';
-import Faqs from './pamm-gestor/Faqs';
+import HeroSection from './pamm-manager-profile-components/HeroSection';
+import Summary from './pamm-manager-profile-components/Summary';
+import PerformanceCharts from './pamm-manager-profile-components/PerformanceCharts';
+import RecentTrades from './pamm-manager-profile-components/RecentTrades';
+import Subscriptions from './pamm-manager-profile-components/Subscriptions';
+import ManagerInfo from './pamm-manager-profile-components/ManagerInfo';
+import Faqs from './pamm-manager-profile-components/Faqs';
 
-const PammGestorDashboard = () => {
+const PammManagerProfile = () => {
   // Placeholder data for demonstration
   const gestorData = {
     name: "Momentum Alpha Fund",
@@ -54,4 +54,4 @@ const PammGestorDashboard = () => {
   );
 };
 
-export default PammGestorDashboard; 
+export default PammManagerProfile; 

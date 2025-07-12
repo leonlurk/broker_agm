@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronLeft, BarChart2, Star, ArrowUpRight, CheckCircle, LineChart, BarChartHorizontal, PieChart } from 'lucide-react';
+import { Search, ChevronLeft, BarChart2, Star, ArrowUpRight, CheckCircle, LineChart, BarChartHorizontal, PieChart, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, CartesianGrid, Tooltip } from 'recharts';
 import { getPammFunds } from '../services/pammService';
+import InvertirPAMMModal from './InvertirPAMMModal';
 
 const PammDashboard = () => {
     const [selectedTrader, setSelectedTrader] = useState(null);
@@ -341,6 +342,7 @@ const PammListView = ({ onSelectTrader }) => {
 const PammDetailView = ({ trader, onBack }) => {
     const [activeTab, setActiveTab] = useState('Rendimiento');
     const [timeFilter, setTimeFilter] = useState('mensual');
+    const [showInvertirModal, setShowInvertirModal] = useState(false);
 
     const chartData = {
         'Rendimiento': {
@@ -420,8 +422,12 @@ const PammDetailView = ({ trader, onBack }) => {
                         <p className="text-gray-400">ID de la estrategia: {trader.cuenta}</p>
                     </div>
                 </div>
-                <button className="mt-4 md:mt-0 text-cyan-400 border border-cyan-400 rounded-full px-6 py-2 hover:bg-cyan-400 hover:text-black transition-colors">
-                    Invertir
+                <button 
+                    onClick={() => setShowInvertirModal(true)}
+                    className="mt-4 md:mt-0 flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-full px-6 py-2 transition-colors font-medium"
+                >
+                    <TrendingUp size={18} />
+                    Invertir en Fondo
                 </button>
             </div>
 
@@ -503,6 +509,17 @@ const PammDetailView = ({ trader, onBack }) => {
                 </div>
                 {renderChart()}
             </div>
+
+            {/* Modal de Invertir en PAMM */}
+            <InvertirPAMMModal 
+                isOpen={showInvertirModal}
+                onClose={() => setShowInvertirModal(false)}
+                gestor={trader}
+                onConfirm={(formData) => {
+                    console.log('Inversión PAMM confirmada:', formData);
+                    // Aquí integrarías con tu API para procesar la inversión
+                }}
+            />
         </div>
     );
 };

@@ -19,7 +19,7 @@ import Wallet from "./components/Wallet";
 import Inversor from "./components/Inversor";
 import Gestor from "./components/Gestor";
 import PammDashboard from "./components/PammDashboard";
-import PammGestorDashboard from "./components/PammGestorDashboard";
+import PammGestorAdminDashboard from "./components/PammGestorAdminDashboard";
 
 const Dashboard = ({ onLogout }) => {
   const { currentUser, userData } = useAuth();
@@ -141,7 +141,7 @@ const Dashboard = ({ onLogout }) => {
       case "Pamm Inversor":
         return <PammDashboard />;
       case "Pamm Gestor":
-        return <PammGestorDashboard />;
+        return <PammGestorAdminDashboard />;
       case "Inversor": // Fallback for old selections if any
           return <Inversor />;
       case "Gestor": // Fallback for old selections if any

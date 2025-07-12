@@ -280,7 +280,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
             <button 
               className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-4 rounded-md hover:opacity-90 transition"
               style={{ outline: 'none' }}
-              onClick={() => setSelectedOption && setSelectedOption("Desafio")}
+              onClick={() => setSelectedOption && setSelectedOption("Nueva Cuenta")}
             >
               Comenzar
             </button>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import TraderProfileDetail from './TraderProfileDetail';
+import SeguirTraderModal from './SeguirTraderModal';
 import { getMasterTraders, getMySubscriptions } from '../services/copytradingService';
 
 const CopytradingDashboard = () => {
@@ -16,6 +17,10 @@ const CopytradingDashboard = () => {
   const [activeSubscriptions, setActiveSubscriptions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Estados para el modal de seguir trader
+  const [showSeguirModal, setShowSeguirModal] = useState(false);
+  const [selectedTraderForCopy, setSelectedTraderForCopy] = useState(null);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -92,6 +97,12 @@ const CopytradingDashboard = () => {
     }
   };
   
+  const handleCopyTrader = (trader) => {
+    console.log("Copying trader:", trader);
+    setSelectedTraderForCopy(trader);
+    setShowSeguirModal(true);
+  };
+  
   // Si hay un trader seleccionado, mostrar sus detalles
   if (selectedTrader) {
     console.log("Rendering TraderProfileDetail for:", selectedTrader);
@@ -156,7 +167,10 @@ const CopytradingDashboard = () => {
         </div>
         
         <div className="flex space-x-2">
-          <button className="flex-1 px-4 py-2 bg-cyan-700 hover:bg-cyan-600 rounded-md text-sm">
+          <button 
+            className="flex-1 px-4 py-2 bg-cyan-700 hover:bg-cyan-600 rounded-md text-sm"
+            onClick={() => handleCopyTrader(trader)}
+          >
             Copiar
           </button>
           <button 
@@ -463,6 +477,22 @@ const CopytradingDashboard = () => {
           )}
         </div>
       )}
+      
+      {/* Modal de Seguir Trader */}
+      <SeguirTraderModal 
+        isOpen={showSeguirModal}
+        onClose={() => {
+          setShowSeguirModal(false);
+          setSelectedTraderForCopy(null);
+        }}
+        trader={selectedTraderForCopy}
+        onConfirm={(formData) => {
+          console.log('Seguir trader confirmado desde dashboard:', formData);
+          // Aquí integrarías con tu API para seguir al trader
+          setShowSeguirModal(false);
+          setSelectedTraderForCopy(null);
+        }}
+      />
     </div>
   );
 };

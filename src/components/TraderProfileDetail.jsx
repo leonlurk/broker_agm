@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Calendar, Clock, ChevronDown, ChevronUp, AlertTriangle, Star, Copy } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, ChevronDown, ChevronUp, AlertTriangle, Star, Copy, Target } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import SeguirTraderModal from './SeguirTraderModal';
 
 const TraderProfileDetail = ({ trader, onBack }) => {
   const [activeTab, setActiveTab] = useState('statistics');
   const [showAllTrades, setShowAllTrades] = useState(false);
   const [rentabilidadTab, setRentabilidadTab] = useState('Rentabilidad');
   const [rentabilidadRange, setRentabilidadRange] = useState('Día');
+  const [showSeguirModal, setShowSeguirModal] = useState(false);
   
   // Colores para el PieChart
   const PIE_COLORS = ['#0e7490', '#2563eb', '#7c3aed', '#dc2626', '#059669', '#d97706'];
@@ -178,6 +180,13 @@ const TraderProfileDetail = ({ trader, onBack }) => {
           <div className="flex items-center gap-2">
             <button className="p-2 text-gray-400 hover:text-white">
               <Star size={20}/>
+            </button>
+            <button 
+              onClick={() => setShowSeguirModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-md text-sm font-medium transition-colors"
+            >
+              <Target size={16} />
+              Seguir Trader
             </button>
             <button 
               onClick={copyTraderInfo}
@@ -497,6 +506,17 @@ const TraderProfileDetail = ({ trader, onBack }) => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Seguir Trader */}
+      <SeguirTraderModal 
+        isOpen={showSeguirModal}
+        onClose={() => setShowSeguirModal(false)}
+        trader={trader}
+        onConfirm={(formData) => {
+          console.log('Seguir trader confirmado:', formData);
+          // Aquí integrarías con tu API para seguir al trader
+        }}
+      />
     </div>
   );
 };

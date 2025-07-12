@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Download } from 'lucide-react'; // Opcional: icono para descargar
+import { Download, Star } from 'lucide-react'; // Opcional: icono para descargar
 import { getFollowers } from '../services/copytradingService';
+import ConfigurarGestorModal from './ConfigurarGestorModal';
 
 const Gestor = () => {
   const [investors, setInvestors] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showConfigurarModal, setShowConfigurarModal] = useState(false);
 
   useEffect(() => {
     const fetchInvestors = async () => {
@@ -45,8 +47,7 @@ const Gestor = () => {
   }, []);
 
   const handleCreateCopy = () => {
-    console.log("Botón 'Crear Copia' presionado.");
-    // Lógica futura para crear una copia/estrategia
+    setShowConfigurarModal(true);
   };
 
   const handleDownload = () => {
@@ -70,10 +71,11 @@ const Gestor = () => {
           {/* Botón Crear Copia */}
           <button
             onClick={handleCreateCopy}
-            className="flex-shrink-0 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-5 rounded-lg hover:opacity-90 transition text-sm md:text-base"
+            className="flex-shrink-0 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-5 rounded-lg hover:opacity-90 transition text-sm md:text-base flex items-center gap-2"
             style={{ outline: 'none' }}
           >
-            Crear Copia
+            <Star size={16} />
+            Configurar Perfil
           </button>
         </div>
       </div>
@@ -145,6 +147,15 @@ const Gestor = () => {
         </div>
       </div>
 
+      {/* Modal de Configurar Gestor */}
+      <ConfigurarGestorModal 
+        isOpen={showConfigurarModal}
+        onClose={() => setShowConfigurarModal(false)}
+        onConfirm={(formData) => {
+          console.log('Perfil de gestor configurado:', formData);
+          // Aquí integrarías con tu API para configurar el perfil del gestor
+        }}
+      />
     </div>
   );
 };
