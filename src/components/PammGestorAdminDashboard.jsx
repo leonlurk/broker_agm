@@ -63,6 +63,53 @@ const mockPAMMGestorData = {
       rendimientoPersonal: 15.0,
       estado: "Activo"
     }
+  ],
+  // Lista de traders disponibles para copiar estrategia
+  tradersDisponibles: [
+    {
+      id: 1,
+      nombre: "Alpha Capital Fund",
+      rendimiento: 28.5,
+      drawdown: 8.2,
+      sharpeRatio: 2.1,
+      inversores: 145,
+      capitalGestionado: 2500000,
+      tipoEstrategia: "Agresivo",
+      mercados: ["Forex", "Criptomonedas"]
+    },
+    {
+      id: 2,
+      nombre: "Momentum Trading Pro",
+      rendimiento: 35.2,
+      drawdown: 12.5,
+      sharpeRatio: 1.8,
+      inversores: 89,
+      capitalGestionado: 1800000,
+      tipoEstrategia: "Moderado",
+      mercados: ["Forex", "Acciones"]
+    },
+    {
+      id: 3,
+      nombre: "Conservative Growth",
+      rendimiento: 18.7,
+      drawdown: 4.8,
+      sharpeRatio: 2.4,
+      inversores: 203,
+      capitalGestionado: 4200000,
+      tipoEstrategia: "Conservador",
+      mercados: ["Forex", "Índices"]
+    },
+    {
+      id: 4,
+      nombre: "Tech Growth Fund",
+      rendimiento: 42.1,
+      drawdown: 15.3,
+      sharpeRatio: 1.6,
+      inversores: 67,
+      capitalGestionado: 1200000,
+      tipoEstrategia: "Agresivo",
+      mercados: ["Criptomonedas", "Acciones"]
+    }
   ]
 };
 
@@ -85,6 +132,7 @@ const StatCard = ({ icon, title, value, detail }) => {
 
 const PammGestorAdminDashboard = () => {
   const [investors] = useState(mockPAMMGestorData.inversores);
+  const [tradersDisponibles] = useState(mockPAMMGestorData.tradersDisponibles);
   const [isLoading] = useState(false);
   const [error] = useState(null);
   const [showCrearFondoModal, setShowCrearFondoModal] = useState(false);
@@ -105,13 +153,6 @@ const PammGestorAdminDashboard = () => {
             </p>
           </div>
           <div className="flex gap-3 mt-4 md:mt-0">
-            <button
-              onClick={() => setShowCopiarEstrategiaModal(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white py-2 px-5 rounded-lg hover:opacity-90 transition"
-            >
-              <Copy size={18} />
-              Copiar Estrategia
-            </button>
             <button
               onClick={() => setShowCrearFondoModal(true)}
               className="flex items-center gap-2 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-5 rounded-lg hover:opacity-90 transition"
@@ -204,6 +245,61 @@ const PammGestorAdminDashboard = () => {
               <span className="text-gray-400">Lock-up:</span>
               <span className="text-white">{data.lockupPeriod} días</span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contenedor Lista de Traders Disponibles */}
+      <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-3xl border border-[#333] p-1">
+        <div className="flex justify-between items-center p-4 border-b border-[#333]">
+          <h2 className="text-xl font-semibold">Traders Disponibles para Copiar Estrategia</h2>
+          <button
+            onClick={() => setShowCopiarEstrategiaModal(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white py-2 px-5 rounded-lg hover:opacity-90 transition"
+          >
+            <Copy size={18} />
+            Copiar Estrategia
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          {/* Encabezado de la tabla */}
+          <div className="grid grid-cols-7 gap-x-4 px-4 py-3 border-b border-[#333] text-xs text-gray-400">
+            <div className="text-left">Trader</div>
+            <div className="text-left">Rendimiento</div>
+            <div className="text-left">Drawdown</div>
+            <div className="text-left">Sharpe Ratio</div>
+            <div className="text-left">Inversores</div>
+            <div className="text-left">Capital</div>
+            <div className="text-left">Estrategia</div>
+          </div>
+
+          {/* Cuerpo de la tabla */}
+          <div className="divide-y divide-[#333]">
+            {tradersDisponibles.map((trader) => (
+              <div
+                key={trader.id}
+                className="grid grid-cols-7 gap-x-4 px-4 py-3 items-center text-sm transition-colors hover:bg-[#2a2a2a] cursor-pointer"
+                onClick={() => setShowCopiarEstrategiaModal(true)}
+              >
+                <div className="text-left truncate font-medium">{trader.nombre}</div>
+                <div className="text-left truncate font-medium text-green-500">+{trader.rendimiento.toFixed(1)}%</div>
+                <div className="text-left truncate font-medium text-red-500">-{trader.drawdown.toFixed(1)}%</div>
+                <div className="text-left truncate">{trader.sharpeRatio}</div>
+                <div className="text-left truncate">{trader.inversores}</div>
+                <div className="text-left truncate">${(trader.capitalGestionado / 1000000).toFixed(1)}M</div>
+                <div className="text-left truncate">
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                    trader.tipoEstrategia === 'Agresivo' 
+                      ? 'bg-red-500 bg-opacity-20 text-red-400'
+                      : trader.tipoEstrategia === 'Moderado'
+                      ? 'bg-yellow-500 bg-opacity-20 text-yellow-400'
+                      : 'bg-green-500 bg-opacity-20 text-green-400'
+                  }`}>
+                    {trader.tipoEstrategia}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

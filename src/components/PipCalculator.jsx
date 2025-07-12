@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Star, Search as SearchIcon } from 'lucide-react';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { useAuth } from '../contexts/AuthContext';
 
 // Expanded and refined list of Forex currency pairs
 const forexInstruments = [
@@ -99,7 +99,6 @@ const allInstruments = [
 
 // Componente principal
 const PipCalculator = () => {
-  // Solo necesitamos currentUser para favoritos de Firebase
   const { currentUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState('pips');
@@ -165,16 +164,16 @@ const PipCalculator = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showInstrumentDropdown]);
-  
+
   // Detectar si es dispositivo móvil
   useEffect(() => {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkIfMobile();
     window.addEventListener('resize', checkIfMobile);
-    
+
     return () => {
       window.removeEventListener('resize', checkIfMobile);
     };
@@ -342,13 +341,13 @@ const PipCalculator = () => {
       'TRY/JPY': 4.6875, 'JPY/TRY': 1 / 4.6875,
       'ZAR/JPY': 7.9365, 'JPY/ZAR': 1 / 7.9365
     };
-    
+
     if (rates[`${base}/${quote}`]) {
       return rates[`${base}/${quote}`];
     } else if (rates[`${quote}/${base}`]) {
       return 1 / rates[`${quote}/${base}`];
     }
-    
+
     // Attempt cross-currency calculation via USD
     if (rates[`${base}/USD`] && rates[`USD/${quote}`]) {
       return rates[`${base}/USD`] * rates[`USD/${quote}`];
@@ -357,7 +356,7 @@ const PipCalculator = () => {
     } else if (rates[`USD/${base}`] && rates[`${quote}/USD`]) {
       return 1 / (rates[`USD/${base}`] * rates[`${quote}/USD`]);
     }
-    
+
     console.warn(`Exchange rate not found for ${base}/${quote}, returning 1. Cross rates via USD might be missing or incorrect.`);
     return 1; // Default fallback if no direct or USD cross-rate found
   };
@@ -412,7 +411,7 @@ const PipCalculator = () => {
   // Calcular el tamaño de posición basado en riesgo
   const calculatePositionSize = () => {
     const riskAmountValue = (accountBalance * riskPercentage) / 100;
-    
+
     const { pipMultiplier, contractSize, currency: instrumentQuoteCurrency } = getInstrumentDetails(instrument);
 
     const getPipValueForOneLot = () => {
@@ -429,7 +428,7 @@ const PipCalculator = () => {
     const pipValuePerLot = getPipValueForOneLot();
 
     const calculatedSize = stopLossPips > 0 && pipValuePerLot > 0 ? riskAmountValue / (stopLossPips * pipValuePerLot) : 0;
-    
+
     return {
       positionSize: calculatedSize.toFixed(2),
       riskAmount: riskAmountValue.toFixed(2)
@@ -555,22 +554,22 @@ const PipCalculator = () => {
     <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-3xl text-white flex flex-col">
       {/* Tabs - Responsivos */}
       <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-6">
-        <button 
+        <button
           onClick={() => setActiveTab('pips')}
           className={`px-4 md:px-6 py-2 rounded-full text-base md:text-lg border ${
-            activeTab === 'pips' 
-              ? 'border-cyan-500 bg-transparent' 
+            activeTab === 'pips'
+              ? 'border-cyan-500 bg-transparent'
               : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d]'
           }`}
           style={{ outline: 'none' }}
         >
-          Calculadora de Pips
+          Pips
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('position')}
           className={`px-4 md:px-6 py-2 rounded-full text-base md:text-lg border ${
-            activeTab === 'position' 
-              ? 'border-cyan-500 bg-transparent' 
+            activeTab === 'position'
+              ? 'border-cyan-500 bg-transparent'
               : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d]'
           }`}
           style={{ outline: 'none' }}
@@ -583,7 +582,7 @@ const PipCalculator = () => {
       <div className="flex-1 border border-[#333] rounded-3xl p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] flex flex-col overflow-y-auto custom-scrollbar">
         {/* Instrumento - Responsivo */}
         <div className="mb-6">
-          <h2 className="text-base md:text-lg mb-2">Instrumento</h2>
+                        <h2 className="text-base md:text-lg mb-2">Instrumento</h2>
           <div className="relative w-full sm:w-3/4 md:w-1/2" ref={instrumentDropdownRef}>
             <div className="flex items-center bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-lg">
               <input
@@ -592,16 +591,16 @@ const PipCalculator = () => {
                 onClick={() => setShowInstrumentDropdown(!showInstrumentDropdown)}
                 readOnly
                 className="w-full bg-transparent px-4 py-3 appearance-none cursor-pointer focus:outline-none"
-                placeholder="Seleccionar instrumento"
+                                  placeholder="Seleccionar instrumento"
               />
               <div
                 className="p-3 cursor-pointer"
                 onClick={() => setShowInstrumentDropdown(!showInstrumentDropdown)}
               >
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </div>
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
             </div>
 
             {showInstrumentDropdown && (
@@ -754,14 +753,14 @@ const PipCalculator = () => {
                 {instrumentType === 'crypto' && 'Cantidad de Ticks'}
               </h2>
               <div className="relative flex items-center">
-                <button 
+                <button
                   onClick={() => handlePipChange(-0.01)}
                   className="bg-transparent absolute left-4 text-2xl text-gray-400 focus:outline-none"
                 >
                   ‹
                 </button>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={rawPipValueInput}
                   onChange={(e) => handleRawInputChange(e.target.value, setRawPipValueInput)}
                   onBlur={() => handleNumericInputBlur(rawPipValueInput, setPipValue, pipValue, 0.01)}
@@ -769,7 +768,7 @@ const PipCalculator = () => {
                   style={{ outline: 'none' }}
                   placeholder="0.00"
                 />
-                <button 
+                <button
                   onClick={() => handlePipChange(0.01)}
                   className="absolute bg-transparent right-4 text-2xl text-gray-400 focus:outline-none"
                 >
@@ -780,21 +779,21 @@ const PipCalculator = () => {
             <div className="w-full md:w-1/2">
               <h2 className="text-base md:text-lg mb-2">Tamaño de Posición (Lotes)</h2>
               <div className="relative flex items-center">
-                <button 
+                <button
                   onClick={() => handlePositionSizeChange(-0.01)}
                   className="absolute left-4 text-2xl bg-transparent text-gray-400 focus:outline-none"
                 >
                   ‹
                 </button>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={rawPositionSizeInput}
                   onChange={(e) => handleRawInputChange(e.target.value, setRawPositionSizeInput)}
                   onBlur={() => handleNumericInputBlur(rawPositionSizeInput, setPositionSize, positionSize, 0.01)}
                   className="w-full bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-lg px-12 py-4 md:py-5 text-center focus:outline-none"
                   placeholder="0.00"
                 />
-                <button 
+                <button
                   onClick={() => handlePositionSizeChange(0.01)}
                   className="focus:outline-none absolute right-4 text-2xl bg-transparent text-gray-400"
                 >
@@ -807,10 +806,10 @@ const PipCalculator = () => {
           <div className="flex flex-col space-y-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h2 className="text-base md:text-lg mb-2">Balance de Cuenta</h2>
+                <h2 className="text-base md:text-lg mb-2">Balance de la Cuenta</h2>
                 <div className="relative flex items-center">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={rawAccountBalanceInput}
                     onChange={(e) => handleRawInputChange(e.target.value, setRawAccountBalanceInput, false, 10)}
                     onBlur={() => handleNumericInputBlur(rawAccountBalanceInput, setAccountBalance, accountBalance, 1, Infinity, 0, true)}
@@ -822,8 +821,8 @@ const PipCalculator = () => {
               <div>
                 <h2 className="text-base md:text-lg mb-2">Porcentaje de Riesgo</h2>
                 <div className="relative flex items-center">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={rawRiskPercentageInput}
                     onChange={(e) => handleRawInputChange(e.target.value, setRawRiskPercentageInput, true, 5)}
                     onBlur={() => handleNumericInputBlur(rawRiskPercentageInput, setRiskPercentage, riskPercentage, 0.01, 100, 2)}
@@ -833,10 +832,10 @@ const PipCalculator = () => {
                 </div>
               </div>
               <div>
-                <h2 className="text-base md:text-lg mb-2">Stop Loss (Pips)</h2>
+                <h2 className="text-base md:text-lg mb-2">Objetivo de Pips</h2>
                 <div className="relative flex items-center">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={rawStopLossPipsInput}
                     onChange={(e) => handleRawInputChange(e.target.value, setRawStopLossPipsInput, false, 5)}
                     onBlur={() => handleNumericInputBlur(rawStopLossPipsInput, setStopLossPips, stopLossPips, 1, Infinity, 0, true)}
@@ -857,8 +856,8 @@ const PipCalculator = () => {
                 key={currency.code}
                 onClick={() => setAccountCurrency(currency.code)}
                 className={`flex items-center justify-center space-x-1 md:space-x-2 py-2 md:py-3 px-2 md:px-4 rounded-lg border ${
-                  accountCurrency === currency.code 
-                    ? 'border-cyan-500 bg-transparent' 
+                  accountCurrency === currency.code
+                    ? 'border-cyan-500 bg-transparent'
                     : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d]'
                 }`}
                 style={{ outline: 'none' }}
@@ -872,7 +871,7 @@ const PipCalculator = () => {
 
         {calculatedResult && (
           <div className="my-6 p-4 border border-cyan-700 rounded-lg bg-gradient-to-br from-[#152e35] to-[#1a3746]">
-            <h2 className="text-lg md:text-xl mb-3 text-cyan-300">Resultado del Cálculo:</h2>
+            <h2 className="text-lg md:text-xl mb-3 text-cyan-300">Valor del Pip:</h2>
             {activeTab === 'pips' ? (
               <p className="text-xl font-bold">
                 {parseFloat(pipValue).toFixed(2)} {calculatedResult.displayUnit}
@@ -891,7 +890,7 @@ const PipCalculator = () => {
           </div>
         )}
 
-        <button 
+        <button
           onClick={handleCalculate}
           className="focus:outline-none mt-6 w-full sm:w-1/2 md:w-1/6 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-3 rounded-xl hover:opacity-90 transition"
         >

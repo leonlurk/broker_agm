@@ -1,23 +1,50 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Descargas = () => {
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Función para detectar si es dispositivo móvil
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Verificar al cargar
+    checkIfMobile();
+    
+    // Configurar el listener para cambios de tamaño
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Limpiar el listener al desmontar
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
   // Datos de las plataformas
   const platforms = [
-    {
-      id: 'mt5',
-      name: 'Metatrader 5',
-      description: 'MetaTrader 5 es la plataforma de trading más popular, con una interfaz fácil de usar y altamente personalizable. Ofrece herramientas avanzadas de gráficos y gestión de órdenes para un seguimiento eficaz de las posiciones de trading, mejorando así el rendimiento del usuario.',
-      image: '/mt5.png',
-      downloads: [
-        { os: 'Windows', icon: '/windows.png', link: '#' },
-        { os: 'Mac', icon: '/apple.png', link: '#' },
-        { os: 'Linux', icon: '/linux.png', link: '#' }
-      ]
-    },
-  ];
+  {
+    id: 'mt5',
+    name: 'MetaTrader 5',
+    description: 'Plataforma de trading profesional con análisis técnico avanzado y automatización de estrategias',
+    image: '/mt5.png',
+    downloads: [
+      { 
+        os: isMobile ? 'Android' : 'Windows',
+        icon: isMobile ? '/Android.png' : '/windows.png',
+        link: isMobile ? 'https://download.mql5.com/cdn/mobile/mt5/android?utm_source=www.metatrader5.com&utm_campaign=install.metaquotes' : 'https://download.mql5.com/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader5.com&utm_campaign=download'
+      },
+      { 
+        os: isMobile ? 'iPhone' : 'Mac',
+        icon: isMobile ? '/apple.png' : '/apple.png',
+        link: isMobile ? 'https://download.mql5.com/cdn/mobile/mt5/ios?utm_source=www.metatrader5.com&utm_campaign=install.metaquotes' : 'https://download.mql5.com/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader5.com&utm_campaign=download.mt5.macos'
+      }
+    ]
+  }
+];
 
   return (
-    <div className="flex flex-col bg-[#232323] text-white p-4 md:p-6 border border-[#333] rounded-3xl">
+    <div className="flex flex-col border border-[#333] rounded-3xl bg-[#232323] text-white p-4 md:p-6">
       <div className="space-y-6">
         {platforms.map((platform) => (
           <div 
@@ -44,7 +71,7 @@ const Descargas = () => {
                         e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Crect width='20' height='20' fill='%23555'/%3E%3C/svg%3E";
                       }}
                     />
-                    <span>Descargar</span>
+                    <span>{download.os}</span>
                   </a>
                 ))}
               </div>

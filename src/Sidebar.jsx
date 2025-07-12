@@ -50,7 +50,9 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     };
     
     const handleSubOptionClick = (option, parent) => {
-        const uniqueOption = parent ? `${parent} ${option}` : option;
+        // For "Herramientas" section, use just the option name
+        // For other sections (Copytrading, Pamm), use the parent prefix
+        const uniqueOption = parent === "Herramientas" ? option : (parent ? `${parent} ${option}` : option);
         console.log("[Sidebar] handleSubOptionClick called with:", uniqueOption);
         setSelectedOption(uniqueOption);
         if (isMobile) {
@@ -200,7 +202,9 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                     onClick={() => handleNavigation(item.name)}
                                     className={`flex items-center justify-between w-full rounded-xl bg-transparent border font-regular
                                         ${isMobile ? 'py-2.5 px-4 text-base' : 'py-4 px-6 text-lg'}
-                                        ${selectedOption === item.name || (item.subOptions && item.subOptions.includes(selectedOption))
+                                        ${selectedOption === item.name || 
+                                          (item.name === "Herramientas" && item.subOptions && item.subOptions.includes(selectedOption)) ||
+                                          (item.name !== "Herramientas" && item.subOptions && item.subOptions.some(sub => selectedOption === `${item.name} ${sub}`))
                                             ? "bg-[#191919] border-cyan-500 border-opacity-30" 
                                             : "hover:bg-[#191919] border-transparent"}`}
                                     style={{ outline: 'none' }}
@@ -268,7 +272,8 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                                     }}
                                                     className={`flex items-center w-full font-regular rounded-lg transition-colors
                                                         ${isMobile ? 'py-2 px-3 text-sm' : 'py-3 px-4 text-md'}
-                                                        ${selectedOption === `${item.name} ${subOption}` 
+                                                        ${(item.name === "Herramientas" && selectedOption === subOption) || 
+                                                          (item.name !== "Herramientas" && selectedOption === `${item.name} ${subOption}`)
                                                             ? "bg-transparent border-l-2 border-cyan-500" 
                                                             : "text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5"}`}
                                                     style={{ outline: 'none' }}

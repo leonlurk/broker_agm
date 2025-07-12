@@ -12,7 +12,7 @@ import OperationsHistory from './components/OperationsHistory';
 import Descargas from './components/Descargas';
 import AfiliadosDashboard from './components/AfiliadosDashboard';
 import Settings from './components/Settings';
-import Noticias from './components/Noticias';
+import Noticias from './components/Noticias2';
 import TradingAccounts from "./components/TradingAccounts";
 import CompetitionCards from "./components/CompetitionCards";
 import Wallet from "./components/Wallet";
