@@ -456,18 +456,6 @@ const TraderProfileDetail = ({ trader, onBack }) => {
         <div className="lg:col-span-2 bg-[#232323] p-6 rounded-xl border border-[#333]">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-medium">Historial de Operaciones</h2>
-             {/* TODO: Añadir lógica real al dropdown de filtro */}
-            <div className="relative">
-              <select 
-                className="appearance-none bg-[#191919] border border-[#333] rounded px-3 py-1 text-xs pr-8 cursor-pointer"
-              >
-                <option>Filtrar por</option>
-                <option>Hoy</option>
-                <option>Última Semana</option>
-                <option>Último Mes</option>
-              </select>
-              <ChevronDown size={14} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
-            </div>
           </div>
             
             <div className="overflow-x-auto">

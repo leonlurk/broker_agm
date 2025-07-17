@@ -7,11 +7,12 @@ import {
   RiCloseLine,
   RiLogoutBoxRLine
 } from "react-icons/ri";
+import useTranslation from "./hooks/useTranslation";
 
 const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
+    const { t } = useTranslation();
     const [expandedOptions, setExpandedOptions] = useState({
         Herramientas: false,
-        Plataformas: false,
         Copytrading: false,
         Pamm: false
     });
@@ -34,13 +35,27 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     }, []);
 
     const handleNavigation = (option) => {
-        if (option === "Herramientas" || option === "Plataformas" || option === "Copytrading" || option === "Pamm") {
-            // Toggle expandido sin cambiar la selección actual
+        if (option === "Herramientas" || option === "Copytrading" || option === "Pamm") {
+            // Cerrar todos los dropdowns primero
+            const allClosed = {
+                Herramientas: false,
+                Copytrading: false,
+                Pamm: false
+            };
+            
+            // Si el dropdown actual está cerrado, abrirlo; si está abierto, dejarlo cerrado
             setExpandedOptions({
-                ...expandedOptions,
+                ...allClosed,
                 [option]: !expandedOptions[option]
             });
         } else {
+            // Cerrar todos los dropdowns al navegar a sección simple
+            setExpandedOptions({
+                Herramientas: false,
+                Copytrading: false,
+                Pamm: false
+            });
+            
             // Llamamos a la función pasada como prop, que ahora maneja diferente el caso de Leaderboard
             setSelectedOption(option);
             if (isMobile) {
@@ -50,6 +65,13 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     };
     
     const handleSubOptionClick = (option, parent) => {
+        // Cerrar todos los dropdowns al hacer click en subopción
+        setExpandedOptions({
+            Herramientas: false,
+            Copytrading: false,
+            Pamm: false
+        });
+        
         // For "Herramientas" section, use just the option name
         // For other sections (Copytrading, Pamm), use the parent prefix
         const uniqueOption = parent === "Herramientas" ? option : (parent ? `${parent} ${option}` : option);
@@ -70,24 +92,37 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     };
 
     const menuItems = [
-        { name: "Dashboard", icon: <img src="./darhboard_alt.svg" className="w-8 h-8" /> },
-        { name: "Cuentas", icon: <img src="./Flag_finish_alt.svg" className="w-8 h-8" alt="Cuentas" /> },
-        { name: "Wallet", icon: <img src="./wallet-line.svg" className="w-8 h-8" alt="Wallet" /> },
+        { name: "Dashboard", translationKey: "sidebar.dashboard", icon: <img src="./darhboard_alt.svg" className="w-8 h-8" /> },
+        { name: "Cuentas", translationKey: "sidebar.accounts", icon: <img src="./Flag_finish_alt.svg" className="w-8 h-8" alt="Cuentas" /> },
+        { name: "Wallet", translationKey: "sidebar.wallet", icon: <img src="./wallet-line.svg" className="w-8 h-8" alt="Wallet" /> },
         { 
             name: "Herramientas", 
+            translationKey: "sidebar.tools",
             icon: <img src="./Setting_alt_line.svg" className="w-8 h-8" alt="Herramientas" />,
-            subOptions: ["Calculadora", "Descargas", "Noticias"]
+            subOptions: [
+                { name: "Calculadora", translationKey: "sidebar.calculator" },
+                { name: "Descargas", translationKey: "sidebar.downloads" },
+                { name: "Noticias", translationKey: "sidebar.news" }
+            ]
         },
-        { name: "Afiliados", icon: <img src="./Group_light.svg" className="w-8 h-8" alt="Afiliados" /> },
+        { name: "Afiliados", translationKey: "sidebar.affiliates", icon: <img src="./Group_light.svg" className="w-8 h-8" alt="Afiliados" /> },
         { 
             name: "Copytrading", 
+            translationKey: "sidebar.copytrading",
             icon: <img src="./copy-linear.svg" className="w-8 h-8" alt="Copytrading" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z'/%3E%3C/svg%3E"} />,
-            subOptions: ["Inversor", "Gestor"]
+            subOptions: [
+                { name: "Inversor", translationKey: "sidebar.investor" },
+                { name: "Gestor", translationKey: "sidebar.manager" }
+            ]
         },
         { 
             name: "Pamm", 
+            translationKey: "sidebar.pamm",
             icon: <img src="./elements.svg" className="w-8 h-8" alt="Pamm" />,
-            subOptions: ["Inversor", "Gestor"]
+            subOptions: [
+                { name: "Inversor", translationKey: "sidebar.investor" },
+                { name: "Gestor", translationKey: "sidebar.manager" }
+            ]
         },
     ];
 
@@ -131,65 +166,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                     />
                 </div>
                 
-                {/* Plataformas button - ahora con flecha y desplegable */}
-                <div className={`${isMobile ? 'mx-2 mb-4' : 'mx-4 mb-6'}`}>
-                    <button
-                        onClick={() => handleNavigation("Plataformas")}
-                        className={`flex items-center justify-between w-full rounded-full border border-[#333] bg-gradient-to-br from-[#232323] to-[#2d2d2d]
-                            ${isMobile ? 'py-2.5 px-4 text-base' : 'py-3.5 px-6 text-lg'} 
-                            ${expandedOptions.Plataformas ? "bg-[#232323]" : "hover:bg-[#232323]"}`}
-                        style={{ outline: 'none' }}
-                    >
-                        <div className="flex items-center">
-                         <img src="./Widget.svg" className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} mr-2`} alt="Widget" />
-                            <span className="font-regular">Plataformas</span>
-                        </div>
-                        <RiArrowRightSLine 
-                            className={`w-5 h-5 transition-transform duration-300 ease-in-out ${expandedOptions.Plataformas ? 'rotate-90' : ''}`} 
-                        />
-                    </button>
-                    
-                    {/* Subopciones para Plataformas */}
-                    <div 
-                        className={`pl-6 space-y-1 overflow-hidden transition-all duration-500 ease-in-out w-full
-                            ${isMobile ? 'pl-4' : 'pl-8'}
-                            ${expandedOptions.Plataformas ? 'max-h-40 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}
-                    >
-                        <button
-                            onClick={() => { 
-                                console.log("[Sidebar] PropFirm clicked - Redirecting...");
-                                window.location.href = 'https://front-broker.netlify.app/login'; 
-                                setExpandedOptions(prev => ({...prev, Plataformas: false })); 
-                                if (isMobile) setIsMobileMenuOpen(false); 
-                            }}
-                            className={`flex items-center w-full font-regular rounded-lg transition-colors
-                                ${isMobile ? 'py-2 px-3 text-sm' : 'py-2.5 px-4 text-md'}
-                                text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5`}
-                            style={{ outline: 'none' }}
-                        >
-                            <span className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-2 flex items-center justify-center`}>
-                                <img src="./candlestick.png" alt="Prop Firm" className={`${isMobile ? 'w-5 h-5' : 'w-7 h-7'}`} onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M4 4h16v2H4v-2zm0 3h16v2H4V7zm0 3h16v2H4v-2zm0 3h10v2H4v-2z'/%3E%3C/svg%3E"} />
-                            </span>
-                            <span>Prop Firm</span>
-                        </button>
-                        <button
-                            onClick={() => { 
-                                console.log("[Sidebar] Broker clicked - Closing dropdown...");
-                                setExpandedOptions(prev => ({...prev, Plataformas: false })); 
-                                if (isMobile) setIsMobileMenuOpen(false); 
-                            }}
-                            className={`flex items-center w-full font-regular rounded-lg transition-colors
-                                ${isMobile ? 'py-2 px-3 text-sm' : 'py-2.5 px-4 text-md'}
-                                text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5`}
-                            style={{ outline: 'none' }}
-                        >
-                            <span className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-2 flex items-center justify-center`}>
-                                <img src="./waterfall.png" alt="Broker" className={`${isMobile ? 'w-5 h-5' : 'w-7 h-7'}`} onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M21 18v1c0 1.1-.9 2-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14c1.1 0 2 .9 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8z'/%3E%3C/svg%3E"} />
-                            </span>
-                            <span>Broker</span>
-                        </button>
-                    </div>
-                </div>
+                {/* Plataformas dropdown removido completamente */}
                 
                 <div className={`h-px w-full bg-[#333] ${isMobile ? 'mb-4' : 'mb-6'}`}></div>
                 
@@ -213,7 +190,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                         <div className={`${isMobile ? 'w-6' : 'w-8'} flex justify-center mr-2`}>
                                             {React.cloneElement(item.icon, { className: isMobile ? 'w-6 h-6' : 'w-8 h-8' })}
                                         </div>
-                                        <span>{item.name}</span>
+                                        <span>{t(item.translationKey)}</span>
                                     </div>
                                     {item.subOptions && (
                                         <RiArrowRightSLine 
@@ -226,13 +203,13 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                 {item.subOptions && (
                                     <div 
                                         className={`space-y-1 overflow-hidden transition-all duration-500 ease-in-out w-full
-                                            ${isMobile ? 'pl-4 mt-1 mb-1' : 'pl-8 mt-3 mb-3'}
-                                            ${expandedOptions[item.name] ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}
+                                            ${isMobile ? 'pl-4' : 'pl-8'}
+                                            ${expandedOptions[item.name] ? (isMobile ? 'mt-1 mb-1 max-h-48 opacity-100' : 'mt-3 mb-3 max-h-48 opacity-100') : 'max-h-0 opacity-0'}`}
                                     >
                                         {item.subOptions.map(subOption => {
                                             // Iconos para cada subopción
                                             let icon;
-                                            switch(subOption) {
+                                            switch(subOption.name) {
                                                 case "Calculadora":
                                                     icon = <img src="./Calculadora2.svg" alt="Calculadora" />;
                                                     break;
@@ -265,15 +242,15 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                             
                                             return (
                                                 <button
-                                                    key={subOption}
+                                                    key={subOption.name}
                                                     onClick={() => { 
-                                                        console.log(`[Sidebar] Clicked on button for: ${subOption} under ${item.name}`);
-                                                        handleSubOptionClick(subOption, item.name);
+                                                        console.log(`[Sidebar] Clicked on button for: ${subOption.name} under ${item.name}`);
+                                                        handleSubOptionClick(subOption.name, item.name);
                                                     }}
                                                     className={`flex items-center w-full font-regular rounded-lg transition-colors
                                                         ${isMobile ? 'py-2 px-3 text-sm' : 'py-3 px-4 text-md'}
-                                                        ${(item.name === "Herramientas" && selectedOption === subOption) || 
-                                                          (item.name !== "Herramientas" && selectedOption === `${item.name} ${subOption}`)
+                                                        ${(item.name === "Herramientas" && selectedOption === subOption.name) || 
+                                                          (item.name !== "Herramientas" && selectedOption === `${item.name} ${subOption.name}`)
                                                             ? "bg-transparent border-l-2 border-cyan-500" 
                                                             : "text-gray-400 hover:text-white bg-transparent hover:bg-white hover:bg-opacity-5"}`}
                                                     style={{ outline: 'none' }}
@@ -281,7 +258,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                                     <span className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-2 flex items-center justify-center`}>
                                                         {existingIcon}
                                                     </span>
-                                                    <span>{subOption}</span>
+                                                    <span>{t(subOption.translationKey)}</span>
                                                 </button>
                                             );
                                         })}
@@ -302,7 +279,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                         style={{ outline: 'none' }}
                     >
                         <span className={`${isMobile ? 'text-lg' : 'text-xl'} mr-1`}>+</span>
-                        <span>Nueva Cuenta</span>
+                        <span>{t('sidebar.newAccount')}</span>
                     </button>
                     <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : 'my-4'}`}></div>
                     
@@ -312,7 +289,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                         style={{ outline: 'none' }}
                     >
                         <img src="./Sign_out_circle_light.svg" className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} alt="Logout" />
-                        <span>Cerrar Sesion</span>
+                        <span>{t('sidebar.logout')}</span>
                     </button>
                 </div>
             </div>

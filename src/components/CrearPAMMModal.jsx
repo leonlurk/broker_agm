@@ -1,30 +1,96 @@
 import React, { useState } from 'react';
-import { X, DollarSign, AlertTriangle, TrendingUp, Shield, Users, Clock, Target } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { X, DollarSign, AlertTriangle, TrendingUp, Shield, Users, Clock, Target, User, Settings, Copy, Percent } from 'lucide-react';
 
-const CrearPAMMModal = ({ isOpen, onClose, onConfirm }) => {
-  const [formData, setFormData] = useState({
-    nombreFondo: '',
-    descripcion: '',
-    capitalMinimo: 1000,
-    capitalMaximo: 100000,
-    inversionMinima: 500,
-    managementFee: 2.0,
-    performanceFee: 20.0,
-    lockupPeriod: 30,
-    tipoEstrategia: 'Moderado',
-    mercados: ['Forex'],
-    riesgoMaximo: 15,
-    horarioOperacion: '24/7',
-    experienciaRequerida: 'Principiante'
-  });
+const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData = null }) => {
+  const getInitialFormData = () => {
+    if (mode === 'configure' && fundData) {
+      return {
+        // Fund creation fields
+        nombreFondo: fundData.name || '',
+        descripcion: fundData.strategy ? `Estrategia ${fundData.strategy}` : '',
+        capitalMinimo: 1000,
+        capitalMaximo: 100000,
+        inversionMinima: fundData.minInvestment || 500,
+        managementFee: fundData.managementFee || 2.0,
+        performanceFee: fundData.performanceFee || 20.0,
+        lockupPeriod: fundData.lockupPeriod || 30,
+        tipoEstrategia: fundData.strategy || 'Moderado',
+        mercados: ['Forex'],
+        riesgoMaximo: Math.abs(fundData.maxDrawdown) || 15,
+        horarioOperacion: '24/7',
+        experienciaRequerida: 'Principiante',
+        // Contract configuration fields
+        tipoContrato: 'PAMM Standard',
+        biografia: '',
+        cuentaCopiar: '',
+        profitSplit: 80,
+        tradingExperience: '',
+        riskManagement: '',
+        minBalance: fundData.balance || 10000,
+        maxInvestors: fundData.investors || 50,
+        copyRatio: 1.0
+      };
+    }
+    return {
+      // Fund creation fields
+      nombreFondo: '',
+      descripcion: '',
+      capitalMinimo: 1000,
+      capitalMaximo: 100000,
+      inversionMinima: 500,
+      managementFee: 2.0,
+      performanceFee: 20.0,
+      lockupPeriod: 30,
+      tipoEstrategia: 'Moderado',
+      mercados: ['Forex'],
+      riesgoMaximo: 15,
+      horarioOperacion: '24/7',
+      experienciaRequerida: 'Principiante',
+      // Contract configuration fields
+      tipoContrato: 'PAMM Standard',
+      biografia: '',
+      cuentaCopiar: '',
+      profitSplit: 80,
+      tradingExperience: '',
+      riskManagement: '',
+      minBalance: 10000,
+      maxInvestors: 50,
+      copyRatio: 1.0
+    };
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData);
 
   const [errors, setErrors] = useState({});
   const [currentStep, setCurrentStep] = useState(1);
+  const maxSteps = mode === 'configure' ? 3 : 4;
+
+  // Reset form data when modal opens or fundData changes
+  React.useEffect(() => {
+    if (isOpen) {
+      setFormData(getInitialFormData());
+      setCurrentStep(1);
+      setErrors({});
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Restore body scroll when modal is closed
+      document.body.style.overflow = 'unset';
+    }
+    
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, fundData, mode]);
 
   const tiposEstrategia = ['Conservador', 'Moderado', 'Agresivo'];
   const mercadosDisponibles = ['Forex', 'Criptomonedas', 'Acciones', 'Índices', 'Materias Primas'];
   const horariosOperacion = ['24/7', '08:00-18:00 GMT', '14:00-22:00 GMT', 'Solo sesión europea', 'Solo sesión americana'];
   const nivelesExperiencia = ['Principiante', 'Intermedio', 'Avanzado'];
+  const tiposContrato = ['PAMM Standard', 'PAMM Pro', 'PAMM Elite', 'Copy Trading Híbrido'];
+  const cuentasDisponibles = ['Cuenta Principal MT5', 'Cuenta Demo MT5', 'Cuenta ECN', 'Cuenta Scalping'];
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -53,15 +119,47 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm }) => {
   const validateStep = (step) => {
     const newErrors = {};
 
-    if (step === 1) {
-      if (!formData.nombreFondo.trim()) {
-        newErrors.nombreFondo = 'El nombre del fondo es obligatorio';
+    if (mode === 'configure') {
+      // Contract configuration validation
+      if (step === 1) {
+        if (!formData.tipoContrato) {
+          newErrors.tipoContrato = 'Selecciona un tipo de contrato';
+        }
+        if (!formData.biografia.trim()) {
+          newErrors.biografia = 'La biografía es obligatoria';
+        }
+        if (formData.biografia.length < 50) {
+          newErrors.biografia = 'La biografía debe tener al menos 50 caracteres';
+        }
       }
-      if (!formData.descripcion.trim()) {
-        newErrors.descripcion = 'La descripción es obligatoria';
+      if (step === 2) {
+        if (!formData.cuentaCopiar) {
+          newErrors.cuentaCopiar = 'Selecciona una cuenta para copiar';
+        }
+        if (!formData.profitSplit || formData.profitSplit < 50 || formData.profitSplit > 95) {
+          newErrors.profitSplit = 'El profit split debe estar entre 50% y 95%';
+        }
       }
-      if (formData.descripcion.length < 50) {
-        newErrors.descripcion = 'La descripción debe tener al menos 50 caracteres';
+      if (step === 3) {
+        if (!formData.tradingExperience.trim()) {
+          newErrors.tradingExperience = 'La experiencia de trading es obligatoria';
+        }
+        if (!formData.riskManagement.trim()) {
+          newErrors.riskManagement = 'La gestión de riesgo es obligatoria';
+        }
+      }
+    } else {
+      // Fund creation validation
+      if (step === 1) {
+        if (!formData.nombreFondo.trim()) {
+          newErrors.nombreFondo = 'El nombre del fondo es obligatorio';
+        }
+        if (!formData.descripcion.trim()) {
+          newErrors.descripcion = 'La descripción es obligatoria';
+        }
+        if (formData.descripcion.length < 50) {
+          newErrors.descripcion = 'La descripción debe tener al menos 50 caracteres';
+        }
       }
     }
 
@@ -117,13 +215,257 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateStep(4)) {
+    if (validateStep(maxSteps)) {
       onConfirm(formData);
       onClose();
     }
   };
 
   const renderStep = () => {
+    if (mode === 'configure') {
+      return renderConfigureStep();
+    }
+    return renderCreateStep();
+  };
+
+  const renderConfigureStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <div className="p-3 bg-blue-500 bg-opacity-20 rounded-full w-16 h-16 mx-auto mb-4">
+                <Settings className="text-blue-500 w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Configuración de Contrato</h3>
+              <p className="text-gray-400">Define el tipo de contrato y tu perfil</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Tipo de Contrato *
+                </label>
+                <select
+                  value={formData.tipoContrato}
+                  onChange={(e) => handleInputChange('tipoContrato', e.target.value)}
+                  className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                >
+                  {tiposContrato.map((tipo) => (
+                    <option key={tipo} value={tipo}>{tipo}</option>
+                  ))}
+                </select>
+                {errors.tipoContrato && (
+                  <p className="text-red-400 text-sm flex items-center gap-1">
+                    <AlertTriangle size={14} />
+                    {errors.tipoContrato}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Biografía Profesional *
+                </label>
+                <textarea
+                  value={formData.biografia}
+                  onChange={(e) => handleInputChange('biografia', e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none resize-none"
+                  placeholder="Describe tu experiencia en trading, metodología, logros y filosofía de inversión..."
+                />
+                <p className="text-xs text-gray-500">
+                  {formData.biografia.length}/800 caracteres (mínimo 50)
+                </p>
+                {errors.biografia && (
+                  <p className="text-red-400 text-sm flex items-center gap-1">
+                    <AlertTriangle size={14} />
+                    {errors.biografia}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <div className="p-3 bg-green-500 bg-opacity-20 rounded-full w-16 h-16 mx-auto mb-4">
+                <Copy className="text-green-500 w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Configuración de Copia</h3>
+              <p className="text-gray-400">Define la cuenta y distribución de ganancias</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Cuenta a Copiar *
+                </label>
+                <select
+                  value={formData.cuentaCopiar}
+                  onChange={(e) => handleInputChange('cuentaCopiar', e.target.value)}
+                  className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white focus:border-green-500 focus:outline-none"
+                >
+                  <option value="">Selecciona una cuenta</option>
+                  {cuentasDisponibles.map((cuenta) => (
+                    <option key={cuenta} value={cuenta}>{cuenta}</option>
+                  ))}
+                </select>
+                {errors.cuentaCopiar && (
+                  <p className="text-red-400 text-sm flex items-center gap-1">
+                    <AlertTriangle size={14} />
+                    {errors.cuentaCopiar}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Profit Split - Trader (%) *
+                  </label>
+                  <div className="relative">
+                    <Percent className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      type="number"
+                      value={formData.profitSplit}
+                      onChange={(e) => handleInputChange('profitSplit', Number(e.target.value))}
+                      className="w-full pr-10 pl-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-green-500 focus:outline-none"
+                      placeholder="80"
+                      min="50"
+                      max="95"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Inversores reciben: {100 - formData.profitSplit}%
+                  </p>
+                  {errors.profitSplit && (
+                    <p className="text-red-400 text-sm flex items-center gap-1">
+                      <AlertTriangle size={14} />
+                      {errors.profitSplit}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Ratio de Copia
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.copyRatio}
+                    onChange={(e) => handleInputChange('copyRatio', Number(e.target.value))}
+                    className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-green-500 focus:outline-none"
+                    placeholder="1.0"
+                    min="0.1"
+                    max="10.0"
+                    step="0.1"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Multiplicador de volumen (1.0 = copia exacta)
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Balance Mínimo Requerido
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      type="number"
+                      value={formData.minBalance}
+                      onChange={(e) => handleInputChange('minBalance', Number(e.target.value))}
+                      className="w-full pl-10 pr-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-green-500 focus:outline-none"
+                      placeholder="10000"
+                      min="1000"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Máximo de Inversores
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.maxInvestors}
+                    onChange={(e) => handleInputChange('maxInvestors', Number(e.target.value))}
+                    className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-green-500 focus:outline-none"
+                    placeholder="50"
+                    min="1"
+                    max="200"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <div className="p-3 bg-purple-500 bg-opacity-20 rounded-full w-16 h-16 mx-auto mb-4">
+                <User className="text-purple-500 w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Experiencia y Gestión de Riesgo</h3>
+              <p className="text-gray-400">Detalla tu metodología y experiencia</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Experiencia en Trading *
+                </label>
+                <textarea
+                  value={formData.tradingExperience}
+                  onChange={(e) => handleInputChange('tradingExperience', e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none resize-none"
+                  placeholder="Años de experiencia, mercados operados, estrategias utilizadas..."
+                />
+                {errors.tradingExperience && (
+                  <p className="text-red-400 text-sm flex items-center gap-1">
+                    <AlertTriangle size={14} />
+                    {errors.tradingExperience}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Gestión de Riesgo *
+                </label>
+                <textarea
+                  value={formData.riskManagement}
+                  onChange={(e) => handleInputChange('riskManagement', e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none resize-none"
+                  placeholder="Stop loss, money management, drawdown máximo, diversificación..."
+                />
+                {errors.riskManagement && (
+                  <p className="text-red-400 text-sm flex items-center gap-1">
+                    <AlertTriangle size={14} />
+                    {errors.riskManagement}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const renderCreateStep = () => {
     switch (currentStep) {
       case 1:
         return (
@@ -467,10 +809,31 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm }) => {
   };
 
   if (!isOpen) return null;
+  
+  console.log('CrearPAMMModal rendering:', { isOpen, mode, fundData });
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#232323] rounded-2xl border border-[#333] w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+  const modalContent = (
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" 
+      style={{ 
+        zIndex: 999999, 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)'
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div 
+        className="bg-[#232323] rounded-2xl border border-[#333] w-full max-w-2xl max-h-[90vh] overflow-y-auto relative" 
+        style={{ zIndex: 1000000 }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#333]">
           <div className="flex items-center gap-3">
@@ -478,8 +841,10 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm }) => {
               <Users className="text-blue-500" size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-white">Crear Fondo PAMM</h2>
-              <p className="text-sm text-gray-400">Paso {currentStep} de 4</p>
+              <h2 className="text-xl font-semibold text-white">
+                {mode === 'configure' ? 'Configurar Contrato PAMM' : 'Crear Fondo PAMM'}
+              </h2>
+              <p className="text-sm text-gray-400">Paso {currentStep} de {maxSteps}</p>
             </div>
           </div>
           <button
@@ -494,12 +859,12 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm }) => {
         <div className="px-6 py-4 border-b border-[#333]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-400">Progreso</span>
-            <span className="text-sm text-gray-400">{Math.round((currentStep / 4) * 100)}%</span>
+            <span className="text-sm text-gray-400">{Math.round((currentStep / maxSteps) * 100)}%</span>
           </div>
           <div className="w-full bg-[#333] rounded-full h-2">
             <div 
               className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(currentStep / 4) * 100}%` }}
+              style={{ width: `${(currentStep / maxSteps) * 100}%` }}
             ></div>
           </div>
         </div>
@@ -531,7 +896,7 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm }) => {
           
           <div className="flex-1"></div>
           
-          {currentStep < 4 ? (
+          {currentStep < maxSteps ? (
             <button
               type="button"
               onClick={handleNext}
@@ -544,13 +909,16 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm }) => {
               onClick={handleSubmit}
               className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-lg transition-colors font-medium"
             >
-              Crear Fondo
+              {mode === 'configure' ? 'Guardar Configuración' : 'Crear Fondo'}
             </button>
           )}
         </div>
       </div>
     </div>
   );
+
+  // Use createPortal to render the modal outside the component tree
+  return createPortal(modalContent, document.body);
 };
 
 export default CrearPAMMModal; 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, Lock, Calendar, ChevronDown, ArrowUpRight, ArrowDownRight, Filter, TrendingUp, TrendingDown } from 'lucide-react';
+import { ChevronLeft, Lock, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
 
 // Mock Data based on screenshots
 const userDetails = {
@@ -46,7 +46,7 @@ if (userDetails.operations.length < 6) {
 }
 
 
-const WithdrawalHistoryDetails = ({ user, onBack }) => {
+const WithdrawalHistoryDetails = ({ onBack }) => {
   const topRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -264,30 +264,6 @@ const WithdrawalHistoryDetails = ({ user, onBack }) => {
       <div className="p-4 md:p-6 bg-[#2d2d2d] rounded-xl space-y-4">
         <h2 className="text-lg md:text-xl font-semibold">Historial de Operaciones</h2>
         
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-            <div>
-                <label className="block text-xs text-gray-400 mb-1">Tipo</label>
-                <div className="flex items-center bg-[#202020] rounded-lg p-2">
-                    <input type="text" value="Compra" className="bg-transparent w-full focus:outline-none text-sm" readOnly />
-                    <ChevronDown size={16} />
-                </div>
-            </div>
-            <div>
-                <label className="block text-xs text-gray-400 mb-1">Desde</label>
-                <div className="flex items-center bg-[#202020] rounded-lg p-2">
-                    <input type="text" value="24/06/2025" className="bg-transparent w-full focus:outline-none text-sm" readOnly />
-                    <Calendar size={16} />
-                </div>
-            </div>
-            <div>
-                <label className="block text-xs text-gray-400 mb-1">Hasta</label>
-                <div className="flex items-center bg-[#202020] rounded-lg p-2">
-                    <input type="text" value="26/06/2025" className="bg-transparent w-full focus:outline-none text-sm" readOnly />
-                    <Calendar size={16} />
-                </div>
-            </div>
-        </div>
         
         {/* Desktop Table */}
         {!isMobile && (
@@ -337,7 +313,7 @@ const WithdrawalHistoryDetails = ({ user, onBack }) => {
                   </div>
                   {/* Footer */}
                   <div className="flex justify-end items-center mt-4 p-2">
-                      <span className="text-gray-400 mr-4">Total</span>
+                      <span className="text-white mr-4">Total</span>
                       <div className="flex items-center gap-2">
                           <span className="text-lg font-bold">$1.250,24</span>
                           <div className="flex items-center gap-1 p-1 rounded bg-green-500/20 text-green-400">
@@ -358,7 +334,7 @@ const WithdrawalHistoryDetails = ({ user, onBack }) => {
             {/* Total móvil */}
             <div className="bg-[#202020] rounded-xl p-4 border-2 border-cyan-500/30">
               <div className="flex justify-between items-center">
-                <span className="text-gray-400 font-medium">Total General</span>
+                <span className="text-white font-medium">Total General</span>
                 <div className="flex items-center gap-2">
                   <span className="text-xl font-bold">$1.250,24</span>
                   <div className="flex items-center gap-1 px-2 py-1 rounded bg-green-500/20 text-green-400">
@@ -376,11 +352,6 @@ const WithdrawalHistoryDetails = ({ user, onBack }) => {
       <div className="p-4 md:p-6 bg-[#2d2d2d] rounded-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <h2 className="text-lg md:text-2xl font-semibold">Historial de Retiros</h2>
-          <div className="flex items-center bg-[#202020] rounded-lg p-2 min-w-[150px]">
-              <Filter size={16} className="mr-2 text-gray-400" />
-              <input type="text" value="Filtrar por" className="bg-transparent w-full focus:outline-none text-sm" readOnly />
-              <ChevronDown size={16} />
-          </div>
         </div>
         
         {/* Desktop Table */}

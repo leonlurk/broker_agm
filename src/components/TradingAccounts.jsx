@@ -10,6 +10,7 @@ import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import CustomDropdown from './utils/CustomDropdown';
 import CustomTooltip from './utils/CustomTooltip';
+import useTranslation from '../hooks/useTranslation';
 
 // --- Instrument Lists (from PipCalculator) ---
 const forexInstruments = [
@@ -125,6 +126,7 @@ const rendimientoPeriodOptions = [
 ];
 
 const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerRef }) => {
+  const { t } = useTranslation();
   const {
     accounts,
     isLoading,
@@ -147,7 +149,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     return navigationParams?.viewMode === 'details' ? navigationParams.accountId : null;
   };
   
-  const [activeTab, setActiveTab] = useState('Todas');
+  const [activeTab, setActiveTab] = useState(t('trading.all'));
   const [selectedAccountId, setSelectedAccountId] = useState(getInitialSelectedAccountId());
   const [viewMode, setViewMode] = useState(getInitialViewMode()); 
   
@@ -186,7 +188,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // Estados para el gráfico de beneficio total
   const [benefitChartFilter, setBenefitChartFilter] = useState('Último mes');
-  const [benefitChartTab, setBenefitChartTab] = useState('Beneficio Total');
+  const [benefitChartTab, setBenefitChartTab] = useState(t('trading.benefitTotal'));
   
   // Estados para filtros del gráfico de rendimiento
   const [rendimientoFilters, setRendimientoFilters] = useState({
@@ -387,11 +389,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const getAllAccountsFromContext = () => {
     const allAccountsList = getAllAccounts();
     return {
-      'Todas': allAccountsList,
-      'Cuentas Reales': getAccountsByCategory(ACC_CAT.REAL),
-      'Cuentas Demo': getAccountsByCategory(ACC_CAT.DEMO),
-      'Copy Trading': getAccountsByCategory(ACC_CAT.COPYTRADING),
-      'Pamm': getAccountsByCategory(ACC_CAT.PAMM)
+      [t('trading.all')]: allAccountsList,
+      [t('accounts.live')]: getAccountsByCategory(ACC_CAT.REAL),
+      [t('accounts.demo')]: getAccountsByCategory(ACC_CAT.DEMO),
+      [t('copytrading.title')]: getAccountsByCategory(ACC_CAT.COPYTRADING),
+      [t('pamm.title')]: getAccountsByCategory(ACC_CAT.PAMM)
     };
   };
 
@@ -449,7 +451,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     if (account.status) {
       return {
         status: account.status,
-        statusColor: account.status === 'Active' ? 'bg-green-800 bg-opacity-30 text-green-400' : 'bg-red-800 bg-opacity-30 text-red-400'
+        statusColor: account.status === 'Activo' ? 'bg-green-800 bg-opacity-30 text-green-400' : 'bg-red-800 bg-opacity-30 text-red-400'
       };
     }
     
@@ -471,18 +473,51 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     return `hsl(191, 95%, ${lightness}%)`;
   };
   
-  // Datos para el gráfico de balance
+  // Función para calcular escala del gráfico Y
+  const calculateYAxisScale = (dataPoints, initialBalance) => {
+    if (!dataPoints || dataPoints.length === 0) return { min: 0, max: 100000, step: 10000 };
+    
+    const values = dataPoints.map(point => point.value);
+    const minValue = Math.min(initialBalance, ...values);
+    const maxValue = Math.max(initialBalance, ...values);
+    
+    // Calcular incrementos basados en el balance inicial
+    let increment;
+    if (initialBalance >= 10000) {
+      increment = 1000;
+    } else if (initialBalance >= 5000) {
+      increment = 500;
+    } else {
+      increment = 250;
+    }
+    
+    // Ajustar min y max para que coincidan con los incrementos
+    const adjustedMin = Math.floor(minValue / increment) * increment;
+    const adjustedMax = Math.ceil(maxValue / increment) * increment;
+    
+    return {
+      min: adjustedMin,
+      max: adjustedMax,
+      step: increment
+    };
+  };
+
+  // Datos para el gráfico de balance (simulando balance inicial de 5000)
+  const initialBalance = 5000;
   const balanceData = [
-    { name: 'Ene', value: 25000 },
-    { name: 'Feb', value: 50000 },
-    { name: 'Mar', value: 75000 },
-    { name: 'Abr', value: 100000 },
-    { name: 'May', value: 130000 },
-    { name: 'Jun', value: 110000 },
-    { name: 'Jul', value: 200000 },
-    { name: 'Ago', value: 180000 },
-    { name: 'Sep', value: 250000 },
+    { name: 'Ene', value: 5000 },
+    { name: 'Feb', value: 5250 },
+    { name: 'Mar', value: 5500 },
+    { name: 'Abr', value: 5750 },
+    { name: 'May', value: 6000 },
+    { name: 'Jun', value: 5800 },
+    { name: 'Jul', value: 6200 },
+    { name: 'Ago', value: 6100 },
+    { name: 'Sep', value: 6500 },
   ];
+  
+  // Calcular escala para el eje Y
+  const yAxisConfig = calculateYAxisScale(balanceData, initialBalance);
 
   // NUEVOS DATOS para secciones faltantes
   const beneficioData = [
@@ -1493,7 +1528,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               className="text-cyan-400 font-medium cursor-pointer hover:text-cyan-300 flex items-center gap-1 text-sm"
             >
               <Settings size={12} />
-              Configurar
+              {t('common.configure')}
             </div>
           ) : (
             <div className="text-white font-medium text-sm flex items-center">
@@ -1551,7 +1586,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           
           {/* Tab Navigation */}
           <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-2'} mb-4 sm:mb-6`}>
-            {['Todas', 'Cuentas Reales', 'Cuentas Demo', 'Copy Trading', 'Pamm'].map((tab) => (
+            {[t('trading.all'), t('accounts.live'), t('accounts.demo'), t('copytrading.title'), t('pamm.title')].map((tab) => (
               <button
                 key={tab}
                 className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
@@ -1673,7 +1708,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           
           {/* Tab Navigation */}
           <div className={`${isMobile ? 'grid grid-cols-3 gap-2' : 'flex flex-wrap gap-2'} mb-4 sm:mb-6`}>
-            {['Todas', 'Cuentas Reales', 'Cuentas Demo'].map((tab) => (
+            {[t('trading.all'), t('accounts.live'), t('accounts.demo')].map((tab) => (
               <button
                 key={tab}
                 className={`px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
@@ -1895,7 +1930,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                             className="text-cyan-400 font-medium cursor-pointer hover:text-cyan-300 flex items-center gap-1"
                           >
                             <Settings size={14} />
-                            Configurar
+                            {t('common.configure')}
                           </div>
                         )}
                         {selectedAccount.investorPassword && (
@@ -1943,8 +1978,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4 cursor-help">Balance</h2>
               </CustomTooltip>
               <div className="flex items-center mb-4 sm:mb-6">
-                <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3">$5,000.00</span>
-                <span className="bg-green-800 bg-opacity-30 text-green-400 px-2 py-1 rounded text-xs sm:text-sm">+24.7%</span>
+                <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3 text-white">
+                  ${balanceData[balanceData.length - 1]?.value.toLocaleString() || '0.00'}
+                </span>
+                <span className="bg-green-800 bg-opacity-30 text-green-400 px-2 py-1 rounded text-xs sm:text-sm">
+                  +{(((balanceData[balanceData.length - 1]?.value || 0) - initialBalance) / initialBalance * 100).toFixed(1)}%
+                </span>
               </div>
               
               <div className={`w-full ${isMobile ? 'h-48' : 'h-64'}`}>
@@ -1958,10 +1997,20 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       </defs>
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
                       <YAxis 
-                      tickFormatter={(value) => `${value/1000}k`}
-                      axisLine={false} tickLine={false} 
+                        domain={[yAxisConfig.min, yAxisConfig.max]}
+                        ticks={Array.from(
+                          {length: Math.floor((yAxisConfig.max - yAxisConfig.min) / yAxisConfig.step) + 1}, 
+                          (_, i) => yAxisConfig.min + (i * yAxisConfig.step)
+                        )}
+                        tickFormatter={(value) => {
+                          if (value >= 1000) {
+                            return `${(value/1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
+                          }
+                          return value.toString();
+                        }}
+                        axisLine={false} tickLine={false} 
                         tick={{ fill: '#9CA3AF', fontSize: 12 }}
-                      width={30} 
+                        width={40} 
                       />
                       <Tooltip
                         contentStyle={{
@@ -2160,34 +2209,34 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               {/* Tabs */}
               <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-2'}`}>
                 <button 
-                  onClick={() => setBenefitChartTab('Beneficio Total')}
+                  onClick={() => setBenefitChartTab(t('trading.benefitTotal'))}
                   className={`px-3 py-2 bg-transparent rounded-full text-xs sm:text-sm font-medium transition ${
-                    benefitChartTab === 'Beneficio Total' 
+                    benefitChartTab === t('trading.benefitTotal') 
                       ? 'border border-cyan-400 text-cyan-400' 
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  {isMobile ? 'Beneficio' : 'Beneficio Total'}
+                  {isMobile ? t('trading.profit') : t('trading.benefitTotal')}
                 </button>
                 <button 
-                  onClick={() => setBenefitChartTab('Balance')}
+                  onClick={() => setBenefitChartTab(t('trading.balance'))}
                   className={`px-3 py-2 bg-transparent rounded-full text-xs sm:text-sm font-medium transition ${
-                    benefitChartTab === 'Balance' 
+                    benefitChartTab === t('trading.balance') 
                       ? 'border border-cyan-400 text-cyan-400' 
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  Balance
+                  {t('trading.balance')}
                 </button>
                 <button 
-                  onClick={() => setBenefitChartTab('Retracción')}
+                  onClick={() => setBenefitChartTab(t('trading.drawdown'))}
                   className={`px-3 py-2 bg-transparent rounded-full text-xs sm:text-sm font-medium transition ${
-                    benefitChartTab === 'Retracción' 
+                    benefitChartTab === t('trading.drawdown') 
                       ? 'border border-cyan-400 text-cyan-400' 
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  Retracción
+                  {t('trading.drawdown')}
                 </button>
               </div>
               
@@ -2471,7 +2520,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             <div className="p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl">
               {/* Header con título */}
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white">Historial de Operaciones</h2>
+                <h2 className="text-2xl font-bold text-white">{t('trading.operationsHistory')}</h2>
               </div>
 
               {/* Botón toggle filtros móvil */}
@@ -2793,7 +2842,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           <div className="bg-[#1a1a1a] rounded-xl border border-[#333] w-full max-w-md">
             {/* Header del Modal */}
             <div className="flex justify-between items-center p-6 border-b border-[#333]">
-              <h3 className="text-xl font-semibold text-white">Configurar Contraseña Investor</h3>
+              <h3 className="text-xl font-semibold text-white">{t('trading.configurePassword')} {t('trading.investorPassword')}</h3>
               <button
                 onClick={closeInvestorModal}
                 className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-colors"
@@ -2870,7 +2919,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 ) : (
                   <>
                     <Settings size={16} />
-                    Configurar
+                    {t('common.configure')}
                   </>
                 )}
               </button>

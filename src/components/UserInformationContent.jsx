@@ -5,28 +5,12 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
-import { Camera, Mail, X, Loader, UploadCloud, Trash2, Search, ChevronDown } from 'lucide-react';
+import { Camera, Mail, ArrowLeft, Loader, UploadCloud, Trash2, Search, ChevronDown, Calendar } from 'lucide-react';
 import axios from 'axios';
 import { z } from 'zod';
+import useTranslation from '../hooks/useTranslation';
 
-// Validation Schema with Zod
-const profileSchema = z.object({
-  nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
-  apellido: z.string().min(2, { message: "El apellido debe tener al menos 2 caracteres" }),
-  pais: z.string().min(1, { message: "Debes seleccionar un país" }),
-  ciudad: z.string().min(2, { message: "La ciudad debe tener al menos 2 caracteres" }),
-  phoneCode: z.string(),
-  phoneNumber: z.string().min(6, { message: "El número de teléfono parece demasiado corto" }),
-  // Acepta URLs completas (https://...) o rutas relativas (/imagen.png)
-  photoURL: z.string().refine(
-    (val) => {
-      if (!val) return true; // Permite valores vacíos
-      // Acepta URLs completas o rutas que empiecen con /
-      return val.startsWith('http://') || val.startsWith('https://') || val.startsWith('/');
-    },
-    { message: "Formato de imagen inválido" }
-  ).optional().nullable(),
-});
+// Validation Schema with Zod - will be created inside component to use translations
 
 const SkeletonLoader = () => (
     <div className="bg-[#1C1C1C] text-white p-4 sm:p-6 md:p-8 rounded-2xl max-w-7xl mx-auto w-full animate-pulse">
@@ -61,6 +45,25 @@ const SkeletonLoader = () => (
 
 const UserInformationContent = ({ onBack }) => {
   const { currentUser } = useAuth();
+  const { t } = useTranslation();
+  
+  // Validation Schema with Zod using translations
+  const profileSchema = z.object({
+    nombre: z.string().min(2, { message: t('validation.nameMinLength') }),
+    apellido: z.string().min(2, { message: t('validation.lastNameMinLength') }),
+    pais: z.string().min(1, { message: t('validation.countryRequired') }),
+    ciudad: z.string().min(2, { message: t('validation.cityMinLength') }),
+    phoneCode: z.string(),
+    phoneNumber: z.string().min(6, { message: t('validation.phoneNumberTooShort') }),
+    photoURL: z.string().refine(
+      (val) => {
+        if (!val) return true;
+        return val.startsWith('http://') || val.startsWith('https://') || val.startsWith('/');
+      },
+      { message: t('validation.invalidImageFormat') }
+    ).optional().nullable(),
+  });
+  
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
@@ -69,6 +72,7 @@ const UserInformationContent = ({ onBack }) => {
     phoneCode: '+54',
     phoneNumber: '',
     photoURL: '',
+    fechaNacimiento: '',
   });
   const [initialData, setInitialData] = useState({});
   const [countries, setCountries] = useState([]);
@@ -77,6 +81,7 @@ const UserInformationContent = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [formSaving, setFormSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isDateFocused, setIsDateFocused] = useState(false);
   
   // Country selector states
   const [countrySearch, setCountrySearch] = useState('');
@@ -271,178 +276,244 @@ const UserInformationContent = ({ onBack }) => {
   }
 
   return (
-    <div className="bg-gradient-to-b from-[#232323] to-[#2b2b2b] text-white p-4 sm:p-6 md:p-8 rounded-2xl max-w-7xl mx-auto w-full">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">Configuración de Perfil</h1>
-        <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-700 transition-colors">
-            <X size={24} />
-        </button>
+    <div className="text-white p-8 rounded-[40px] mx-auto w-full border border-[#3C3C3C]" style={{ background: 'linear-gradient(122.63deg, rgba(34, 34, 34, 0.5) 0%, rgba(53, 53, 53, 0.5) 100%)' }}>
+      <div className="flex items-center mb-8">
+        <img 
+          src="/Back.svg" 
+          alt="Back" 
+          onClick={onBack}
+          className="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity mr-6" 
+        />
+        <h1 className="text-2xl font-semibold text-white">{t('profile.userInformation')}</h1>
       </div>
 
-      <form onSubmit={handleSave} className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-        {/* Profile Picture Section */}
-        <section className="flex-shrink-0 flex flex-col items-center gap-4 w-full lg:w-64">
-          <h2 className="text-xl font-semibold text-gray-300 self-start lg:self-center">Foto de Perfil</h2>
-          <div className="relative w-40 h-40">
-            <img 
-              src={preview}
-              alt="User profile" 
-              className="w-full h-full rounded-full object-cover border-4 border-gray-600"
-            />
-          </div>
-          <div 
-            {...getRootProps()} 
-            className={`w-full p-6 text-center border-2 border-dashed rounded-xl cursor-pointer transition-colors ${isDragActive ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-600 hover:border-cyan-400'}`}
-          >
-            <input {...getInputProps()} />
-            <div className="flex flex-col items-center gap-2 text-gray-400">
-              <UploadCloud size={32}/>
-              {isDragActive ?
-                <p>Suelta la imagen aquí...</p> :
-                <p>Arrastra una foto o haz clic para seleccionarla</p>
-              }
-              <span className="text-xs">PNG, JPG, WEBP hasta 5MB</span>
+      <form onSubmit={handleSave}>
+        {/* Profile and Basic Info Section */}
+        <div className="flex flex-col sm:flex-row gap-6 mb-6">
+          {/* Profile Picture */}
+          <div className="flex-shrink-0 flex justify-center sm:justify-start">
+            <div className="relative w-24 h-24">
+              <img 
+                src={preview}
+                alt="User profile" 
+                className="w-full h-full rounded-full object-cover border-2 border-white"
+              />
+              <div 
+                {...getRootProps()}
+                className="absolute bottom-0 right-0 w-8 h-8 bg-[#404040] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#505050] transition-colors"
+              >
+                <input {...getInputProps()} />
+                <Camera size={16} className="text-white" />
+              </div>
             </div>
           </div>
-          {preview && preview !== '/IconoPerfil.svg' && (
-             <button type="button" onClick={() => {
-                setFormData(prev => ({ ...prev, photoURL: '/IconoPerfil.svg'}));
-                setPreview('/IconoPerfil.svg');
-                // We set the file to null, but also change formData, so hasChanges will be true
-                setProfileImageFile(null); 
-             }} className="w-full flex items-center justify-center gap-2 bg-red-500/20 text-red-400 py-2 px-4 rounded-lg hover:bg-red-500/40 transition-colors">
-                <Trash2 size={16}/>
-                Eliminar Foto
-            </button>
-          )}
-        </section>
+          
+          {/* Name Fields */}
+          <div className="flex-grow sm:ml-4 sm:mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[43%_55%] gap-4">
+              <div>
+                <label className="block text-white text-sm font-medium mb-2">{t('profile.name')}</label>
+                <input 
+                  type="text" 
+                  name="nombre" 
+                  value={formData.nombre} 
+                  onChange={handleInputChange}
+                  placeholder={t('profile.name')}
+                  className={`w-full border ${errors.nombre ? 'border-red-500' : 'border-[rgba(60,60,60,1)]'} rounded-50 px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-cyan-500`}
+                  style={{ 
+                    fontFamily: 'Poppins', 
+                    fontWeight: 400, 
+                    fontSize: '16px',
+                    background: 'linear-gradient(122.63deg, rgba(34, 34, 34, 1) 0%, rgba(53, 53, 53, 1) 100%)'
+                  }}
+                />
+                {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
+              </div>
+              <div>
+                <label className="block text-white text-sm font-medium mb-2">{t('profile.lastName')}</label>
+                <input 
+                  type="text" 
+                  name="apellido" 
+                  value={formData.apellido} 
+                  onChange={handleInputChange}
+                  placeholder={t('profile.lastName')}
+                  className={`w-full border ${errors.apellido ? 'border-red-500' : 'border-[rgba(60,60,60,1)]'} rounded-50 px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-cyan-500`}
+                  style={{ 
+                    fontFamily: 'Poppins', 
+                    fontWeight: 400, 
+                    fontSize: '16px',
+                    background: 'linear-gradient(122.63deg, rgba(34, 34, 34, 1) 0%, rgba(53, 53, 53, 1) 100%)'
+                  }}
+                />
+                {errors.apellido && <p className="text-red-500 text-xs mt-1">{errors.apellido}</p>}
+              </div>
+            </div>
+          </div>
+        </div>
 
-        {/* Form Fields Section */}
-        <section className="flex-grow w-full">
-          <div className="space-y-6">
-            {/* --- Personal Information --- */}
-            <div className="bg-[#2D2D2D] p-6 rounded-2xl">
-              <h3 className="text-lg font-semibold mb-4 text-cyan-400">Información Personal</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                {/* Email */}
-                <div className="md:col-span-2">
-                  <label htmlFor="email" className="block text-sm text-gray-400 mb-2">Email</label>
+        {/* Additional Fields Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          {/* Fecha de nacimiento */}
+          <div className="relative">
+            <input 
+              type="text"
+              name="fechaNacimiento"
+              value={formData.fechaNacimiento}
+              onChange={handleInputChange}
+              placeholder="Fecha de nacimiento"
+              onFocus={(e) => {
+                e.target.type = 'date';
+                setIsDateFocused(true);
+              }}
+              onBlur={(e) => {
+                if (!e.target.value) {
+                  e.target.type = 'text';
+                }
+                setIsDateFocused(false);
+              }}
+              className="w-full border border-[rgba(60,60,60,1)] rounded-50 px-6 py-3 text-gray-400 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              style={{ 
+                fontFamily: 'Poppins', 
+                fontWeight: 400, 
+                fontSize: '16px',
+                background: 'linear-gradient(122.63deg, rgba(34, 34, 34, 1) 0%, rgba(53, 53, 53, 1) 100%)'
+              }}
+            />
+            {!isDateFocused && !formData.fechaNacimiento && (
+              <Calendar size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            )}
+          </div>
+          
+          {/* Género */}
+          <div className="relative">
+            <select 
+              className="w-full border border-[rgba(60,60,60,1)] rounded-50 px-6 py-3 text-gray-400 focus:outline-none focus:ring-1 focus:ring-cyan-500 appearance-none" 
+              style={{ 
+                fontFamily: 'Poppins', 
+                fontWeight: 400, 
+                fontSize: '16px',
+                background: 'linear-gradient(122.63deg, rgba(34, 34, 34, 1) 0%, rgba(53, 53, 53, 1) 100%)'
+              }}
+            >
+              <option value="">Género</option>
+              <option value="masculino">Masculino</option>
+              <option value="femenino">Femenino</option>
+              <option value="otro">Otro</option>
+            </select>
+            <ChevronDown size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          </div>
+          
+          {/* País */}
+          <div className="relative" ref={countryDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+              className={`w-full border ${errors.pais ? 'border-red-500' : 'border-[rgba(60,60,60,1)]'} rounded-50 px-6 py-3 text-left flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-cyan-500`}
+              style={{ 
+                fontFamily: 'Poppins', 
+                fontWeight: 400, 
+                fontSize: '16px',
+                background: 'linear-gradient(122.63deg, rgba(34, 34, 34, 1) 0%, rgba(53, 53, 53, 1) 100%)'
+              }}
+            >
+              <span className={formData.pais ? 'text-white' : 'text-gray-400'}>
+                {formData.pais || 'Argentina'}
+              </span>
+              <ChevronDown 
+                size={20} 
+                className={`text-gray-400 transition-transform ${isCountryDropdownOpen ? 'rotate-180' : ''}`} 
+              />
+            </button>
+            
+            {isCountryDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#404040] border border-[#333] rounded-xl shadow-lg z-50 max-h-60 overflow-hidden">
+                <div className="p-3 border-b border-[#333]">
                   <div className="relative">
-                    <input type="email" id="email" value={currentUser.email} readOnly className="w-full bg-[#1C1C1C] border border-[#333] rounded-xl p-3 text-sm text-gray-400 focus:outline-none cursor-not-allowed" />
-                    <Mail size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="Buscar país..."
+                      value={countrySearch}
+                      onChange={handleCountrySearchChange}
+                      className="w-full bg-[#2D2D2D] border border-[#444] rounded-xl pl-10 pr-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
+                      autoFocus
+                    />
+                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   </div>
                 </div>
-                {/* Nombre */}
-                <div>
-                  <label htmlFor="nombre" className="block text-sm text-gray-400 mb-2">Nombre</label>
-                  <input type="text" id="nombre" name="nombre" value={formData.nombre} onChange={handleInputChange} className={`w-full bg-[#1C1C1C] border ${errors.nombre ? 'border-red-500' : 'border-[#333]'} rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500`} />
-                  {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
-                </div>
-                {/* Apellido */}
-                <div>
-                  <label htmlFor="apellido" className="block text-sm text-gray-400 mb-2">Apellido</label>
-                  <input type="text" id="apellido" name="apellido" value={formData.apellido} onChange={handleInputChange} className={`w-full bg-[#1C1C1C] border ${errors.apellido ? 'border-red-500' : 'border-[#333]'} rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500`} />
-                  {errors.apellido && <p className="text-red-500 text-xs mt-1">{errors.apellido}</p>}
+                <div className="max-h-40 overflow-y-auto">
+                  {filteredCountries.length > 0 ? (
+                    filteredCountries.map((country) => (
+                      <button
+                        key={country.name}
+                        type="button"
+                        onClick={() => handleCountrySelect(country.name)}
+                        className="w-full text-left px-3 py-2 text-sm text-white hover:bg-[#2D2D2D] transition-colors"
+                      >
+                        {country.name}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-gray-400">
+                      No se encontraron países
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-
-             {/* --- Location Information --- */}
-            <div className="bg-[#2D2D2D] p-6 rounded-2xl">
-              <h3 className="text-lg font-semibold mb-4 text-cyan-400">Ubicación y Contacto</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                {/* País */}
-                <div className="relative" ref={countryDropdownRef}>
-                    <label htmlFor="pais" className="block text-sm text-gray-400 mb-2">País</label>
-                    <div className="relative">
-                        <button
-                            type="button"
-                            onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
-                            className={`w-full bg-[#1C1C1C] border ${errors.pais ? 'border-red-500' : 'border-[#333]'} rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 text-left flex items-center justify-between`}
-                        >
-                            <span className={formData.pais ? 'text-white' : 'text-gray-400'}>
-                                {formData.pais || 'Seleccionar país'}
-                            </span>
-                            <ChevronDown 
-                                size={20} 
-                                className={`text-gray-400 transition-transform ${isCountryDropdownOpen ? 'rotate-180' : ''}`} 
-                            />
-                        </button>
-                        
-                        {isCountryDropdownOpen && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-[#1C1C1C] border border-[#333] rounded-xl shadow-lg z-50 max-h-60 overflow-hidden">
-                                {/* Search input */}
-                                <div className="p-3 border-b border-[#333]">
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Buscar país..."
-                                            value={countrySearch}
-                                            onChange={handleCountrySearchChange}
-                                            className="w-full bg-[#2D2D2D] border border-[#444] rounded-lg pl-10 pr-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
-                                            autoFocus
-                                        />
-                                        <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                    </div>
-                                </div>
-                                
-                                {/* Country list */}
-                                <div className="max-h-40 overflow-y-auto">
-                                    {filteredCountries.length > 0 ? (
-                                        filteredCountries.map((country) => (
-                                            <button
-                                                key={country.name}
-                                                type="button"
-                                                onClick={() => handleCountrySelect(country.name)}
-                                                className="w-full text-left px-3 py-2 text-sm text-white hover:bg-[#2D2D2D] transition-colors"
-                                            >
-                                                {country.name}
-                                            </button>
-                                        ))
-                                    ) : (
-                                        <div className="px-3 py-2 text-sm text-gray-400">
-                                            No se encontraron países
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    {errors.pais && <p className="text-red-500 text-xs mt-1">{errors.pais}</p>}
-                </div>
-                {/* Ciudad */}
-                <div>
-                    <label htmlFor="ciudad" className="block text-sm text-gray-400 mb-2">Ciudad</label>
-                    <input type="text" id="ciudad" name="ciudad" value={formData.ciudad} onChange={handleInputChange} placeholder="Ej: Buenos Aires" className={`w-full bg-[#1C1C1C] border ${errors.ciudad ? 'border-red-500' : 'border-[#333]'} rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500`} />
-                    {errors.ciudad && <p className="text-red-500 text-xs mt-1">{errors.ciudad}</p>}
-                </div>
-                {/* Teléfono */}
-                <div className="md:col-span-2">
-                    <label htmlFor="telefono" className="block text-sm text-gray-400 mb-2">Teléfono</label>
-                    <div className="flex">
-                        <input type="text" value={formData.phoneCode} readOnly className="w-20 bg-[#1C1C1C] border-t border-b border-l border-[#333] rounded-l-xl p-3 text-sm text-center text-gray-400 cursor-not-allowed"/>
-                        <input type="tel" id="telefono" name="phoneNumber" placeholder="Número de teléfono" value={formData.phoneNumber} onChange={handleInputChange} className={`w-full bg-[#1C1C1C] border-t border-b border-r ${errors.phoneNumber ? 'border-red-500' : 'border-[#333]'} rounded-r-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500`} />
-                    </div>
-                     {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>}
-                </div>
-              </div>
-            </div>
-
-            {/* --- Actions --- */}
-            <div className="flex flex-col sm:flex-row justify-end gap-4 pt-4">
-              <button type="button" onClick={handleCancel} disabled={!hasChanges || formSaving} className="w-full sm:w-auto bg-transparent border border-gray-600 text-white py-3 px-8 rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                  Cancelar
-              </button>
-              <button 
-                type="submit" 
-                disabled={!hasChanges || formSaving} 
-                className="w-full sm:w-auto bg-cyan-600 text-white py-3 px-8 rounded-xl hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                  {formSaving ? <><Loader size={20} className="animate-spin" /> Guardando...</> : 'Guardar Cambios'}
-              </button>
-            </div>
+            )}
+            {errors.pais && <p className="text-red-500 text-xs mt-1">{errors.pais}</p>}
           </div>
-        </section>
+          
+          {/* Ciudad */}
+          <div>
+            <input 
+              type="text" 
+              name="ciudad" 
+              value={formData.ciudad} 
+              onChange={handleInputChange}
+              placeholder="Concepción del Uruguay"
+              className={`w-full border ${errors.ciudad ? 'border-red-500' : 'border-[rgba(60,60,60,1)]'} rounded-50 px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-cyan-500`}
+              style={{ 
+                fontFamily: 'Poppins', 
+                fontWeight: 400, 
+                fontSize: '16px',
+                background: 'linear-gradient(122.63deg, rgba(34, 34, 34, 1) 0%, rgba(53, 53, 53, 1) 100%)'
+              }}
+            />
+            {errors.ciudad && <p className="text-red-500 text-xs mt-1">{errors.ciudad}</p>}
+          </div>
+          
+          {/* Teléfono */}
+          <div className="relative">
+            <input 
+              type="tel" 
+              name="phoneNumber" 
+              placeholder="Teléfono" 
+              value={formData.phoneNumber} 
+              onChange={handleInputChange} 
+              className={`w-full border ${errors.phoneNumber ? 'border-red-500' : 'border-[rgba(60,60,60,1)]'} rounded-50 px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-cyan-500`}
+              style={{ 
+                fontFamily: 'Poppins', 
+                fontWeight: 400, 
+                fontSize: '16px',
+                background: 'linear-gradient(122.63deg, rgba(34, 34, 34, 1) 0%, rgba(53, 53, 53, 1) 100%)'
+              }}
+            />
+            <ChevronDown size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>}
+          </div>
+          
+          {/* Save Button */}
+          <div className="flex justify-center items-center sm:col-span-1">
+            <button 
+              type="submit" 
+              disabled={formSaving} 
+              className="w-full sm:w-full bg-transparent text-white py-3 px-8 rounded-50 hover:bg-cyan-600/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-cyan-500"
+              style={{ fontFamily: 'Poppins', fontWeight: 400, fontSize: '16px' }}
+            >
+              {formSaving ? <><Loader size={20} className="animate-spin" /> {t('profile.saving')}</> : t('profile.saveChanges')}
+            </button>
+          </div>
+        </div>
       </form>
     </div>
   );

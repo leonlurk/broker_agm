@@ -454,7 +454,7 @@ const OperationsHistory = () => {
                   <div>{op.metodo}</div>
                   
                   <div className="text-gray-400">Cantidad:</div>
-                  <div className="font-medium">{op.cantidad}</div>
+                  <div className="font-medium text-white">{op.cantidad}</div>
                 </div>
                 
                 {/* Para desktop */}
@@ -472,7 +472,7 @@ const OperationsHistory = () => {
                 </div>
                 <div className="hidden md:block px-2">{op.tipo}</div>
                 <div className="hidden md:block px-2">{op.metodo}</div>
-                <div className="hidden md:block px-2 font-medium">{op.cantidad}</div>
+                <div className="hidden md:block px-2 font-medium text-white">{op.cantidad}</div>
               </div>
             ))
           ) : (

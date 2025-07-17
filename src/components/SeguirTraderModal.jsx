@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { X, DollarSign, AlertTriangle, Settings, Clock, Target } from 'lucide-react';
+import useTranslation from '../hooks/useTranslation';
 
 const SeguirTraderModal = ({ isOpen, onClose, trader, onConfirm }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     capitalAsignado: 5000,
     porcentajeRiesgo: 5,
@@ -11,7 +13,16 @@ const SeguirTraderModal = ({ isOpen, onClose, trader, onConfirm }) => {
     tiposOperacion: ['Forex', 'Criptomonedas'],
     horarioCopiado: '24/7',
     autoStop: true,
-    comisionTrader: 25
+    comisionTrader: 25,
+    // New advanced configuration fields
+    multiplicadorLote: 1.0,
+    retrasoCopiado: 0,
+    copiarSL: true,
+    copiarTP: true,
+    lotesMinimos: 0.01,
+    lotesMaximos: 10,
+    notificaciones: true,
+    pausarEnPerdidas: false
   });
 
   const [errors, setErrors] = useState({});
@@ -62,6 +73,23 @@ const SeguirTraderModal = ({ isOpen, onClose, trader, onConfirm }) => {
       newErrors.tiposOperacion = 'Selecciona al menos un tipo de operación';
     }
 
+    // Validaciones para campos avanzados
+    if (formData.multiplicadorLote < 0.1 || formData.multiplicadorLote > 10) {
+      newErrors.multiplicadorLote = 'El multiplicador debe estar entre 0.1 y 10';
+    }
+
+    if (formData.retrasoCopiado < 0 || formData.retrasoCopiado > 5000) {
+      newErrors.retrasoCopiado = 'El retraso debe estar entre 0 y 5000ms';
+    }
+
+    if (formData.lotesMinimos < 0.01 || formData.lotesMinimos > formData.lotesMaximos) {
+      newErrors.lotesMinimos = 'Los lotes mínimos deben ser al menos 0.01 y menores que los máximos';
+    }
+
+    if (formData.lotesMaximos < formData.lotesMinimos || formData.lotesMaximos > 100) {
+      newErrors.lotesMaximos = 'Los lotes máximos deben ser mayores que los mínimos y hasta 100';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -86,8 +114,8 @@ const SeguirTraderModal = ({ isOpen, onClose, trader, onConfirm }) => {
               <Target className="text-cyan-500" size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-white">Seguir Trader</h2>
-              <p className="text-sm text-gray-400">Configura tu estrategia de copia</p>
+              <h2 className="text-xl font-semibold text-white">{t('followTrader.followTrader')}</h2>
+              <p className="text-sm text-gray-400">{t('followTrader.configureFollow')}</p>
             </div>
           </div>
           <button
@@ -245,6 +273,107 @@ const SeguirTraderModal = ({ isOpen, onClose, trader, onConfirm }) => {
             </select>
           </div>
 
+          {/* Configuración de Lotes */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+              <Settings size={16} />
+              Configuración Avanzada
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Multiplicador de Lote
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={formData.multiplicadorLote}
+                  onChange={(e) => handleInputChange('multiplicadorLote', Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
+                  placeholder="1.0"
+                  min="0.1"
+                  max="10"
+                />
+                <p className="text-xs text-gray-500">Multiplica el tamaño de lote del trader</p>
+                {errors.multiplicadorLote && (
+                  <p className="text-red-400 text-sm flex items-center gap-1">
+                    <AlertTriangle size={14} />
+                    {errors.multiplicadorLote}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Retraso de Copiado (ms)
+                </label>
+                <input
+                  type="number"
+                  value={formData.retrasoCopiado}
+                  onChange={(e) => handleInputChange('retrasoCopiado', Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
+                  placeholder="0"
+                  min="0"
+                  max="5000"
+                />
+                <p className="text-xs text-gray-500">Retraso antes de copiar operaciones</p>
+                {errors.retrasoCopiado && (
+                  <p className="text-red-400 text-sm flex items-center gap-1">
+                    <AlertTriangle size={14} />
+                    {errors.retrasoCopiado}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Lotes Mínimos
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.lotesMinimos}
+                  onChange={(e) => handleInputChange('lotesMinimos', Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
+                  placeholder="0.01"
+                  min="0.01"
+                  max="1"
+                />
+                {errors.lotesMinimos && (
+                  <p className="text-red-400 text-sm flex items-center gap-1">
+                    <AlertTriangle size={14} />
+                    {errors.lotesMinimos}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Lotes Máximos
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={formData.lotesMaximos}
+                  onChange={(e) => handleInputChange('lotesMaximos', Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
+                  placeholder="10"
+                  min="0.1"
+                  max="100"
+                />
+                {errors.lotesMaximos && (
+                  <p className="text-red-400 text-sm flex items-center gap-1">
+                    <AlertTriangle size={14} />
+                    {errors.lotesMaximos}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Opciones Adicionales */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -265,6 +394,38 @@ const SeguirTraderModal = ({ isOpen, onClose, trader, onConfirm }) => {
 
             <div className="flex items-center justify-between">
               <div>
+                <p className="text-sm font-medium text-gray-300">Copiar Stop Loss</p>
+                <p className="text-xs text-gray-500">Copiar los niveles de stop loss del trader</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.copiarSL}
+                  onChange={(e) => handleInputChange('copiarSL', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-[#333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-300">Copiar Take Profit</p>
+                <p className="text-xs text-gray-500">Copiar los niveles de take profit del trader</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.copiarTP}
+                  onChange={(e) => handleInputChange('copiarTP', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-[#333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm font-medium text-gray-300">Auto-Stop</p>
                 <p className="text-xs text-gray-500">Detener automáticamente si se alcanza el límite</p>
               </div>
@@ -273,6 +434,38 @@ const SeguirTraderModal = ({ isOpen, onClose, trader, onConfirm }) => {
                   type="checkbox"
                   checked={formData.autoStop}
                   onChange={(e) => handleInputChange('autoStop', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-[#333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-300">Notificaciones</p>
+                <p className="text-xs text-gray-500">Recibir notificaciones de operaciones copiadas</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.notificaciones}
+                  onChange={(e) => handleInputChange('notificaciones', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-[#333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-300">Pausar en Pérdidas</p>
+                <p className="text-xs text-gray-500">Pausar copiado tras múltiples operaciones perdedoras</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.pausarEnPerdidas}
+                  onChange={(e) => handleInputChange('pausarEnPerdidas', e.target.checked)}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-[#333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
@@ -298,13 +491,13 @@ const SeguirTraderModal = ({ isOpen, onClose, trader, onConfirm }) => {
               onClick={onClose}
               className="flex-1 px-4 py-3 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
             >
-              Cancelar
+              {t('followTrader.cancel')}
             </button>
             <button
               type="submit"
               className="flex-1 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-lg transition-colors font-medium"
             >
-              Confirmar Seguimiento
+              {t('followTrader.follow')}
             </button>
           </div>
         </form>

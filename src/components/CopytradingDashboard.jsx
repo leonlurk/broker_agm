@@ -3,8 +3,10 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import TraderProfileDetail from './TraderProfileDetail';
 import SeguirTraderModal from './SeguirTraderModal';
 import { getMasterTraders, getMySubscriptions } from '../services/copytradingService';
+import useTranslation from '../hooks/useTranslation';
 
 const CopytradingDashboard = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('traders');
   const [selectedTrader, setSelectedTrader] = useState(null);
   const [expandedTrader, setExpandedTrader] = useState(null);
@@ -21,6 +23,9 @@ const CopytradingDashboard = () => {
   // Estados para el modal de seguir trader
   const [showSeguirModal, setShowSeguirModal] = useState(false);
   const [selectedTraderForCopy, setSelectedTraderForCopy] = useState(null);
+  
+  // Estado para rastrear qué traders están siendo copiados
+  const [copiedTraders, setCopiedTraders] = useState(new Set());
   
   useEffect(() => {
     const fetchData = async () => {
@@ -98,6 +103,9 @@ const CopytradingDashboard = () => {
   };
   
   const handleCopyTrader = (trader) => {
+    if (copiedTraders.has(trader.id)) {
+      return; // Ya está siendo copiado
+    }
     console.log("Copying trader:", trader);
     setSelectedTraderForCopy(trader);
     setShowSeguirModal(true);
@@ -115,7 +123,7 @@ const CopytradingDashboard = () => {
   if (isLoading) {
     return (
       <div className="p-6 bg-[#232323] text-white text-center">
-        <h1 className="text-xl font-semibold">Cargando Datos de Copytrading...</h1>
+        <h1 className="text-xl font-semibold">{t('copytrading.loadingData')}</h1>
       </div>
     );
   }
@@ -168,10 +176,15 @@ const CopytradingDashboard = () => {
         
         <div className="flex space-x-2">
           <button 
-            className="flex-1 px-4 py-2 bg-cyan-700 hover:bg-cyan-600 rounded-md text-sm"
+            className={`flex-1 px-4 py-2 rounded-md text-sm transition-colors ${
+              copiedTraders.has(trader.id) 
+                ? 'bg-green-600 hover:bg-green-700' 
+                : 'bg-cyan-700 hover:bg-cyan-600'
+            }`}
             onClick={() => handleCopyTrader(trader)}
+            disabled={copiedTraders.has(trader.id)}
           >
-            Copiar
+            {copiedTraders.has(trader.id) ? t('copytrading.copying') : t('copytrading.copy')}
           </button>
           <button 
             className="px-4 py-2 bg-[#333] hover:bg-[#444] rounded-md text-sm"
@@ -324,8 +337,8 @@ const CopytradingDashboard = () => {
 
   return (
     <div className="p-6 bg-[#232323] text-white">
-      <h1 className="text-2xl font-semibold mb-4">Copytrading</h1>
-      <p className="text-gray-400 mb-6">Gestiona tus operaciones de copytrading.</p>
+      <h1 className="text-2xl font-semibold mb-4">Copy Trading</h1>
+      <p className="text-gray-400 mb-6">Gestiona tus operaciones copy trading.</p>
       
       {/* Tabs */}
       <div className="flex mb-6 border-b border-[#333] overflow-x-auto">
@@ -337,7 +350,7 @@ const CopytradingDashboard = () => {
               : 'text-gray-400 hover:text-white'
           }`}
         >
-          Traders disponibles
+          {t('copytrading.exploreTraders')}
         </button>
         <button
           onClick={() => setActiveTab('subscriptions')}
@@ -347,7 +360,7 @@ const CopytradingDashboard = () => {
               : 'text-gray-400 hover:text-white'
           }`}
         >
-          Mis suscripciones
+          {t('copytrading.myCopies')}
         </button>
         <button
           onClick={() => setActiveTab('performance')}
@@ -357,7 +370,7 @@ const CopytradingDashboard = () => {
               : 'text-gray-400 hover:text-white'
           }`}
         >
-          Rendimiento
+          {t('copytrading.performance')}
         </button>
       </div>
       
@@ -369,7 +382,7 @@ const CopytradingDashboard = () => {
             <div className="flex-1">
               <input
                 type="text"
-                placeholder="Buscar traders..."
+                placeholder={t('copytrading.searchTrader')}
                 className="w-full p-3 bg-[#191919] border border-[#333] rounded-lg text-white"
                 value={searchTerm}
                 onChange={(e) => {
@@ -445,8 +458,8 @@ const CopytradingDashboard = () => {
             activeSubscriptions.map(subscription => renderSubscriptionCard(subscription))
           ) : (
             <div className="bg-[#191919] p-8 rounded-xl border border-[#333] text-center">
-              <p className="text-lg mb-2">No tienes suscripciones activas</p>
-              <p className="text-gray-400 mb-4">Comienza a copiar traders para ver tus suscripciones aquí</p>
+              <p className="text-lg mb-2">No tienes copias activas</p>
+              <p className="text-gray-400 mb-4">Comienza a copiar traders para verlas aquí</p>
               <button
                 onClick={() => setActiveTab('traders')}
                 className="px-6 py-3 bg-cyan-700 hover:bg-cyan-600 rounded-md"
@@ -466,7 +479,7 @@ const CopytradingDashboard = () => {
           ) : (
             <div className="bg-[#191919] p-8 rounded-xl border border-[#333] text-center">
               <p className="text-lg mb-2">No hay datos de rendimiento</p>
-              <p className="text-gray-400 mb-4">Necesitas tener al menos una suscripción activa</p>
+              <p className="text-gray-400 mb-4">Necesitas al menos una copia activa</p>
               <button
                 onClick={() => setActiveTab('traders')}
                 className="px-6 py-3 bg-cyan-700 hover:bg-cyan-600 rounded-md"
@@ -489,6 +502,12 @@ const CopytradingDashboard = () => {
         onConfirm={(formData) => {
           console.log('Seguir trader confirmado desde dashboard:', formData);
           // Aquí integrarías con tu API para seguir al trader
+          
+          // Marcar el trader como copiado
+          if (selectedTraderForCopy) {
+            setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+          }
+          
           setShowSeguirModal(false);
           setSelectedTraderForCopy(null);
         }}

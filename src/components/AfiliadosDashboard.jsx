@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Copy, ArrowUpDown, Save, AlertTriangle, Loader, Lock, Menu } from 'lucide-react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { ChevronDown, Copy, ArrowUpDown, Lock, Menu, Loader } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import WithdrawalHistoryDetails from './WithdrawalHistoryDetails';
+import Pagination from './utils/Pagination';
 
 // Definir los requisitos de referidos para cada tier (para pruebas)
 const TIER_REQUIREMENTS = {
@@ -24,10 +25,6 @@ const determineTier = (referralCount) => {
 
 const AfiliadosDashboard = () => {
   const [activeTab, setActiveTab] = useState('panel');
-  const [walletAddress, setWalletAddress] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [editWalletAddress, setEditWalletAddress] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [userId, setUserId] = useState('');
@@ -35,8 +32,12 @@ const AfiliadosDashboard = () => {
   const [currentTier, setCurrentTier] = useState(1);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [selectedTrader, setSelectedTrader] = useState(null);
-  const [visibleAfiliados, setVisibleAfiliados] = useState(3);
+  const [visibleAfiliados] = useState(3);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Estados para paginación
+  const [currentPageCuentas, setCurrentPageCuentas] = useState(1);
+  const itemsPerPage = 10;
   
   // Mock data for the new "Cuentas Activas" table
   const topAfiliadosData = [
@@ -102,9 +103,40 @@ const AfiliadosDashboard = () => {
     },
   ];
 
-  // Datos para las tablas
+  // Generar más datos para demostrar paginación
+  const generateMoreData = (baseData, count) => {
+    const newData = [...baseData];
+    for (let i = baseData.length; i < count; i++) {
+      newData.push({
+        id: i + 1,
+        nombre: `Trader ${String.fromCharCode(65 + (i % 26))}${Math.floor(i / 26) + 1}`,
+        tipoCuenta: ['Standard', 'Premium', 'VIP', 'Zero Spread', 'ECN'][i % 5],
+        balance: Math.floor(Math.random() * 5000) + 500,
+        equidad: Math.floor(Math.random() * 5000) + 500,
+        lotesOperados: Math.floor(Math.random() * 100) + 5,
+        comisionesGeneradas: Math.floor(Math.random() * 100) + 5,
+        retirosCobrados: Math.floor(Math.random() * 20) + 1,
+      });
+    }
+    return newData;
+  };
+
+  // Expandir datos para tener suficientes elementos para paginar
+  const expandedAfiliadosData = generateMoreData(topAfiliadosData, 25);
+
   const referenciasData = [];
   const pagosData = [];
+
+  // Calcular datos paginados
+  const getPaginatedData = (data, currentPage, itemsPerPage) => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return data.slice(startIndex, endIndex);
+  };
+
+  const paginatedCuentasActivas = getPaginatedData(expandedAfiliadosData, currentPageCuentas, itemsPerPage);
+  
+  const totalPagesCuentas = Math.ceil(expandedAfiliadosData.length / itemsPerPage);
 
   // Detectar si es dispositivo móvil
   useEffect(() => {
@@ -133,11 +165,6 @@ const AfiliadosDashboard = () => {
 
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            // Cargar Wallet
-            if (userData.withdrawals_wallet) {
-              setWalletAddress(userData.withdrawals_wallet);
-              setEditWalletAddress(userData.withdrawals_wallet);
-            }
             // Cargar Conteo de Referidos y Determinar Tier
             const count = userData.referralCount || 0; // Asumir 0 si no existe
             setReferralCount(count);
@@ -165,39 +192,6 @@ const AfiliadosDashboard = () => {
     setActiveTab(tab);
   };
   
-  const toggleEditMode = () => {
-    setIsEditing(!isEditing);
-    setEditWalletAddress(walletAddress);
-    setError('');
-    setSuccessMessage('');
-  };
-  
-  const saveWalletAddress = async () => {
-    if (!editWalletAddress.trim()) {
-      setError('Por favor, introduzca una dirección de wallet válida.');
-      return;
-    }
-    setIsSaving(true);
-    setError('');
-    try {
-      const user = auth.currentUser;
-      if (user) {
-        const userDocRef = doc(db, 'users', user.uid);
-        await setDoc(userDocRef, { withdrawals_wallet: editWalletAddress.trim() }, { merge: true });
-        setWalletAddress(editWalletAddress.trim());
-        setSuccessMessage('Dirección de wallet actualizada correctamente');
-        setTimeout(() => setSuccessMessage(''), 3000);
-        setIsEditing(false);
-      } else {
-        setError('Debe iniciar sesión para actualizar la dirección de wallet.');
-      }
-    } catch (err) {
-      console.error('Error al actualizar la wallet:', err);
-      setError('Error al guardar los cambios. Intente de nuevo más tarde.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
   
   const copyToClipboard = (text) => {
     if (!text) return;
@@ -344,75 +338,6 @@ const AfiliadosDashboard = () => {
               </div>
             </div>
             
-            {/* Direccion De Pago USDT */}
-            <div className="space-y-4">
-              <h2 className="text-2xl md:text-3xl font-medium">Direccion De Pago USDT</h2>
-              <p className="text-gray-400 text-sm md:text-base">Proporcionar Una Dirección USDT TRC20 Válida</p>
-              
-              {successMessage && (
-                <div className="bg-green-900/20 border border-green-600 text-green-400 p-3 rounded-lg mb-3 text-sm">
-                  {successMessage}
-                </div>
-              )}
-              
-              {error && (
-                <div className="bg-red-900/20 border border-red-600 text-red-400 p-3 rounded-lg mb-3 flex items-center text-sm">
-                  <AlertTriangle size={16} className="mr-2 flex-shrink-0" />
-                  {error}
-                </div>
-              )}
-              
-              {isEditing ? (
-                <div className="flex flex-col space-y-3">
-                  <input
-                    type="text"
-                    className="w-full p-3 bg-gradient-to-br from-[#1a1a1a] to-[#252525] rounded-lg border border-[#333] text-white text-sm"
-                    value={editWalletAddress}
-                    onChange={(e) => setEditWalletAddress(e.target.value)}
-                    placeholder="Ingrese su dirección TRC20 USDT"
-                  />
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button 
-                      className="px-6 py-3 bg-gradient-to-br from-[#0F7490] to-[#0A5A72] text-white rounded-full hover:opacity-90 transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                      onClick={saveWalletAddress}
-                      disabled={isSaving}
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader size={16} className="animate-spin mr-2" />
-                          Guardando...
-                        </>
-                      ) : (
-                        <>
-                          <Save size={16} className="mr-2" />
-                          Guardar
-                        </>
-                      )}
-                    </button>
-                    <button 
-                      className="px-6 py-3 bg-[#2a2a2a] text-white rounded-full hover:bg-[#333] transition text-sm"
-                      onClick={toggleEditMode}
-                      disabled={isSaving}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-grow p-3 bg-gradient-to-br from-[#1a1a1a] to-[#252525] rounded-lg border border-[#333] text-gray-300 overflow-hidden flex items-center">
-                    <span className="truncate mr-2 text-sm">{walletAddress || 'No se ha establecido una dirección de wallet'}</span>
-                  </div>
-                  <button 
-                    className="px-6 py-3 bg-gradient-to-br focus:outline-none from-[#0F7490] to-[#0A5A72] text-white rounded-full hover:opacity-90 transition text-sm flex-shrink-0"
-                    onClick={toggleEditMode}
-                  >
-                  Editar
-                </button>
-                </div>
-              )}
-            </div>
-
         {/* Tiers Section */}
             <div className="space-y-4">
               <h2 className="text-2xl md:text-3xl font-medium">Niveles de Comisión</h2>
@@ -480,7 +405,7 @@ const AfiliadosDashboard = () => {
 
               {/* Rows */}
               <div className="space-y-3">
-                {topAfiliadosData.slice(0, visibleAfiliados).map((trader) => (
+                {paginatedCuentasActivas.map((trader) => (
                   <div key={trader.id} className="grid grid-cols-[minmax(150px,1.5fr)_minmax(0,3fr)_minmax(0,1.5fr)_repeat(5,minmax(0,1fr))] items-center gap-x-4 p-4 rounded-xl bg-[#202020]">
                     {/* Column 1: Button */}
                     <button 
@@ -515,21 +440,21 @@ const AfiliadosDashboard = () => {
               {/* Mobile Card View */}
               {isMobile && (
                 <div className="space-y-3">
-                  {topAfiliadosData.slice(0, visibleAfiliados).map(trader => renderMobileAfiliadosCard(trader))}
+                  {paginatedCuentasActivas.map(trader => renderMobileAfiliadosCard(trader))}
                 </div>
               )}
 
-              {/* Ver Mas Button */}
-              {visibleAfiliados < topAfiliadosData.length && (
-              <div className="flex justify-center pt-4">
-                <button 
-                  onClick={() => setVisibleAfiliados(prev => prev + 3)}
-                    className="bg-[#2d2d2d] hover:bg-[#3f3f3f] transition-colors text-white font-semibold py-3 px-8 rounded-lg text-sm"
-                >
-                  Ver Más
-                </button>
+              {/* Pagination */}
+              <div className="mt-6">
+                <Pagination
+                  currentPage={currentPageCuentas}
+                  totalPages={totalPagesCuentas}
+                  onPageChange={setCurrentPageCuentas}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={expandedAfiliadosData.length}
+                  className="justify-center"
+                />
               </div>
-              )}
             </div>
           </div>
         );

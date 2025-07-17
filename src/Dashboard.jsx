@@ -7,6 +7,7 @@ import PipCalculator from './components/PipCalculator';
 import CertificateComponent from './components/CertificateComponent';
 import LeaderboardModal from './components/LeaderboardModal';
 import ScrollManager from './components/utils/ScrollManager';
+import { scrollToTopManual } from './hooks/useScrollToTop';
 
 import OperationsHistory from './components/OperationsHistory';
 import Descargas from './components/Descargas';
@@ -47,6 +48,11 @@ const Dashboard = ({ onLogout }) => {
   // Efecto para loguear cambios en selectedOption
   useEffect(() => {
     console.log("[Dashboard - src] selectedOption state updated to:", selectedOption);
+  }, [selectedOption]);
+  
+  // Efecto para hacer scroll hacia arriba cuando cambie la sección
+  useEffect(() => {
+    scrollToTopManual(mainContentRef);
   }, [selectedOption]); 
 
   // Crear una función para abrir el modal que podemos pasar a cualquier componente
@@ -135,13 +141,33 @@ const Dashboard = ({ onLogout }) => {
         scrollContainerRef={mainContentRef}
       />;
       case "Copytrading Inversor":
-          return <Inversor />;
+          return <Inversor 
+            setSelectedOption={setSelectedOption}
+            navigationParams={navigationParams}
+            setNavigationParams={setNavigationParams}
+            scrollContainerRef={mainContentRef}
+          />;
       case "Copytrading Gestor":
-          return <Gestor />;
+          return <Gestor 
+            setSelectedOption={setSelectedOption}
+            navigationParams={navigationParams}
+            setNavigationParams={setNavigationParams}
+            scrollContainerRef={mainContentRef}
+          />;
       case "Pamm Inversor":
-        return <PammDashboard />;
+        return <PammDashboard 
+          setSelectedOption={setSelectedOption}
+          navigationParams={navigationParams}
+          setNavigationParams={setNavigationParams}
+          scrollContainerRef={mainContentRef}
+        />;
       case "Pamm Gestor":
-        return <PammGestorAdminDashboard />;
+        return <PammGestorAdminDashboard 
+          setSelectedOption={setSelectedOption}
+          navigationParams={navigationParams}
+          setNavigationParams={setNavigationParams}
+          scrollContainerRef={mainContentRef}
+        />;
       case "Inversor": // Fallback for old selections if any
           return <Inversor />;
       case "Gestor": // Fallback for old selections if any
