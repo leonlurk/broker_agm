@@ -239,9 +239,6 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
             </div>
           </button>
           
-          {/* Language Selector */}
-          <LanguageSelector />
-          
           <div className="flex items-center space-x-2 relative">
             <button 
               onClick={toggleUserInfo}
@@ -257,6 +254,9 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
               />
             </button>
           </div>
+          
+          {/* Language Selector - 4ta opción (última) */}
+          <LanguageSelector />
         </div>
       </div>
 

@@ -692,9 +692,9 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
         </button>
       </div>
 
-      {/* Mis Cuentas Section */}
+      {/* Portfolio Section */}
       <div className="bg-[#2a2a2a] p-6 rounded-2xl border border-[#333]">
-        <h2 className="text-xl font-semibold mb-6">Mis Cuentas</h2>
+        <h2 className="text-xl font-semibold mb-6">Portfolio</h2>
         
         {/* Basic KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -734,15 +734,8 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
 
       {/* Mis Fondos PAMM Section */}
       <div className="bg-[#2a2a2a] p-6 rounded-2xl border border-[#333]">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6">
           <h2 className="text-xl font-semibold">Mis Fondos PAMM</h2>
-          <button
-            onClick={handleConfigureContract}
-            className="flex items-center gap-2 bg-[#0F7490] hover:bg-[#0A5A72] text-white py-2 px-4 rounded-lg transition-colors"
-          >
-            <Settings size={16} />
-            Configurar
-          </button>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

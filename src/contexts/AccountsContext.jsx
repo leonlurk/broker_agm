@@ -50,13 +50,18 @@ export const AccountsProvider = ({ children }) => {
 
   // Cargar cuentas desde Firebase
   const loadAccounts = async () => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.log('Debug AccountsContext - No current user');
+      return;
+    }
     
+    console.log('Debug AccountsContext - Loading accounts for user:', currentUser.uid);
     setIsLoading(true);
     setError(null);
     
     try {
       const result = await getUserTradingAccounts(currentUser.uid);
+      console.log('Debug AccountsContext - getUserTradingAccounts result:', result);
       
       if (result.success) {
         // Organizar cuentas por categoría
@@ -67,16 +72,20 @@ export const AccountsProvider = ({ children }) => {
           [ACCOUNT_CATEGORIES.PAMM]: [] // Se llenarán con datos reales después
         };
         
+        console.log('Debug AccountsContext - Organized accounts:', organizedAccounts);
         setAccounts(organizedAccounts);
         
         // Seleccionar automáticamente la primera cuenta si no hay ninguna seleccionada
         if (!selectedAccount && result.accounts.length > 0) {
+          console.log('Debug AccountsContext - Auto-selecting first account:', result.accounts[0]);
           setSelectedAccount(result.accounts[0]);
         }
       } else {
+        console.log('Debug AccountsContext - Error loading accounts:', result.error);
         setError(result.error || 'Error al cargar cuentas');
       }
     } catch (err) {
+      console.error('Debug AccountsContext - Exception loading accounts:', err);
       setError('Error inesperado al cargar cuentas');
     } finally {
       setIsLoading(false);

@@ -89,7 +89,6 @@ const WithdrawalHistoryDetails = ({ onBack }) => {
           operation.isProfit ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
         }`}>
           <span className="font-semibold">{operation.result}</span>
-          <span className="text-sm">{operation.resultPercent}</span>
           {operation.isProfit ? <TrendingUp size={14}/> : <TrendingDown size={14}/>}
         </div>
       </div>
@@ -138,13 +137,6 @@ const WithdrawalHistoryDetails = ({ onBack }) => {
         </div>
       </div>
 
-      {/* ID Posición */}
-      <div className="pt-2 border-t border-gray-700">
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-400">ID Posición</span>
-          <span className="font-mono">{operation.positionId}</span>
-        </div>
-      </div>
     </div>
   );
 
@@ -270,7 +262,7 @@ const WithdrawalHistoryDetails = ({ onBack }) => {
           <div className="overflow-x-auto">
               <div className="min-w-full text-xs whitespace-nowrap">
                   {/* Header */}
-                  <div className="grid grid-cols-12 gap-4 text-gray-400 py-2">
+                  <div className="grid grid-cols-11 gap-4 text-gray-400 py-2">
                       <div className="col-span-2">Fecha</div>
                       <div>Instrumento</div>
                       <div>Tipo</div>
@@ -280,13 +272,12 @@ const WithdrawalHistoryDetails = ({ onBack }) => {
                       <div>Precio Apertura</div>
                       <div>Precio Cierre</div>
                       <div>Pips</div>
-                      <div>ID Posición</div>
                       <div className="col-span-1 text-right">Resultado</div>
                   </div>
                   {/* Body */}
                   <div className="space-y-2">
                   {data.operations.map(op => (
-                      <div key={op.id} className="grid grid-cols-12 gap-4 items-center bg-[#202020] p-2 rounded-md">
+                      <div key={op.id} className="grid grid-cols-11 gap-4 items-center bg-[#202020] p-2 rounded-md">
                           <div className="col-span-2">
                               <div>{op.openTime} <span className="text-gray-400">{op.openDate}</span></div>
                               <div className="text-gray-400">{op.closeTime} <span className="text-gray-400">{op.closeDate}</span></div>
@@ -302,10 +293,8 @@ const WithdrawalHistoryDetails = ({ onBack }) => {
                           <div>${op.openPrice}</div>
                           <div>${op.closePrice}</div>
                           <div>{op.pips}</div>
-                          <div>{op.positionId}</div>
                           <div className={`col-span-1 flex items-center justify-end gap-1 p-1 rounded ${op.isProfit ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                               <span>{op.result}</span>
-                              <span>{op.resultPercent}</span>
                               {op.isProfit ? <ArrowUpRight size={14}/> : <ArrowDownRight size={14}/>}
                           </div>
                       </div>
@@ -317,7 +306,6 @@ const WithdrawalHistoryDetails = ({ onBack }) => {
                       <div className="flex items-center gap-2">
                           <span className="text-lg font-bold">$1.250,24</span>
                           <div className="flex items-center gap-1 p-1 rounded bg-green-500/20 text-green-400">
-                             <span>+8.0%</span>
                              <ArrowUpRight size={14}/>
                           </div>
                       </div>
@@ -338,7 +326,6 @@ const WithdrawalHistoryDetails = ({ onBack }) => {
                 <div className="flex items-center gap-2">
                   <span className="text-xl font-bold">$1.250,24</span>
                   <div className="flex items-center gap-1 px-2 py-1 rounded bg-green-500/20 text-green-400">
-                     <span className="font-semibold">+8.0%</span>
                      <TrendingUp size={14}/>
                   </div>
                 </div>

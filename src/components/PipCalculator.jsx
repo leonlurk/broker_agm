@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Star, Search as SearchIcon } from 'lucide-react';
+import { Star, Search as SearchIcon, ChevronDown } from 'lucide-react';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
@@ -90,11 +90,45 @@ const cryptoInstruments = [
   { value: 'DOT/USD', label: 'Polkadot / USD (DOT/USD)', type: 'crypto' },
 ];
 
+const metalInstruments = [
+  { value: 'XAU/USD', label: 'Gold / USD (XAU/USD)', type: 'metal' },
+  { value: 'XAG/USD', label: 'Silver / USD (XAG/USD)', type: 'metal' },
+  { value: 'XPT/USD', label: 'Platinum / USD (XPT/USD)', type: 'metal' },
+  { value: 'XPD/USD', label: 'Palladium / USD (XPD/USD)', type: 'metal' },
+  { value: 'XCU/USD', label: 'Copper / USD (XCU/USD)', type: 'metal' },
+];
+
+const indicesInstruments = [
+  { value: 'SPX500', label: 'S&P 500 (SPX500)', type: 'index' },
+  { value: 'US30', label: 'Dow Jones (US30)', type: 'index' },
+  { value: 'NAS100', label: 'NASDAQ 100 (NAS100)', type: 'index' },
+  { value: 'GER30', label: 'DAX 30 (GER30)', type: 'index' },
+  { value: 'UK100', label: 'FTSE 100 (UK100)', type: 'index' },
+  { value: 'JPN225', label: 'Nikkei 225 (JPN225)', type: 'index' },
+  { value: 'FRA40', label: 'CAC 40 (FRA40)', type: 'index' },
+  { value: 'AUS200', label: 'ASX 200 (AUS200)', type: 'index' },
+];
+
 // Combine all instruments into a single array
 const allInstruments = [
   ...forexInstruments,
   ...stockInstruments,
   ...cryptoInstruments,
+  ...metalInstruments,
+  ...indicesInstruments,
+];
+
+// Position size quick options
+const positionSizeQuickOptions = [
+  { value: 0.01, label: '0.01' },
+  { value: 0.05, label: '0.05' },
+  { value: 0.1, label: '0.1' },
+  { value: 0.25, label: '0.25' },
+  { value: 0.5, label: '0.5' },
+  { value: 1.0, label: '1.0' },
+  { value: 2.0, label: '2.0' },
+  { value: 5.0, label: '5.0' },
+  { value: 10.0, label: '10.0' },
 ];
 
 // Componente principal
@@ -105,6 +139,7 @@ const PipCalculator = () => {
   const [instrumentType, setInstrumentType] = useState('forex'); // State to filter dropdown content
   const [pipValue, setPipValue] = useState(1.00);
   const [positionSize, setPositionSize] = useState(1.00);
+  const [showPositionSizeDropdown, setShowPositionSizeDropdown] = useState(false);
   const [accountCurrency, setAccountCurrency] = useState('USD');
   const [instrument, setInstrument] = useState('EUR/USD'); // Default to a common pair
   const [isMobile, setIsMobile] = useState(false);
@@ -119,6 +154,9 @@ const PipCalculator = () => {
   const [rawAccountBalanceInput, setRawAccountBalanceInput] = useState(accountBalance.toString());
   const [rawRiskPercentageInput, setRawRiskPercentageInput] = useState(riskPercentage.toString());
   const [rawStopLossPipsInput, setRawStopLossPipsInput] = useState(stopLossPips.toString());
+  
+  // Ref for position size dropdown
+  const positionSizeDropdownRef = useRef(null);
 
   // New state for instrument search and favorites
   const [instrumentSearchTerm, setInstrumentSearchTerm] = useState('');
@@ -214,6 +252,33 @@ const PipCalculator = () => {
       return newValue > 0 ? newValue : prev;
     });
   };
+
+  // Handle position size quick selection
+  const handlePositionSizeQuickSelect = (value) => {
+    setPositionSize(value);
+    setRawPositionSizeInput(value.toFixed(2));
+    setShowPositionSizeDropdown(false);
+  };
+
+  // Handle click outside for position size dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (positionSizeDropdownRef.current && !positionSizeDropdownRef.current.contains(event.target)) {
+        setShowPositionSizeDropdown(false);
+      }
+    };
+
+    if (showPositionSizeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showPositionSizeDropdown]);
+
 
   // Generic handler for input changes
   const handleRawInputChange = (value, setter, allowDecimal = true, maxChars) => {
@@ -504,6 +569,10 @@ const PipCalculator = () => {
       instrumentsToFilter = stockInstruments;
     } else if (instrumentType === 'crypto') {
       instrumentsToFilter = cryptoInstruments;
+    } else if (instrumentType === 'metal') {
+      instrumentsToFilter = metalInstruments;
+    } else if (instrumentType === 'index') {
+      instrumentsToFilter = indicesInstruments;
     }
 
     const searched = instrumentsToFilter.filter(item =>
@@ -553,24 +622,24 @@ const PipCalculator = () => {
   return (
     <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-3xl text-white flex flex-col">
       {/* Tabs - Responsivos */}
-      <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
         <button
           onClick={() => setActiveTab('pips')}
-          className={`px-4 md:px-6 py-2 rounded-full text-base md:text-lg border ${
+          className={`px-4 py-3 rounded-xl text-sm md:text-base font-medium border transition-all duration-200 ${
             activeTab === 'pips'
-              ? 'border-cyan-500 bg-transparent'
-              : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d]'
+              ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
+              : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-gray-300 hover:border-gray-600'
           }`}
           style={{ outline: 'none' }}
         >
-          Pips
+          Calculadora de Pips
         </button>
         <button
           onClick={() => setActiveTab('position')}
-          className={`px-4 md:px-6 py-2 rounded-full text-base md:text-lg border ${
+          className={`px-4 py-3 rounded-xl text-sm md:text-base font-medium border transition-all duration-200 ${
             activeTab === 'position'
-              ? 'border-cyan-500 bg-transparent'
-              : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d]'
+              ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
+              : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-gray-300 hover:border-gray-600'
           }`}
           style={{ outline: 'none' }}
         >
@@ -582,93 +651,99 @@ const PipCalculator = () => {
       <div className="flex-1 border border-[#333] rounded-3xl p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] flex flex-col overflow-y-auto custom-scrollbar">
         {/* Instrumento - Responsivo */}
         <div className="mb-6">
-                        <h2 className="text-base md:text-lg mb-2">Instrumento</h2>
-          <div className="relative w-full sm:w-3/4 md:w-1/2" ref={instrumentDropdownRef}>
-            <div className="flex items-center bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-lg">
+          <h2 className="text-base md:text-lg mb-3 font-medium">Instrumento</h2>
+          <div className="relative w-full" ref={instrumentDropdownRef}>
+            <div className="flex items-center bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-xl hover:border-cyan-400 transition-all duration-200 shadow-sm">
               <input
                 type="text"
                 value={selectedInstrumentLabel}
                 onClick={() => setShowInstrumentDropdown(!showInstrumentDropdown)}
                 readOnly
-                className="w-full bg-transparent px-4 py-3 appearance-none cursor-pointer focus:outline-none"
-                                  placeholder="Seleccionar instrumento"
+                className="w-full bg-transparent px-4 py-3 md:py-4 appearance-none cursor-pointer focus:outline-none text-base font-medium"
+                placeholder="Seleccionar instrumento"
               />
               <div
-                className="p-3 cursor-pointer"
+                className="p-3 md:p-4 cursor-pointer"
                 onClick={() => setShowInstrumentDropdown(!showInstrumentDropdown)}
               >
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
+                <ChevronDown 
+                  size={20} 
+                  className={`text-cyan-400 transition-transform duration-200 ${showInstrumentDropdown ? 'rotate-180' : ''}`} 
+                />
               </div>
             </div>
 
             {showInstrumentDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-[#2d2d2d] border border-[#444] rounded-lg shadow-lg max-h-72 overflow-y-auto custom-scrollbar">
-                {activeTab === 'pips' && ( // Only show instrument type filters if activeTab is 'pips'
-                  <div className="p-2 sticky top-0 bg-[#2d2d2d] z-20 border-b border-[#444]">
-                    <div className="flex justify-between space-x-2 mb-2">
-                      <button
-                        onClick={() => setInstrumentType('forex')}
-                        className={`flex-1 px-3 py-1.5 rounded-full text-xs sm:text-sm border ${
-                          instrumentType === 'forex'
-                            ? 'border-cyan-500 bg-transparent'
-                            : 'border-gray-700 bg-transparent'
-                        }`}
-                        style={{ outline: 'none' }}
-                      >
-                        Forex
-                      </button>
-                      <button
-                        onClick={() => setInstrumentType('stocks')}
-                        className={`flex-1 px-3 py-1.5 rounded-full text-xs sm:text-sm border ${
-                          instrumentType === 'stocks'
-                            ? 'border-cyan-500 bg-transparent'
-                            : 'border-gray-700 bg-transparent'
-                        }`}
-                        style={{ outline: 'none' }}
-                      >
-                        Acciones
-                      </button>
-                      <button
-                        onClick={() => setInstrumentType('crypto')}
-                        className={`flex-1 px-3 py-1.5 rounded-full text-xs sm:text-sm border ${
-                          instrumentType === 'crypto'
-                            ? 'border-cyan-500 bg-transparent'
-                            : 'border-gray-700 bg-transparent'
-                        }`}
-                        style={{ outline: 'none' }}
-                      >
-                        Cripto
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Buscar instrumento"
-                        value={instrumentSearchTerm}
-                        onChange={(e) => setInstrumentSearchTerm(e.target.value)}
-                        className="w-full bg-[#232323] border border-[#444] rounded-md px-3 py-2 pl-10 focus:outline-none focus:border-cyan-500"
-                      />
-                      <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    </div>
+              <div className="absolute z-[60] mt-1 w-full bg-[#2d2d2d] border border-[#444] rounded-lg shadow-lg max-h-72 overflow-y-auto custom-scrollbar">
+                <div className="p-2 sticky top-0 bg-[#2d2d2d] z-20 border-b border-[#444]">
+                  <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-2">
+                    <button
+                      onClick={() => setInstrumentType('forex')}
+                      className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${
+                        instrumentType === 'forex'
+                          ? 'border-cyan-500 bg-transparent'
+                          : 'border-gray-700 bg-transparent'
+                      }`}
+                      style={{ outline: 'none' }}
+                    >
+                      Forex
+                    </button>
+                    <button
+                      onClick={() => setInstrumentType('stocks')}
+                      className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${
+                        instrumentType === 'stocks'
+                          ? 'border-cyan-500 bg-transparent'
+                          : 'border-gray-700 bg-transparent'
+                      }`}
+                      style={{ outline: 'none' }}
+                    >
+                      Acciones
+                    </button>
+                    <button
+                      onClick={() => setInstrumentType('crypto')}
+                      className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${
+                        instrumentType === 'crypto'
+                          ? 'border-cyan-500 bg-transparent'
+                          : 'border-gray-700 bg-transparent'
+                      }`}
+                      style={{ outline: 'none' }}
+                    >
+                      Cripto
+                    </button>
+                    <button
+                      onClick={() => setInstrumentType('metal')}
+                      className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${
+                        instrumentType === 'metal'
+                          ? 'border-cyan-500 bg-transparent'
+                          : 'border-gray-700 bg-transparent'
+                      }`}
+                      style={{ outline: 'none' }}
+                    >
+                      Metales
+                    </button>
+                    <button
+                      onClick={() => setInstrumentType('index')}
+                      className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${
+                        instrumentType === 'index'
+                          ? 'border-cyan-500 bg-transparent'
+                          : 'border-gray-700 bg-transparent'
+                      }`}
+                      style={{ outline: 'none' }}
+                    >
+                      Índices
+                    </button>
                   </div>
-                )}
-                {/* When not in 'pips' tab, only show search bar and all instruments */}
-                {activeTab !== 'pips' && (
-                  <div className="p-2 sticky top-0 bg-[#2d2d2d] z-20 border-b border-[#444]">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Buscar instrumento"
-                        value={instrumentSearchTerm}
-                        onChange={(e) => setInstrumentSearchTerm(e.target.value)}
-                        className="w-full bg-[#232323] border border-[#444] rounded-md px-3 py-2 pl-10 focus:outline-none focus:border-cyan-500"
-                      />
-                      <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Buscar instrumento"
+                      value={instrumentSearchTerm}
+                      onChange={(e) => setInstrumentSearchTerm(e.target.value)}
+                      className="w-full bg-[#232323] border border-[#444] rounded-md px-3 py-2 pl-10 focus:outline-none focus:border-cyan-500"
+                    />
+                    <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   </div>
-                )}
+                </div>
 
                 {favoriteFilteredInstruments.length > 0 && (
                   <>
@@ -745,60 +820,89 @@ const PipCalculator = () => {
         </div>
 
         {activeTab === 'pips' ? (
-          <div className="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-4 mb-6">
-            <div className="w-full md:w-1/2">
-              <h2 className="text-base md:text-lg mb-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="space-y-3">
+              <h2 className="text-base md:text-lg font-medium">
                 {instrumentType === 'forex' && 'Cantidad de Pips'}
                 {instrumentType === 'stocks' && 'Cantidad de Puntos'}
                 {instrumentType === 'crypto' && 'Cantidad de Ticks'}
+                {instrumentType === 'metal' && 'Cantidad de Puntos'}
+                {instrumentType === 'index' && 'Cantidad de Puntos'}
               </h2>
-              <div className="relative flex items-center">
+              <div className="relative">
                 <button
                   onClick={() => handlePipChange(-0.01)}
-                  className="bg-transparent absolute left-4 text-2xl text-gray-400 focus:outline-none"
+                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-9 h-9 bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600 rounded-full flex items-center justify-center text-white text-lg font-bold focus:outline-none transition-all duration-200 shadow-lg hover:shadow-cyan-500/25 hover:scale-105 active:scale-95 ${showInstrumentDropdown ? 'z-10' : 'z-50'}`}
                 >
-                  ‹
+                  −
                 </button>
                 <input
                   type="text"
                   value={rawPipValueInput}
                   onChange={(e) => handleRawInputChange(e.target.value, setRawPipValueInput)}
                   onBlur={() => handleNumericInputBlur(rawPipValueInput, setPipValue, pipValue, 0.01)}
-                  className="w-full bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-lg px-12 py-4 md:py-5 text-center"
-                  style={{ outline: 'none' }}
+                  className="w-full bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] hover:border-cyan-400 focus:border-cyan-500 rounded-xl px-12 py-4 md:py-5 text-center text-lg font-medium focus:outline-none transition-all duration-200 relative z-20"
                   placeholder="0.00"
                 />
                 <button
                   onClick={() => handlePipChange(0.01)}
-                  className="absolute bg-transparent right-4 text-2xl text-gray-400 focus:outline-none"
+                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-9 h-9 bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600 rounded-full flex items-center justify-center text-white text-lg font-bold focus:outline-none transition-all duration-200 shadow-lg hover:shadow-cyan-500/25 hover:scale-105 active:scale-95 ${showInstrumentDropdown ? 'z-10' : 'z-50'}`}
                 >
-                  ›
+                  +
                 </button>
               </div>
             </div>
-            <div className="w-full md:w-1/2">
-              <h2 className="text-base md:text-lg mb-2">Tamaño de Posición (Lotes)</h2>
-              <div className="relative flex items-center">
+            <div className="space-y-3" ref={positionSizeDropdownRef}>
+              <div className="flex items-center justify-between">
+                <h2 className="text-base md:text-lg font-medium">Tamaño de Posición (Lotes)</h2>
+                <button
+                  onClick={() => setShowPositionSizeDropdown(!showPositionSizeDropdown)}
+                  className="px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded-full text-white transition-colors focus:outline-none"
+                >
+                  Opciones rápidas
+                </button>
+              </div>
+              <div className="relative">
                 <button
                   onClick={() => handlePositionSizeChange(-0.01)}
-                  className="absolute left-4 text-2xl bg-transparent text-gray-400 focus:outline-none"
+                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-9 h-9 bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600 rounded-full flex items-center justify-center text-white text-lg font-bold focus:outline-none transition-all duration-200 shadow-lg hover:shadow-cyan-500/25 hover:scale-105 active:scale-95 ${showInstrumentDropdown ? 'z-10' : 'z-50'}`}
                 >
-                  ‹
+                  −
                 </button>
                 <input
                   type="text"
                   value={rawPositionSizeInput}
                   onChange={(e) => handleRawInputChange(e.target.value, setRawPositionSizeInput)}
                   onBlur={() => handleNumericInputBlur(rawPositionSizeInput, setPositionSize, positionSize, 0.01)}
-                  className="w-full bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-lg px-12 py-4 md:py-5 text-center focus:outline-none"
+                  className="w-full bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] hover:border-cyan-400 focus:border-cyan-500 rounded-xl px-12 py-4 md:py-5 text-center text-lg font-medium focus:outline-none transition-all duration-200 relative z-20"
                   placeholder="0.00"
                 />
                 <button
                   onClick={() => handlePositionSizeChange(0.01)}
-                  className="focus:outline-none absolute right-4 text-2xl bg-transparent text-gray-400"
+                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-9 h-9 bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600 rounded-full flex items-center justify-center text-white text-lg font-bold focus:outline-none transition-all duration-200 shadow-lg hover:shadow-cyan-500/25 hover:scale-105 active:scale-95 ${showInstrumentDropdown ? 'z-10' : 'z-50'}`}
                 >
-                  ›
+                  +
                 </button>
+                
+                {showPositionSizeDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#404040] border border-[#333] rounded-xl shadow-lg z-50 overflow-hidden">
+                    <div className="grid grid-cols-3 gap-1 p-2">
+                      {positionSizeQuickOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => handlePositionSizeQuickSelect(option.value)}
+                          className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                            positionSize === option.value 
+                              ? 'bg-cyan-500 text-white' 
+                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

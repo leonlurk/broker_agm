@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { ChevronDown, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Plus, Target } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell, Legend } from 'recharts';
 import SeguirTraderModal from './SeguirTraderModal';
+import AccountSelectionModal from './AccountSelectionModal';
+import CommentsRatingModal from './CommentsRatingModal';
+import { useAccounts } from '../contexts/AccountsContext';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import useTranslation from '../hooks/useTranslation';
 
@@ -170,8 +173,17 @@ const Inversor = () => {
   const [showSeguirModal, setShowSeguirModal] = useState(false);
   const [selectedTraderForCopy, setSelectedTraderForCopy] = useState(null);
   
-  // Estado para rastrear qué traders están siendo seguidos
-  const [followedTraders, setFollowedTraders] = useState(new Set());
+  // Estados para el modal de selección de cuenta
+  const [showAccountSelectionModal, setShowAccountSelectionModal] = useState(false);
+  const [selectedAccountForCopy, setSelectedAccountForCopy] = useState(null);
+  
+  // Estados para el modal de comentarios
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [comments, setComments] = useState([]);
+  
+  // Estados separados para seguir y copiar
+  const [followedTraders, setFollowedTraders] = useState(new Set()); // Solo para botón "Seguir"
+  const [copiedTraders, setCopiedTraders] = useState(new Set()); // Solo para botón "Copiar"
   
   // Trader Profile states
   const [activeTab, setActiveTab] = useState('performance');
@@ -182,6 +194,38 @@ const Inversor = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [view, selectedTrader]);
+
+  // Efecto para inicializar comentarios con datos mock
+  useEffect(() => {
+    // Initialize comments with mock data when component mounts
+    const mockComments = [
+      {
+        id: 1,
+        user: 'InvestorPro',
+        avatar: '/user1.png',
+        date: '2024-01-10',
+        rating: 5,
+        comment: 'Excelente trader, muy consistente en sus estrategias. He estado copiándolo por 3 meses y los resultados son fantásticos.'
+      },
+      {
+        id: 2,
+        user: 'TradingNewbie',
+        avatar: '/user2.png',
+        date: '2024-01-08',
+        rating: 4,
+        comment: 'Buen rendimiento general, aunque a veces las operaciones duran más de lo esperado. Recomendado para perfiles conservadores.'
+      },
+      {
+        id: 3,
+        user: 'CopyMaster',
+        avatar: '/user3.png',
+        date: '2024-01-05',
+        rating: 5,
+        comment: 'Profesional serio con una estrategia bien definida. El análisis de riesgo es impecable.'
+      }
+    ];
+    setComments(mockComments);
+  }, []);
 
   const handleExploreTraders = () => {
     setView('explorer');
@@ -255,7 +299,48 @@ const Inversor = () => {
     }
     console.log('Copiando trader:', trader.name);
     setSelectedTraderForCopy(trader);
+    setShowAccountSelectionModal(true);
+  };
+
+  const handleAccountSelected = (account) => {
+    console.log('Account selected for copying:', account);
+    setSelectedAccountForCopy(account);
+    setShowAccountSelectionModal(false);
     setShowSeguirModal(true);
+  };
+
+  const handleFollowTrader = (trader) => {
+    if (followedTraders.has(trader.id)) {
+      // Dejar de seguir
+      setFollowedTraders(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(trader.id);
+        return newSet;
+      });
+      console.log('Dejando de seguir trader:', trader.name);
+    } else {
+      // Seguir
+      setFollowedTraders(prev => new Set([...prev, trader.id]));
+      console.log('Siguiendo trader:', trader.name);
+    }
+  };
+
+  const handleSubmitComment = async (commentData) => {
+    // Simular un envío a API
+    const newComment = {
+      id: comments.length + 1,
+      user: 'Usuario Actual', // En producción vendría del contexto de usuario
+      avatar: '/current-user.png',
+      date: new Date().toISOString().split('T')[0],
+      rating: commentData.rating,
+      comment: commentData.comment
+    };
+
+    setComments(prev => [newComment, ...prev]);
+    console.log('Comentario enviado:', commentData);
+    
+    // Aquí se integraría con la API real
+    // await submitTraderComment(commentData);
   };
 
   const mockTraderProfileData = {
@@ -352,8 +437,18 @@ const Inversor = () => {
         rating: 5,
         comment: 'Profesional serio con una estrategia bien definida. El análisis de riesgo es impecable.'
       }
+    ],
+    instruments: [
+      { name: 'EUR/USD', value: 35.2 },
+      { name: 'GBP/USD', value: 28.7 },
+      { name: 'USD/JPY', value: 18.5 },
+      { name: 'XAU/USD', value: 12.3 },
+      { name: 'US100', value: 5.3 }
     ]
   };
+
+  // Colores para el PieChart de instrumentos
+  const PIE_COLORS = ['#0e7490', '#2563eb', '#7c3aed', '#dc2626', '#059669', '#d97706'];
 
   if (view === 'dashboard') {
     return (
@@ -555,6 +650,51 @@ const Inversor = () => {
             {t('investor.exploreTraders')}
           </button>
         </div>
+
+        {/* Modal de Selección de Cuenta */}
+        <AccountSelectionModal
+          isOpen={showAccountSelectionModal}
+          onClose={() => {
+            setShowAccountSelectionModal(false);
+            setSelectedTraderForCopy(null);
+            setSelectedAccountForCopy(null);
+          }}
+          trader={selectedTraderForCopy}
+          onAccountSelected={handleAccountSelected}
+        />
+
+        {/* Modal de Seguir Trader */}
+        <SeguirTraderModal 
+          isOpen={showSeguirModal}
+          onClose={() => {
+            setShowSeguirModal(false);
+            setSelectedTraderForCopy(null);
+            setSelectedAccountForCopy(null);
+          }}
+          trader={selectedTraderForCopy}
+          selectedAccount={selectedAccountForCopy}
+          onConfirm={(formData) => {
+            console.log('Copiar trader confirmado desde dashboard:', formData);
+            console.log('Cuenta seleccionada:', selectedAccountForCopy);
+            
+            // Marcar el trader como copiado
+            if (selectedTraderForCopy) {
+              setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+            }
+            
+            setShowSeguirModal(false);
+            setSelectedTraderForCopy(null);
+            setSelectedAccountForCopy(null);
+          }}
+        />
+
+        {/* Modal de Comentarios y Puntuación */}
+        <CommentsRatingModal
+          isOpen={showCommentsModal}
+          onClose={() => setShowCommentsModal(false)}
+          trader={selectedTraderForCopy}
+          onSubmit={handleSubmitComment}
+        />
       </div>
     );
   }
@@ -774,14 +914,14 @@ const Inversor = () => {
                 <button
                   onClick={() => handleCopyTrader(trader)}
                   className={`flex-1 py-2 px-4 rounded-lg transition-all text-sm font-medium flex items-center justify-center gap-2 ${
-                    followedTraders.has(trader.id)
+                    copiedTraders.has(trader.id)
                       ? 'bg-green-600 text-white hover:bg-green-700'
                       : 'bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white hover:opacity-90'
                   }`}
-                  disabled={followedTraders.has(trader.id)}
+                  disabled={copiedTraders.has(trader.id)}
                 >
                   <Copy size={16} />
-                  {followedTraders.has(trader.id) ? 'Copiando' : 'Copiar'}
+                  {copiedTraders.has(trader.id) ? 'Copiando' : 'Copiar'}
                 </button>
                 <button
                   onClick={() => handleViewTraderDetails(trader)}
@@ -799,6 +939,51 @@ const Inversor = () => {
         <div className="mt-6 text-center text-gray-400">
           {filteredTraders.length} traders disponibles
         </div>
+
+        {/* Modal de Selección de Cuenta */}
+        <AccountSelectionModal
+          isOpen={showAccountSelectionModal}
+          onClose={() => {
+            setShowAccountSelectionModal(false);
+            setSelectedTraderForCopy(null);
+            setSelectedAccountForCopy(null);
+          }}
+          trader={selectedTraderForCopy}
+          onAccountSelected={handleAccountSelected}
+        />
+
+        {/* Modal de Seguir Trader */}
+        <SeguirTraderModal 
+          isOpen={showSeguirModal}
+          onClose={() => {
+            setShowSeguirModal(false);
+            setSelectedTraderForCopy(null);
+            setSelectedAccountForCopy(null);
+          }}
+          trader={selectedTraderForCopy}
+          selectedAccount={selectedAccountForCopy}
+          onConfirm={(formData) => {
+            console.log('Copiar trader confirmado desde explorer:', formData);
+            console.log('Cuenta seleccionada:', selectedAccountForCopy);
+            
+            // Marcar el trader como copiado
+            if (selectedTraderForCopy) {
+              setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+            }
+            
+            setShowSeguirModal(false);
+            setSelectedTraderForCopy(null);
+            setSelectedAccountForCopy(null);
+          }}
+        />
+
+        {/* Modal de Comentarios y Puntuación */}
+        <CommentsRatingModal
+          isOpen={showCommentsModal}
+          onClose={() => setShowCommentsModal(false)}
+          trader={selectedTraderForCopy}
+          onSubmit={handleSubmitComment}
+        />
       </div>
     );
   }
@@ -876,17 +1061,24 @@ const Inversor = () => {
                 <button
                   onClick={() => handleCopyTrader(selectedTrader)}
                   className={`py-3 px-8 rounded-xl transition-all font-medium flex items-center gap-2 ${
-                    followedTraders.has(selectedTrader.id)
+                    copiedTraders.has(selectedTrader.id)
                       ? 'bg-green-600 text-white hover:bg-green-700'
                       : 'bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white hover:opacity-90'
                   }`}
-                  disabled={followedTraders.has(selectedTrader.id)}
+                  disabled={copiedTraders.has(selectedTrader.id)}
                 >
                   <Copy size={20} />
-                  {followedTraders.has(selectedTrader.id) ? 'Copiando Trader' : 'Copiar Trader'}
+                  {copiedTraders.has(selectedTrader.id) ? 'Copiando Trader' : 'Copiar Trader'}
                 </button>
-                <button className="border border-cyan-500 text-cyan-400 py-3 px-6 rounded-xl hover:bg-cyan-500/10 transition-colors font-medium">
-                  Seguir
+                <button 
+                  onClick={() => handleFollowTrader(selectedTrader)}
+                  className={`py-3 px-6 rounded-xl transition-colors font-medium ${
+                    followedTraders.has(selectedTrader.id)
+                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      : 'border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10'
+                  }`}
+                >
+                  {followedTraders.has(selectedTrader.id) ? 'Siguiendo' : 'Seguir'}
                 </button>
               </div>
             </div>
@@ -898,8 +1090,9 @@ const Inversor = () => {
           <div className="flex flex-wrap gap-2 mb-6 border-b border-[#333] pb-4">
             {[
               { id: 'performance', label: 'Rendimiento', icon: BarChart3 },
+              { id: 'drawdown', label: 'Drawdown', icon: TrendingDown },
               { id: 'statistics', label: 'Estadísticas', icon: Activity },
-              { id: 'history', label: 'Historial', icon: History },
+              { id: 'instruments', label: 'Instrumentos', icon: Target },
               { id: 'comments', label: 'Comentarios', icon: MessageSquare }
             ].map((tab) => {
               const Icon = tab.icon;
@@ -1078,62 +1271,128 @@ const Inversor = () => {
             </div>
           )}
 
-          {activeTab === 'history' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-cyan-400">Historial</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[#333]">
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Símbolo</th>
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Tipo</th>
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Apertura</th>
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Cierre</th>
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Lotes</th>
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">P&L</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockTraderProfileData.tradeHistory.map((trade) => (
-                      <tr key={trade.id} className="border-b border-[#333]/50">
-                        <td className="py-3 px-4 text-white font-medium">{trade.symbol}</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            trade.type === 'BUY' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {trade.type}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-gray-400 text-sm">
-                          <div>{trade.openTime}</div>
-                          <div className="text-white">{trade.openPrice}</div>
-                        </td>
-                        <td className="py-3 px-4 text-gray-400 text-sm">
-                          <div>{trade.closeTime}</div>
-                          <div className="text-white">{trade.closePrice}</div>
-                        </td>
-                        <td className="py-3 px-4 text-white">{trade.lotSize}</td>
-                        <td className="py-3 px-4">
-                          <div className={`font-medium ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {formatCurrency(trade.pnl)}
-                          </div>
-                          <div className={`text-sm ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            ({formatPercentage(trade.pnlPercentage)})
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {activeTab === 'instruments' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold text-cyan-400">Instrumentos de Trading</h3>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    <span className="text-white">EURUSD</span>
+                    <span className="text-white font-medium">31.31%</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 rounded-full bg-cyan-400"></div>
+                    <span className="text-white">XAUUSD</span>
+                    <span className="text-white font-medium">68.69%</span>
+                  </div>
+                </div>
+                <div className="w-48 h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'EURUSD', value: 31.31 },
+                          { name: 'XAUUSD', value: 68.69 }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={70}
+                        dataKey="value"
+                      >
+                        <Cell fill="#3b82f6" />
+                        <Cell fill="#22d3ee" />
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'drawdown' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold text-cyan-400">Drawdown</h3>
+              
+              <div className="h-64 mb-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={mockTraderProfileData.performance.chartData}>
+                    <defs>
+                      <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.05}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                    />
+                    <YAxis 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                      tickFormatter={(value) => `${value}%`}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1C1C1C', 
+                        border: '1px solid #333', 
+                        borderRadius: '8px',
+                        color: '#fff'
+                      }}
+                      labelStyle={{ color: '#9CA3AF' }}
+                      formatter={(value) => [`${value}%`, 'Drawdown']}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="drawdown" 
+                      stroke="#ef4444" 
+                      strokeWidth={2}
+                      fill="url(#drawdownGradient)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              
+              {/* Estadísticas de drawdown */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
+                  <p className="text-sm text-gray-400 mb-1">Drawdown Máximo</p>
+                  <p className="text-lg font-medium text-red-500">-{selectedTrader.maxDrawdown || 18.4}%</p>
+                </div>
+                <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
+                  <p className="text-sm text-gray-400 mb-1">Drawdown Actual</p>
+                  <p className="text-lg font-medium text-red-400">-6.3%</p>
+                </div>
+                <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
+                  <p className="text-sm text-gray-400 mb-1">Duración Máx</p>
+                  <p className="text-lg font-medium text-white">12 días</p>
+                </div>
+                <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
+                  <p className="text-sm text-gray-400 mb-1">Recuperación</p>
+                  <p className="text-lg font-medium text-yellow-500">En curso</p>
+                </div>
               </div>
             </div>
           )}
 
           {activeTab === 'comments' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-cyan-400">Comentarios</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-cyan-400">Comentarios</h3>
+                <button
+                  onClick={() => setShowCommentsModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-lg transition-colors font-medium text-sm"
+                >
+                  <Plus size={16} />
+                  Agregar Comentario
+                </button>
+              </div>
               <div className="space-y-4">
-                {mockTraderProfileData.comments.map((comment) => (
+                {comments.map((comment) => (
                   <div key={comment.id} className="bg-[#1C1C1C] rounded-xl p-6 border border-[#333]">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center">
@@ -1159,6 +1418,51 @@ const Inversor = () => {
             </div>
           )}
         </div>
+
+        {/* Modal de Selección de Cuenta */}
+        <AccountSelectionModal
+          isOpen={showAccountSelectionModal}
+          onClose={() => {
+            setShowAccountSelectionModal(false);
+            setSelectedTraderForCopy(null);
+            setSelectedAccountForCopy(null);
+          }}
+          trader={selectedTraderForCopy}
+          onAccountSelected={handleAccountSelected}
+        />
+
+        {/* Modal de Seguir Trader */}
+        <SeguirTraderModal 
+          isOpen={showSeguirModal}
+          onClose={() => {
+            setShowSeguirModal(false);
+            setSelectedTraderForCopy(null);
+            setSelectedAccountForCopy(null);
+          }}
+          trader={selectedTraderForCopy}
+          selectedAccount={selectedAccountForCopy}
+          onConfirm={(formData) => {
+            console.log('Copiar trader confirmado desde trader profile:', formData);
+            console.log('Cuenta seleccionada:', selectedAccountForCopy);
+            
+            // Marcar el trader como copiado
+            if (selectedTraderForCopy) {
+              setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+            }
+            
+            setShowSeguirModal(false);
+            setSelectedTraderForCopy(null);
+            setSelectedAccountForCopy(null);
+          }}
+        />
+
+        {/* Modal de Comentarios y Puntuación */}
+        <CommentsRatingModal
+          isOpen={showCommentsModal}
+          onClose={() => setShowCommentsModal(false)}
+          trader={selectedTrader}
+          onSubmit={handleSubmitComment}
+        />
       </div>
     );
   }
@@ -1168,26 +1472,50 @@ const Inversor = () => {
     <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333]">
       <p className="text-gray-400">Vista no encontrada</p>
       
+      {/* Modal de Selección de Cuenta */}
+      <AccountSelectionModal
+        isOpen={showAccountSelectionModal}
+        onClose={() => {
+          setShowAccountSelectionModal(false);
+          setSelectedTraderForCopy(null);
+          setSelectedAccountForCopy(null);
+        }}
+        trader={selectedTraderForCopy}
+        onAccountSelected={handleAccountSelected}
+      />
+
       {/* Modal de Seguir Trader */}
       <SeguirTraderModal 
         isOpen={showSeguirModal}
         onClose={() => {
           setShowSeguirModal(false);
           setSelectedTraderForCopy(null);
+          setSelectedAccountForCopy(null);
         }}
         trader={selectedTraderForCopy}
+        selectedAccount={selectedAccountForCopy}
         onConfirm={(formData) => {
-          console.log('Seguir trader confirmado desde inversor:', formData);
-          // Aquí integrarías con tu API para seguir al trader
+          console.log('Copiar trader confirmado desde inversor:', formData);
+          console.log('Cuenta seleccionada:', selectedAccountForCopy);
+          // Aquí integrarías con tu API para copiar al trader
           
-          // Marcar el trader como seguido
+          // Marcar el trader como copiado
           if (selectedTraderForCopy) {
-            setFollowedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+            setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
           }
           
           setShowSeguirModal(false);
           setSelectedTraderForCopy(null);
+          setSelectedAccountForCopy(null);
         }}
+      />
+
+      {/* Modal de Comentarios y Puntuación */}
+      <CommentsRatingModal
+        isOpen={showCommentsModal}
+        onClose={() => setShowCommentsModal(false)}
+        trader={selectedTraderForCopy}
+        onSubmit={handleSubmitComment}
       />
     </div>
   );

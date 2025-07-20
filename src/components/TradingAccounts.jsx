@@ -98,7 +98,26 @@ const cryptoInstruments = [
   { value: 'DOT/USD', label: 'Polkadot / USD (DOT/USD)', type: 'crypto' },
 ];
 
-const allInstruments = [...forexInstruments, ...stockInstruments, ...cryptoInstruments];
+const metalInstruments = [
+  { value: 'XAU/USD', label: 'Gold / USD (XAU/USD)', type: 'metal' },
+  { value: 'XAG/USD', label: 'Silver / USD (XAG/USD)', type: 'metal' },
+  { value: 'XPT/USD', label: 'Platinum / USD (XPT/USD)', type: 'metal' },
+  { value: 'XPD/USD', label: 'Palladium / USD (XPD/USD)', type: 'metal' },
+  { value: 'XCU/USD', label: 'Copper / USD (XCU/USD)', type: 'metal' },
+];
+
+const indicesInstruments = [
+  { value: 'SPX500', label: 'S&P 500 (SPX500)', type: 'index' },
+  { value: 'US30', label: 'Dow Jones (US30)', type: 'index' },
+  { value: 'NAS100', label: 'NASDAQ 100 (NAS100)', type: 'index' },
+  { value: 'GER30', label: 'DAX 30 (GER30)', type: 'index' },
+  { value: 'UK100', label: 'FTSE 100 (UK100)', type: 'index' },
+  { value: 'JPN225', label: 'Nikkei 225 (JPN225)', type: 'index' },
+  { value: 'FRA40', label: 'CAC 40 (FRA40)', type: 'index' },
+  { value: 'AUS200', label: 'ASX 200 (AUS200)', type: 'index' },
+];
+
+const allInstruments = [...forexInstruments, ...stockInstruments, ...cryptoInstruments, ...metalInstruments, ...indicesInstruments];
 // --- End Instrument Lists ---
 
 // Options for custom dropdowns

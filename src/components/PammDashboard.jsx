@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
 import { getPammFunds } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
@@ -48,11 +48,15 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
 
     const handleViewFundDetails = (fund) => {
         console.log('Viewing fund details:', fund);
-        if (fund && fund.id) {
-            setSelectedFund(fund);
-            setView('fundProfile');
-        } else {
-            console.error('Invalid fund data:', fund);
+        try {
+            if (fund && fund.id) {
+                setSelectedFund(fund);
+                setView('fundProfile');
+            } else {
+                console.error('Invalid fund data:', fund);
+            }
+        } catch (error) {
+            console.error('Error in handleViewFundDetails:', error);
         }
     };
 
@@ -145,6 +149,7 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
             filters={filters}
             setFilters={setFilters}
             filteredFunds={filteredFunds}
+            t={t}
         />;
     }
 
@@ -160,6 +165,7 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
             investedFunds={investedFunds}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
+            t={t}
         />;
     }
 
@@ -545,9 +551,18 @@ const PammExplorerView = ({
     showFilters,
     setShowFilters,
     filters,
-    setFilters
+    setFilters,
+    t
 }) => {
     const [expandedFund, setExpandedFund] = useState(null);
+    
+    // Custom dropdown states
+    const [showFundTypeDropdown, setShowFundTypeDropdown] = useState(false);
+    const [showRiskLevelDropdown, setShowRiskLevelDropdown] = useState(false);
+    
+    // Dropdown refs
+    const fundTypeDropdownRef = useRef(null);
+    const riskLevelDropdownRef = useRef(null);
     
     const getTypeColor = (type) => {
         switch (type) {
@@ -557,6 +572,28 @@ const PammExplorerView = ({
             default: return 'bg-gray-600';
         }
     };
+    
+    // Handle click outside for dropdowns
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (fundTypeDropdownRef.current && !fundTypeDropdownRef.current.contains(event.target)) {
+                setShowFundTypeDropdown(false);
+            }
+            if (riskLevelDropdownRef.current && !riskLevelDropdownRef.current.contains(event.target)) {
+                setShowRiskLevelDropdown(false);
+            }
+        };
+
+        if (showFundTypeDropdown || showRiskLevelDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showFundTypeDropdown, showRiskLevelDropdown]);
     
     const toggleExpandFund = (fundId) => {
         setExpandedFund(expandedFund === fundId ? null : fundId);
@@ -579,7 +616,7 @@ const PammExplorerView = ({
         const isExpanded = expandedFund === fund.id;
         
         return (
-            <div key={fund.id} className="bg-[#191919] p-6 rounded-xl border border-[#333] mb-4">
+            <div key={fund.id} className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl border border-[#333] mb-4">
                 <div className="flex justify-between items-start mb-4">
                     <div>
                         <h3 className="text-lg font-medium">{fund.name}</h3>
@@ -687,7 +724,7 @@ const PammExplorerView = ({
                             <div className="flex flex-wrap gap-2 mb-4">
                                 {fund.markets && fund.markets.length > 0 ? (
                                     fund.markets.map((market, index) => (
-                                        <span key={index} className="bg-[#191919] px-2 py-1 rounded text-xs">
+                                        <span key={index} className="bg-[#1C1C1C] px-2 py-1 rounded text-xs">
                                             {market}
                                         </span>
                                     ))
@@ -737,32 +774,128 @@ const PammExplorerView = ({
                     <input
                         type="text"
                         placeholder="Buscar fondos o gestores..."
-                        className="w-full p-3 bg-[#191919] border border-[#333] rounded-lg text-white"
+                        className="w-full p-3 bg-[#1C1C1C] border border-[#333] rounded-lg text-white"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
                 <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
-                    <select 
-                        className="p-3 bg-[#191919] border border-[#333] rounded-lg text-white"
-                        value={filters.fundType || ''}
-                        onChange={(e) => setFilters(prev => ({ ...prev, fundType: e.target.value }))}
-                    >
-                        <option value="">Todos los tipos</option>
-                        <option value="Premium">Premium</option>
-                        <option value="Verificado">Verificado</option>
-                        <option value="Nuevo">Nuevo</option>
-                    </select>
-                    <select 
-                        className="p-3 bg-[#191919] border border-[#333] rounded-lg text-white"
-                        value={filters.riskLevel || ''}
-                        onChange={(e) => setFilters(prev => ({ ...prev, riskLevel: e.target.value }))}
-                    >
-                        <option value="">Todos los riesgos</option>
-                        <option value="Bajo">Riesgo bajo</option>
-                        <option value="Moderado">Riesgo moderado</option>
-                        <option value="Alto">Riesgo alto</option>
-                    </select>
+                    <div className="relative" ref={fundTypeDropdownRef}>
+                        <div 
+                            className="flex items-center justify-between p-3 bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-lg hover:border-cyan-400 transition-all duration-200 cursor-pointer"
+                            onClick={() => setShowFundTypeDropdown(!showFundTypeDropdown)}
+                        >
+                            <span className="text-white">
+                                {filters.fundType ? 
+                                    (filters.fundType === 'Premium' ? 'Premium' :
+                                     filters.fundType === 'Verificado' ? 'Verificado' :
+                                     filters.fundType === 'Nuevo' ? 'Nuevo' : 'Todos los tipos')
+                                    : 'Todos los tipos'}
+                            </span>
+                            <ChevronDown 
+                                size={20} 
+                                className={`text-cyan-400 transition-transform duration-200 ${showFundTypeDropdown ? 'rotate-180' : ''}`} 
+                            />
+                        </div>
+                        {showFundTypeDropdown && (
+                            <div className="absolute z-50 mt-1 w-full bg-[#2d2d2d] border border-[#444] rounded-lg shadow-lg overflow-hidden">
+                                <div 
+                                    className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer"
+                                    onClick={() => {
+                                        setFilters(prev => ({ ...prev, fundType: '' }));
+                                        setShowFundTypeDropdown(false);
+                                    }}
+                                >
+                                    Todos los tipos
+                                </div>
+                                <div 
+                                    className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer"
+                                    onClick={() => {
+                                        setFilters(prev => ({ ...prev, fundType: 'Premium' }));
+                                        setShowFundTypeDropdown(false);
+                                    }}
+                                >
+                                    Premium
+                                </div>
+                                <div 
+                                    className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer"
+                                    onClick={() => {
+                                        setFilters(prev => ({ ...prev, fundType: 'Verificado' }));
+                                        setShowFundTypeDropdown(false);
+                                    }}
+                                >
+                                    Verificado
+                                </div>
+                                <div 
+                                    className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer"
+                                    onClick={() => {
+                                        setFilters(prev => ({ ...prev, fundType: 'Nuevo' }));
+                                        setShowFundTypeDropdown(false);
+                                    }}
+                                >
+                                    Nuevo
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <div className="relative" ref={riskLevelDropdownRef}>
+                        <div 
+                            className="flex items-center justify-between p-3 bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-lg hover:border-cyan-400 transition-all duration-200 cursor-pointer"
+                            onClick={() => setShowRiskLevelDropdown(!showRiskLevelDropdown)}
+                        >
+                            <span className="text-white">
+                                {filters.riskLevel ? 
+                                    (filters.riskLevel === 'Bajo' ? 'Riesgo bajo' :
+                                     filters.riskLevel === 'Moderado' ? 'Riesgo moderado' :
+                                     filters.riskLevel === 'Alto' ? 'Riesgo alto' : 'Todos los riesgos')
+                                    : 'Todos los riesgos'}
+                            </span>
+                            <ChevronDown 
+                                size={20} 
+                                className={`text-cyan-400 transition-transform duration-200 ${showRiskLevelDropdown ? 'rotate-180' : ''}`} 
+                            />
+                        </div>
+                        {showRiskLevelDropdown && (
+                            <div className="absolute z-50 mt-1 w-full bg-[#2d2d2d] border border-[#444] rounded-lg shadow-lg overflow-hidden">
+                                <div 
+                                    className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer"
+                                    onClick={() => {
+                                        setFilters(prev => ({ ...prev, riskLevel: '' }));
+                                        setShowRiskLevelDropdown(false);
+                                    }}
+                                >
+                                    Todos los riesgos
+                                </div>
+                                <div 
+                                    className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer"
+                                    onClick={() => {
+                                        setFilters(prev => ({ ...prev, riskLevel: 'Bajo' }));
+                                        setShowRiskLevelDropdown(false);
+                                    }}
+                                >
+                                    Riesgo bajo
+                                </div>
+                                <div 
+                                    className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer"
+                                    onClick={() => {
+                                        setFilters(prev => ({ ...prev, riskLevel: 'Moderado' }));
+                                        setShowRiskLevelDropdown(false);
+                                    }}
+                                >
+                                    Riesgo moderado
+                                </div>
+                                <div 
+                                    className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer"
+                                    onClick={() => {
+                                        setFilters(prev => ({ ...prev, riskLevel: 'Alto' }));
+                                        setShowRiskLevelDropdown(false);
+                                    }}
+                                >
+                                    Riesgo alto
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
             
@@ -790,7 +923,8 @@ const PammFundProfileView = ({
     onInvestInFund,
     investedFunds,
     activeTab,
-    setActiveTab
+    setActiveTab,
+    t
 }) => {
     if (!fund) {
         return (
@@ -842,7 +976,7 @@ const PammFundProfileView = ({
             
             {/* Fund Overview */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-[#2a2a2a] p-4 rounded-xl">
+                <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-4 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-sm text-gray-400">AUM Total</span>
                         <DollarSign className="text-cyan-500" size={16} />
@@ -850,7 +984,7 @@ const PammFundProfileView = ({
                     <div className="text-xl font-bold">{formatAUM(fund.aum)}</div>
                 </div>
                 
-                <div className="bg-[#2a2a2a] p-4 rounded-xl">
+                <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-4 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-sm text-gray-400">Rendimiento Total</span>
                         <TrendingUp className="text-green-500" size={16} />
@@ -858,7 +992,7 @@ const PammFundProfileView = ({
                     <div className="text-xl font-bold text-green-500">{formatPercentage(fund.totalReturn)}</div>
                 </div>
                 
-                <div className="bg-[#2a2a2a] p-4 rounded-xl">
+                <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-4 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-sm text-gray-400">Inversores</span>
                         <Users className="text-blue-500" size={16} />
@@ -866,7 +1000,7 @@ const PammFundProfileView = ({
                     <div className="text-xl font-bold">{fund.investors}</div>
                 </div>
                 
-                <div className="bg-[#2a2a2a] p-4 rounded-xl">
+                <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-4 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-sm text-gray-400">Nivel de Riesgo</span>
                         <Shield className={getRiskColor(fund.riskLevel).replace('text-', '')} size={16} />
@@ -898,7 +1032,7 @@ const PammFundProfileView = ({
                 {activeTab === 'performance' && (
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-[#2a2a2a] p-6 rounded-xl">
+                            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl">
                                 <h3 className="text-lg font-semibold mb-4">Métricas de Rendimiento</h3>
                                 <div className="space-y-3">
                                     <div className="flex justify-between">
@@ -920,7 +1054,7 @@ const PammFundProfileView = ({
                                 </div>
                             </div>
                             
-                            <div className="bg-[#2a2a2a] p-6 rounded-xl">
+                            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl">
                                 <h3 className="text-lg font-semibold mb-4">Información del Fondo</h3>
                                 <div className="space-y-3">
                                     <div className="flex justify-between">
@@ -942,7 +1076,7 @@ const PammFundProfileView = ({
                                 </div>
                             </div>
                             
-                            <div className="bg-[#2a2a2a] p-6 rounded-xl">
+                            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl">
                                 <h3 className="text-lg font-semibold mb-4">Mercados</h3>
                                 <div className="space-y-2">
                                     {fund.markets && fund.markets.length > 0 ? (
@@ -959,7 +1093,7 @@ const PammFundProfileView = ({
                         </div>
                         
                         {/* Historical Chart */}
-                        <div className="bg-[#2a2a2a] p-6 rounded-xl">
+                        <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl">
                             <h3 className="text-lg font-semibold mb-4">Evolución del Fondo</h3>
                             <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -1001,7 +1135,7 @@ const PammFundProfileView = ({
                 )}
                 
                 {activeTab === 'strategy' && (
-                    <div className="bg-[#2a2a2a] p-6 rounded-xl">
+                    <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl">
                         <h3 className="text-lg font-semibold mb-4">Estrategia de Inversión</h3>
                         <div className="space-y-4">
                             <div>
@@ -1051,7 +1185,7 @@ const PammFundProfileView = ({
                 )}
                 
                 {activeTab === 'fees' && (
-                    <div className="bg-[#2a2a2a] p-6 rounded-xl">
+                    <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl">
                         <h3 className="text-lg font-semibold mb-6">Estructura de Comisiones</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="bg-[#333] p-6 rounded-xl">
@@ -1274,7 +1408,7 @@ const PammListView = ({ onSelectTrader }) => {
                         placeholder="Buscar por nombre o número de cuenta"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="bg-[#2D2D2D] border border-[#333] rounded-lg py-2 pl-10 pr-4 w-full md:w-80 text-white"
+                        className="bg-[#1C1C1C] border border-[#333] rounded-lg py-2 pl-10 pr-4 w-full md:w-80 text-white"
                     />
                     <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
@@ -1430,6 +1564,12 @@ const PammDetailView = ({ trader, onBack, investedFunds, setInvestedFunds }) => 
     const [activeTab, setActiveTab] = useState('Rendimiento');
     const [timeFilter, setTimeFilter] = useState('mensual');
     const [showInvertirModal, setShowInvertirModal] = useState(false);
+    
+    // Custom dropdown states
+    const [showTimeFilterDropdown, setShowTimeFilterDropdown] = useState(false);
+    
+    // Dropdown refs
+    const timeFilterDropdownRef = useRef(null);
 
     const chartData = {
         'Rendimiento': {
@@ -1452,6 +1592,25 @@ const PammDetailView = ({ trader, onBack, investedFunds, setInvestedFunds }) => 
         const lightness = minLightness + (value / maxValue) * (maxLightness - minLightness);
         return `hsl(191, 95%, ${lightness}%)`;
     };
+
+    // Handle click outside for dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (timeFilterDropdownRef.current && !timeFilterDropdownRef.current.contains(event.target)) {
+                setShowTimeFilterDropdown(false);
+            }
+        };
+
+        if (showTimeFilterDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showTimeFilterDropdown]);
 
     const renderChart = () => {
         const currentChart = chartData[activeTab][timeFilter];
@@ -1592,15 +1751,41 @@ const PammDetailView = ({ trader, onBack, investedFunds, setInvestedFunds }) => 
                             </button>
                         ))}
                     </div>
-                    <div className="relative mt-3 sm:mt-0">
-                        <select 
-                            value={timeFilter}
-                            onChange={(e) => setTimeFilter(e.target.value)}
-                            className="bg-[#2D2D2D] border border-[#333] rounded-lg py-2 pl-4 pr-8 appearance-none focus:outline-none focus:ring-1 focus:ring-cyan-500 text-white"
+                    <div className="relative mt-3 sm:mt-0" ref={timeFilterDropdownRef}>
+                        <div 
+                            className="flex items-center justify-between py-2 pl-4 pr-3 bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-lg hover:border-cyan-400 transition-all duration-200 cursor-pointer min-w-[120px]"
+                            onClick={() => setShowTimeFilterDropdown(!showTimeFilterDropdown)}
                         >
-                            <option value="mensual">Mensual</option>
-                            <option value="trimestral">Trimestral</option>
-                        </select>
+                            <span className="text-white">
+                                {timeFilter === 'mensual' ? 'Mensual' : 'Trimestral'}
+                            </span>
+                            <ChevronDown 
+                                size={16} 
+                                className={`text-cyan-400 transition-transform duration-200 ${showTimeFilterDropdown ? 'rotate-180' : ''}`} 
+                            />
+                        </div>
+                        {showTimeFilterDropdown && (
+                            <div className="absolute z-50 mt-1 w-full bg-[#2d2d2d] border border-[#444] rounded-lg shadow-lg overflow-hidden">
+                                <div 
+                                    className="px-4 py-2 hover:bg-[#3a3a3a] cursor-pointer text-sm"
+                                    onClick={() => {
+                                        setTimeFilter('mensual');
+                                        setShowTimeFilterDropdown(false);
+                                    }}
+                                >
+                                    Mensual
+                                </div>
+                                <div 
+                                    className="px-4 py-2 hover:bg-[#3a3a3a] cursor-pointer text-sm"
+                                    onClick={() => {
+                                        setTimeFilter('trimestral');
+                                        setShowTimeFilterDropdown(false);
+                                    }}
+                                >
+                                    Trimestral
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
                 {renderChart()}

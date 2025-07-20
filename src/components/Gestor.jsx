@@ -473,34 +473,53 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           </div>
         </div>
 
-        {/* Mis Cuentas Section */}
+        {/* Portafolio Section */}
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-6 text-cyan-400">Mis Cuentas</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Balance Disponible */}
-            <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
-                  <DollarSign size={24} className="text-green-400" />
-                </div>
-                <TrendingUp size={20} className="text-green-400" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-1">$25,340.00</h3>
-              <p className="text-sm text-gray-400">Balance Disponible</p>
-            </div>
-
-            {/* Cuentas Activas */}
+          <h2 className="text-xl font-semibold mb-6 text-cyan-400">Portafolio</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Capital Propio */}
             <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                  <Activity size={24} className="text-blue-400" />
+                  <DollarSign size={24} className="text-blue-400" />
                 </div>
-                <div className="text-right">
-                  <span className="text-green-400 text-xs">1 activa</span>
-                </div>
+                <TrendingUp size={20} className="text-blue-400" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">2</h3>
-              <p className="text-sm text-gray-400">Cuentas Totales</p>
+              <h3 className="text-2xl font-bold text-white mb-1">$25,340.00</h3>
+              <p className="text-sm text-gray-400">Capital Propio</p>
+              <div className="mt-2 text-xs text-gray-500">
+                <span className="text-green-400">+8.5%</span> este mes
+              </div>
+            </div>
+
+            {/* Capital de Terceros */}
+            <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center">
+                  <Users size={24} className="text-cyan-400" />
+                </div>
+                <TrendingUp size={20} className="text-cyan-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">$89,500.00</h3>
+              <p className="text-sm text-gray-400">Capital de Terceros</p>
+              <div className="mt-2 text-xs text-gray-500">
+                <span className="text-yellow-400">5 inversores</span> activos
+              </div>
+            </div>
+
+            {/* Capital Total Administrado */}
+            <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                  <Briefcase size={24} className="text-green-400" />
+                </div>
+                <TrendingUp size={20} className="text-green-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">$114,840.00</h3>
+              <p className="text-sm text-gray-400">Capital Total Administrado</p>
+              <div className="mt-2 text-xs text-gray-500">
+                <span className="text-green-400">+12.8%</span> rendimiento total
+              </div>
             </div>
           </div>
         </div>

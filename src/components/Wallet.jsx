@@ -205,13 +205,18 @@ const Wallet = () => {
       return;
     }
 
-    if (activeTab === 'retirar' && parseFloat(amount) > selectedAccount.balance) {
+    if ((activeTab === 'retirar' || activeTab === 'transferir') && parseFloat(amount) > selectedAccount.balance) {
       setError('Saldo insuficiente');
       return;
     }
 
     if ((activeTab === 'retirar' || activeTab === 'depositar') && !selectedMethod) {
       setError('Debe seleccionar un método');
+      return;
+    }
+
+    if (activeTab === 'transferir' && !transferToAccount) {
+      setError('Debe seleccionar una cuenta de destino');
       return;
     }
 
@@ -231,11 +236,12 @@ const Wallet = () => {
         amount: parseFloat(amount),
         currency: 'USD',
         type: activeTab,
-        method: selectedMethod || 'Transferencia Interna',
+        method: activeTab === 'transferir' ? 'Transferencia Interna' : selectedMethod,
         status: 'pending',
         createdAt: Timestamp.now(),
         ...(selectedCoin && { coin: selectedCoin }),
-        ...(walletAddress && { walletAddress })
+        ...(walletAddress && { walletAddress }),
+        ...(transferToAccount && { toAccountId: transferToAccount.id, toAccountName: transferToAccount.accountName })
       };
 
       // Guardar en Firebase
@@ -250,6 +256,10 @@ const Wallet = () => {
         const withdrawAmount = parseFloat(amount);
         setSuccess(`Retiro de $${amount} USD iniciado correctamente`);
         notifyWithdrawal(withdrawAmount, selectedAccount.accountName);
+      } else if (activeTab === 'transferir') {
+        const transferAmount = parseFloat(amount);
+        setSuccess(`Transferencia de $${amount} USD de ${selectedAccount.accountName} a ${transferToAccount.accountName} iniciada correctamente`);
+        notifyTransfer(transferAmount, selectedAccount.accountName, transferToAccount.accountName);
       }
 
       // Limpiar formulario
@@ -325,6 +335,14 @@ const Wallet = () => {
     currentOperation !== WALLET_OPERATIONS.TRANSFER || account.id !== selectedAccount?.id
   );
 
+  // Debug: Log para verificar cuentas
+  console.log('Debug Wallet - currentUser:', currentUser);
+  console.log('Debug Wallet - getAllAccounts():', getAllAccounts());
+  console.log('Debug Wallet - availableAccounts:', availableAccounts);
+  console.log('Debug Wallet - accounts from context:', accounts);
+  console.log('Debug Wallet - isLoading:', isLoading);
+  console.log('Debug Wallet - error:', error);
+
   // Filtrar transacciones según el filtro activo
   const filteredTransactions = transactions.filter(transaction => {
     if (historyFilter === 'all') return true;
@@ -348,37 +366,40 @@ const Wallet = () => {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Paso 1: Seleccionar cuenta destino */}
-        <div className={`bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-xl border-2 p-6 ${currentStep === 1 ? 'border-cyan-500' : 'border-[#333]'}`}>
+        <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 1 ? 'border-[#06b6d4]' : 'border-[#334155]'}`}>
           <h3 className="text-lg font-semibold mb-2 text-white">Paso 1</h3>
-          <p className="text-gray-400 mb-6 text-sm">Seleccionar cuenta de destino</p>
+          <p className="text-[#9ca3af] mb-6 text-sm">Seleccionar cuenta de destino</p>
           
           <div className="relative" ref={transferDropdownRef}>
             <button 
               onClick={() => setShowTransferAccountDropdown(!showTransferAccountDropdown)}
-              className="w-full p-4 text-left rounded-lg border-2 border-[#333] bg-[#1a1a1a] hover:bg-[#2a2a2a] transition-colors"
+              className="w-full p-4 text-left rounded-lg border-2 border-[#4b5563] bg-[#1e1e1e] hover:bg-[#374151] transition-colors font-medium text-[#9ca3af] hover:text-white"
             >
-              <span className="text-white">
-                {transferToAccount ? `${transferToAccount.accountName} (${transferToAccount.accountNumber})` : 'Seleccionar cuenta destino'}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🔄</span>
+                <span>
+                  {transferToAccount ? `${transferToAccount.accountName} (${transferToAccount.accountNumber})` : 'Seleccionar cuenta destino'}
+                </span>
+              </div>
             </button>
 
             {showTransferAccountDropdown && (
-              <div className="absolute top-full left-0 mt-2 w-full bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] border border-[#333] rounded-lg shadow-xl z-50">
+              <div className="absolute top-full left-0 mt-2 w-full bg-[#232323] border border-[#334155] rounded-lg shadow-xl z-50">
                 <div className="p-2 max-h-60 overflow-y-auto">
                   {availableAccounts.filter(acc => acc.id !== selectedAccount?.id).map((account) => (
                     <button
                       key={account.id}
                       onClick={() => handleSelectTransferAccount(account)}
-                      className="w-full p-3 text-left rounded-lg hover:bg-[#3a3a3a] transition-colors"
+                      className="w-full p-3 text-left rounded-lg hover:bg-[#374151] transition-colors"
                     >
                       <div className="flex justify-between items-center">
                         <div>
                           <div className="font-medium text-white">{account.accountName}</div>
-                          <div className="text-xs text-gray-400">{account.accountType} • {account.accountNumber}</div>
+                          <div className="text-xs text-[#9ca3af]">{account.accountType} • {account.accountNumber}</div>
                         </div>
                         <div className="text-right">
                           <div className="font-semibold text-white">${(account.balance || 0).toLocaleString()}</div>
-                          <div className="text-xs text-gray-400">USD</div>
+                          <div className="text-xs text-[#9ca3af]">USD</div>
                         </div>
                       </div>
                     </button>
@@ -387,23 +408,60 @@ const Wallet = () => {
               </div>
             )}
           </div>
+          
+          {transferToAccount && (
+            <button 
+              onClick={() => goToStep(3)}
+              className="mt-4 w-full py-2 bg-[#06b6d4] hover:bg-[#0891b2] text-white rounded-lg transition-colors"
+            >
+              Continuar
+            </button>
+          )}
         </div>
 
-        {/* Paso 2: Vacío para transferencias */}
-        <div className={`bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-xl border-2 p-6 opacity-60 border-[#333]`}>
+        {/* Paso 2: Información de transferencia */}
+        <div className={`bg-[#232323] rounded-xl border-2 p-6 border-[#334155] ${transferToAccount ? '' : 'opacity-60'}`}>
           <h3 className="text-lg font-semibold mb-2 text-white">Paso 2</h3>
-          <p className="text-gray-400 mb-6 text-sm">-</p>
+          <p className="text-[#9ca3af] mb-6 text-sm">Información de transferencia</p>
+          
+          {transferToAccount && (
+            <div className="space-y-4">
+              <div className="p-4 bg-[#1e1e1e] rounded-lg border border-[#334155]">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl">📤</span>
+                  <div>
+                    <div className="font-medium text-white">Origen</div>
+                    <div className="text-sm text-[#9ca3af]">{selectedAccount?.accountName}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">📥</span>
+                  <div>
+                    <div className="font-medium text-white">Destino</div>
+                    <div className="text-sm text-[#9ca3af]">{transferToAccount.accountName}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-[#1e1e1e] rounded-lg border border-[#334155]">
+                <p className="text-[#22d3ee] mb-2 text-sm font-medium">Importante:</p>
+                <p className="text-[#9ca3af] text-xs leading-relaxed">
+                  Las transferencias internas son inmediatas y sin comisión.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Paso 3: Monto y confirmación */}
-        <div className={`bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-xl border-2 p-6 ${currentStep === 3 ? 'border-cyan-500' : 'border-[#333]'} ${currentStep < 3 ? 'opacity-60' : ''}`}>
+        <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 3 ? 'border-[#06b6d4]' : 'border-[#334155]'} ${currentStep < 3 ? 'opacity-60' : ''}`}>
           <h3 className="text-lg font-semibold mb-2 text-white">Paso 3</h3>
-          <p className="text-gray-400 mb-6 text-sm">Monto a transferir</p>
+          <p className="text-[#9ca3af] mb-6 text-sm">Completar transferencia</p>
           
           {currentStep >= 3 && (
             <div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-400 mb-2">
+                <label className="block text-sm font-medium text-[#9ca3af] mb-2">
                   Monto (USD)
                 </label>
                 <input
@@ -411,19 +469,26 @@ const Wallet = () => {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
-                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none transition-colors"
+                  className="w-full px-4 py-3 bg-[#1e1e1e] border border-[#4b5563] rounded-lg text-white placeholder-[#6b7280] focus:border-[#06b6d4] focus:outline-none"
                 />
+              </div>
+
+              <div className="bg-[#1e1e1e] p-4 rounded-lg mb-6 border border-[#334155]">
+                <p className="text-[#22d3ee] mb-2 text-sm font-medium">Importante:</p>
+                <p className="text-[#9ca3af] text-xs leading-relaxed">
+                  La transferencia se procesará inmediatamente y sin comisión.
+                </p>
               </div>
 
               <div className="flex items-center mb-6">
                 <input 
                   type="checkbox" 
-                  id="terms" 
+                  id="transferTerms" 
                   checked={acceptTerms}
                   onChange={(e) => setAcceptTerms(e.target.checked)}
-                  className="mr-3 w-4 h-4 text-cyan-500 bg-[#1a1a1a] border-[#333] rounded focus:ring-cyan-500 focus:ring-2"
+                  className="mr-3 w-4 h-4 text-[#06b6d4] bg-[#1e1e1e] border-[#4b5563] rounded focus:ring-[#06b6d4] focus:ring-2"
                 />
-                <label htmlFor="terms" className="text-sm text-gray-400 font-medium">
+                <label htmlFor="transferTerms" className="text-sm text-[#9ca3af] font-medium">
                   Confirmo que los datos son correctos
                 </label>
               </div>
@@ -433,8 +498,8 @@ const Wallet = () => {
                 disabled={!acceptTerms || !amount || !transferToAccount || isLoading}
                 className={`w-full py-3 rounded-lg text-center font-semibold transition-all ${
                   acceptTerms && amount && transferToAccount && !isLoading
-                    ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-700 hover:to-cyan-600 text-white' 
-                    : 'bg-[#2a2a2a] text-gray-500 cursor-not-allowed'
+                    ? 'bg-gradient-to-r from-[#06b6d4] to-[#0891b2] hover:from-[#0891b2] hover:to-[#0e7490] text-white' 
+                    : 'bg-[#374151] text-[#6b7280] cursor-not-allowed'
                 }`}
               >
                 {isLoading ? 'Procesando...' : 'Transferir'}
@@ -825,9 +890,9 @@ const Wallet = () => {
                 setActiveTab('depositar');
                 resetForm();
               }}
-              className={`px-6 py-2 rounded-md transition-all ${
+              className={`px-4 py-2 rounded-md transition-all ${
                 activeTab === 'depositar'
-                  ? 'bg-cyan-500 text-white'
+                  ? 'bg-green-500 text-white'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -838,13 +903,26 @@ const Wallet = () => {
                 setActiveTab('retirar');
                 resetForm();
               }}
-              className={`px-6 py-2 rounded-md transition-all ${
+              className={`px-4 py-2 rounded-md transition-all ${
                 activeTab === 'retirar'
-                  ? 'bg-cyan-500 text-white'
+                  ? 'bg-green-500 text-white'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
               Retirar
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('transferir');
+                resetForm();
+              }}
+              className={`px-4 py-2 rounded-md transition-all ${
+                activeTab === 'transferir'
+                  ? 'bg-blue-500 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Transferir
             </button>
           </div>
           
@@ -863,6 +941,19 @@ const Wallet = () => {
 
       {/* Selección de cuenta */}
       <div className="mb-6">
+        <div className="flex items-center gap-4 mb-2">
+          <label className="text-sm text-gray-400">Seleccionar cuenta:</label>
+          <button 
+            onClick={loadAccounts}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-3 py-1 bg-[#2a2a2a] hover:bg-[#333] border border-[#444] rounded-lg text-xs text-gray-400 hover:text-white transition-colors"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {isLoading ? 'Cargando...' : 'Recargar'}
+          </button>
+        </div>
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={() => setShowAccountDropdown(!showAccountDropdown)}
@@ -884,31 +975,38 @@ const Wallet = () => {
           {showAccountDropdown && (
             <div className="absolute top-full left-0 mt-2 w-full max-w-md bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] border border-[#333] rounded-xl shadow-xl z-50">
               <div className="p-2 max-h-60 overflow-y-auto">
-                {availableAccounts.map((account) => (
-                  <button
-                    key={account.id}
-                    onClick={() => {
-                      selectAccount(account);
-                      setShowAccountDropdown(false);
-                    }}
-                    className={`w-full p-4 text-left rounded-lg transition-all duration-200 ${
-                      selectedAccount?.id === account.id
-                        ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/20 border border-cyan-500/50'
-                        : 'hover:bg-[#3a3a3a]'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="font-medium text-white">{account.accountName}</div>
-                        <div className="text-xs text-gray-400">{account.accountType} • {account.accountNumber}</div>
+                {availableAccounts.length > 0 ? (
+                  availableAccounts.map((account) => (
+                    <button
+                      key={account.id}
+                      onClick={() => {
+                        selectAccount(account);
+                        setShowAccountDropdown(false);
+                      }}
+                      className={`w-full p-4 text-left rounded-lg transition-all duration-200 ${
+                        selectedAccount?.id === account.id
+                          ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/20 border border-cyan-500/50'
+                          : 'hover:bg-[#3a3a3a]'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="font-medium text-white">{account.accountName}</div>
+                          <div className="text-xs text-gray-400">{account.accountType} • {account.accountNumber}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-white">${(account.balance || 0).toLocaleString()}</div>
+                          <div className="text-xs text-gray-400">USD</div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-white">${(account.balance || 0).toLocaleString()}</div>
-                        <div className="text-xs text-gray-400">USD</div>
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-gray-400">
+                    <p className="mb-2">No tienes cuentas disponibles</p>
+                    <p className="text-sm">Crea una cuenta primero en Trading Accounts</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -939,6 +1037,10 @@ const Wallet = () => {
         {activeTab === 'depositar' || activeTab === 'retirar' ? (
           <div>
             {renderDepositWithdrawContent()}
+          </div>
+        ) : activeTab === 'transferir' ? (
+          <div>
+            {renderTransferContent()}
           </div>
         ) : (
           <div>
@@ -985,8 +1087,8 @@ const Wallet = () => {
       {/* Modal de Detalle de Transacción */}
       {showTransactionDetail && selectedTransaction && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-2 md:p-4">
-          <div className="bg-[#232323] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between p-4 md:p-6 border-b border-[#333] flex-shrink-0">
+          <div className="bg-[#232323] rounded-xl max-w-2xl w-full">
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-[#333]">
               <h3 className="text-lg md:text-xl font-semibold">Detalles de Transacción</h3>
               <button
                 onClick={() => {
@@ -1001,7 +1103,7 @@ const Wallet = () => {
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="p-4 md:p-6">
               <div className="space-y-6">
                 {/* Header con monto y tipo */}
                 <div className="text-center">
@@ -1112,19 +1214,16 @@ const Wallet = () => {
                   </div>
                 )}
 
-                {/* Botón de soporte */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                {/* Botón de cerrar */}
+                <div className="pt-4">
                   <button
                     onClick={() => {
                       setShowTransactionDetail(false);
                       setSelectedTransaction(null);
                     }}
-                    className="flex-1 px-4 py-3 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
+                    className="w-full px-4 py-3 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
                   >
                     Cerrar
-                  </button>
-                  <button className="flex-1 px-4 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors">
-                    Contactar Soporte
                   </button>
                 </div>
               </div>

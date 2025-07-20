@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Calendar, Clock, ChevronDown, ChevronUp, AlertTriangle, Star, Copy, Target } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, ChevronDown, ChevronUp, AlertTriangle, Star, Copy, Target, MessageSquare, Plus } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import SeguirTraderModal from './SeguirTraderModal';
+import AccountSelectionModal from './AccountSelectionModal';
+import CommentsRatingModal from './CommentsRatingModal';
+import { useAccounts } from '../contexts/AccountsContext';
 
 const TraderProfileDetail = ({ trader, onBack }) => {
   const [activeTab, setActiveTab] = useState('statistics');
@@ -9,6 +12,10 @@ const TraderProfileDetail = ({ trader, onBack }) => {
   const [rentabilidadTab, setRentabilidadTab] = useState('Rentabilidad');
   const [rentabilidadRange, setRentabilidadRange] = useState('Día');
   const [showSeguirModal, setShowSeguirModal] = useState(false);
+  
+  // Estados para el modal de selección de cuenta
+  const [showAccountSelectionModal, setShowAccountSelectionModal] = useState(false);
+  const [selectedAccountForCopy, setSelectedAccountForCopy] = useState(null);
   
   // Colores para el PieChart
   const PIE_COLORS = ['#0e7490', '#2563eb', '#7c3aed', '#dc2626', '#059669', '#d97706'];
@@ -124,6 +131,26 @@ const TraderProfileDetail = ({ trader, onBack }) => {
       { date: '26/04', value: 30 },
   ];
 
+  // Datos de ejemplo para Drawdown
+  const drawdownData = [
+      { date: '01/04', value: 0 },
+      { date: '03/04', value: -2.5 },
+      { date: '05/04', value: -1.2 },
+      { date: '07/04', value: -4.8 },
+      { date: '09/04', value: -3.1 },
+      { date: '11/04', value: -6.2 },
+      { date: '13/04', value: -2.8 },
+      { date: '15/04', value: -8.5 },
+      { date: '17/04', value: -5.4 },
+      { date: '19/04', value: -12.3 },
+      { date: '21/04', value: -7.9 },
+      { date: '23/04', value: -15.6 },
+      { date: '25/04', value: -9.2 },
+      { date: '27/04', value: -18.4 },
+      { date: '29/04', value: -11.7 },
+      { date: '30/04', value: -6.3 }
+  ];
+
   // Datos de ejemplo para Historial (deberían venir del trader)
   const tradeHistoryData = [
       { id: '484247', position: 'XAUUSD', entryValue: 2670.89, entryTime: '10/01/2025 20:20:00', exitValue: 2670.69, exitTime: '10/01/2025 01:26:07', profit: -0.40 },
@@ -137,6 +164,48 @@ const TraderProfileDetail = ({ trader, onBack }) => {
   const copyTraderInfo = () => {
     const info = `Trader: ${trader?.nombre || 'Nombre Trader'}\nCuenta: ${getTraderStats().accountNumber}\nServidor: ${getTraderStats().server}`;
     navigator.clipboard.writeText(info);
+  };
+
+  const handleCopyTrader = () => {
+    console.log('Copying trader:', trader?.name);
+    setShowAccountSelectionModal(true);
+  };
+
+  // Estados separados para seguir y copiar
+  const [followedTraders, setFollowedTraders] = useState(new Set()); // Solo para botón "Seguir"
+  const [copiedTraders, setCopiedTraders] = useState(new Set()); // Solo para botón "Copiar"
+  
+  // Estados para el modal de comentarios
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+
+  const handleFollowTrader = () => {
+    if (followedTraders.has(trader?.id)) {
+      // Dejar de seguir
+      setFollowedTraders(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(trader?.id);
+        return newSet;
+      });
+      console.log('Dejando de seguir trader:', trader?.name);
+    } else {
+      // Seguir
+      setFollowedTraders(prev => new Set([...prev, trader?.id]));
+      console.log('Siguiendo trader:', trader?.name);
+    }
+  };
+
+  const handleAccountSelected = (account) => {
+    console.log('Account selected for copying:', account);
+    setSelectedAccountForCopy(account);
+    setShowAccountSelectionModal(false);
+    setShowSeguirModal(true);
+  };
+
+  const handleSubmitComment = async (commentData) => {
+    console.log('Comentario enviado para trader:', trader?.name, commentData);
+    // Aquí se integraría con la API real para enviar el comentario
+    // await submitTraderComment(trader.id, commentData);
+    setShowCommentsModal(false);
   };
 
   const formatCurrency = (value) => {
@@ -182,18 +251,34 @@ const TraderProfileDetail = ({ trader, onBack }) => {
               <Star size={20}/>
             </button>
             <button 
-              onClick={() => setShowSeguirModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 rounded-md text-sm font-medium transition-colors"
+              onClick={handleFollowTrader}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                followedTraders.has(trader?.id)
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600'
+              }`}
             >
               <Target size={16} />
-              Seguir Trader
+              {followedTraders.has(trader?.id) ? 'Siguiendo' : 'Seguir Trader'}
             </button>
             <button 
-              onClick={copyTraderInfo}
-              className="flex items-center gap-2 px-4 py-2 bg-[#333] hover:bg-[#444] rounded-md text-sm"
+              onClick={handleCopyTrader}
+              disabled={copiedTraders.has(trader?.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-colors ${
+                copiedTraders.has(trader?.id)
+                  ? 'bg-green-600 hover:bg-green-700 cursor-not-allowed'
+                  : 'bg-[#333] hover:bg-[#444]'
+              }`}
             >
               <Copy size={16} />
-              Copiar
+              {copiedTraders.has(trader?.id) ? 'Copiando' : 'Copiar'}
+            </button>
+            <button 
+              onClick={() => setShowCommentsModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-md text-sm transition-colors"
+            >
+              <MessageSquare size={16} />
+              Comentar
             </button>
                 </div>
               </div>
@@ -304,7 +389,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
         <div className="lg:col-span-4 bg-[#232323] p-6 rounded-xl border border-[#333]">
       {/* Tabs */}
         <div className="flex mb-4 border-b border-[#333] overflow-x-auto">
-          {['Rentabilidad', 'Beneficio Total', 'Balance y Equidad', 'Retracción Máxima'].map(tab => (
+          {['Rentabilidad', 'Drawdown', 'Beneficio Total', 'Balance y Equidad', 'Retracción Máxima'].map(tab => (
         <button
               key={tab}
               onClick={() => setRentabilidadTab(tab)}
@@ -388,11 +473,93 @@ const TraderProfileDetail = ({ trader, onBack }) => {
             </div>
           </div>
           )}
-          {/* TODO: Añadir contenido para las otras pestañas */}
-          {rentabilidadTab !== 'Rentabilidad' && (
+          {rentabilidadTab === 'Drawdown' && (
+            <div>
+              <div className="flex justify-end mb-4">
+                <div className="relative">
+                  <select 
+                    value={rentabilidadRange}
+                    onChange={(e) => setRentabilidadRange(e.target.value)}
+                    className="appearance-none bg-[#191919] border border-[#333] rounded px-3 py-1 text-xs pr-8 cursor-pointer"
+                  >
+                    <option value="Día">Día</option>
+                    <option value="Semana">Semana</option>
+                    <option value="Mes">Mes</option>
+                    <option value="Año">Año</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+              
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={drawdownData}>
+                    <defs>
+                      <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.05}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                    />
+                    <YAxis 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                      tickFormatter={(value) => `${value}%`}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1f2937', 
+                        border: '1px solid #374151', 
+                        borderRadius: '6px',
+                        color: '#fff'
+                      }}
+                      labelStyle={{ color: '#9CA3AF' }}
+                      formatter={(value) => [`${value}%`, 'Drawdown']}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#ef4444" 
+                      strokeWidth={2}
+                      fill="url(#drawdownGradient)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              
+              {/* Estadísticas de drawdown */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
+                  <p className="text-xs text-gray-400 mb-1">Drawdown Máximo</p>
+                  <p className="text-lg font-medium text-red-500">-18.4%</p>
+                </div>
+                <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
+                  <p className="text-xs text-gray-400 mb-1">Drawdown Actual</p>
+                  <p className="text-lg font-medium text-red-400">-6.3%</p>
+                </div>
+                <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
+                  <p className="text-xs text-gray-400 mb-1">Duración Máx</p>
+                  <p className="text-lg font-medium text-white">12 días</p>
+                </div>
+                <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
+                  <p className="text-xs text-gray-400 mb-1">Recuperación</p>
+                  <p className="text-lg font-medium text-yellow-500">En curso</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Contenido para las otras pestañas */}
+          {!['Rentabilidad', 'Drawdown'].includes(rentabilidadTab) && (
             <div className="text-center text-gray-500 py-10">
               Contenido para {rentabilidadTab} (Pendiente)
-                  </div>
+            </div>
           )}
                 </div>
               </div>
@@ -495,15 +662,47 @@ const TraderProfileDetail = ({ trader, onBack }) => {
         </div>
       </div>
 
+      {/* Modal de Selección de Cuenta */}
+      <AccountSelectionModal
+        isOpen={showAccountSelectionModal}
+        onClose={() => {
+          setShowAccountSelectionModal(false);
+          setSelectedAccountForCopy(null);
+        }}
+        trader={trader}
+        onAccountSelected={handleAccountSelected}
+      />
+
       {/* Modal de Seguir Trader */}
       <SeguirTraderModal 
         isOpen={showSeguirModal}
-        onClose={() => setShowSeguirModal(false)}
-        trader={trader}
-        onConfirm={(formData) => {
-          console.log('Seguir trader confirmado:', formData);
-          // Aquí integrarías con tu API para seguir al trader
+        onClose={() => {
+          setShowSeguirModal(false);
+          setSelectedAccountForCopy(null);
         }}
+        trader={trader}
+        selectedAccount={selectedAccountForCopy}
+        onConfirm={(formData) => {
+          console.log('Copiar trader confirmado:', formData);
+          console.log('Cuenta seleccionada:', selectedAccountForCopy);
+          // Aquí integrarías con tu API para copiar al trader
+          
+          // Marcar el trader como copiado
+          if (trader?.id) {
+            setCopiedTraders(prev => new Set([...prev, trader.id]));
+          }
+          
+          setShowSeguirModal(false);
+          setSelectedAccountForCopy(null);
+        }}
+      />
+
+      {/* Modal de Comentarios y Puntuación */}
+      <CommentsRatingModal
+        isOpen={showCommentsModal}
+        onClose={() => setShowCommentsModal(false)}
+        trader={trader}
+        onSubmit={handleSubmitComment}
       />
     </div>
   );

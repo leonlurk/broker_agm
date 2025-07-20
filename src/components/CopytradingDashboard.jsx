@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import TraderProfileDetail from './TraderProfileDetail';
 import SeguirTraderModal from './SeguirTraderModal';
+import AccountSelectionModal from './AccountSelectionModal';
 import { getMasterTraders, getMySubscriptions } from '../services/copytradingService';
+import { useAccounts } from '../contexts/AccountsContext';
 import useTranslation from '../hooks/useTranslation';
 
 const CopytradingDashboard = () => {
@@ -23,6 +25,10 @@ const CopytradingDashboard = () => {
   // Estados para el modal de seguir trader
   const [showSeguirModal, setShowSeguirModal] = useState(false);
   const [selectedTraderForCopy, setSelectedTraderForCopy] = useState(null);
+  
+  // Estados para el modal de selección de cuenta
+  const [showAccountSelectionModal, setShowAccountSelectionModal] = useState(false);
+  const [selectedAccountForCopy, setSelectedAccountForCopy] = useState(null);
   
   // Estado para rastrear qué traders están siendo copiados
   const [copiedTraders, setCopiedTraders] = useState(new Set());
@@ -108,6 +114,13 @@ const CopytradingDashboard = () => {
     }
     console.log("Copying trader:", trader);
     setSelectedTraderForCopy(trader);
+    setShowAccountSelectionModal(true);
+  };
+
+  const handleAccountSelected = (account) => {
+    console.log("Account selected for copying:", account);
+    setSelectedAccountForCopy(account);
+    setShowAccountSelectionModal(false);
     setShowSeguirModal(true);
   };
   
@@ -346,7 +359,7 @@ const CopytradingDashboard = () => {
           onClick={() => setActiveTab('traders')}
           className={`py-3 px-6 whitespace-nowrap ${
             activeTab === 'traders'
-              ? 'text-cyan-400 border-b-2 border-cyan-400'
+              ? 'text-green-400 border-b-2 border-green-400'
               : 'text-gray-400 hover:text-white'
           }`}
         >
@@ -356,7 +369,7 @@ const CopytradingDashboard = () => {
           onClick={() => setActiveTab('subscriptions')}
           className={`py-3 px-6 whitespace-nowrap ${
             activeTab === 'subscriptions'
-              ? 'text-cyan-400 border-b-2 border-cyan-400'
+              ? 'text-green-400 border-b-2 border-green-400'
               : 'text-gray-400 hover:text-white'
           }`}
         >
@@ -366,7 +379,7 @@ const CopytradingDashboard = () => {
           onClick={() => setActiveTab('performance')}
           className={`py-3 px-6 whitespace-nowrap ${
             activeTab === 'performance'
-              ? 'text-cyan-400 border-b-2 border-cyan-400'
+              ? 'text-green-400 border-b-2 border-green-400'
               : 'text-gray-400 hover:text-white'
           }`}
         >
@@ -491,17 +504,32 @@ const CopytradingDashboard = () => {
         </div>
       )}
       
+      {/* Modal de Selección de Cuenta */}
+      <AccountSelectionModal
+        isOpen={showAccountSelectionModal}
+        onClose={() => {
+          setShowAccountSelectionModal(false);
+          setSelectedTraderForCopy(null);
+          setSelectedAccountForCopy(null);
+        }}
+        trader={selectedTraderForCopy}
+        onAccountSelected={handleAccountSelected}
+      />
+
       {/* Modal de Seguir Trader */}
       <SeguirTraderModal 
         isOpen={showSeguirModal}
         onClose={() => {
           setShowSeguirModal(false);
           setSelectedTraderForCopy(null);
+          setSelectedAccountForCopy(null);
         }}
         trader={selectedTraderForCopy}
+        selectedAccount={selectedAccountForCopy}
         onConfirm={(formData) => {
-          console.log('Seguir trader confirmado desde dashboard:', formData);
-          // Aquí integrarías con tu API para seguir al trader
+          console.log('Copiar trader confirmado desde dashboard:', formData);
+          console.log('Cuenta seleccionada:', selectedAccountForCopy);
+          // Aquí integrarías con tu API para copiar al trader
           
           // Marcar el trader como copiado
           if (selectedTraderForCopy) {
@@ -510,6 +538,7 @@ const CopytradingDashboard = () => {
           
           setShowSeguirModal(false);
           setSelectedTraderForCopy(null);
+          setSelectedAccountForCopy(null);
         }}
       />
     </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, DollarSign, AlertTriangle, Settings, Clock, Target } from 'lucide-react';
 import useTranslation from '../hooks/useTranslation';
 
-const SeguirTraderModal = ({ isOpen, onClose, trader, onConfirm }) => {
+const SeguirTraderModal = ({ isOpen, onClose, trader, selectedAccount, onConfirm }) => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
     capitalAsignado: 5000,
@@ -126,20 +126,26 @@ const SeguirTraderModal = ({ isOpen, onClose, trader, onConfirm }) => {
           </button>
         </div>
 
-        {/* Información del Trader */}
-        <div className="p-6 border-b border-[#333] bg-[#2a2a2a]">
-          <div className="flex items-center gap-4">
-            <img 
-              src={trader?.avatar || '/default-avatar.png'} 
-              alt={trader?.nombre || 'Trader'} 
-              className="w-12 h-12 rounded-full border-2 border-cyan-500"
-            />
-            <div>
-              <h3 className="text-lg font-semibold text-white">{trader?.nombre || 'Trader'}</h3>
-              <p className="text-sm text-gray-400">Rendimiento: {trader?.rendimiento || '+0.0%'}</p>
+        {/* Información de la Cuenta Seleccionada */}
+        {selectedAccount && (
+          <div className="p-6 border-b border-[#333] bg-[#262626]">
+            <h4 className="text-sm font-medium text-gray-300 mb-3">Cuenta seleccionada para copiar</h4>
+            <div className="flex items-center justify-between bg-[#2a2a2a] p-4 rounded-lg border border-[#333]">
+              <div>
+                <h5 className="font-semibold text-white">{selectedAccount.accountName}</h5>
+                <p className="text-sm text-gray-400">#{selectedAccount.accountNumber}</p>
+                <p className="text-xs text-gray-500">{selectedAccount.accountTypeSelection} • 1:{selectedAccount.leverage}</p>
+              </div>
+              <div className="text-right">
+                <div className="flex items-center gap-1 text-white font-semibold">
+                  <DollarSign size={14} />
+                  <span>{selectedAccount.balance?.toLocaleString() || '0'}</span>
+                </div>
+                <p className="text-xs text-gray-400">Balance disponible</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
