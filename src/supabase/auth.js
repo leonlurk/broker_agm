@@ -15,17 +15,14 @@ export const registerUser = async (username, email, password, refId = null) => {
   logger.auth(`[Supabase] Attempting registration for user`, { username, email: '[EMAIL_PROVIDED]', refId });
   
   try {
-    // Step 1: Sign up with Supabase Auth
+    // Debug: Log the Supabase client configuration
+    logger.auth(`[Supabase] Debug - Using URL: ${supabase.supabaseUrl}`);
+    logger.auth(`[Supabase] Debug - Auth endpoint: ${supabase.supabaseUrl}/auth/v1/signup`);
+    
+    // Step 1: Sign up with Supabase Auth (simplified for debugging)
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
-      password,
-      options: {
-        data: {
-          username,
-          display_name: username
-        },
-        emailRedirectTo: `${window.location.origin}/verify-email`
-      }
+      password
     });
 
     if (authError) throw authError;
