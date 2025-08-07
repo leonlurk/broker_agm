@@ -4,7 +4,8 @@ import { logger } from '../utils/logger';
 
 // Get Supabase credentials from environment
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Remove quotes if they exist (in case the env var is quoted)
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.replace(/^["']|["']$/g, '');
 
 // Debug: Log the actual values (partially masked for security)
 logger.info('[Supabase Config] Loading configuration...', {
