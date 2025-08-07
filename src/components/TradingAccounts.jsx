@@ -232,7 +232,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // --- Favorite Instruments Logic (from PipCalculator) ---
   useEffect(() => {
     if (currentUser) {
-      const userId = currentUser.uid || currentUser.id;
+      const userId = currentUser.id;
       DatabaseAdapter.users.getById(userId).then(({ data, error }) => {
         if (data && data.favorite_pip_instruments) {
           setFavoriteInstruments(data.favorite_pip_instruments);
@@ -263,7 +263,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const toggleFavorite = async (instrumentValue) => {
     if (!currentUser) return; // Or handle local favorites for non-logged-in users
 
-    const userId = currentUser.uid || currentUser.id;
+    const userId = currentUser.id;
     const isCurrentlyFavorite = favoriteInstruments.includes(instrumentValue);
 
     setFavoriteInstruments(prev =>

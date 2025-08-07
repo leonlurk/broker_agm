@@ -92,7 +92,7 @@ const UserInformationContent = ({ onBack }) => {
       if (!currentUser) return;
       setLoading(true);
       try {
-        const userId = currentUser.uid || currentUser.id;
+        const userId = currentUser.id;
         const { data: userData, error } = await DatabaseAdapter.users.getById(userId);
         if (error) throw error;
         
@@ -237,14 +237,14 @@ const UserInformationContent = ({ onBack }) => {
         const toastIdUpload = toast.loading('Subiendo imagen...');
         // Generar nombre único para evitar conflictos
         const fileName = `${Date.now()}_${profileImageFile.name}`;
-        const userId = currentUser.uid || currentUser.id;
+        const userId = currentUser.id;
         const uploadResult = await StorageAdapter.uploadProfilePicture(userId, profileImageFile, fileName);
         if (!uploadResult.success) throw new Error(uploadResult.error);
         updatedData.photoURL = uploadResult.url;
         toast.success('Imagen subida', { id: toastIdUpload });
       }
 
-      const userId = currentUser.uid || currentUser.id;
+      const userId = currentUser.id;
       const { error: updateError } = await DatabaseAdapter.users.update(userId, updatedData);
       if (updateError) throw updateError;
       

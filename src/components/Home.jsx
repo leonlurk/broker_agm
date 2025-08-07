@@ -56,7 +56,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
       if (!currentUser) return;
       
       try {
-        const { data: userData, error } = await DatabaseAdapter.users.getById(currentUser.uid);
+        const { data: userData, error } = await DatabaseAdapter.users.getById(currentUser.id);
         
         if (userData) {
           setUserProfileData({
@@ -100,7 +100,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
       // Recargar datos cuando se cierra el modal de configuración
       const fetchUserData = async () => {
         try {
-          const { data: userData, error } = await DatabaseAdapter.users.getById(currentUser.uid);
+          const { data: userData, error } = await DatabaseAdapter.users.getById(currentUser.id);
           
           if (userData) {
             setUserProfileData({

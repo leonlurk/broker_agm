@@ -229,7 +229,7 @@ const Wallet = () => {
 
     try {
       // Crear registro de transacción
-      const userId = currentUser.uid || currentUser.id;
+      const userId = currentUser.id;
       const transactionData = {
         user_id: userId,
         account_id: selectedAccount.id,

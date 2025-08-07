@@ -159,9 +159,9 @@ const AfiliadosDashboard = () => {
       setIsLoadingData(true);
       try {
         if (currentUser) {
-          setUserId(currentUser.uid); // Guardar User ID para el link
+          setUserId(currentUser.id); // Guardar User ID para el link
           
-          const { data: userData, error } = await DatabaseAdapter.users.getById(currentUser.uid);
+          const { data: userData, error } = await DatabaseAdapter.users.getById(currentUser.id);
 
           if (userData) {
             // Cargar Conteo de Referidos y Determinar Tier

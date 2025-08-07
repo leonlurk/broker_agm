@@ -151,7 +151,7 @@ export const DatabaseAdapter = {
     getById: async (userId) => {
       if (DATABASE_PROVIDER === 'supabase') {
         const { data, error } = await supabase
-          .from('users')
+          .from('profiles')
           .select('*')
           .eq('id', userId)
           .single();
@@ -182,7 +182,7 @@ export const DatabaseAdapter = {
     create: async (userData) => {
       if (DATABASE_PROVIDER === 'supabase') {
         const { data, error } = await supabase
-          .from('users')
+          .from('profiles')
           .insert([userData])
           .select()
           .single();
@@ -207,7 +207,7 @@ export const DatabaseAdapter = {
     update: async (userId, updates) => {
       if (DATABASE_PROVIDER === 'supabase') {
         const { data, error } = await supabase
-          .from('users')
+          .from('profiles')
           .update(updates)
           .eq('id', userId)
           .select()

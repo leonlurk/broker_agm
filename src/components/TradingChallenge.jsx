@@ -56,7 +56,7 @@ export default function TradingChallengeUI() {
         leverage
       };
 
-      const result = await createTradingAccount(currentUser.uid, accountData);
+      const result = await createTradingAccount(currentUser.id, accountData);
 
       if (result.success) {
         setSuccess(`¡Cuenta creada exitosamente! Número de cuenta: ${result.accountNumber}`);

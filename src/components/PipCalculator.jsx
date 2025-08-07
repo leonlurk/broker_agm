@@ -167,7 +167,7 @@ const PipCalculator = () => {
   useEffect(() => {
     if (currentUser) {
       // First try to get user preferences document
-      DatabaseAdapter.users.getById(currentUser.uid).then(({ data, error }) => {
+      DatabaseAdapter.users.getById(currentUser.id).then(({ data, error }) => {
         if (data && data.favoritePipInstruments) {
           setFavoriteInstruments(data.favoritePipInstruments);
         } else if (error) {
@@ -539,7 +539,7 @@ const PipCalculator = () => {
 
     try {
       // Get current user data first
-      const { data: currentUserData } = await DatabaseAdapter.users.getById(currentUser.uid);
+      const { data: currentUserData } = await DatabaseAdapter.users.getById(currentUser.id);
       const currentFavorites = currentUserData?.favoritePipInstruments || [];
       
       let newFavorites;
@@ -550,7 +550,7 @@ const PipCalculator = () => {
       }
 
       // Update user data
-      const { error } = await DatabaseAdapter.users.update(currentUser.uid, {
+      const { error } = await DatabaseAdapter.users.update(currentUser.id, {
         favoritePipInstruments: newFavorites
       });
 

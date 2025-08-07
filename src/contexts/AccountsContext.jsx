@@ -55,12 +55,12 @@ export const AccountsProvider = ({ children }) => {
       return;
     }
     
-    console.log('Debug AccountsContext - Loading accounts for user:', currentUser.uid);
+    console.log('Debug AccountsContext - Loading accounts for user:', currentUser.id);
     setIsLoading(true);
     setError(null);
     
     try {
-      const result = await getUserTradingAccounts(currentUser.uid);
+      const result = await getUserTradingAccounts(currentUser.id);
       console.log('Debug AccountsContext - getUserTradingAccounts result:', result);
       
       if (result.success) {

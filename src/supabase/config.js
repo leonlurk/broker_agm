@@ -51,7 +51,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     
     // Try to fetch from a public endpoint
     const { data, error } = await supabase
-      .from('users')
+      .from('profiles')
       .select('count', { count: 'exact', head: true });
     
     if (error) {
