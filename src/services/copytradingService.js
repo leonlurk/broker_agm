@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { auth } from '../firebase/config'; // Importamos auth para obtener el token
+import { AuthAdapter } from './database.adapter'; // Importamos el adapter para obtener el token
 
 // La URL base de tu nuevo backend de Node.js desplegado en el VPS
 // Esto debería estar en un archivo .env en tu proyecto de React
@@ -15,7 +15,7 @@ const logicApiClient = axios.create({
 // a cada petición que se haga al backend de lógica.
 logicApiClient.interceptors.request.use(
   async (config) => {
-    const user = auth.currentUser;
+    const user = await AuthAdapter.getCurrentUser();
     if (user) {
       const token = await user.getIdToken();
       config.headers.Authorization = `Bearer ${token}`;

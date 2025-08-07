@@ -19,6 +19,7 @@
     "type:check": "tsc --noEmit"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.53.0",
     "axios": "^1.10.0",
     "date-fns": "^4.1.0",
     "firebase": "^11.5.0",

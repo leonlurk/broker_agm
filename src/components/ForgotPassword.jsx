@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { resetPassword } from '../firebase/auth';
+import { AuthAdapter } from '../services/database.adapter';
 
 const ForgotPassword = ({ onContinue, onLoginClick }) => {
   const [username, setUsername] = useState('');
@@ -15,7 +15,7 @@ const ForgotPassword = ({ onContinue, onLoginClick }) => {
     setLoading(true);
     
     try {
-      const { success, error } = await resetPassword(email);
+      const { success, error } = await AuthAdapter.resetPassword(email);
       
       if (error) {
         throw new Error(error.message || 'Error al enviar el correo de recuperación');

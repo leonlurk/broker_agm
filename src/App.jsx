@@ -7,7 +7,7 @@ import ResetPassword from './components/ResetPassword';
 import VerificationCode from './components/VerificationCode';
 import Dashboard from './Dashboard';
 import { useAuth } from './contexts/AuthContext';
-import { logoutUser } from './firebase/auth';
+import { AuthAdapter } from './services/database.adapter';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -23,7 +23,7 @@ function App() {
   
   const handleLogout = async () => {
     try {
-      await logoutUser();
+      await AuthAdapter.logoutUser();
       navigate('/login');
     } catch (error) {
       console.error("Logout failed", error);

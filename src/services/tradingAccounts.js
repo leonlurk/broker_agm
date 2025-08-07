@@ -1,5 +1,4 @@
-import { db } from '../firebase/config';
-import { collection, addDoc, getDocs, query, where, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { DatabaseAdapter } from './database.adapter';
 import { logger } from '../utils/logger';
 
 // Collection name for trading accounts
@@ -23,14 +22,10 @@ export const createTradingAccount = async (userId, accountData) => {
     }
 
     // Check if account name already exists for this user
-    const existingAccountQuery = query(
-      collection(db, TRADING_ACCOUNTS_COLLECTION),
-      where("userId", "==", userId),
-      where("accountName", "==", accountData.accountName)
-    );
+    const { data: existingAccounts } = await DatabaseAdapter.tradingAccounts.getByUserId(userId);
+    const accountExists = existingAccounts?.some(acc => acc.account_name === accountData.accountName);
     
-    const existingAccounts = await getDocs(existingAccountQuery);
-    if (!existingAccounts.empty) {
+    if (accountExists) {
       throw new Error('Ya existe una cuenta con este nombre');
     }
 
@@ -54,24 +49,25 @@ export const createTradingAccount = async (userId, accountData) => {
       server: 'AGM-Server',
       platform: 'MetaTrader 5',
       status: 'Active',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
-    // Add to Firestore
-    const docRef = await addDoc(collection(db, TRADING_ACCOUNTS_COLLECTION), newAccount);
+    // Add to database
+    const { data: createdAccount, error } = await DatabaseAdapter.tradingAccounts.create(newAccount);
+    if (error) throw error;
     
     logger.info('Trading account created successfully', { 
-      accountId: docRef.id, 
+      accountId: createdAccount.id, 
       accountNumber,
       accountType: accountData.accountType 
     });
 
     return {
       success: true,
-      accountId: docRef.id,
+      accountId: createdAccount.id,
       accountNumber,
-      data: newAccount
+      data: createdAccount
     };
 
   } catch (error) {
@@ -88,20 +84,11 @@ export const getUserTradingAccounts = async (userId) => {
   logger.info('Fetching trading accounts for user', { userId });
   
   try {
-    const accountsQuery = query(
-      collection(db, TRADING_ACCOUNTS_COLLECTION),
-      where("userId", "==", userId)
-    );
+    const { data: accounts, error } = await DatabaseAdapter.tradingAccounts.getByUserId(userId);
     
-    const querySnapshot = await getDocs(accountsQuery);
-    const accounts = [];
-    
-    querySnapshot.forEach((doc) => {
-      accounts.push({
-        id: doc.id,
-        ...doc.data()
-      });
-    });
+    if (error) {
+      throw error;
+    }
 
     logger.info('Trading accounts fetched successfully', { count: accounts.length });
     
@@ -124,14 +111,14 @@ export const updateAccountBalance = async (accountId, newBalance) => {
   logger.info('Updating account balance', { accountId, newBalance });
   
   try {
-    const accountRef = doc(db, TRADING_ACCOUNTS_COLLECTION, accountId);
-    
-    await updateDoc(accountRef, {
+    const { error } = await DatabaseAdapter.tradingAccounts.update(accountId, {
       balance: newBalance,
       equity: newBalance,
-      freeMargin: newBalance,
-      updatedAt: serverTimestamp()
+      free_margin: newBalance,
+      updated_at: new Date().toISOString()
     });
+    
+    if (error) throw error;
 
     logger.info('Account balance updated successfully');
     
@@ -153,12 +140,12 @@ export const updateInvestorPassword = async (accountId, investorPassword) => {
   logger.info('Updating investor password', { accountId });
   
   try {
-    const accountRef = doc(db, TRADING_ACCOUNTS_COLLECTION, accountId);
-    
-    await updateDoc(accountRef, {
-      investorPassword: investorPassword,
-      updatedAt: serverTimestamp()
+    const { error } = await DatabaseAdapter.tradingAccounts.update(accountId, {
+      investor_password: investorPassword,
+      updated_at: new Date().toISOString()
     });
+    
+    if (error) throw error;
 
     logger.info('Investor password updated successfully');
     

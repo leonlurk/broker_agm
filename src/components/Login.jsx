@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { loginUser } from '../firebase/auth';
+import { AuthAdapter } from '../services/database.adapter';
 
 const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const [username, setUsername] = useState('');
@@ -14,7 +14,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
     setLoading(true);
     
     try {
-      const { user, error } = await loginUser(username, password);
+      const { user, error } = await AuthAdapter.loginUser(username, password);
       
       if (error) {
         throw new Error(error.message || 'Error al iniciar sesión');

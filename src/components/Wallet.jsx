@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAccounts, WALLET_OPERATIONS } from '../contexts/AccountsContext';
-import { doc, setDoc, collection, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { DatabaseAdapter } from '../services/database.adapter';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 
@@ -230,22 +229,24 @@ const Wallet = () => {
 
     try {
       // Crear registro de transacción
+      const userId = currentUser.uid || currentUser.id;
       const transactionData = {
-        userId: currentUser.uid,
-        accountId: selectedAccount.id,
+        user_id: userId,
+        account_id: selectedAccount.id,
+        account_name: selectedAccount.accountName,
         amount: parseFloat(amount),
         currency: 'USD',
         type: activeTab,
         method: activeTab === 'transferir' ? 'Transferencia Interna' : selectedMethod,
         status: 'pending',
-        createdAt: Timestamp.now(),
+        created_at: new Date().toISOString(),
         ...(selectedCoin && { coin: selectedCoin }),
-        ...(walletAddress && { walletAddress }),
-        ...(transferToAccount && { toAccountId: transferToAccount.id, toAccountName: transferToAccount.accountName })
+        ...(walletAddress && { wallet_address: walletAddress }),
+        ...(transferToAccount && { to_account_id: transferToAccount.id, to_account_name: transferToAccount.accountName })
       };
 
-      // Guardar en Firebase
-      await addDoc(collection(db, 'transactions'), transactionData);
+      // Guardar en base de datos
+      await DatabaseAdapter.transactions.create(transactionData);
 
       // Actualizar balances localmente (en producción esto se haría en el backend)
       if (activeTab === 'depositar') {

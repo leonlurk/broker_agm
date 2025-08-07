@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { db, storage } from '../firebase/config';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { DatabaseAdapter, StorageAdapter } from '../services/database.adapter';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
 import { Camera, Mail, ArrowLeft, Loader, UploadCloud, Trash2, Search, ChevronDown, Calendar } from 'lucide-react';
@@ -94,9 +92,9 @@ const UserInformationContent = ({ onBack }) => {
       if (!currentUser) return;
       setLoading(true);
       try {
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        const docSnap = await getDoc(userDocRef);
-        const userData = docSnap.exists() ? docSnap.data() : {};
+        const userId = currentUser.uid || currentUser.id;
+        const { data: userData, error } = await DatabaseAdapter.users.getById(userId);
+        if (error) throw error;
         
         const fullData = {
           nombre: userData.nombre || '',
@@ -239,15 +237,16 @@ const UserInformationContent = ({ onBack }) => {
         const toastIdUpload = toast.loading('Subiendo imagen...');
         // Generar nombre único para evitar conflictos
         const fileName = `${Date.now()}_${profileImageFile.name}`;
-        const storageRef = ref(storage, `profile_pictures/${currentUser.uid}/${fileName}`);
-        await uploadBytes(storageRef, profileImageFile);
-        const newPhotoURL = await getDownloadURL(storageRef);
-        updatedData.photoURL = newPhotoURL;
+        const userId = currentUser.uid || currentUser.id;
+        const uploadResult = await StorageAdapter.uploadProfilePicture(userId, profileImageFile, fileName);
+        if (!uploadResult.success) throw new Error(uploadResult.error);
+        updatedData.photoURL = uploadResult.url;
         toast.success('Imagen subida', { id: toastIdUpload });
       }
 
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      await setDoc(userDocRef, updatedData, { merge: true });
+      const userId = currentUser.uid || currentUser.id;
+      const { error: updateError } = await DatabaseAdapter.users.update(userId, updatedData);
+      if (updateError) throw updateError;
       
       setFormData(updatedData);
       setInitialData(updatedData);

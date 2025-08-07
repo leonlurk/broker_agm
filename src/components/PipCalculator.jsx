@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Star, Search as SearchIcon, ChevronDown } from 'lucide-react';
-import { db } from '../firebase/config';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { DatabaseAdapter } from '../services/database.adapter';
 
 // Expanded and refined list of Forex currency pairs
 const forexInstruments = [
@@ -164,16 +163,16 @@ const PipCalculator = () => {
   const [showInstrumentDropdown, setShowInstrumentDropdown] = useState(false);
   const instrumentDropdownRef = useRef(null); // Ref for the dropdown container
 
-  // Load favorites from Firestore on mount if user is logged in
+  // Load favorites from database on mount if user is logged in
   useEffect(() => {
     if (currentUser) {
-      const userPrefsRef = doc(db, 'userPreferences', currentUser.uid);
-      getDoc(userPrefsRef).then(docSnap => {
-        if (docSnap.exists() && docSnap.data().favoritePipInstruments) {
-          setFavoriteInstruments(docSnap.data().favoritePipInstruments);
+      // First try to get user preferences document
+      DatabaseAdapter.users.getById(currentUser.uid).then(({ data, error }) => {
+        if (data && data.favoritePipInstruments) {
+          setFavoriteInstruments(data.favoritePipInstruments);
+        } else if (error) {
+          console.error("Error fetching favorite instruments from database:", error);
         }
-      }).catch(error => {
-        console.error("Error fetching favorite instruments from Firestore:", error);
       });
     }
     // Clear favorites if user logs out or changes
@@ -530,7 +529,6 @@ const PipCalculator = () => {
       return;
     }
 
-    const userPrefsRef = doc(db, 'userPreferences', currentUser.uid);
     const isCurrentlyFavorite = favoriteInstruments.includes(instrumentValue);
 
     setFavoriteInstruments(prev =>
@@ -540,17 +538,27 @@ const PipCalculator = () => {
     );
 
     try {
+      // Get current user data first
+      const { data: currentUserData } = await DatabaseAdapter.users.getById(currentUser.uid);
+      const currentFavorites = currentUserData?.favoritePipInstruments || [];
+      
+      let newFavorites;
       if (isCurrentlyFavorite) {
-        await updateDoc(userPrefsRef, {
-          favoritePipInstruments: arrayRemove(instrumentValue)
-        });
+        newFavorites = currentFavorites.filter(fav => fav !== instrumentValue);
       } else {
-        await setDoc(userPrefsRef, {
-          favoritePipInstruments: arrayUnion(instrumentValue)
-        }, { merge: true });
+        newFavorites = [...currentFavorites, instrumentValue];
+      }
+
+      // Update user data
+      const { error } = await DatabaseAdapter.users.update(currentUser.uid, {
+        favoritePipInstruments: newFavorites
+      });
+
+      if (error) {
+        throw error;
       }
     } catch (error) {
-      console.error("Error updating favorite instruments in Firestore:", error);
+      console.error("Error updating favorite instruments in database:", error);
       // Revert if error occurs
       setFavoriteInstruments(prev =>
         isCurrentlyFavorite

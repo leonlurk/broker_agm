@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, Copy, ArrowUpDown, Lock, Menu, Loader } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase/config';
+import { useAuth } from '../contexts/AuthContext';
+import { DatabaseAdapter } from '../services/database.adapter';
 import WithdrawalHistoryDetails from './WithdrawalHistoryDetails';
 import Pagination from './utils/Pagination';
 
@@ -24,6 +24,7 @@ const determineTier = (referralCount) => {
 };
 
 const AfiliadosDashboard = () => {
+  const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('panel');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -152,23 +153,24 @@ const AfiliadosDashboard = () => {
     };
   }, []);
   
-  // Cargar datos del usuario (wallet, referidos, etc.) desde Firebase
+  // Cargar datos del usuario (wallet, referidos, etc.) desde la base de datos
   useEffect(() => {
     const fetchUserData = async () => {
       setIsLoadingData(true);
       try {
-        const user = auth.currentUser;
-        if (user) {
-          setUserId(user.uid); // Guardar User ID para el link
-          const userDocRef = doc(db, 'users_broker', user.uid);
-          const userDoc = await getDoc(userDocRef);
+        if (currentUser) {
+          setUserId(currentUser.uid); // Guardar User ID para el link
+          
+          const { data: userData, error } = await DatabaseAdapter.users.getById(currentUser.uid);
 
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
+          if (userData) {
             // Cargar Conteo de Referidos y Determinar Tier
             const count = userData.referralCount || 0; // Asumir 0 si no existe
             setReferralCount(count);
             setCurrentTier(determineTier(count));
+          } else if (error) {
+            console.error('Error al obtener datos del usuario:', error);
+            setError('Error al cargar los datos. Intente de nuevo más tarde.');
           } else {
             // Si el doc no existe, valores por defecto
             setReferralCount(0);
@@ -186,7 +188,7 @@ const AfiliadosDashboard = () => {
     };
 
     fetchUserData();
-  }, []);
+  }, [currentUser]);
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);

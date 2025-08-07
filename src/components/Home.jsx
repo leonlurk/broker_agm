@@ -7,8 +7,7 @@ import { ChevronDown, ArrowDown, ArrowUp, SlidersHorizontal, Settings as Setting
 import { useAccounts, WALLET_OPERATIONS, ACCOUNT_CATEGORIES } from '../contexts/AccountsContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useAuth } from '../contexts/AuthContext';
-import { db } from '../firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
+import { DatabaseAdapter } from '../services/database.adapter';
 import useTranslation from '../hooks/useTranslation';
 
 const fondoTarjetaUrl = "/fondoTarjeta.png";
@@ -51,24 +50,30 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   });
   const dropdownRef = useRef(null);
 
-  // Cargar datos del usuario desde Firebase
+  // Cargar datos del usuario desde la base de datos
   useEffect(() => {
     const fetchUserData = async () => {
       if (!currentUser) return;
       
       try {
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        const docSnap = await getDoc(userDocRef);
+        const { data: userData, error } = await DatabaseAdapter.users.getById(currentUser.uid);
         
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
+        if (userData) {
           setUserProfileData({
             photoURL: userData.photoURL || currentUser.photoURL || '/Perfil.png',
             nombre: userData.nombre || '',
             apellido: userData.apellido || ''
           });
+        } else if (error) {
+          console.error("Error loading user data:", error);
+          // Si no hay datos en la base de datos, usar los datos del Auth
+          setUserProfileData({
+            photoURL: currentUser.photoURL || '/Perfil.png',
+            nombre: currentUser.displayName?.split(' ')[0] || '',
+            apellido: currentUser.displayName?.split(' ')[1] || ''
+          });
         } else {
-          // Si no hay datos en Firestore, usar los datos del Auth
+          // Si no hay datos en la base de datos, usar los datos del Auth
           setUserProfileData({
             photoURL: currentUser.photoURL || '/Perfil.png',
             nombre: currentUser.displayName?.split(' ')[0] || '',
@@ -95,16 +100,16 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
       // Recargar datos cuando se cierra el modal de configuración
       const fetchUserData = async () => {
         try {
-          const userDocRef = doc(db, 'users', currentUser.uid);
-          const docSnap = await getDoc(userDocRef);
+          const { data: userData, error } = await DatabaseAdapter.users.getById(currentUser.uid);
           
-          if (docSnap.exists()) {
-            const userData = docSnap.data();
+          if (userData) {
             setUserProfileData({
               photoURL: userData.photoURL || currentUser.photoURL || '/Perfil.png',
               nombre: userData.nombre || '',
               apellido: userData.apellido || ''
             });
+          } else if (error) {
+            console.error("Error refreshing user data:", error);
           }
         } catch (error) {
           console.error("Error refreshing user data:", error);

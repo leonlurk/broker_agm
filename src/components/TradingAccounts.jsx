@@ -6,8 +6,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { updateInvestorPassword } from '../services/tradingAccounts';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
-import { db } from '../firebase/config';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { DatabaseAdapter } from '../services/database.adapter';
 import CustomDropdown from './utils/CustomDropdown';
 import CustomTooltip from './utils/CustomTooltip';
 import useTranslation from '../hooks/useTranslation';
@@ -233,13 +232,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // --- Favorite Instruments Logic (from PipCalculator) ---
   useEffect(() => {
     if (currentUser) {
-      const userPrefsRef = doc(db, 'userPreferences', currentUser.uid);
-      getDoc(userPrefsRef).then(docSnap => {
-        if (docSnap.exists() && docSnap.data().favoritePipInstruments) {
-          setFavoriteInstruments(docSnap.data().favoritePipInstruments);
+      const userId = currentUser.uid || currentUser.id;
+      DatabaseAdapter.users.getById(userId).then(({ data, error }) => {
+        if (data && data.favorite_pip_instruments) {
+          setFavoriteInstruments(data.favorite_pip_instruments);
         }
       }).catch(error => {
-        console.error("Error fetching favorite instruments from Firestore:", error);
+        console.error("Error fetching favorite instruments:", error);
       });
     }
     return () => {
@@ -264,7 +263,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const toggleFavorite = async (instrumentValue) => {
     if (!currentUser) return; // Or handle local favorites for non-logged-in users
 
-    const userPrefsRef = doc(db, 'userPreferences', currentUser.uid);
+    const userId = currentUser.uid || currentUser.id;
     const isCurrentlyFavorite = favoriteInstruments.includes(instrumentValue);
 
     setFavoriteInstruments(prev =>
@@ -274,11 +273,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     );
 
     try {
-      if (isCurrentlyFavorite) {
-        await updateDoc(userPrefsRef, { favoritePipInstruments: arrayRemove(instrumentValue) });
-      } else {
-        await setDoc(userPrefsRef, { favoritePipInstruments: arrayUnion(instrumentValue) }, { merge: true });
-      }
+      const newFavorites = isCurrentlyFavorite 
+        ? favoriteInstruments.filter(i => i !== instrumentValue)
+        : [...favoriteInstruments, instrumentValue];
+      
+      await DatabaseAdapter.users.update(userId, { 
+        favorite_pip_instruments: newFavorites 
+      });
     } catch (error) {
       console.error("Error updating favorites in Firestore:", error);
       // Revert UI on error

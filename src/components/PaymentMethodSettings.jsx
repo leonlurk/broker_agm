@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { addPaymentMethod, deletePaymentMethod } from '../firebase/auth';
+import { AuthAdapter } from '../services/database.adapter';
 import { Trash2, PlusCircle } from 'lucide-react';
 
 const PaymentMethodSettings = ({ onBack }) => {
@@ -40,7 +40,7 @@ const PaymentMethodSettings = ({ onBack }) => {
       newMethod = { type: 'bank', alias, cbu, holderName, holderId };
     }
 
-    const result = await addPaymentMethod(currentUser.uid, newMethod);
+    const result = await AuthAdapter.addPaymentMethod(currentUser.uid, newMethod);
     if (result.success) {
       setFeedback({ message: 'Método de pago agregado con éxito.', type: 'success' });
       await refreshUserData(); // Refresh user data to get the new list
@@ -57,7 +57,7 @@ const PaymentMethodSettings = ({ onBack }) => {
 
   const handleDeleteMethod = async (method) => {
     if (window.confirm(`¿Estás seguro de que quieres eliminar el método "${method.alias}"?`)) {
-      const result = await deletePaymentMethod(currentUser.uid, method);
+      const result = await AuthAdapter.deletePaymentMethod(currentUser.uid, method);
       if (result.success) {
         setFeedback({ message: 'Método de pago eliminado con éxito.', type: 'success' });
         await refreshUserData();

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { registerUser } from '../firebase/auth';
+import { AuthAdapter } from '../services/database.adapter';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Register = ({ onLoginClick }) => {
@@ -48,7 +48,7 @@ const Register = ({ onLoginClick }) => {
     console.log("[Register] Calling registerUser function...");
     try {
       // Pass refId to registerUser
-      const { user, error } = await registerUser(username, email, password, refId); 
+      const { user, error } = await AuthAdapter.registerUser(username, email, password, refId); 
       
       if (error) {
         console.error("[Register] registerUser returned error:", error);

@@ -1,7 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { onAuthStateChange } from '../firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { db, auth } from '../firebase/config';
+import { AuthAdapter, DatabaseAdapter } from '../services/database.adapter';
 import { logger } from '../utils/logger';
 
 const AuthContext = createContext();
@@ -20,11 +18,10 @@ export const AuthProvider = ({ children }) => {
       setUserData(null);
       return;
     }
-    const userDocRef = doc(db, 'users', user.uid);
-    const userDocSnap = await getDoc(userDocRef);
-    if (userDocSnap.exists()) {
-      const fetchedData = userDocSnap.data();
-      setUserData(fetchedData);
+    const userId = user.uid || user.id;
+    const { data, error } = await DatabaseAdapter.users.getById(userId);
+    if (data && !error) {
+      setUserData(data);
     }
   };
 
@@ -38,30 +35,29 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     logger.auth("Setting up onAuthStateChange listener...");
-    const unsubscribe = onAuthStateChange(async (user) => {
+    const unsubscribe = AuthAdapter.onAuthStateChange(async (user) => {
       logger.auth("onAuthStateChange callback received", { userPresent: !!user });
       setCurrentUser(user);
       setUserData(null);
       
       if (user) {
-        logger.auth("User is authenticated and exists in users collection. Fetching Firestore data...");
+        logger.auth("User is authenticated and exists in users collection. Fetching data...");
         try {
-          const userDocRef = doc(db, 'users', user.uid);
-          const userDocSnap = await getDoc(userDocRef);
+          const userId = user.uid || user.id;
+          const { data, error } = await DatabaseAdapter.users.getById(userId);
           
-          if (userDocSnap.exists()) {
-            const fetchedData = userDocSnap.data();
-            logger.auth("Firestore data fetched successfully");
-            setUserData(fetchedData);
+          if (data && !error) {
+            logger.auth("User data fetched successfully");
+            setUserData(data);
           } else {
-            logger.error("Firestore document unexpectedly missing for authenticated user. Forcing sign out.");
-            await auth.signOut();
+            logger.error("User document unexpectedly missing for authenticated user. Forcing sign out.");
+            await AuthAdapter.logoutUser();
             setCurrentUser(null);
           }
         } catch (error) {
-          logger.error("Error fetching Firestore user data", error);
-          logger.warn("Signing out user due to Firestore fetch error.");
-          await auth.signOut();
+          logger.error("Error fetching user data", error);
+          logger.warn("Signing out user due to data fetch error.");
+          await AuthAdapter.logoutUser();
           setCurrentUser(null);
         }
       } else {
