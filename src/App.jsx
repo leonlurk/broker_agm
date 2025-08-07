@@ -9,6 +9,7 @@ import Dashboard from './Dashboard';
 import { useAuth } from './contexts/AuthContext';
 import { AuthAdapter } from './services/database.adapter';
 import { Toaster } from 'react-hot-toast';
+import TestSupabase from './components/TestSupabase';
 
 function App() {
   const { currentUser, isAuthenticated } = useAuth();
@@ -42,6 +43,7 @@ function App() {
 
   return (
     <>
+      <TestSupabase />
       <Routes>
         <Route 
           path="/login" 
