@@ -60,6 +60,8 @@ const Register = ({ onLoginClick }) => {
           friendlyError = 'La contraseña debe tener al menos 6 caracteres.';
         } else if (error.code === 'auth/invalid-email') {
           friendlyError = 'El formato del correo electrónico no es válido.';
+        } else if (error.code === 'USERNAME_EXISTS') {
+          friendlyError = 'El nombre de usuario ya está en uso. Por favor, elige otro.';
         } else if (error.message) {
           // Use the message from the error if available (like permission denied)
           friendlyError = error.message;

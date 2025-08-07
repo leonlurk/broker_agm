@@ -8,68 +8,60 @@ import { logger } from '../utils/logger';
 const USERS_TABLE = 'profiles';
 
 /**
+ * Check if username is available
+ */
+export const checkUsernameAvailable = async (username) => {
+  try {
+    const { data, error } = await supabase
+      .from(USERS_TABLE)
+      .select('id')
+      .eq('username', username)
+      .single();
+    
+    // If we get PGRST116 error (no rows), username is available
+    if (error && error.code === 'PGRST116') {
+      return { available: true };
+    }
+    
+    // If we found a user or got another error
+    if (data || error) {
+      return { available: false };
+    }
+    
+    return { available: true };
+  } catch (error) {
+    logger.error('[Supabase] Error checking username availability', error);
+    return { available: false, error };
+  }
+};
+
+/**
  * Register a new broker user
  * Mirrors Firebase registerUser function
  */
 export const registerUser = async (username, email, password, refId = null) => {
   logger.auth(`[Supabase] Attempting registration for user`, { username, email: '[EMAIL_PROVIDED]', refId });
   
-  // Debug: Direct API test
-  try {
-    const testUrl = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/health`;
-    logger.auth(`[Supabase] Debug - Testing direct API health check at: ${testUrl}`);
-    
-    const healthResponse = await fetch(testUrl, {
-      headers: {
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    logger.auth(`[Supabase] Debug - Health check response:`, {
-      status: healthResponse.status,
-      statusText: healthResponse.statusText,
-      ok: healthResponse.ok
-    });
-  } catch (fetchError) {
-    logger.error(`[Supabase] Debug - Direct API test failed:`, {
-      message: fetchError.message,
-      type: fetchError.constructor.name
-    });
-  }
   
   try {
-    // Debug: Log what we're about to send
-    logger.auth(`[Supabase] Debug - Request details:`, {
-      email: email,
-      passwordLength: password?.length,
-      supabaseClientExists: !!supabase,
-      authClientExists: !!supabase.auth,
-      signUpMethodExists: typeof supabase.auth.signUp
-    });
-
-    // Debug: Test if we can reach Supabase at all
-    logger.auth(`[Supabase] Debug - Testing basic connection...`);
-    try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      logger.auth(`[Supabase] Debug - Session check:`, { 
-        hasSession: !!sessionData?.session,
-        sessionError: sessionError?.message || 'none'
-      });
-    } catch (connError) {
-      logger.error(`[Supabase] Debug - Connection test failed:`, connError);
+    // First check if username is available
+    logger.auth(`[Supabase] Checking username availability for: ${username}`);
+    const { available } = await checkUsernameAvailable(username);
+    
+    if (!available) {
+      logger.auth(`[Supabase] Username "${username}" is already taken`);
+      return { 
+        user: null, 
+        error: { 
+          message: 'El nombre de usuario ya está en uso. Por favor, elige otro.',
+          code: 'USERNAME_EXISTS'
+        } 
+      };
     }
     
-    // Debug: Log the exact Supabase URL and key being used
-    logger.auth(`[Supabase] Debug - Configuration:`, {
-      url: import.meta.env.VITE_SUPABASE_URL,
-      keyPrefix: import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 30) + '...',
-      keyLength: import.meta.env.VITE_SUPABASE_ANON_KEY?.length,
-      provider: import.meta.env.VITE_DATABASE_PROVIDER
-    });
-    
-    // Step 1: Sign up with Supabase Auth (simplified for debugging)
-    logger.auth(`[Supabase] Debug - Calling signUp with email: ${email}`);
+    logger.auth(`[Supabase] Username "${username}" is available, proceeding with registration`);
+    // Step 1: Sign up with Supabase Auth
+    logger.auth(`[Supabase] Calling signUp with email: ${email}`);
     
     let authData, authError;
     try {
@@ -78,54 +70,51 @@ export const registerUser = async (username, email, password, refId = null) => {
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin,
           data: {
             username: username,
-            display_name: username
+            full_name: username // Use full_name which the trigger expects
           }
         }
       };
       
-      logger.auth(`[Supabase] Debug - Signup options:`, {
-        email,
-        hasPassword: !!password,
-        passwordLength: password?.length,
-        optionsProvided: true,
-        redirectTo: window.location.origin
-      });
+      logger.auth(`[Supabase] Signup metadata:`, signUpOptions.options.data);
       
       const response = await supabase.auth.signUp(signUpOptions);
       authData = response.data;
       authError = response.error;
       
-      // Additional debug for response
-      logger.auth(`[Supabase] Debug - Raw response received:`, {
-        hasData: !!response.data,
-        hasError: !!response.error,
-        dataKeys: response.data ? Object.keys(response.data) : [],
-        errorType: response.error ? response.error.constructor.name : 'none'
-      });
+      // Log response summary
+      if (response.error) {
+        logger.auth(`[Supabase] Signup error:`, response.error.message);
+      } else if (response.data?.user) {
+        logger.auth(`[Supabase] Signup successful for user:`, response.data.user.id);
+      }
     } catch (signupException) {
-      logger.error(`[Supabase] Debug - SignUp threw exception:`, {
-        message: signupException.message,
-        stack: signupException.stack,
-        name: signupException.name,
-        fullError: JSON.stringify(signupException, null, 2)
-      });
+      logger.error(`[Supabase] SignUp exception:`, signupException.message);
       throw signupException;
     }
     
-    logger.auth(`[Supabase] Debug - Signup response:`, { 
-      hasData: !!authData,
-      hasUser: !!authData?.user,
-      userId: authData?.user?.id,
-      hasError: !!authError,
-      errorMessage: authError?.message,
-      errorStatus: authError?.status,
-      errorCode: authError?.code
-    });
+    // Log result
+    if (authError) {
+      logger.auth(`[Supabase] Signup failed:`, authError.message);
+    } else if (authData?.user) {
+      logger.auth(`[Supabase] Auth user created successfully:`, authData.user.id);
+    }
 
-    if (authError) throw authError;
+    if (authError) {
+      // Check if it's a database error (likely username constraint)
+      if (authError.message?.includes('Database error')) {
+        logger.error('[Supabase] Database error - likely username already exists');
+        return {
+          user: null,
+          error: {
+            message: 'El nombre de usuario ya está en uso. Por favor, elige otro.',
+            code: 'USERNAME_EXISTS'
+          }
+        };
+      }
+      throw authError;
+    }
     
     const user = authData.user;
     logger.auth(`[Supabase] Auth user created successfully`, { uid: user.id });
