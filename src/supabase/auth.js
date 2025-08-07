@@ -4,8 +4,8 @@
 import { supabase } from './config';
 import { logger } from '../utils/logger';
 
-// Unified collection/table name
-const USERS_TABLE = 'users';
+// Unified collection/table name - Using existing 'profiles' table
+const USERS_TABLE = 'profiles';
 
 /**
  * Register a new broker user
@@ -130,30 +130,36 @@ export const registerUser = async (username, email, password, refId = null) => {
     const user = authData.user;
     logger.auth(`[Supabase] Auth user created successfully`, { uid: user.id });
     
-    // Step 2: Create user profile in database
+    // Step 2: Update user profile in database (profile already created by trigger)
+    // The profiles table is auto-populated by Supabase trigger
+    // We just need to update it with additional fields
     const userData = {
-      id: user.id, // In Supabase, we use 'id' instead of 'uid'
       username,
-      email,
-      display_name: username,
-      created_time: new Date().toISOString(),
-      user_type: 'broker',
-      referral_count: 0,
-      referred_by: refId
+      full_name: username, // Use full_name instead of display_name
+      phone: null,
+      country: null,
+      metadata: {
+        user_type: 'broker',
+        referral_count: 0,
+        referred_by: refId,
+        display_name: username
+      }
     };
 
+    // Update the auto-created profile instead of inserting
     const { error: dbError } = await supabase
       .from(USERS_TABLE)
-      .insert([userData]);
+      .update(userData)
+      .eq('id', user.id);
 
     if (dbError) {
-      logger.error('[Supabase] Error creating user profile', dbError);
-      // Rollback: delete auth user if profile creation fails
-      await supabase.auth.admin.deleteUser(user.id);
+      logger.error('[Supabase] Error updating user profile', dbError);
+      // Note: We don't delete the auth user since profile was auto-created
+      // The user can still login and update their profile later
       throw dbError;
     }
 
-    logger.auth(`[Supabase] User profile created successfully`);
+    logger.auth(`[Supabase] User profile updated successfully`);
     
     return { user, error: null };
   } catch (error) {
@@ -366,7 +372,7 @@ export const getCurrentUser = async () => {
 };
 
 /**
- * Check if user exists in the users table
+ * Check if user exists in the profiles table
  * Mirrors Firebase isBrokerUser function
  */
 export const isBrokerUser = async (userId) => {
@@ -380,7 +386,7 @@ export const isBrokerUser = async (userId) => {
   try {
     const { data, error } = await supabase
       .from(USERS_TABLE)
-      .select('id')
+      .select('id, role, status')
       .eq('id', userId)
       .single();
     
@@ -388,8 +394,9 @@ export const isBrokerUser = async (userId) => {
       throw error;
     }
     
-    const exists = !!data;
-    logger.auth(`[Supabase] User ${exists ? 'found' : 'NOT found'}`);
+    // Check if user exists and is active
+    const exists = !!data && data.status === 'active';
+    logger.auth(`[Supabase] User ${exists ? 'found and active' : 'NOT found or inactive'}`);
     return exists;
   } catch (error) {
     logger.error(`[Supabase] Error checking user existence`, error);
@@ -446,23 +453,29 @@ export const onAuthStateChange = (callback) => {
  */
 export const addPaymentMethod = async (userId, newMethod) => {
   try {
-    // First get current payment methods
+    // First get current metadata
     const { data: userData, error: fetchError } = await supabase
       .from(USERS_TABLE)
-      .select('payment_methods')
+      .select('metadata')
       .eq('id', userId)
       .single();
     
     if (fetchError) throw fetchError;
     
-    const currentMethods = userData.payment_methods || [];
+    const currentMetadata = userData.metadata || {};
+    const currentMethods = currentMetadata.payment_methods || [];
     const methodWithId = { ...newMethod, id: `pm_${Date.now()}` };
     const updatedMethods = [...currentMethods, methodWithId];
     
-    // Update with new array
+    // Update metadata with new payment methods
     const { error: updateError } = await supabase
       .from(USERS_TABLE)
-      .update({ payment_methods: updatedMethods })
+      .update({ 
+        metadata: {
+          ...currentMetadata,
+          payment_methods: updatedMethods
+        }
+      })
       .eq('id', userId);
     
     if (updateError) throw updateError;
@@ -481,22 +494,28 @@ export const addPaymentMethod = async (userId, newMethod) => {
  */
 export const deletePaymentMethod = async (userId, methodToDelete) => {
   try {
-    // First get current payment methods
+    // First get current metadata
     const { data: userData, error: fetchError } = await supabase
       .from(USERS_TABLE)
-      .select('payment_methods')
+      .select('metadata')
       .eq('id', userId)
       .single();
     
     if (fetchError) throw fetchError;
     
-    const currentMethods = userData.payment_methods || [];
+    const currentMetadata = userData.metadata || {};
+    const currentMethods = currentMetadata.payment_methods || [];
     const updatedMethods = currentMethods.filter(method => method.id !== methodToDelete.id);
     
-    // Update with filtered array
+    // Update metadata with filtered payment methods
     const { error: updateError } = await supabase
       .from(USERS_TABLE)
-      .update({ payment_methods: updatedMethods })
+      .update({ 
+        metadata: {
+          ...currentMetadata,
+          payment_methods: updatedMethods
+        }
+      })
       .eq('id', userId);
     
     if (updateError) throw updateError;

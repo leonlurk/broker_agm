@@ -229,7 +229,7 @@ export const DatabaseAdapter = {
     // Query users
     query: async (filters = {}) => {
       if (DATABASE_PROVIDER === 'supabase') {
-        let query = supabase.from('users').select('*');
+        let query = supabase.from('profiles').select('*'); // Using existing profiles table
         
         // Apply filters
         Object.entries(filters).forEach(([key, value]) => {

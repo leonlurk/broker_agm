@@ -32,19 +32,19 @@ export const createTradingAccount = async (userId, accountData) => {
     // Generate account number
     const accountNumber = generateAccountNumber();
 
-    // Prepare account data
+    // Prepare account data - matching existing schema
     const newAccount = {
-      userId,
-      accountNumber,
-      accountName: accountData.accountName,
-      accountType: accountData.accountType, // 'DEMO' or 'Real'
-      accountTypeSelection: accountData.accountTypeSelection, // 'Zero Spread' or 'Standard'
+      user_id: userId, // Changed from userId to user_id
+      account_number: accountNumber, // Changed from accountNumber to account_number
+      account_name: accountData.accountName, // Changed from accountName to account_name
+      account_type: accountData.accountType, // 'DEMO' or 'Real'
+      account_type_selection: accountData.accountTypeSelection, // 'Zero Spread' or 'Standard' - changed from accountTypeSelection
       leverage: accountData.leverage,
       balance: accountData.accountType === 'DEMO' ? 10000 : 0, // Demo starts with $10,000
       equity: accountData.accountType === 'DEMO' ? 10000 : 0,
       margin: 0,
-      freeMargin: accountData.accountType === 'DEMO' ? 10000 : 0,
-      marginLevel: 0,
+      free_margin: accountData.accountType === 'DEMO' ? 10000 : 0, // Changed from freeMargin to free_margin
+      margin_level: 0, // Changed from marginLevel to margin_level
       currency: 'USD',
       server: 'AGM-Server',
       platform: 'MetaTrader 5',
