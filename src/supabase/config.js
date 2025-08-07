@@ -6,6 +6,14 @@ import { logger } from '../utils/logger';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Debug: Log the actual values (partially masked for security)
+logger.info('[Supabase Config] Loading configuration...', {
+  url: supabaseUrl,
+  keyPrefix: supabaseAnonKey ? supabaseAnonKey.substring(0, 20) + '...' : 'MISSING',
+  keyLength: supabaseAnonKey ? supabaseAnonKey.length : 0,
+  envMode: import.meta.env.MODE
+});
+
 // Validate configuration
 if (!supabaseUrl || !supabaseAnonKey) {
   logger.error('Supabase configuration missing', { 
@@ -23,7 +31,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     storage: window.localStorage,
     storageKey: 'agm-broker-auth',
-    flowType: 'pkce'
+    flowType: 'implicit' // Changed from 'pkce' to 'implicit' for simpler auth flow
   },
   db: {
     schema: 'public'
@@ -34,6 +42,31 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     }
   }
 });
+
+// Debug: Test the connection immediately
+(async () => {
+  try {
+    logger.info('[Supabase Config] Testing connection to Supabase...');
+    
+    // Try to fetch from a public endpoint
+    const { data, error } = await supabase
+      .from('users')
+      .select('count', { count: 'exact', head: true });
+    
+    if (error) {
+      logger.error('[Supabase Config] Connection test failed:', {
+        error: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+    } else {
+      logger.info('[Supabase Config] Connection test successful');
+    }
+  } catch (e) {
+    logger.error('[Supabase Config] Connection test exception:', e);
+  }
+})();
 
 // Export auth and storage helpers for convenience
 export const supabaseAuth = supabase.auth;

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Connection</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test Supabase Connection</h1>
+    <div id="output"></div>
+    
+    <script>
+        const SUPABASE_URL = 'https://ukngiipxprielwdfuvln.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbmdpaXB4cHJpZWx3ZGZ1dmxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxOTYxMTksImV4cCI6MjA2OTc3MjExOX0.hetsRCLnf4ovhK2GAd3F3Fa8rnVNoSGu1ldaYvYIEJY';
+        
+        const output = document.getElementById('output');
+        
+        function log(message, data = null) {
+            const p = document.createElement('p');
+            p.innerHTML = `<strong>${message}</strong>`;
+            if (data) {
+                p.innerHTML += '<br>' + JSON.stringify(data, null, 2);
+            }
+            output.appendChild(p);
+        }
+        
+        async function testSupabase() {
+            log('Creating Supabase client...');
+            
+            try {
+                const { createClient } = supabase;
+                const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                log('Client created successfully');
+                
+                // Test 1: Get session
+                log('Testing getSession...');
+                const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+                log('Session test result:', { hasSession: !!sessionData?.session, error: sessionError?.message || 'none' });
+                
+                // Test 2: Health check
+                log('Testing health endpoint...');
+                const healthResponse = await fetch(`${SUPABASE_URL}/auth/v1/health`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                log('Health check response:', { 
+                    status: healthResponse.status, 
+                    statusText: healthResponse.statusText 
+                });
+                
+                // Test 3: Try signup
+                const testEmail = `test${Date.now()}@example.com`;
+                const testPassword = 'TestPassword123!';
+                
+                log(`Testing signup with email: ${testEmail}`);
+                const { data: signupData, error: signupError } = await supabaseClient.auth.signUp({
+                    email: testEmail,
+                    password: testPassword
+                });
+                
+                if (signupError) {
+                    log('Signup error:', {
+                        message: signupError.message,
+                        status: signupError.status,
+                        code: signupError.code
+                    });
+                } else {
+                    log('Signup successful!', {
+                        userId: signupData.user?.id,
+                        email: signupData.user?.email
+                    });
+                }
+                
+            } catch (error) {
+                log('ERROR:', {
+                    message: error.message,
+                    stack: error.stack
+                });
+            }
+        }
+        
+        // Run test
+        testSupabase();
+    </script>
+</body>
+</html>

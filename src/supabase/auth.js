@@ -14,15 +14,115 @@ const USERS_TABLE = 'users';
 export const registerUser = async (username, email, password, refId = null) => {
   logger.auth(`[Supabase] Attempting registration for user`, { username, email: '[EMAIL_PROVIDED]', refId });
   
+  // Debug: Direct API test
   try {
-    // Debug: Log the Supabase client configuration
-    logger.auth(`[Supabase] Debug - Using URL: ${supabase.supabaseUrl}`);
-    logger.auth(`[Supabase] Debug - Auth endpoint: ${supabase.supabaseUrl}/auth/v1/signup`);
+    const testUrl = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/health`;
+    logger.auth(`[Supabase] Debug - Testing direct API health check at: ${testUrl}`);
+    
+    const healthResponse = await fetch(testUrl, {
+      headers: {
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    logger.auth(`[Supabase] Debug - Health check response:`, {
+      status: healthResponse.status,
+      statusText: healthResponse.statusText,
+      ok: healthResponse.ok
+    });
+  } catch (fetchError) {
+    logger.error(`[Supabase] Debug - Direct API test failed:`, {
+      message: fetchError.message,
+      type: fetchError.constructor.name
+    });
+  }
+  
+  try {
+    // Debug: Log what we're about to send
+    logger.auth(`[Supabase] Debug - Request details:`, {
+      email: email,
+      passwordLength: password?.length,
+      supabaseClientExists: !!supabase,
+      authClientExists: !!supabase.auth,
+      signUpMethodExists: typeof supabase.auth.signUp
+    });
+
+    // Debug: Test if we can reach Supabase at all
+    logger.auth(`[Supabase] Debug - Testing basic connection...`);
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      logger.auth(`[Supabase] Debug - Session check:`, { 
+        hasSession: !!sessionData?.session,
+        sessionError: sessionError?.message || 'none'
+      });
+    } catch (connError) {
+      logger.error(`[Supabase] Debug - Connection test failed:`, connError);
+    }
+    
+    // Debug: Log the exact Supabase URL and key being used
+    logger.auth(`[Supabase] Debug - Configuration:`, {
+      url: import.meta.env.VITE_SUPABASE_URL,
+      keyPrefix: import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 30) + '...',
+      keyLength: import.meta.env.VITE_SUPABASE_ANON_KEY?.length,
+      provider: import.meta.env.VITE_DATABASE_PROVIDER
+    });
     
     // Step 1: Sign up with Supabase Auth (simplified for debugging)
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password
+    logger.auth(`[Supabase] Debug - Calling signUp with email: ${email}`);
+    
+    let authData, authError;
+    try {
+      // Try with additional options for better error debugging
+      const signUpOptions = {
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            username: username,
+            display_name: username
+          }
+        }
+      };
+      
+      logger.auth(`[Supabase] Debug - Signup options:`, {
+        email,
+        hasPassword: !!password,
+        passwordLength: password?.length,
+        optionsProvided: true,
+        redirectTo: window.location.origin
+      });
+      
+      const response = await supabase.auth.signUp(signUpOptions);
+      authData = response.data;
+      authError = response.error;
+      
+      // Additional debug for response
+      logger.auth(`[Supabase] Debug - Raw response received:`, {
+        hasData: !!response.data,
+        hasError: !!response.error,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        errorType: response.error ? response.error.constructor.name : 'none'
+      });
+    } catch (signupException) {
+      logger.error(`[Supabase] Debug - SignUp threw exception:`, {
+        message: signupException.message,
+        stack: signupException.stack,
+        name: signupException.name,
+        fullError: JSON.stringify(signupException, null, 2)
+      });
+      throw signupException;
+    }
+    
+    logger.auth(`[Supabase] Debug - Signup response:`, { 
+      hasData: !!authData,
+      hasUser: !!authData?.user,
+      userId: authData?.user?.id,
+      hasError: !!authError,
+      errorMessage: authError?.message,
+      errorStatus: authError?.status,
+      errorCode: authError?.code
     });
 
     if (authError) throw authError;
