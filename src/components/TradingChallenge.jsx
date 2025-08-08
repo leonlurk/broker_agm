@@ -17,6 +17,7 @@ export default function TradingChallengeUI() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [mt5Credentials, setMt5Credentials] = useState(null);
 
   const leverageOptions = ['1:50', '1:100', '1:200', '1:500', '1:1000'];
 
@@ -61,6 +62,11 @@ export default function TradingChallengeUI() {
       if (result.success) {
         setSuccess(`¡Cuenta creada exitosamente! Número de cuenta: ${result.accountNumber}`);
         
+        // Store MT5 credentials if available
+        if (result.mt5Credentials) {
+          setMt5Credentials(result.mt5Credentials);
+        }
+        
         // Crear notificación
         notifyAccountCreated(accountName.trim(), `${accountType} - ${accountTypeSelection}`);
         
@@ -95,7 +101,35 @@ export default function TradingChallengeUI() {
               {/* Success/Error Messages */}
               {success && (
                 <div className="mb-6 p-4 bg-green-900/20 border border-green-500 rounded-lg">
-                  <p className="text-green-400 text-sm md:text-base">{success}</p>
+                  <p className="text-green-400 text-sm md:text-base mb-3">{success}</p>
+                  
+                  {/* MT5 Credentials Display */}
+                  {mt5Credentials && (
+                    <div className="mt-4 p-3 bg-black/30 rounded-lg">
+                      <p className="text-cyan-400 font-semibold mb-2">Credenciales MT5:</p>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Login:</span>
+                          <span className="text-white font-mono">{mt5Credentials.login}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Contraseña:</span>
+                          <span className="text-white font-mono">{mt5Credentials.password}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Contraseña Investor:</span>
+                          <span className="text-white font-mono">{mt5Credentials.investor_password}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Servidor:</span>
+                          <span className="text-white">{mt5Credentials.server || 'AGM-Server'}</span>
+                        </div>
+                      </div>
+                      <p className="text-yellow-400 text-xs mt-3">
+                        ⚠️ Guarde estas credenciales de forma segura. No podrán ser recuperadas posteriormente.
+                      </p>
+                    </div>
+                  )}
               </div>
               )}
               

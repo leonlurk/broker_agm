@@ -1,5 +1,7 @@
 import { DatabaseAdapter } from './database.adapter';
 import { logger } from '../utils/logger';
+import { createMT5Account } from './mt5Api';
+import { getCurrentUser } from '../supabase/config';
 
 // Collection name for trading accounts
 const TRADING_ACCOUNTS_COLLECTION = "trading_accounts";
@@ -29,26 +31,45 @@ export const createTradingAccount = async (userId, accountData) => {
       throw new Error('Ya existe una cuenta con este nombre');
     }
 
-    // Generate account number
-    const accountNumber = generateAccountNumber();
+    // Get current user email for MT5 account
+    const currentUser = await getCurrentUser();
+    const userEmail = currentUser?.email || '';
+
+    // First, create the MT5 account
+    const mt5Result = await createMT5Account(userId, {
+      ...accountData,
+      email: userEmail
+    });
+
+    if (!mt5Result.success) {
+      throw new Error(mt5Result.error || 'Error creating MT5 account');
+    }
+
+    // Use MT5 login as account number
+    const accountNumber = mt5Result.data.login?.toString() || generateAccountNumber();
 
     // Prepare account data - matching existing schema
     const newAccount = {
       user_id: userId, // Changed from userId to user_id
-      account_number: accountNumber, // Changed from accountNumber to account_number
+      account_number: accountNumber, // MT5 login number
       account_name: accountData.accountName, // Changed from accountName to account_name
       account_type: accountData.accountType, // 'DEMO' or 'Real'
       account_type_selection: accountData.accountTypeSelection, // 'Zero Spread' or 'Standard' - changed from accountTypeSelection
-      leverage: accountData.leverage,
-      balance: accountData.accountType === 'DEMO' ? 10000 : 0, // Demo starts with $10,000
-      equity: accountData.accountType === 'DEMO' ? 10000 : 0,
+      leverage: mt5Result.data.leverage || accountData.leverage,
+      balance: mt5Result.data.balance || (accountData.accountType === 'DEMO' ? 10000 : 0),
+      equity: mt5Result.data.balance || (accountData.accountType === 'DEMO' ? 10000 : 0),
       margin: 0,
-      free_margin: accountData.accountType === 'DEMO' ? 10000 : 0, // Changed from freeMargin to free_margin
+      free_margin: mt5Result.data.balance || (accountData.accountType === 'DEMO' ? 10000 : 0),
       margin_level: 0, // Changed from marginLevel to margin_level
       currency: 'USD',
-      server: 'AGM-Server',
+      server: mt5Result.data.server || 'AGM-Server',
       platform: 'MetaTrader 5',
       status: 'Active',
+      // Store MT5 credentials
+      mt5_login: mt5Result.data.login,
+      mt5_password: mt5Result.data.password, // Should be encrypted in production
+      mt5_investor_password: mt5Result.data.investor_password,
+      mt5_group: mt5Result.data.group,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -60,6 +81,7 @@ export const createTradingAccount = async (userId, accountData) => {
     logger.info('Trading account created successfully', { 
       accountId: createdAccount.id, 
       accountNumber,
+      mt5Login: mt5Result.data.login,
       accountType: accountData.accountType 
     });
 
@@ -67,7 +89,13 @@ export const createTradingAccount = async (userId, accountData) => {
       success: true,
       accountId: createdAccount.id,
       accountNumber,
-      data: createdAccount
+      data: createdAccount,
+      mt5Credentials: {
+        login: mt5Result.data.login,
+        password: mt5Result.data.password,
+        investor_password: mt5Result.data.investor_password,
+        server: mt5Result.data.server
+      }
     };
 
   } catch (error) {
