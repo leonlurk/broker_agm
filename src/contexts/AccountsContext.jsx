@@ -66,8 +66,8 @@ export const AccountsProvider = ({ children }) => {
       if (result.success) {
         // Organizar cuentas por categoría
         const organizedAccounts = {
-          [ACCOUNT_CATEGORIES.REAL]: result.accounts.filter(acc => acc.accountType === 'Real'),
-          [ACCOUNT_CATEGORIES.DEMO]: result.accounts.filter(acc => acc.accountType === 'DEMO'),
+          [ACCOUNT_CATEGORIES.REAL]: result.accounts.filter(acc => acc.account_type === 'Real'),
+          [ACCOUNT_CATEGORIES.DEMO]: result.accounts.filter(acc => acc.account_type === 'DEMO'),
           [ACCOUNT_CATEGORIES.COPYTRADING]: [], // Se llenarán con datos reales después
           [ACCOUNT_CATEGORIES.PAMM]: [] // Se llenarán con datos reales después
         };

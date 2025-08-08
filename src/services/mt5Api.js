@@ -28,9 +28,19 @@ mt5Api.interceptors.request.use(
       const session = await getSession();
       if (session?.access_token) {
         config.headers.Authorization = `Bearer ${session.access_token}`;
+      } else if (import.meta.env.DEV) {
+        // In development mode, create a fake JWT token for testing
+        logger.warn('[MT5 API] Using development JWT token');
+        const fakeToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInN1YiI6ImRlbW8tdXNlci1pZCIsImVtYWlsIjoiZGVtb0BleGFtcGxlLmNvbSIsInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiaWF0IjoxNjAwMDAwMDAwLCJleHAiOjk5OTk5OTk5OTl9.fake_signature';
+        config.headers.Authorization = `Bearer ${fakeToken}`;
       }
     } catch (error) {
       logger.error('[MT5 API] Error getting session for request', error);
+      if (import.meta.env.DEV) {
+        // Fallback to demo token in development
+        const fakeToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInN1YiI6ImRlbW8tdXNlci1pZCIsImVtYWlsIjoiZGVtb0BleGFtcGxlLmNvbSIsInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiaWF0IjoxNjAwMDAwMDAwLCJleHAiOjk5OTk5OTk5OTl9.fake_signature';
+        config.headers.Authorization = `Bearer ${fakeToken}`;
+      }
     }
     return config;
   },
@@ -105,7 +115,9 @@ export const createMT5Account = async (userId, accountData) => {
       email: accountData.email || '',
       group: group,
       leverage: parseInt(accountData.leverage) || 100,
-      account_type: accountData.accountType?.toLowerCase() === 'demo' ? 'demo' : 'real'
+      account_type: accountData.accountType?.toLowerCase() === 'demo' ? 'demo' : 'real',
+      // Set initial deposit - only add deposit if specifically provided
+      ...(accountData.initialBalance && { deposit: parseFloat(accountData.initialBalance) })
     };
 
     logger.info('[MT5 API] Request data', requestData);
@@ -121,9 +133,9 @@ export const createMT5Account = async (userId, accountData) => {
     return {
       success: true,
       data: {
-        login: response.data.login,
-        password: response.data.password,
-        investor_password: response.data.investor_password,
+        login: response.data.account_login, // Backend retorna account_login
+        password: response.data.account_password, // Backend retorna account_password
+        investor_password: response.data.account_investor_password, // Backend retorna account_investor_password
         server: response.data.server || 'AGM-Server',
         group: response.data.group,
         leverage: response.data.leverage,

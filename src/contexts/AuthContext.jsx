@@ -35,13 +35,22 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     logger.auth("Setting up onAuthStateChange listener...");
+    
+    // Add a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        logger.warn("Auth check timeout - forcing loading to false");
+        setLoading(false);
+      }
+    }, 5000); // 5 second timeout
+    
     const unsubscribe = AuthAdapter.onAuthStateChange(async (user) => {
       logger.auth("onAuthStateChange callback received", { userPresent: !!user });
       setCurrentUser(user);
       setUserData(null);
       
       if (user) {
-        logger.auth("User is authenticated and exists in users collection. Fetching data...");
+        logger.auth("User is authenticated. Fetching data...");
         try {
           const userId = user.uid || user.id;
           const { data, error } = await DatabaseAdapter.users.getById(userId);
@@ -49,16 +58,35 @@ export const AuthProvider = ({ children }) => {
           if (data && !error) {
             logger.auth("User data fetched successfully");
             setUserData(data);
+          } else if (error) {
+            // Don't sign out on error, just use minimal data
+            logger.warn("Error fetching user profile, using minimal data", error);
+            setUserData({ 
+              id: userId, 
+              email: user.email,
+              username: user.email?.split('@')[0] || 'user',
+              created_at: new Date().toISOString()
+            });
           } else {
-            logger.error("User document unexpectedly missing for authenticated user. Forcing sign out.");
-            await AuthAdapter.logoutUser();
-            setCurrentUser(null);
+            // User not in database yet, create minimal data
+            logger.warn("User profile not found, creating minimal data");
+            setUserData({ 
+              id: userId, 
+              email: user.email,
+              username: user.email?.split('@')[0] || 'user',
+              created_at: new Date().toISOString()
+            });
           }
         } catch (error) {
           logger.error("Error fetching user data", error);
-          logger.warn("Signing out user due to data fetch error.");
-          await AuthAdapter.logoutUser();
-          setCurrentUser(null);
+          // Don't sign out, just use minimal data
+          const userId = user.uid || user.id;
+          setUserData({ 
+            id: userId, 
+            email: user.email,
+            username: user.email?.split('@')[0] || 'user',
+            created_at: new Date().toISOString()
+          });
         }
       } else {
         logger.auth("No authenticated user after onAuthStateChange callback.");
@@ -66,10 +94,12 @@ export const AuthProvider = ({ children }) => {
       
       logger.auth("Setting loading to false.");
       setLoading(false);
+      clearTimeout(loadingTimeout);
     });
 
     return () => {
       logger.auth("Unsubscribing from onAuthStateChange.");
+      clearTimeout(loadingTimeout);
       unsubscribe();
     }
   }, []);

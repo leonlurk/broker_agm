@@ -1534,7 +1534,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     const credentials = [
       { label: 'Servidor MT5', value: selectedAccount.server || 'AGM-Server', field: 'Servidor' },
       { label: 'Contraseña Master', value: selectedAccount.masterPassword || 'MT5Pass123', field: 'Contraseña Master', isPassword: true, showKey: 'master' },
-      { label: 'Número de Cuenta', value: selectedAccount.accountNumber, field: 'Número de Cuenta' },
+      { label: 'Número de Cuenta', value: selectedAccount.account_number, field: 'Número de Cuenta' },
       { label: 'Contraseña Investor', value: selectedAccount.investorPassword, field: 'Contraseña Investor', isPassword: true, showKey: 'investor', canConfigure: true }
     ];
 
@@ -1663,12 +1663,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   {/* Account Info */}
                   <div className={isMobile ? 'text-center' : ''}>
                       <h3 className="text-base sm:text-lg font-bold text-white mb-1">
-                        {account.accountName || 'Cuenta sin nombre'} 
+                        {account.account_name || 'Cuenta sin nombre'} 
                         {isMobile && <br />}
-                        <span className="text-sm sm:text-base">(ID: {account.accountNumber || 'N/A'})</span>
+                        <span className="text-sm sm:text-base">(ID: {account.account_number || 'N/A'})</span>
                       </h3>
                     <div className={`${isMobile ? 'space-y-1' : 'flex items-center space-x-4'} text-xs sm:text-sm text-gray-400`}>
-                        <span>Tipo: {account.accountType || 'N/A'}</span>
+                        <span>Tipo: {account.account_type || 'N/A'}</span>
                         <span>Balance: ${(account.balance || 0).toFixed(2)}</span>
                         <span>Plataforma: {account.platform || 'MT5'}</span>
                     </div>
@@ -1774,10 +1774,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <div className="font-medium text-white text-sm sm:text-base">
                     {account.accountName || 'Cuenta sin nombre'} 
                     {isMobile && <br />}
-                    <span className="text-xs sm:text-sm">(ID: {account.accountNumber || 'N/A'})</span>
+                    <span className="text-xs sm:text-sm">(ID: {account.account_number || 'N/A'})</span>
                   </div>
                   <div className="text-xs text-gray-400 mt-1">
-                    {account.accountType || 'N/A'} • ${(account.balance || 0).toFixed(2)}
+                    {account.account_type || 'N/A'} • ${(account.balance || 0).toFixed(2)}
                   </div>
               </button>
               ))
@@ -1811,7 +1811,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm mb-4 sm:mb-6">
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">{selectedAccount.accountName} (ID: {selectedAccount.accountNumber})</span>
+                          <span className="text-gray-400">{selectedAccount.account_name} (ID: {selectedAccount.account_number})</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
@@ -1823,7 +1823,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">Tipo de cuenta: {selectedAccount.accountType || 'N/A'}</span>
+                          <span className="text-gray-400">Tipo de cuenta: {selectedAccount.account_type || 'N/A'}</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
@@ -1908,9 +1908,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     <div className="p-3 bg-[#0f0f0f] rounded-lg relative group">
                       <span className="text-gray-400 text-xs block mb-1">Número de Cuenta</span>
                       <div className="flex items-center justify-between">
-                        <div className="text-white font-medium">{selectedAccount.accountNumber}</div>
+                        <div className="text-white font-medium">{selectedAccount.account_number}</div>
                         <button
-                          onClick={() => copyToClipboard(selectedAccount.accountNumber, 'Número de Cuenta')}
+                          onClick={() => copyToClipboard(selectedAccount.account_number, 'Número de Cuenta')}
                           className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
                           title="Copiar número de cuenta"
                         >
@@ -2183,7 +2183,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <CustomTooltip content="La suma total de todos los fondos que has depositado en esta cuenta.">
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Depósitos Totales</h3>
-                <span className="text-xl font-bold">$10,000.00</span>
+                <span className="text-xl font-bold">${(getAllAccounts().find(acc => acc.id === selectedAccountId)?.balance || 0).toFixed(2)}</span>
               </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">

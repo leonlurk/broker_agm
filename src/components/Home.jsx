@@ -160,7 +160,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   };
 
   const handleDeposit = () => {
-    console.log("Deposit button clicked for account:", selectedAccount?.accountName);
+    console.log("Deposit button clicked for account:", selectedAccount?.account_name);
     const operationData = startWalletOperation(WOP.DEPOSIT, selectedAccount);
     if (setSelectedOption) {
       setSelectedOption("Wallet", operationData);
@@ -168,7 +168,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   };
 
   const handleWithdraw = () => {
-    console.log("Withdraw button clicked for account:", selectedAccount?.accountName);
+    console.log("Withdraw button clicked for account:", selectedAccount?.account_name);
     const operationData = startWalletOperation(WOP.WITHDRAW, selectedAccount);
     if (setSelectedOption) {
       setSelectedOption("Wallet", operationData);
@@ -176,7 +176,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   };
 
   const handleTransfer = () => {
-    console.log("Transfer button clicked for account:", selectedAccount?.accountName);
+    console.log("Transfer button clicked for account:", selectedAccount?.account_name);
     const operationData = startWalletOperation(WOP.TRANSFER, selectedAccount);
     if (setSelectedOption) {
       setSelectedOption("Wallet", operationData);
@@ -304,7 +304,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                 disabled={isLoading}
               >
                 <span className="truncate">
-                  {selectedAccount ? selectedAccount.accountName : t('withdrawal.selectAccount')}
+                  {selectedAccount ? selectedAccount.account_name : t('withdrawal.selectAccount')}
                 </span>
                 <img src='/Filter.svg' width={23} />
               </button>
@@ -325,7 +325,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                             onClick={() => handleWalletAccountSelect(account)}
                             className="w-full text-left px-2 py-1.5 rounded hover:bg-[#333] text-gray-300 hover:text-white block truncate"
                           >
-                                 {account.accountName} - ${(account.balance || 0).toFixed(2)}
+                                 {account.account_name} - ${(account.balance || 0).toFixed(2)}
                           </button>
                         ))}
                       </div>
@@ -341,7 +341,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
             <div className="space-y-1 pt-3">
               <h3 className="text-base text-gray-400">{t('accounts.accountNumber')}:</h3>
               <p className="text-lg font-medium text-white">
-                {selectedAccount?.accountNumber || t('common.selectAccount')}
+                {selectedAccount?.account_number || t('common.selectAccount')}
               </p>
             </div>
             <div className="space-y-1">
@@ -351,7 +351,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
               </p>
               {selectedAccount && (
                 <p className="text-sm text-gray-400">
-                  {selectedAccount.accountType} • {selectedAccount.accountTypeSelection}
+                  {selectedAccount.account_type} • {selectedAccount.account_type_selection}
                 </p>
               )}
             </div>
@@ -443,7 +443,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                  >
                    <div className="flex-grow">
                      <h3 className="text-xl font-bold text-white mb-1 uppercase">
-                           {account.accountName}
+                           {account.account_name}
                          </h3>
                      <p className="text-sm text-gray-300">{t('dashboard.totalBalance')}</p>
                      <div className="flex items-baseline gap-2 mb-4">

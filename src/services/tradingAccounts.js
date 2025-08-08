@@ -48,30 +48,21 @@ export const createTradingAccount = async (userId, accountData) => {
     // Use MT5 login as account number
     const accountNumber = mt5Result.data.login?.toString() || generateAccountNumber();
 
-    // Prepare account data - matching existing schema
+    // Prepare account data - matching existing schema (only columns that exist)
     const newAccount = {
       user_id: userId, // Changed from userId to user_id
       account_number: accountNumber, // MT5 login number
       account_name: accountData.accountName, // Changed from accountName to account_name
       account_type: accountData.accountType, // 'DEMO' or 'Real'
       account_type_selection: accountData.accountTypeSelection, // 'Zero Spread' or 'Standard' - changed from accountTypeSelection
-      leverage: mt5Result.data.leverage || accountData.leverage,
-      balance: mt5Result.data.balance || (accountData.accountType === 'DEMO' ? 10000 : 0),
-      equity: mt5Result.data.balance || (accountData.accountType === 'DEMO' ? 10000 : 0),
+      leverage: (mt5Result.data.leverage || accountData.leverage).toString(), // Convert to string as per schema
+      balance: mt5Result.data.balance || 0,
+      equity: mt5Result.data.balance || 0,
       margin: 0,
-      free_margin: mt5Result.data.balance || (accountData.accountType === 'DEMO' ? 10000 : 0),
-      margin_level: 0, // Changed from marginLevel to margin_level
-      currency: 'USD',
-      server: mt5Result.data.server || 'AGM-Server',
-      platform: 'MetaTrader 5',
-      status: 'Active',
-      // Store MT5 credentials
-      mt5_login: mt5Result.data.login,
-      mt5_password: mt5Result.data.password, // Should be encrypted in production
-      mt5_investor_password: mt5Result.data.investor_password,
-      mt5_group: mt5Result.data.group,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      free_margin: mt5Result.data.balance || 0
+      // Note: Removed mt5_login, mt5_password, mt5_investor_password, mt5_group, margin_level
+      // as these columns don't exist in the trading_accounts table
+      // The MT5 credentials are stored in broker_accounts table instead
     };
 
     // Add to database
