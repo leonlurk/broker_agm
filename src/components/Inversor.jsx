@@ -7,8 +7,9 @@ import CommentsRatingModal from './CommentsRatingModal';
 import { useAccounts } from '../contexts/AccountsContext';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import useTranslation from '../hooks/useTranslation';
+import { getMasterTraders, getMySubscriptions, getInvestorPortfolio } from '../services/copytradingService';
 
-// Mock data para el dashboard del inversor
+// Mock data para el dashboard del inversor (TEMPORAL - será reemplazado por datos reales)
 const mockPortfolioData = {
   totalBalance: 15250.75,
   totalPnL: 2100.50,
@@ -167,7 +168,12 @@ const Inversor = () => {
     followers: { min: '' },
     maxDrawdown: { max: '' }
   });
-  const [filteredTraders, setFilteredTraders] = useState(mockTradersForExplorer);
+  const [filteredTraders, setFilteredTraders] = useState([]);
+  const [realTraders, setRealTraders] = useState([]);
+  const [isLoadingTraders, setIsLoadingTraders] = useState(true);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [portfolioData, setPortfolioData] = useState(mockPortfolioData); // Temporal hasta tener endpoint de portfolio
+  const [historicalData, setHistoricalData] = useState(mockHistoricalData);
   
   // Estados para el modal de seguir trader
   const [showSeguirModal, setShowSeguirModal] = useState(false);
@@ -194,6 +200,125 @@ const Inversor = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [view, selectedTrader]);
+
+  // Cargar datos reales de la API
+  useEffect(() => {
+    const fetchTradersData = async () => {
+      try {
+        setIsLoadingTraders(true);
+        // Cargar traders, suscripciones y portfolio en paralelo
+        const [tradersData, subsData, portfolioApiData] = await Promise.all([
+          getMasterTraders(),
+          getMySubscriptions(),
+          getInvestorPortfolio().catch(() => null) // No fallar si portfolio endpoint no está disponible
+        ]);
+        
+        // Formatear los traders para el componente
+        const formattedTraders = tradersData.map(trader => ({
+          id: trader.id,
+          name: trader.name || trader.username || 'Trader',
+          avatar: trader.photo_url || '/Avatar1.png',
+          monthlyPerformance: trader.performance?.monthly_pnl_percentage || 0,
+          riskLevel: trader.risk_level || 'Moderado',
+          aum: trader.aum || 0,
+          followers: trader.follower_count || 0,
+          maxDrawdown: trader.max_drawdown || 0,
+          winRate: trader.win_rate || 0,
+          avgHoldTime: trader.avg_hold_time || 'N/A',
+          rating: trader.rating || 0,
+          strategy: trader.strategy || 'N/A',
+          isVerified: trader.is_verified || false
+        }));
+        
+        setRealTraders(formattedTraders);
+        setFilteredTraders(formattedTraders);
+        
+        // Usar portfolio data del API si está disponible
+        if (portfolioApiData) {
+          const currentBalance = portfolioApiData.total_balance || 0;
+          
+          setPortfolioData({
+            totalBalance: currentBalance,
+            totalPnL: portfolioApiData.total_pnl || 0,
+            totalPnLPercentage: portfolioApiData.total_pnl_percentage || 0,
+            activeCapital: portfolioApiData.active_capital || 0
+          });
+
+          // Generar datos históricos basados en balance actual
+          const generateHistoricalData = (currentValue, pnlPercentage) => {
+            const data = [];
+            const dates = ['01/12', '05/12', '10/12', '15/12', '20/12', '25/12', '30/12'];
+            const startValue = currentValue / (1 + (pnlPercentage / 100));
+            
+            dates.forEach((date, index) => {
+              const progress = (index + 1) / dates.length;
+              const value = startValue + ((currentValue - startValue) * progress);
+              data.push({
+                date,
+                value: Math.round(value * 100) / 100
+              });
+            });
+            
+            return data;
+          };
+          
+          setHistoricalData(generateHistoricalData(currentBalance, portfolioApiData.total_pnl_percentage || 0));
+
+          // Usar los traders copiados del portfolio API
+          if (portfolioApiData.copied_traders) {
+            const formattedCopiedTraders = portfolioApiData.copied_traders.map(trader => ({
+              id: trader.id,
+              name: trader.name,
+              avatar: trader.avatar || '/Avatar1.png',
+              personalPnL: trader.personal_pnl || 0,
+              personalPnLPercentage: trader.personal_pnl_percentage || 0,
+              assignedCapital: trader.assigned_capital || 0,
+              status: trader.status || 'active'
+            }));
+            
+            setSubscriptions(formattedCopiedTraders);
+          }
+        } else {
+          // Fallback: formatear suscripciones tradicionales
+          const formattedSubs = subsData.map(sub => ({
+            id: sub.id,
+            name: sub.master?.name || sub.master?.username || 'Unknown Trader',
+            avatar: sub.master?.photo_url || '/Avatar1.png',
+            personalPnL: sub.pnl || 0,
+            personalPnLPercentage: sub.pnl_percentage || 0,
+            assignedCapital: sub.assigned_capital || 0,
+            status: sub.status || 'active'
+          }));
+          
+          setSubscriptions(formattedSubs);
+          
+          // Calcular portfolio data basado en suscripciones
+          if (formattedSubs.length > 0) {
+            const totalBalance = formattedSubs.reduce((sum, sub) => sum + sub.assignedCapital, 0);
+            const totalPnL = formattedSubs.reduce((sum, sub) => sum + sub.personalPnL, 0);
+            const totalPnLPercentage = totalBalance > 0 ? (totalPnL / totalBalance) * 100 : 0;
+            
+            setPortfolioData({
+              totalBalance,
+              totalPnL,
+              totalPnLPercentage,
+              activeCapital: totalBalance
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading traders data:', error);
+        console.error('Error details:', error.response?.data || error.message);
+        // En caso de error, usar datos mock como fallback
+        setFilteredTraders(mockTradersForExplorer);
+        setPortfolioData(mockPortfolioData);
+      } finally {
+        setIsLoadingTraders(false);
+      }
+    };
+    
+    fetchTradersData();
+  }, []);
 
   // Efecto para inicializar comentarios con datos mock
   useEffect(() => {
@@ -509,7 +634,7 @@ const Inversor = () => {
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4 text-cyan-400">Traders Copiados</h2>
           <div className="space-y-4">
-            {mockCopiedTraders.map((trader) => (
+            {(subscriptions.length > 0 ? subscriptions : mockCopiedTraders).map((trader) => (
               <div key={trader.id} className="bg-[#1C1C1C] rounded-xl border border-[#333] p-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   {/* Trader Info */}
@@ -606,7 +731,7 @@ const Inversor = () => {
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mockHistoricalData}>
+              <AreaChart data={historicalData}>
                 <XAxis 
                   dataKey="date" 
                   axisLine={false} 

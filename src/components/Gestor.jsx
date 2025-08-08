@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Users, DollarSign, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Eye, Settings, BarChart3, Activity, Award, Calendar, Copy, MoreHorizontal, Edit, Camera, Save, X, Info, Shield, Target, Briefcase, Search, Filter, SlidersHorizontal, Pause, StopCircle, MessageCircle, UserCheck } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell } from 'recharts';
-import { getFollowers } from '../services/copytradingService';
+import { getFollowers, getTraderStats } from '../services/copytradingService';
 import ConfigurarGestorModal from './ConfigurarGestorModal';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import useTranslation from '../hooks/useTranslation';
@@ -129,6 +129,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
   const { t } = useTranslation();
   const [view, setView] = useState('dashboard'); // dashboard, myInvestors, profileEdit
   const [investors, setInvestors] = useState([]);
+  const [traderStats, setTraderStats] = useState(mockTraderDashboardData);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showConfigurarModal, setShowConfigurarModal] = useState(false);
@@ -166,47 +167,73 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
   const [showInvestorActions, setShowInvestorActions] = useState({});
 
   useEffect(() => {
-    const fetchInvestors = async () => {
+    const fetchTraderData = async () => {
       try {
         setIsLoading(true);
         setError(null);
         
-        // Simular carga de datos - en producción usar datos reales
-        setTimeout(() => {
+        // Cargar estadísticas del trader y seguidores en paralelo
+        const [statsData, followersData] = await Promise.all([
+          getTraderStats().catch(() => mockTraderDashboardData),
+          getFollowers().catch(() => [])
+        ]);
+        
+        // Actualizar estadísticas del trader
+        if (statsData && statsData !== mockTraderDashboardData) {
+          setTraderStats({
+            overview: {
+              totalAUM: statsData.overview?.total_aum || 0,
+              monthlyReturn: statsData.overview?.monthly_return || 0,
+              totalFollowers: statsData.overview?.total_followers || 0,
+              activeFollowers: statsData.overview?.active_followers || 0,
+              totalCommissions: statsData.overview?.total_commissions || 0,
+              monthlyCommissions: statsData.overview?.monthly_commissions || 0,
+              riskScore: statsData.overview?.risk_score || 0,
+              maxDrawdown: statsData.overview?.max_drawdown || 0
+            },
+            performanceChart: statsData.performance_chart || mockTraderDashboardData.performanceChart,
+            topInvestors: statsData.followers_list || []
+          });
+          
+          // Usar la lista de inversores del API si está disponible
+          if (statsData.followers_list && Array.isArray(statsData.followers_list)) {
+            setInvestors(statsData.followers_list);
+          } else if (Array.isArray(followersData)) {
+            // Formatear datos de seguidores tradicionales
+            const formattedInvestors = followersData.map(follower => ({
+              id: follower.id,
+              name: follower.follower?.name || follower.follower?.username || 'Inversor sin nombre',
+              avatar: follower.follower?.photo_url || '/investor1.png',
+              email: follower.follower?.email || '',
+              investedAmount: follower.invested_amount || 0,
+              monthlyPnL: follower.monthly_pnl || 0,
+              monthlyPnLPercentage: follower.monthly_pnl_percentage || 0,
+              totalPnL: follower.total_pnl || 0,
+              totalPnLPercentage: follower.total_pnl_percentage || 0,
+              copyPercentage: (follower.risk_ratio || 1) * 100,
+              startDate: follower.created_at || new Date().toISOString(),
+              lastActivity: follower.updated_at || follower.created_at || new Date().toISOString(),
+              status: follower.status || 'active'
+            }));
+            
+            setInvestors(formattedInvestors);
+          }
+        } else {
+          // Usar datos mock como fallback
           setInvestors(mockTraderDashboardData.topInvestors);
-          setIsLoading(false);
-        }, 1000);
-        
-        /* Código original comentado para mantener funcionalidad
-        const followerData = await getFollowers();
-
-        if (!Array.isArray(followerData)) {
-            console.warn("[Gestor] getFollowers no devolvió un array. Se recibió:", followerData);
-            setInvestors([]);
-            return;
         }
-
-        const formattedInvestors = followerData.map(follower => ({
-          id: follower.id,
-          nombre: follower.userInfo?.name || 'Inversor sin nombre',
-          cuenta: follower.followerMt5AccountId,
-          fecha: new Date(follower.createdAt).toLocaleDateString(),
-          rentabilidad: `${follower.performance?.profitPercentage?.toFixed(2) || 0}%`,
-          rendimiento: follower.riskRatio >= 1.2 ? 'Agresivo' : 'Moderado',
-          bajoGestion: `$${follower.investmentAmount?.toFixed(2) || 0}`,
-          estado: follower.isActive ? 'Activo' : 'Inactivo',
-        }));
         
-        setInvestors(formattedInvestors);
-        */
       } catch (err) {
+        console.error('Error loading trader data:', err);
         setError('No se pudieron cargar los datos.');
-        console.error(err);
+        // Usar datos mock como fallback en caso de error
+        setInvestors(mockTraderDashboardData.topInvestors);
+      } finally {
         setIsLoading(false);
       }
     };
     
-    fetchInvestors();
+    fetchTraderData();
   }, []);
 
   const handleCreateCopy = () => {

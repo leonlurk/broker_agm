@@ -3,22 +3,36 @@ import { AuthAdapter } from './database.adapter'; // Importamos el adapter para 
 
 // La URL base de tu nuevo backend de Node.js desplegado en el VPS
 // Esto debería estar en un archivo .env en tu proyecto de React
-// const API_BASE_URL = process.env.REACT_APP_LOGIC_API_URL || 'https://logic-api.yourdomain.com/api';
-const API_BASE_URL = ''; // Temporalmente deshabilitado para que el front-end se renderice
+const API_BASE_URL = import.meta.env.VITE_LOGIC_API_URL || 'http://localhost/api';
+// Ahora conectado a tu backend Copy-PAMM enterprise que corre en localhost
 
 // Creamos una instancia de Axios para nuestro servicio de lógica
 const logicApiClient = axios.create({
   baseURL: API_BASE_URL
 });
 
-// Interceptor para añadir automáticamente el token de autenticación de Firebase
+// Interceptor para añadir automáticamente el token de autenticación
 // a cada petición que se haga al backend de lógica.
 logicApiClient.interceptors.request.use(
   async (config) => {
-    const user = await AuthAdapter.getCurrentUser();
-    if (user) {
-      const token = await user.getIdToken();
-      config.headers.Authorization = `Bearer ${token}`;
+    try {
+      if (AuthAdapter.isSupabase()) {
+        // For Supabase, get the session which contains the access_token
+        const { supabase } = await import('../supabase/config');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          config.headers.Authorization = `Bearer ${session.access_token}`;
+        }
+      } else {
+        // For Firebase
+        const user = await AuthAdapter.getCurrentUser();
+        if (user && user.getIdToken) {
+          const token = await user.getIdToken();
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      }
+    } catch (error) {
+      console.warn('Error getting auth token:', error);
     }
     return config;
   },
@@ -41,18 +55,71 @@ export const getPammFunds = async () => {
 };
 
 /**
- * Permite al usuario actual unirse a un fondo PAMM.
- * @param {string} pammId - El ID del fondo PAMM.
- * @param {string} investorMt5AccountId - El ID de la cuenta MT5 del inversor.
- * @param {number} amount - La cantidad a invertir.
+ * Obtiene los detalles de un fondo PAMM específico.
+ * @param {string} fundId - El ID del fondo PAMM.
+ * @returns {Promise<object>} Los detalles del fondo PAMM.
+ */
+export const getFundDetails = async (fundId) => {
+  try {
+    const response = await logicApiClient.get(`/pamm/funds/${fundId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener los detalles del fondo' };
+  }
+};
+
+/**
+ * Obtiene las inversiones PAMM del usuario actual.
+ * @returns {Promise<Array<object>>} La lista de inversiones PAMM.
+ */
+export const getMyPammInvestments = async () => {
+  try {
+    const response = await logicApiClient.get('/pamm/investments');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener mis inversiones PAMM' };
+  }
+};
+
+/**
+ * Obtiene los fondos PAMM donde el usuario es inversor con resumen del portfolio.
+ * @returns {Promise<object>} El portfolio de fondos PAMM del usuario.
+ */
+export const getMyFunds = async () => {
+  try {
+    const response = await logicApiClient.get('/pamm/my-funds');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener mis fondos PAMM' };
+  }
+};
+
+/**
+ * Obtiene las estadísticas como manager PAMM.
+ * @returns {Promise<object>} Las estadísticas del manager PAMM.
+ */
+export const getManagerStats = async () => {
+  try {
+    const response = await logicApiClient.get('/pamm/manager-stats');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener estadísticas del manager' };
+  }
+};
+
+/**
+ * Permite al usuario unirse a un fondo PAMM.
+ * @param {string} fundId - El ID del fondo PAMM.
+ * @param {string} mt5AccountId - El ID de la cuenta MT5 del inversor.
+ * @param {number} investedAmount - El monto a invertir.
  * @returns {Promise<object>} La respuesta del servidor.
  */
-export const joinPamm = async (pammId, investorMt5AccountId, amount) => {
+export const joinPammFund = async (fundId, mt5AccountId, investedAmount) => {
   try {
     const response = await logicApiClient.post('/pamm/join', {
-      pammId,
-      investorMt5AccountId,
-      amount
+      fund_id: fundId,
+      investor_mt5_account_id: mt5AccountId,
+      invested_amount: investedAmount
     });
     return response.data;
   } catch (error) {
@@ -61,16 +128,14 @@ export const joinPamm = async (pammId, investorMt5AccountId, amount) => {
 };
 
 /**
- * Permite al usuario actual retirar su inversión de un fondo PAMM.
- * @param {string} pammId - El ID del fondo PAMM.
- * @param {string} investorMt5AccountId - El ID de la cuenta MT5 del inversor.
+ * Permite al usuario salir de un fondo PAMM.
+ * @param {string} fundId - El ID del fondo PAMM.
  * @returns {Promise<object>} La respuesta del servidor.
  */
-export const leavePamm = async (pammId, investorMt5AccountId) => {
+export const leavePammFund = async (fundId) => {
   try {
     const response = await logicApiClient.post('/pamm/leave', {
-      pammId,
-      investorMt5AccountId,
+      fund_id: fundId
     });
     return response.data;
   } catch (error) {
@@ -79,14 +144,19 @@ export const leavePamm = async (pammId, investorMt5AccountId) => {
 };
 
 /**
- * Obtiene las inversiones en PAMM activas para el usuario actual.
- * @returns {Promise<Array<object>>} La lista de inversiones.
+ * Crea un nuevo fondo PAMM (para managers).
+ * @param {object} fundData - Los datos del fondo PAMM.
+ * @returns {Promise<object>} La respuesta del servidor.
  */
-export const getMyPammInvestments = async () => {
+export const createPammFund = async (fundData) => {
   try {
-    const response = await logicApiClient.get('/pamm/investments');
+    const response = await logicApiClient.post('/pamm/create', fundData);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { error: 'Error al obtener las inversiones PAMM' };
+    throw error.response?.data || { error: 'Error al crear el fondo PAMM' };
   }
-}; 
+};
+
+// Mantener compatibilidad con nombres antiguos
+export const joinPamm = joinPammFund;
+export const leavePamm = leavePammFund; 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
-import { getPammFunds } from '../services/pammService';
+import { getPammFunds, getMyFunds } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import useTranslation from '../hooks/useTranslation';
@@ -25,6 +25,8 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
         maxDrawdown: { max: '' }
     });
     const [filteredFunds, setFilteredFunds] = useState([]);
+    const [myFunds, setMyFunds] = useState({ summary: {}, funds: [] });
+    const [isLoadingMyFunds, setIsLoadingMyFunds] = useState(false);
     
     // Estado para rastrear fondos en los que se está invirtiendo
     const [investedFunds, setInvestedFunds] = useState(new Set());
@@ -36,6 +38,28 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
     useEffect(() => {
         scrollToTopManual(scrollContainerRef);
     }, [view, selectedFund]);
+
+    // Cargar fondos PAMM del usuario para el dashboard
+    useEffect(() => {
+        const fetchMyFunds = async () => {
+            if (view !== 'dashboard') return;
+            
+            try {
+                setIsLoadingMyFunds(true);
+                const myFundsData = await getMyFunds();
+                setMyFunds(myFundsData);
+            } catch (error) {
+                console.error('Error loading my PAMM funds:', error);
+                console.error('Error details:', error.response?.data || error.message);
+                // Mantener datos vacíos en caso de error
+                setMyFunds({ summary: {}, funds: [] });
+            } finally {
+                setIsLoadingMyFunds(false);
+            }
+        };
+
+        fetchMyFunds();
+    }, [view]);
 
     const handleExploreFunds = () => {
         setView('explorer');

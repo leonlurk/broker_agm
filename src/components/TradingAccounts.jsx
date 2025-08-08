@@ -10,6 +10,13 @@ import { DatabaseAdapter } from '../services/database.adapter';
 import CustomDropdown from './utils/CustomDropdown';
 import CustomTooltip from './utils/CustomTooltip';
 import useTranslation from '../hooks/useTranslation';
+import { 
+  getAccountMetrics, 
+  getAccountStatistics, 
+  getInstrumentsDistribution, 
+  getAccountPerformance,
+  getAccountHistory 
+} from '../services/mt5Metrics';
 
 // --- Instrument Lists (from PipCalculator) ---
 const forexInstruments = [
@@ -196,6 +203,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     dateTo: '',
     profitLoss: 'Todos'
   });
+  
+  // Estados para datos reales de MT5
+  const [realMetrics, setRealMetrics] = useState(null);
+  const [realStatistics, setRealStatistics] = useState(null);
+  const [realInstruments, setRealInstruments] = useState(null);
+  const [realPerformance, setRealPerformance] = useState(null);
+  const [realHistory, setRealHistory] = useState(null);
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
 
   // State for new instrument filter
   const [showInstrumentDropdown, setShowInstrumentDropdown] = useState(false);
@@ -463,6 +478,127 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     scrollToTopManual(scrollContainerRef); // Scroll al volver a vista general
   };
 
+  // useEffect para cargar datos reales de MT5 cuando se selecciona una cuenta
+  useEffect(() => {
+    const loadRealMetricsData = async () => {
+      if (!selectedAccountId) return;
+      
+      const selectedAccount = getAllAccounts().find(acc => acc.id === selectedAccountId);
+      if (!selectedAccount || !selectedAccount.account_number) return;
+      
+      setIsLoadingMetrics(true);
+      
+      try {
+        // Cargar todas las métricas en paralelo
+        const [metrics, statistics, instruments, performance, history] = await Promise.all([
+          getAccountMetrics(selectedAccount.account_number),
+          getAccountStatistics(selectedAccount.account_number),
+          getInstrumentsDistribution(selectedAccount.account_number),
+          getAccountPerformance(selectedAccount.account_number, 
+            rendimientoFilters.period === 'Trimestral' ? 'quarterly' : 'monthly', 
+            parseInt(rendimientoFilters.year)
+          ),
+          getAccountHistory(selectedAccount.account_number, historyFilters.dateFrom, historyFilters.dateTo)
+        ]);
+        
+        // Actualizar estados con datos reales
+        if (metrics.success) setRealMetrics(metrics.data);
+        if (statistics.success) setRealStatistics(statistics.data);
+        if (instruments.success) setRealInstruments(instruments.data);
+        if (performance.success) setRealPerformance(performance.data);
+        if (history.success) {
+          // Transformar datos del historial al formato esperado
+          const transformedHistory = {
+            operations: history.data.operations?.map(op => {
+              const openDate = new Date(op.open_time);
+              const closeDate = new Date(op.close_time);
+              const profit = parseFloat(op.profit) || 0;
+              const volume = parseFloat(op.volume) || 0;
+              const openPrice = parseFloat(op.open_price) || 0;
+              const closePrice = parseFloat(op.close_price) || 0;
+              
+              // Calcular pips (aproximación para forex)
+              let pips = 0;
+              if (op.symbol?.includes('JPY')) {
+                pips = Math.abs(closePrice - openPrice) * 100;
+              } else {
+                pips = Math.abs(closePrice - openPrice) * 10000;
+              }
+              pips = Math.round(pips);
+              
+              // Calcular porcentajes de SL y TP
+              const stopLoss = parseFloat(op.stop_loss) || 0;
+              const takeProfit = parseFloat(op.take_profit) || 0;
+              let stopLossPct = '';
+              let takeProfitPct = '';
+              
+              if (stopLoss && openPrice) {
+                const slDiff = Math.abs(openPrice - stopLoss) / openPrice * 100;
+                stopLossPct = `-${slDiff.toFixed(1)}%`;
+              }
+              
+              if (takeProfit && openPrice) {
+                const tpDiff = Math.abs(takeProfit - openPrice) / openPrice * 100;
+                takeProfitPct = `+${tpDiff.toFixed(1)}%`;
+              }
+              
+              return {
+                fechaApertura: openDate.toLocaleDateString('es-ES', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  day: '2-digit',
+                  month: 'short'
+                }),
+                fechaCierre: closeDate.toLocaleDateString('es-ES', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  day: '2-digit',
+                  month: 'short'
+                }),
+                fechaISO: openDate.toISOString().split('T')[0],
+                tiempoApertura: openDate.toLocaleTimeString('es-ES', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  second: '2-digit'
+                }),
+                tiempoCierre: closeDate.toLocaleTimeString('es-ES', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  second: '2-digit'
+                }),
+                instrumento: op.symbol || 'N/A',
+                bandera: '/EU.svg', // Default flag, could be mapped based on symbol
+                tipo: op.type === 0 ? 'Compra' : 'Venta',
+                lotaje: volume.toFixed(2),
+                stopLoss: stopLoss ? stopLoss.toFixed(5) : 'N/A',
+                stopLossPct: stopLossPct,
+                takeProfit: takeProfit ? takeProfit.toFixed(5) : 'N/A',
+                takeProfitPct: takeProfitPct,
+                precioApertura: openPrice.toFixed(5),
+                precioCierre: closePrice.toFixed(5),
+                pips: pips,
+                idPosicion: op.ticket || 'N/A',
+                resultado: profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`,
+                resultadoColor: profit >= 0 ? 'text-green-400' : 'text-red-400',
+                resultadoPct: volume > 0 ? `${((profit / (volume * 1000)) * 100).toFixed(1)}%` : '0%',
+                ganancia: profit
+              };
+            }) || []
+          };
+          setRealHistory(transformedHistory);
+        }
+        
+      } catch (error) {
+        console.error('Error loading MT5 metrics:', error);
+        toast.error('Error al cargar las métricas de la cuenta');
+      } finally {
+        setIsLoadingMetrics(false);
+      }
+    };
+    
+    loadRealMetricsData();
+  }, [selectedAccountId, rendimientoFilters.period, rendimientoFilters.year, historyFilters.dateFrom, historyFilters.dateTo]);
+
   // Función helper para obtener el estado de la cuenta
   const getAccountStatus = (account) => {
     if (!account) return { status: 'Inactiva', statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
@@ -522,19 +658,24 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     };
   };
 
-  // Datos para el gráfico de balance (simulando balance inicial de 5000)
-  const initialBalance = 5000;
-  const balanceData = [
-    { name: 'Ene', value: 5000 },
-    { name: 'Feb', value: 5250 },
-    { name: 'Mar', value: 5500 },
-    { name: 'Abr', value: 5750 },
-    { name: 'May', value: 6000 },
-    { name: 'Jun', value: 5800 },
-    { name: 'Jul', value: 6200 },
-    { name: 'Ago', value: 6100 },
-    { name: 'Sep', value: 6500 },
-  ];
+  // Datos para el gráfico de balance - usar datos reales si están disponibles
+  const initialBalance = realMetrics?.initial_balance || 0;
+  const balanceData = realPerformance?.data ? 
+    realPerformance.data.slice(0, 9).map(month => ({
+      name: month.name,
+      value: month.value || 0
+    })) : 
+    [
+      { name: 'Ene', value: 0 },
+      { name: 'Feb', value: 0 },
+      { name: 'Mar', value: 0 },
+      { name: 'Abr', value: 0 },
+      { name: 'May', value: 0 },
+      { name: 'Jun', value: 0 },
+      { name: 'Jul', value: 0 },
+      { name: 'Ago', value: 0 },
+      { name: 'Sep', value: 0 },
+    ];
   
   // Calcular escala para el eje Y
   const yAxisConfig = calculateYAxisScale(balanceData, initialBalance);
@@ -877,7 +1018,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // Función para filtrar los datos del historial
   const getFilteredHistorialData = () => {
-    return historialData.filter(item => {
+    // Usar datos reales si están disponibles, sino usar datos de ejemplo
+    const dataSource = realHistory?.operations || historialData;
+    return dataSource.filter(item => {
       // Filtro por instrumento
       if (historyFilters.instrument !== 'Todos' && item.instrumento !== historyFilters.instrument) {
         return false;
@@ -918,7 +1061,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Función para generar datos del gráfico de beneficio total con optimización móvil
   const generateBenefitChartData = () => {
     // Aplicar filtros del historial al gráfico
-    let dataToProcess = historialData;
+    let dataToProcess = realHistory?.operations || historialData;
     
     // Aplicar filtros del historial si están activos
     if (historyFilters.instrument !== 'Todos') {
@@ -1999,10 +2142,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               </CustomTooltip>
               <div className="flex items-center mb-4 sm:mb-6">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3 text-white">
-                  ${balanceData[balanceData.length - 1]?.value.toLocaleString() || '0.00'}
+                  ${(realMetrics?.balance || balanceData[balanceData.length - 1]?.value || 0).toLocaleString()}
                 </span>
-                <span className="bg-green-800 bg-opacity-30 text-green-400 px-2 py-1 rounded text-xs sm:text-sm">
-                  +{(((balanceData[balanceData.length - 1]?.value || 0) - initialBalance) / initialBalance * 100).toFixed(1)}%
+                <span className={`px-2 py-1 rounded text-xs sm:text-sm ${
+                  (realMetrics?.profit_loss_percentage || 0) >= 0 
+                    ? 'bg-green-800 bg-opacity-30 text-green-400' 
+                    : 'bg-red-800 bg-opacity-30 text-red-400'
+                }`}>
+                  {(realMetrics?.profit_loss_percentage || 0) >= 0 ? '+' : ''}{(realMetrics?.profit_loss_percentage || 0).toFixed(1)}%
                 </span>
               </div>
               
@@ -2062,10 +2209,18 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">Profit/Loss</h3>
                 </CustomTooltip>
                   <div className="flex items-center mb-1">
-                  <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">$1,000.00</span>
-                  <span className="bg-green-800 bg-opacity-30 text-green-400 px-2 py-1 rounded text-xs">+25.0%</span>
+                  <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
+                    ${Math.abs(realMetrics?.profit_loss || 0).toFixed(2)}
+                  </span>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    (realMetrics?.profit_loss || 0) >= 0
+                      ? 'bg-green-800 bg-opacity-30 text-green-400'
+                      : 'bg-red-800 bg-opacity-30 text-red-400'
+                  }`}>
+                    {(realMetrics?.profit_loss || 0) >= 0 ? '+' : ''}{(realMetrics?.profit_loss_percentage || 0).toFixed(1)}%
+                  </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-400">Lun, 13 Enero</p>
+                  <p className="text-xs sm:text-sm text-gray-400">Total histórico</p>
                 </div>
 
               {/* Drawdown */}
@@ -2074,10 +2229,20 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">Drawdown</h3>
                 </CustomTooltip>
                 <div className="flex items-center mb-1">
-                  <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">$200.00</span>
-                  <span className="bg-green-800 bg-opacity-30 text-green-400 px-2 py-1 rounded text-xs">+25.0%</span>
+                  <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
+                    {(realMetrics?.max_drawdown || 0).toFixed(2)}%
+                  </span>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    (realMetrics?.current_drawdown || 0) <= 5
+                      ? 'bg-green-800 bg-opacity-30 text-green-400'
+                      : (realMetrics?.current_drawdown || 0) <= 10
+                      ? 'bg-yellow-800 bg-opacity-30 text-yellow-400'
+                      : 'bg-red-800 bg-opacity-30 text-red-400'
+                  }`}>
+                    Actual: {(realMetrics?.current_drawdown || 0).toFixed(2)}%
+                  </span>
                 </div>
-                <p className="text-xs sm:text-sm text-gray-400">Total • Diario</p>
+                <p className="text-xs sm:text-sm text-gray-400">Máximo • Actual</p>
                 </div>
 
               {/* Días de Trading */}
@@ -2085,7 +2250,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 <CustomTooltip content="El número total de días en los que se ha realizado al menos una operación.">
                   <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">Días de Trading</h3>
                 </CustomTooltip>
-                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold">5 Días</div>
+                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold">{realMetrics?.trading_days || 0} Días</div>
               </div>
                 </div>
               </div>
@@ -2100,8 +2265,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-xs sm:text-sm mb-1">Pérdida Promedio Por Operación</h3>
                 <div className="flex items-center">
-                  <span className="text-lg sm:text-xl font-bold text-red-400">$77.61</span>
-                  <span className="bg-red-800 bg-opacity-30 text-red-400 px-1 py-0.5 rounded text-xs ml-2">-25.0%</span>
+                  <span className="text-lg sm:text-xl font-bold text-red-400">${(realStatistics?.average_loss || 0).toFixed(2)}</span>
+                  <span className="bg-red-800 bg-opacity-30 text-red-400 px-1 py-0.5 rounded text-xs ml-2">Promedio</span>
                 </div>
               </div>
               </CustomTooltip>
@@ -2116,8 +2281,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Ganancia Promedio Por Operación</h3>
                 <div className="flex items-center">
-                  <span className="text-xl font-bold">$20.61</span>
-                  <span className="bg-green-800 bg-opacity-30 text-green-400 px-1 py-0.5 rounded text-xs ml-2">+25.0%</span>
+                  <span className="text-xl font-bold">${(realStatistics?.average_win || 0).toFixed(2)}</span>
+                  <span className="bg-green-800 bg-opacity-30 text-green-400 px-1 py-0.5 rounded text-xs ml-2">Promedio</span>
                 </div>
               </div>
               </CustomTooltip>
@@ -2131,7 +2296,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <CustomTooltip content="El tamaño de posición promedio que utilizas en tus operaciones.">
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Lotaje Promedio Por Operación</h3>
-                <span className="text-xl font-bold">3.26</span>
+                <span className="text-xl font-bold">{(realStatistics?.average_lot_size || 0).toFixed(2)}</span>
                   </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
@@ -2144,7 +2309,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <CustomTooltip content="El tiempo promedio que mantienes abiertas tus posiciones.">
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Duración Promedio Por Operación</h3>
-                <span className="text-xl font-bold">02:25:36</span>
+                <span className="text-xl font-bold">{realStatistics?.average_trade_duration || '00:00:00'}</span>
                   </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
@@ -2157,7 +2322,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <CustomTooltip content="Compara la ganancia potencial con la pérdida potencial. Un ratio de 1:3 significa que arriesgas 1 para ganar 3.">
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Relación Riesgo Beneficio</h3>
-                <span className="text-xl font-bold">1:3</span>
+                <span className="text-xl font-bold">{realStatistics?.risk_reward_ratio || '0:0'}</span>
               </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
@@ -2170,7 +2335,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <CustomTooltip content="El porcentaje de operaciones ganadoras sobre el total de operaciones realizadas.">
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Ratio De Ganancia</h3>
-                <span className="text-xl font-bold">20%</span>
+                <span className="text-xl font-bold">{(realStatistics?.win_rate || 0).toFixed(1)}%</span>
               </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
@@ -2183,7 +2348,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <CustomTooltip content="La suma total de todos los fondos que has depositado en esta cuenta.">
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Depósitos Totales</h3>
-                <span className="text-xl font-bold">${(getAllAccounts().find(acc => acc.id === selectedAccountId)?.balance || 0).toFixed(2)}</span>
+                <span className="text-xl font-bold">${(realStatistics?.total_deposits || 0).toFixed(2)}</span>
               </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
@@ -2196,7 +2361,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <CustomTooltip content="La suma total de todos los fondos que has retirado de esta cuenta.">
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Retiros Totales</h3>
-                <span className="text-xl font-bold">$12,000.00</span>
+                <span className="text-xl font-bold">${(realStatistics?.total_withdrawals || 0).toFixed(2)}</span>
               </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
@@ -2209,7 +2374,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <CustomTooltip content="La ganancia o pérdida neta total de la cuenta desde su creación.">
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">PNL</h3>
-                <span className="text-xl font-bold">$5,000.00 = 5%</span>
+                <span className="text-xl font-bold">${(realStatistics?.net_pnl || 0).toFixed(2)} = {(realStatistics?.net_pnl_percentage || 0).toFixed(1)}%</span>
               </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
@@ -2374,11 +2539,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                 {/* Leyenda */}
                 <div className="space-y-4">
-                  {dynamicInstrumentsData.map((entry, index) => (
+                  {(realInstruments?.distribution || dynamicInstrumentsData).map((entry, index) => (
                     <div key={index} className="flex items-center">
                       <div className="w-4 h-4 rounded-sm mr-3" style={{ backgroundColor: entry.color }}></div>
                       <span className="text-gray-300">{entry.name}</span>
-                      <span className="ml-auto font-semibold text-white">{entry.value.toFixed(2)}%</span>
+                      <span className="ml-auto font-semibold text-white">{(entry.value || 0).toFixed(2)}%</span>
                     </div>
                   ))}
                 </div>
@@ -2388,7 +2553,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={dynamicInstrumentsData}
+                        data={realInstruments?.distribution || dynamicInstrumentsData}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
@@ -2398,7 +2563,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         stroke="#2a2a2a"
                         strokeWidth={4}
                       >
-                        {dynamicInstrumentsData.map((entry, index) => (
+                        {(realInstruments?.distribution || dynamicInstrumentsData).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color}/>
                         ))}
                       </Pie>
@@ -2463,7 +2628,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <div className={`w-full ${isMobile ? 'h-64' : 'h-80'}`}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart 
-                    data={optimizeChartDataForMobile(dynamicRendimientoData)} 
+                    data={optimizeChartDataForMobile(realPerformance?.data || dynamicRendimientoData)} 
                     margin={{ 
                       top: isMobile ? 10 : 20, 
                       right: isMobile ? 10 : 0, 
@@ -2527,7 +2692,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       radius={[4, 4, 0, 0]}
                       onMouseOver={(data) => setBarChartTooltip({ bar: data, label: data.name })}
                     >
-                      {(optimizeChartDataForMobile(dynamicRendimientoData)).map((entry, index) => (
+                      {(optimizeChartDataForMobile(realPerformance?.data || dynamicRendimientoData)).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={getBarColor(entry.value)} />
                       ))}
                     </Bar>
