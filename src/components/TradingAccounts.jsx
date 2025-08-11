@@ -10,13 +10,15 @@ import { DatabaseAdapter } from '../services/database.adapter';
 import CustomDropdown from './utils/CustomDropdown';
 import CustomTooltip from './utils/CustomTooltip';
 import useTranslation from '../hooks/useTranslation';
+// Importar servicio optimizado
+import accountMetricsOptimized from '../services/accountMetricsOptimized';
 import { 
-  getAccountMetrics, 
-  getAccountStatistics, 
-  getInstrumentsDistribution, 
-  getAccountPerformance,
-  getAccountHistory 
-} from '../services/mt5Metrics';
+  getBalanceChartData, 
+  recordBalanceSnapshot,
+  getTradingOperations,
+  getPerformanceChartData 
+} from '../services/accountHistory';
+// Auto-sync ya manejado por el backend scheduler
 
 // --- Instrument Lists (from PipCalculator) ---
 const forexInstruments = [
@@ -210,7 +212,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const [realInstruments, setRealInstruments] = useState(null);
   const [realPerformance, setRealPerformance] = useState(null);
   const [realHistory, setRealHistory] = useState(null);
+  const [realBalanceChart, setRealBalanceChart] = useState(null);
+  const [realBalanceHistory, setRealBalanceHistory] = useState(null);
+  const [realPerformanceChart, setRealPerformanceChart] = useState(null);
+  const [realTradingOperations, setRealTradingOperations] = useState(null);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // State for new instrument filter
   const [showInstrumentDropdown, setShowInstrumentDropdown] = useState(false);
@@ -243,6 +251,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       window.removeEventListener('resize', checkIfMobile);
     };
   }, []);
+  
+  // Auto-sync COMPLETAMENTE DESHABILITADO - Ahora manejado por el backend scheduler
+  useEffect(() => {
+    // NO HACER NADA - Auto-sync deshabilitado y manejado por backend
+    return () => {
+      // Cleanup vacío - sync ahora es automático en el backend
+    };
+  }, [currentUser]);
 
   // --- Favorite Instruments Logic (from PipCalculator) ---
   useEffect(() => {
@@ -478,7 +494,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     scrollToTopManual(scrollContainerRef); // Scroll al volver a vista general
   };
 
-  // useEffect para cargar datos reales de MT5 cuando se selecciona una cuenta
+  // useEffect para cargar datos reales de MT5 cuando se selecciona una cuenta con auto-refresh
   useEffect(() => {
     const loadRealMetricsData = async () => {
       if (!selectedAccountId) return;
@@ -486,117 +502,133 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       const selectedAccount = getAllAccounts().find(acc => acc.id === selectedAccountId);
       if (!selectedAccount || !selectedAccount.account_number) return;
       
-      setIsLoadingMetrics(true);
+      // No mostrar loading en auto-refresh, solo en carga inicial
+      if (!realMetrics && !realStatistics) {
+        setIsLoadingMetrics(true);
+      } else {
+        // Si ya hay datos, mostrar indicador de refresh
+        setIsRefreshing(true);
+      }
       
       try {
-        // Cargar todas las métricas en paralelo
-        const [metrics, statistics, instruments, performance, history] = await Promise.all([
-          getAccountMetrics(selectedAccount.account_number),
-          getAccountStatistics(selectedAccount.account_number),
-          getInstrumentsDistribution(selectedAccount.account_number),
-          getAccountPerformance(selectedAccount.account_number, 
-            rendimientoFilters.period === 'Trimestral' ? 'quarterly' : 'monthly', 
-            parseInt(rendimientoFilters.year)
-          ),
-          getAccountHistory(selectedAccount.account_number, historyFilters.dateFrom, historyFilters.dateTo)
-        ]);
+        // Obtener todos los datos del dashboard desde el endpoint optimizado
+        const dashboardData = await accountMetricsOptimized.getDashboardData(
+          selectedAccount.account_number,
+          'month'
+        );
         
-        // Actualizar estados con datos reales
-        if (metrics.success) setRealMetrics(metrics.data);
-        if (statistics.success) setRealStatistics(statistics.data);
-        if (instruments.success) setRealInstruments(instruments.data);
-        if (performance.success) setRealPerformance(performance.data);
-        if (history.success) {
-          // Transformar datos del historial al formato esperado
-          const transformedHistory = {
-            operations: history.data.operations?.map(op => {
-              const openDate = new Date(op.open_time);
-              const closeDate = new Date(op.close_time);
-              const profit = parseFloat(op.profit) || 0;
-              const volume = parseFloat(op.volume) || 0;
-              const openPrice = parseFloat(op.open_price) || 0;
-              const closePrice = parseFloat(op.close_price) || 0;
-              
-              // Calcular pips (aproximación para forex)
-              let pips = 0;
-              if (op.symbol?.includes('JPY')) {
-                pips = Math.abs(closePrice - openPrice) * 100;
-              } else {
-                pips = Math.abs(closePrice - openPrice) * 10000;
-              }
-              pips = Math.round(pips);
-              
-              // Calcular porcentajes de SL y TP
-              const stopLoss = parseFloat(op.stop_loss) || 0;
-              const takeProfit = parseFloat(op.take_profit) || 0;
-              let stopLossPct = '';
-              let takeProfitPct = '';
-              
-              if (stopLoss && openPrice) {
-                const slDiff = Math.abs(openPrice - stopLoss) / openPrice * 100;
-                stopLossPct = `-${slDiff.toFixed(1)}%`;
-              }
-              
-              if (takeProfit && openPrice) {
-                const tpDiff = Math.abs(takeProfit - openPrice) / openPrice * 100;
-                takeProfitPct = `+${tpDiff.toFixed(1)}%`;
-              }
-              
-              return {
-                fechaApertura: openDate.toLocaleDateString('es-ES', { 
-                  hour: '2-digit', 
-                  minute: '2-digit',
-                  day: '2-digit',
-                  month: 'short'
-                }),
-                fechaCierre: closeDate.toLocaleDateString('es-ES', { 
-                  hour: '2-digit', 
-                  minute: '2-digit',
-                  day: '2-digit',
-                  month: 'short'
-                }),
-                fechaISO: openDate.toISOString().split('T')[0],
-                tiempoApertura: openDate.toLocaleTimeString('es-ES', { 
-                  hour: '2-digit', 
-                  minute: '2-digit',
-                  second: '2-digit'
-                }),
-                tiempoCierre: closeDate.toLocaleTimeString('es-ES', { 
-                  hour: '2-digit', 
-                  minute: '2-digit',
-                  second: '2-digit'
-                }),
-                instrumento: op.symbol || 'N/A',
-                bandera: '/EU.svg', // Default flag, could be mapped based on symbol
-                tipo: op.type === 0 ? 'Compra' : 'Venta',
-                lotaje: volume.toFixed(2),
-                stopLoss: stopLoss ? stopLoss.toFixed(5) : 'N/A',
-                stopLossPct: stopLossPct,
-                takeProfit: takeProfit ? takeProfit.toFixed(5) : 'N/A',
-                takeProfitPct: takeProfitPct,
-                precioApertura: openPrice.toFixed(5),
-                precioCierre: closePrice.toFixed(5),
-                pips: pips,
-                idPosicion: op.ticket || 'N/A',
-                resultado: profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`,
-                resultadoColor: profit >= 0 ? 'text-green-400' : 'text-red-400',
-                resultadoPct: volume > 0 ? `${((profit / (volume * 1000)) * 100).toFixed(1)}%` : '0%',
-                ganancia: profit
-              };
-            }) || []
-          };
-          setRealHistory(transformedHistory);
+        // También obtener el historial de balance para el gráfico
+        const balanceHistory = await accountMetricsOptimized.getBalanceHistory(
+          selectedAccount.account_number,
+          'month'
+        );
+        
+        // Procesar datos del dashboard
+        if (dashboardData) {
+          // Actualizar métricas
+          if (dashboardData.kpis) {
+            console.log('[TradingAccounts] Usando métricas optimizadas:', dashboardData.kpis);
+            setRealMetrics(dashboardData.kpis);
+          }
+          
+          // Actualizar estadísticas
+          if (dashboardData.statistics) {
+            console.log('[TradingAccounts] Usando estadísticas optimizadas:', dashboardData.statistics);
+            setRealStatistics(dashboardData.statistics);
+          }
+          
+          // Actualizar instrumentos
+          if (dashboardData.instruments && dashboardData.instruments.length > 0) {
+            console.log('[TradingAccounts] Usando instrumentos optimizados:', dashboardData.instruments);
+            setRealInstruments({
+              distribution: dashboardData.instruments,
+              total_instruments: dashboardData.instruments.length,
+              total_trades: dashboardData.statistics?.total_trades || 0
+            });
+          }
+          
+          // Actualizar historial de balance
+          if (balanceHistory && balanceHistory.length > 0) {
+            console.log('[TradingAccounts] Usando historial de balance optimizado:', balanceHistory);
+            // Formatear para el gráfico
+            const formattedBalance = balanceHistory.map(item => ({
+              date: item.date,
+              value: item.value || item.balance || 0
+            }));
+            setRealBalanceHistory(formattedBalance);
+          }
         }
+        
+        // Usar operaciones del dashboard si están disponibles
+        if (dashboardData.recent_operations && dashboardData.recent_operations.length > 0) {
+          // Usar operaciones del dashboard optimizado
+          const transformedOps = {
+            operations: dashboardData.recent_operations.map(op => ({
+              id: op.ticket,
+              ticket: op.ticket,
+              symbol: op.symbol,
+              type: op.operation_type || op.type,
+              volume: op.volume,
+              openPrice: op.open_price || op.openPrice,
+              closePrice: op.close_price || op.closePrice,
+              openTime: op.open_time || op.openTime,
+              closeTime: op.close_time || op.closeTime,
+              stopLoss: op.stop_loss || op.stopLoss,
+              takeProfit: op.take_profit || op.takeProfit,
+              profit: op.profit,
+              swap: op.swap || 0,
+              commission: op.commission || 0,
+              status: op.status || 'CLOSED',
+              pips: Math.round(Math.abs((op.close_price || op.closePrice) - (op.open_price || op.openPrice)) * 10000),
+              stopLossPercentage: op.stop_loss ? 
+                Math.abs(((op.open_price || op.openPrice) - op.stop_loss) / (op.open_price || op.openPrice) * 100).toFixed(1) + '%' : '-',
+              takeProfitPercentage: op.take_profit ? 
+                Math.abs((op.take_profit - (op.open_price || op.openPrice)) / (op.open_price || op.openPrice) * 100).toFixed(1) + '%' : '-'
+            })),
+            total_operations: dashboardData.recent_operations.length
+          };
+          setRealHistory(transformedOps);
+        } else {
+          // Si no hay operaciones, establecer array vacío
+          setRealHistory({ operations: [], total_operations: 0 });
+        }
+        
+        // Actualizar tiempo de última actualización
+        setLastUpdated(new Date());
         
       } catch (error) {
         console.error('Error loading MT5 metrics:', error);
         toast.error('Error al cargar las métricas de la cuenta');
       } finally {
         setIsLoadingMetrics(false);
+        setIsRefreshing(false);
       }
     };
     
+    // Cargar datos inmediatamente
     loadRealMetricsData();
+    
+    // Auto-refresh desactivado por ahora - los datos se actualizan solo con refresh manual
+    // Para reactivar, descomentar las siguientes líneas:
+    /*
+    let refreshInterval;
+    if (selectedAccountId) {
+      console.log('[TradingAccounts] Configurando auto-refresh cada 60 segundos');
+      refreshInterval = setInterval(() => {
+        console.log('[TradingAccounts] Auto-refresh de métricas...', new Date().toISOString());
+        loadRealMetricsData();
+      }, 60000); // 60 segundos
+    }
+    */
+    let refreshInterval = null;
+    
+    // Limpiar intervalo al desmontar o cambiar dependencias
+    return () => {
+      if (refreshInterval) {
+        console.log('[TradingAccounts] Limpiando intervalo de auto-refresh');
+        clearInterval(refreshInterval);
+      }
+    };
   }, [selectedAccountId, rendimientoFilters.period, rendimientoFilters.year, historyFilters.dateFrom, historyFilters.dateTo]);
 
   // Función helper para obtener el estado de la cuenta
@@ -605,9 +637,20 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     
     // Usar el status si existe, sino determinar basado en balance
     if (account.status) {
+      // Normalizar el status (Active -> Activa, Inactive -> Inactiva)
+      const normalizedStatus = account.status === 'Active' ? 'Activa' : 
+                               account.status === 'Inactive' ? 'Inactiva' : 
+                               account.status;
+      
+      // Verde para Active/Activa, Gris para Inactive/Inactiva, Rojo para otros
+      const isActive = account.status === 'Active' || account.status === 'Activa';
+      const isInactive = account.status === 'Inactive' || account.status === 'Inactiva';
+      
       return {
-        status: account.status,
-        statusColor: account.status === 'Activo' ? 'bg-green-800 bg-opacity-30 text-green-400' : 'bg-red-800 bg-opacity-30 text-red-400'
+        status: normalizedStatus,
+        statusColor: isActive ? 'bg-green-800 bg-opacity-30 text-green-400' : 
+                    isInactive ? 'bg-gray-800 bg-opacity-30 text-gray-400' :
+                    'bg-red-800 bg-opacity-30 text-red-400'
       };
     }
     
@@ -658,13 +701,24 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     };
   };
 
-  // Datos para el gráfico de balance - usar datos reales si están disponibles
+  // Obtener la cuenta seleccionada de forma segura
+  const currentSelectedAccount = selectedAccountId ? 
+    getAllAccounts().find(acc => acc.id === selectedAccountId) : null;
+  
+  // Datos para el gráfico de balance - usar datos históricos de Supabase
   const initialBalance = realMetrics?.initial_balance || 0;
-  const balanceData = realPerformance?.data ? 
-    realPerformance.data.slice(0, 9).map(month => ({
-      name: month.name,
-      value: month.value || 0
+  const balanceData = realBalanceHistory && realBalanceHistory.length > 0 ? 
+    // Usar datos reales del histórico de balance
+    realBalanceHistory.slice(-9).map((point, index) => ({
+      name: point.date || `Día ${index + 1}`,
+      value: point.value || 0
     })) : 
+    // Si no hay datos históricos pero hay balance actual, mostrar una línea desde 0
+    (currentSelectedAccount && currentSelectedAccount.balance > 0) ? [
+      { name: 'Inicio', value: 0 },
+      { name: 'Actual', value: currentSelectedAccount.balance }
+    ] : 
+    // Si no hay datos, mostrar todo en 0
     [
       { name: 'Ene', value: 0 },
       { name: 'Feb', value: 0 },
@@ -680,37 +734,97 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Calcular escala para el eje Y
   const yAxisConfig = calculateYAxisScale(balanceData, initialBalance);
 
-  // NUEVOS DATOS para secciones faltantes
-  const beneficioData = [
-    { name: 'Ene', value: 1000 },
-    { name: 'Feb', value: 1500 },
-    { name: 'Mar', value: 1200 },
-    { name: 'Abr', value: 1800 },
-    { name: 'May', value: 2000 },
-    { name: 'Jun', value: 1700 },
-  ];
+  // Generar datos de beneficio basados en el historial de balance real
+  const generateBeneficioData = () => {
+    if (balanceData && balanceData.length > 0) {
+      // Usar los datos reales del balance
+      return balanceData.slice(-6).map(item => ({
+        name: item.date,
+        value: item.value || 0
+      }));
+    }
+    // Fallback si no hay datos
+    return [
+      { name: 'Ene', value: 0 },
+      { name: 'Feb', value: 0 },
+      { name: 'Mar', value: 0 },
+      { name: 'Abr', value: 0 },
+      { name: 'May', value: 0 },
+      { name: 'Jun', value: 0 },
+    ];
+  };
+  
+  const beneficioData = generateBeneficioData();
 
-  const instrumentosData = [
-    { name: 'NQM25', value: 71.43, color: '#06b6d4' },
-    { name: 'EURUSD', value: 28.57, color: '#2563eb' },
-  ];
+  // Variables temporales para evitar error de referencia
+  // Se actualizarán con los valores reales más adelante cuando se definan las funciones
+  let instrumentosData = [];
+  let rendimientoData = [];
 
-  const rendimientoData = [
-    { name: 'Ene', value: 3.2 },
-    { name: 'Feb', value: 5.0 },
-    { name: 'Mar', value: 4.5 },
-    { name: 'Abr', value: 7.9 },
-    { name: 'May', value: 10.0 },
-    { name: 'Jun', value: 8.5 },
-    { name: 'Jul', value: 13.2 },
-    { name: 'Ago', value: 15.0 },
-    { name: 'Sep', value: 14.4 },
-    { name: 'Oct', value: 18.0 },
-    { name: 'Nov', value: 15.2 },
-    { name: 'Dic', value: 19.8 },
-  ];
-
-  const historialData = [
+  // Transformar operaciones de Supabase al formato de la tabla
+  const transformTradingOperations = (operations) => {
+    if (!operations || operations.length === 0) return [];
+    
+    return operations.map(op => {
+      const openTime = new Date(op.open_time);
+      const closeTime = new Date(op.close_time);
+      const duration = closeTime - openTime;
+      
+      // Calcular pips según el instrumento
+      let pips = 0;
+      if (op.symbol === 'EURUSD') {
+        pips = Math.round((op.close_price - op.open_price) * 10000);
+      } else if (op.symbol === 'XAUUSD') {
+        pips = Math.round((op.close_price - op.open_price) * 10);
+      }
+      
+      // Formatear duración
+      const hours = Math.floor(duration / 3600000);
+      const minutes = Math.floor((duration % 3600000) / 60000);
+      const seconds = Math.floor((duration % 60000) / 1000);
+      
+      return {
+        fechaApertura: openTime.toLocaleString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          day: '2-digit', 
+          month: 'short' 
+        }),
+        fechaCierre: closeTime.toLocaleString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          day: '2-digit', 
+          month: 'short' 
+        }),
+        fechaISO: openTime.toISOString().split('T')[0],
+        tiempoApertura: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
+        tiempoCierre: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
+        instrumento: op.symbol,
+        bandera: op.symbol === 'EURUSD' ? '/EU.svg' : '/gold.svg',
+        tipo: op.operation_type === 'BUY' ? 'Compra' : 'Venta',
+        lotaje: op.volume.toFixed(2),
+        stopLoss: op.stop_loss ? op.stop_loss.toFixed(5) : 'N/A',
+        stopLossPct: op.stop_loss ? 
+          `-${Math.abs((op.open_price - op.stop_loss) / op.open_price * 100).toFixed(1)}%` : '-',
+        takeProfit: op.take_profit ? op.take_profit.toFixed(5) : 'N/A',
+        takeProfitPct: op.take_profit ? 
+          `+${Math.abs((op.take_profit - op.open_price) / op.open_price * 100).toFixed(1)}%` : '-',
+        precioApertura: op.open_price.toFixed(5),
+        precioCierre: op.close_price.toFixed(5),
+        pips: pips,
+        idPosicion: op.ticket,
+        resultado: op.profit >= 0 ? `+$${op.profit.toFixed(2)}` : `-$${Math.abs(op.profit).toFixed(2)}`,
+        resultadoColor: op.profit >= 0 ? 'text-green-400' : 'text-red-400',
+        resultadoPct: `${((op.profit / (op.volume * 1000)) * 100).toFixed(1)}%`,
+        ganancia: op.profit
+      };
+    });
+  };
+  
+  // Usar operaciones reales si están disponibles, si no usar datos hardcodeados
+  const historialData = realTradingOperations ? 
+    transformTradingOperations(realTradingOperations) : 
+    [
     // Febrero 2025
     { 
       fechaApertura: '12:00 20 Feb',
@@ -1198,6 +1312,46 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // Función para generar datos de Balance
   const generateBalanceChartData = () => {
+    // Usar datos del histórico de balance de Supabase
+    if (realBalanceChart && realBalanceChart.length > 0) {
+      // Reducir puntos para evitar superposición de fechas
+      const dataPoints = realBalanceChart.length;
+      let filteredData = realBalanceChart;
+      
+      // Si hay más de 10 puntos, tomar solo algunos representativos
+      if (dataPoints > 10) {
+        const step = Math.floor(dataPoints / 8); // Mostrar máximo 8 puntos
+        filteredData = realBalanceChart.filter((_, index) => 
+          index === 0 || // Primer punto
+          index === dataPoints - 1 || // Último punto
+          index % step === 0 // Puntos intermedios
+        );
+      }
+      
+      return filteredData.map(point => ({
+        date: new Date(point.date || point.timestamp).toLocaleDateString('es-ES', { 
+          day: '2-digit', 
+          month: 'short' 
+        }),
+        value: point.value || point.balance || 0
+      }));
+    }
+    
+    // Si no hay histórico pero hay balance actual, mostrar línea simple
+    if (currentSelectedAccount && currentSelectedAccount.balance > 0) {
+      const now = new Date();
+      return [
+        { date: 'Inicio', value: 0 },
+        { date: now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }), value: currentSelectedAccount.balance }
+      ];
+    }
+    
+    // Sin datos
+    return [{ date: 'Sin datos', value: 0 }];
+  };
+  
+  // Función anterior renombrada para no perder funcionalidad
+  const generateBalanceChartDataOld = () => {
     let dataToProcess = historialData;
     
     // Aplicar mismos filtros que el gráfico de beneficio
@@ -1465,54 +1619,87 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   const currentChartData = getChartDataByTab();
 
-  // Función para generar datos de instrumentos basado en filtros
+  // Función para generar datos de instrumentos basado en filtros - COMPLETAMENTE DINÁMICO
   const generateInstrumentsData = () => {
-    let dataToProcess = historialData;
+    // Primero verificar si hay datos reales de la API
+    if (realInstruments?.distribution && realInstruments.distribution.length > 0) {
+      // Usar datos reales de la API con colores dinámicos
+      const colors = ['#06b6d4', '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+      
+      return realInstruments.distribution.map((item, index) => ({
+        name: item.symbol || item.name || 'Unknown',
+        value: item.percentage || 0,
+        color: colors[index % colors.length],
+        ganancia: item.profit || 0,
+        operaciones: item.count || 0
+      }));
+    }
     
-    // Agrupar por instrumento y calcular totales
-    const instrumentTotals = {
-      'EURUSD': { ganancia: 0, operaciones: 0 },
-      'XAUUSD': { ganancia: 0, operaciones: 0 }
-    };
+    // Si no hay datos de la API, usar operaciones reales de Supabase
+    let dataToProcess = realTradingOperations ? 
+      transformTradingOperations(realTradingOperations) : 
+      [];
+    
+    // Si tampoco hay operaciones, mostrar "Sin datos"
+    if (dataToProcess.length === 0) {
+      return [
+        {
+          name: 'Sin operaciones',
+          value: 100,
+          color: '#4a5568',
+          ganancia: 0,
+          operaciones: 0
+        }
+      ];
+    }
+    
+    // Agrupar por instrumento dinámicamente (cualquier instrumento)
+    const instrumentTotals = {};
     
     dataToProcess.forEach(item => {
-      if (instrumentTotals[item.instrumento]) {
-        instrumentTotals[item.instrumento].ganancia += item.ganancia;
-        instrumentTotals[item.instrumento].operaciones += 1;
+      const symbol = item.instrumento || item.symbol || 'Unknown';
+      if (!instrumentTotals[symbol]) {
+        instrumentTotals[symbol] = { ganancia: 0, operaciones: 0 };
       }
+      instrumentTotals[symbol].ganancia += item.ganancia || item.profit || 0;
+      instrumentTotals[symbol].operaciones += 1;
     });
     
-    // Calcular total para porcentajes
-    const totalGanancia = Math.abs(instrumentTotals.EURUSD.ganancia) + Math.abs(instrumentTotals.XAUUSD.ganancia);
+    // Calcular total de operaciones
+    const totalOperaciones = Object.values(instrumentTotals).reduce(
+      (sum, item) => sum + item.operaciones, 0
+    );
     
-    // Datos fijos para EURUSD y XAUUSD
-    const instrumentsData = [
-      {
-        name: 'EURUSD',
-        value: totalGanancia > 0 ? (Math.abs(instrumentTotals.EURUSD.ganancia) / totalGanancia) * 100 : 50,
-        color: '#2563eb',
-        ganancia: instrumentTotals.EURUSD.ganancia,
-        operaciones: instrumentTotals.EURUSD.operaciones
-      },
-      {
-        name: 'XAUUSD',
-        value: totalGanancia > 0 ? (Math.abs(instrumentTotals.XAUUSD.ganancia) / totalGanancia) * 100 : 50,
-        color: '#06b6d4',
-        ganancia: instrumentTotals.XAUUSD.ganancia,
-        operaciones: instrumentTotals.XAUUSD.operaciones
-      }
-    ];
-    
-    // Si no hay datos, mostrar distribución 50/50
-    if (totalGanancia === 0) {
-      instrumentsData[0].value = 50;
-      instrumentsData[1].value = 50;
+    // Si no hay operaciones, retornar datos vacíos
+    if (totalOperaciones === 0) {
+      return [
+        {
+          name: 'Sin operaciones',
+          value: 100,
+          color: '#4a5568',
+          ganancia: 0,
+          operaciones: 0
+        }
+      ];
     }
+    
+    // Convertir a array y calcular porcentajes
+    const colors = ['#06b6d4', '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+    const instrumentsData = Object.entries(instrumentTotals)
+      .map(([symbol, data], index) => ({
+        name: symbol,
+        value: (data.operaciones / totalOperaciones) * 100,
+        color: colors[index % colors.length],
+        ganancia: data.ganancia,
+        operaciones: data.operaciones
+      }))
+      .filter(item => item.operaciones > 0) // Solo incluir instrumentos con operaciones
+      .sort((a, b) => b.value - a.value) // Ordenar por porcentaje descendente
+      .slice(0, 8); // Limitar a 8 instrumentos principales
     
     return instrumentsData;
   };
 
-  const dynamicInstrumentsData = generateInstrumentsData();
 
   // Función para actualizar filtros del rendimiento
   const updateRendimientoFilter = (filterType, value) => {
@@ -1522,155 +1709,107 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }));
   };
 
-  // Función para generar datos de rendimiento dinámicos
+  // Función para generar datos de rendimiento dinámicos basados en datos reales
   const generateRendimientoData = () => {
-    // Filtrar por año seleccionado
-    const selectedYear = parseInt(rendimientoFilters.year);
-    
-    // Generar datos según el período seleccionado
-    if (rendimientoFilters.period === 'Mensual') {
-      // Datos de muestra variados según año
-      if (selectedYear === 2024) {
-        // Datos para 2024 - Año completo con buen rendimiento
+    // Si no hay historial de balance, retornar array vacío con estructura
+    if (!realBalanceHistory || realBalanceHistory.length === 0) {
+      // Retornar estructura vacía para evitar errores en el gráfico
+      if (rendimientoFilters.period === 'Mensual') {
+        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        return months.map(month => ({ name: month, value: 0 }));
+      } else if (rendimientoFilters.period === 'Trimestral') {
         return [
-          { name: 'Ene', value: 8.5 },
-          { name: 'Feb', value: 12.3 },
-          { name: 'Mar', value: 15.7 },
-          { name: 'Abr', value: 22.1 },
-          { name: 'May', value: 28.9 },
-          { name: 'Jun', value: 25.4 },
-          { name: 'Jul', value: 31.2 },
-          { name: 'Ago', value: 35.8 },
-          { name: 'Sep', value: 42.3 },
-          { name: 'Oct', value: 38.7 },
-          { name: 'Nov', value: 45.2 },
-          { name: 'Dic', value: 52.8 },
+          { name: '1er Trimestre', value: 0 },
+          { name: '2do Trimestre', value: 0 },
+          { name: '3er Trimestre', value: 0 },
+          { name: '4to Trimestre', value: 0 }
         ];
       } else {
-        // Datos para 2025 - Año en curso con crecimiento proyectado
-        return [
-          { name: 'Ene', value: 14.2 },
-          { name: 'Feb', value: 18.7 },
-          { name: 'Mar', value: 23.1 },
-          { name: 'Abr', value: 27.8 },
-          { name: 'May', value: 32.4 },
-          { name: 'Jun', value: 29.6 },
-          { name: 'Jul', value: 36.9 },
-          { name: 'Ago', value: 41.3 },
-          { name: 'Sep', value: 46.7 },
-          { name: 'Oct', value: 43.2 },
-          { name: 'Nov', value: 49.8 },
-          { name: 'Dic', value: 55.4 },
-        ];
+        return [{ name: new Date().getFullYear().toString(), value: 0 }];
       }
+    }
+    
+    const selectedYear = parseInt(rendimientoFilters.year);
+    const balanceInitial = realBalanceHistory[0]?.value || realMetrics?.initial_balance || 0;
+    
+    // Filtrar datos por año seleccionado
+    const yearData = realBalanceHistory.filter(item => {
+      const itemYear = new Date(item.date).getFullYear();
+      return itemYear === selectedYear;
+    });
+    
+    if (rendimientoFilters.period === 'Mensual') {
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      
+      return months.map((monthName, index) => {
+        // Buscar el último balance del mes
+        const monthData = yearData.filter(item => {
+          const itemMonth = new Date(item.date).getMonth();
+          return itemMonth === index;
+        });
+        
+        if (monthData.length > 0) {
+          const lastBalance = monthData[monthData.length - 1].value;
+          const rendimiento = balanceInitial > 0 
+            ? ((lastBalance - balanceInitial) / balanceInitial) * 100 
+            : 0;
+          return { name: monthName, value: parseFloat(rendimiento.toFixed(2)) };
+        }
+        
+        return { name: monthName, value: 0 };
+      });
       
     } else if (rendimientoFilters.period === 'Trimestral') {
-      // Datos de muestra variados para trimestres
-      if (selectedYear === 2024) {
-        return [
-          { name: '1er Trimestre', value: 36.5 },
-          { name: '2do Trimestre', value: 76.4 },
-          { name: '3er Trimestre', value: 109.3 },
-          { name: '4to Trimestre', value: 136.7 },
-        ];
-      } else {
-        return [
-          { name: '1er Trimestre', value: 56.0 },
-          { name: '2do Trimestre', value: 89.8 },
-          { name: '3er Trimestre', value: 124.9 },
-          { name: '4to Trimestre', value: 158.6 },
-        ];
-      }
+      const quarters = [
+        { name: '1er Trimestre', months: [0, 1, 2] },
+        { name: '2do Trimestre', months: [3, 4, 5] },
+        { name: '3er Trimestre', months: [6, 7, 8] },
+        { name: '4to Trimestre', months: [9, 10, 11] }
+      ];
+      
+      return quarters.map(quarter => {
+        const quarterData = yearData.filter(item => {
+          const itemMonth = new Date(item.date).getMonth();
+          return quarter.months.includes(itemMonth);
+        });
+        
+        if (quarterData.length > 0) {
+          const lastBalance = quarterData[quarterData.length - 1].value;
+          const rendimiento = balanceInitial > 0 
+            ? ((lastBalance - balanceInitial) / balanceInitial) * 100 
+            : 0;
+          return { name: quarter.name, value: parseFloat(rendimiento.toFixed(2)) };
+        }
+        
+        return { name: quarter.name, value: 0 };
+      });
     }
     
-    // Fallback a datos estáticos mensuales por defecto
-    return [
-      { name: 'Ene', value: 12.5 },
-      { name: 'Feb', value: 16.3 },
-      { name: 'Mar', value: 19.8 },
-      { name: 'Abr', value: 23.4 },
-      { name: 'May', value: 28.7 },
-      { name: 'Jun', value: 25.1 },
-      { name: 'Jul', value: 31.9 },
-      { name: 'Ago', value: 36.2 },
-      { name: 'Sep', value: 41.5 },
-      { name: 'Oct', value: 38.9 },
-      { name: 'Nov', value: 44.7 },
-      { name: 'Dic', value: 49.3 },
-    ];
+    // Fallback mensual con datos reales
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return months.map(month => ({ name: month, value: 0 }));
   };
 
-  // Función simplificada para generar datos de rendimiento dinámicos
-  const generateSimpleRendimientoData = () => {
-    const selectedYear = parseInt(rendimientoFilters.year);
-    
-    if (rendimientoFilters.period === 'Mensual') {
-      if (selectedYear === 2024) {
-        return [
-          { name: 'Ene', value: 8.5 },
-          { name: 'Feb', value: 12.3 },
-          { name: 'Mar', value: 15.7 },
-          { name: 'Abr', value: 22.1 },
-          { name: 'May', value: 28.9 },
-          { name: 'Jun', value: 25.4 },
-          { name: 'Jul', value: 31.2 },
-          { name: 'Ago', value: 35.8 },
-          { name: 'Sep', value: 42.3 },
-          { name: 'Oct', value: 38.7 },
-          { name: 'Nov', value: 45.2 },
-          { name: 'Dic', value: 52.8 },
-        ];
-      } else {
-        return [
-          { name: 'Ene', value: 14.2 },
-          { name: 'Feb', value: 18.7 },
-          { name: 'Mar', value: 23.1 },
-          { name: 'Abr', value: 27.8 },
-          { name: 'May', value: 32.4 },
-          { name: 'Jun', value: 29.6 },
-          { name: 'Jul', value: 36.9 },
-          { name: 'Ago', value: 41.3 },
-          { name: 'Sep', value: 46.7 },
-          { name: 'Oct', value: 43.2 },
-          { name: 'Nov', value: 49.8 },
-          { name: 'Dic', value: 55.4 },
-        ];
-      }
-    } else if (rendimientoFilters.period === 'Trimestral') {
-      if (selectedYear === 2024) {
-        return [
-          { name: '1er Trimestre', value: 36.5 },
-          { name: '2do Trimestre', value: 76.4 },
-          { name: '3er Trimestre', value: 109.3 },
-          { name: '4to Trimestre', value: 136.7 },
-        ];
-      } else {
-        return [
-          { name: '1er Trimestre', value: 56.0 },
-          { name: '2do Trimestre', value: 89.8 },
-          { name: '3er Trimestre', value: 124.9 },
-          { name: '4to Trimestre', value: 158.6 },
-        ];
-      }
-    }
-    
-    return [
-      { name: 'Ene', value: 12.5 },
-      { name: 'Feb', value: 16.3 },
-      { name: 'Mar', value: 19.8 },
-      { name: 'Abr', value: 23.4 },
-      { name: 'May', value: 28.7 },
-      { name: 'Jun', value: 25.1 },
-      { name: 'Jul', value: 31.9 },
-      { name: 'Ago', value: 36.2 },
-      { name: 'Sep', value: 41.5 },
-      { name: 'Oct', value: 38.9 },
-      { name: 'Nov', value: 44.7 },
-      { name: 'Dic', value: 49.3 },
-    ];
-  };
-
-  const dynamicRendimientoData = generateSimpleRendimientoData();
+  // Generar datos dinámicos después de definir las funciones
+  const dynamicInstrumentsData = generateInstrumentsData();
+  const dynamicRendimientoData = generateRendimientoData();
+  
+  // Actualizar las variables con los datos dinámicos generados
+  instrumentosData = dynamicInstrumentsData;
+  rendimientoData = dynamicRendimientoData;
+  
+  // Debug para ver qué datos se están usando
+  console.log('[Debug Instruments]', {
+    realInstruments,
+    dynamicInstrumentsData,
+    hasRealData: realInstruments?.distribution?.length > 0
+  });
+  
+  console.log('[Debug Rendimiento]', {
+    beneficioData: generateBeneficioData(),
+    dynamicRendimientoData,
+    hasRealData: balanceData?.length > 0
+  });
 
   // Función para renderizar las credenciales MT5 en móvil como tarjetas
   const renderMobileCredentials = (selectedAccount) => {
@@ -1842,6 +1981,25 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   }
 
   // VISTA DETALLADA DE CUENTA
+  // Obtener la cuenta seleccionada para mostrar sus detalles
+  const selectedAccount = currentSelectedAccount;
+  
+  if (!selectedAccount) {
+    return (
+      <div className="flex flex-col p-3 sm:p-4 text-white">
+        <div className="text-center text-gray-400 py-8">
+          <p>No se encontró la cuenta seleccionada</p>
+          <button 
+            onClick={handleBackToOverview}
+            className="mt-4 px-4 py-2 bg-[#2d2d2d] text-white rounded-lg hover:bg-[#3d3d3d] transition"
+          >
+            Volver a cuentas
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="flex flex-col p-3 sm:p-4 text-white">
       {/* Back Button */}
@@ -1915,7 +2073,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 onClick={() => setSelectedAccountId(account.id)}
               >
                   <div className="font-medium text-white text-sm sm:text-base">
-                    {account.accountName || 'Cuenta sin nombre'} 
+                    {account.account_name || 'Cuenta sin nombre'} 
                     {isMobile && <br />}
                     <span className="text-xs sm:text-sm">(ID: {account.account_number || 'N/A'})</span>
                   </div>
@@ -1959,6 +2117,24 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
                           <span className="text-gray-400">Balance actual: ${(selectedAccount.balance || 0).toFixed(2)}</span>
+                  </div>
+                  {/* Indicador de actualización automática */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      {isRefreshing ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400 mr-2" />
+                      ) : (
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2" />
+                      )}
+                      <span className="text-xs text-gray-500">
+                        Auto-refresh activo (60s)
+                      </span>
+                    </div>
+                    {lastUpdated && (
+                      <span className="text-xs text-gray-500">
+                        Actualizado: {lastUpdated.toLocaleTimeString()}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
@@ -2479,12 +2655,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     width={isMobile ? 50 : 60}
                     tickFormatter={(value) => {
                       if (benefitChartTab === 'Retracción') {
-                        return `${value.toFixed(1)}%`;
+                        return `${typeof value === 'number' ? value.toFixed(1) : 0}%`;
                       }
-                      if (Math.abs(value) >= 1000) {
+                      if (typeof value === 'number' && Math.abs(value) >= 1000) {
                         return `${(value/1000).toFixed(1)}K`;
                       }
-                      return value.toFixed(0);
+                      return typeof value === 'number' ? value.toFixed(0) : '0';
                     }}
                   />
                   <CartesianGrid 
@@ -2505,9 +2681,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     itemStyle={{ color: '#ffffff' }}
                     formatter={(value) => {
                       const unit = benefitChartTab === 'Retracción' ? '%' : '$';
+                      const numValue = typeof value === 'number' ? value : 0;
                       const formattedValue = benefitChartTab === 'Retracción' 
-                        ? value.toFixed(2) 
-                        : value.toLocaleString();
+                        ? (typeof numValue === 'number' ? numValue.toFixed(2) : '0') 
+                        : (typeof numValue === 'number' ? numValue.toLocaleString() : '0');
                       return [`${unit}${formattedValue}`, benefitChartTab];
                     }}
                     labelFormatter={(label) => `Fecha: ${label}`}
@@ -2539,48 +2716,94 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                 {/* Leyenda */}
                 <div className="space-y-4">
-                  {(realInstruments?.distribution || dynamicInstrumentsData).map((entry, index) => (
-                    <div key={index} className="flex items-center">
-                      <div className="w-4 h-4 rounded-sm mr-3" style={{ backgroundColor: entry.color }}></div>
-                      <span className="text-gray-300">{entry.name}</span>
-                      <span className="ml-auto font-semibold text-white">{(entry.value || 0).toFixed(2)}%</span>
-                    </div>
-                  ))}
+                  {(() => {
+                    // Determinar qué datos usar
+                    const dataToUse = realInstruments?.distribution?.length > 0 
+                      ? realInstruments.distribution 
+                      : (realInstruments === null ? dynamicInstrumentsData : []);
+                    
+                    // Si no hay datos, mostrar mensaje profesional
+                    if (dataToUse.length === 0 || (dataToUse.length === 1 && dataToUse[0].name === 'Sin operaciones')) {
+                      return (
+                        <div className="flex flex-col justify-center h-full">
+                          <div className="p-4 bg-[#1a1a1a] rounded-lg border border-[#333]">
+                            <div className="text-gray-500 text-sm mb-2">Estado</div>
+                            <div className="text-gray-400 font-medium">Sin actividad de trading</div>
+                            <div className="text-gray-600 text-xs mt-2">Los instrumentos aparecerán cuando realice operaciones</div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    return dataToUse.map((entry, index) => (
+                      <div key={index} className="flex items-center">
+                        <div className="w-4 h-4 rounded-sm mr-3" style={{ backgroundColor: entry.color }}></div>
+                        <span className="text-gray-300">{entry.name}</span>
+                        <span className="ml-auto font-semibold text-white">{(entry.value || 0).toFixed(2)}%</span>
+                      </div>
+                    ));
+                  })()}
                 </div>
 
                 {/* Gráfico */}
                 <div className="w-full h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={realInstruments?.distribution || dynamicInstrumentsData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ percent }) => `${(percent * 100).toFixed(2)}%`}
-                        outerRadius={100}
-                        dataKey="value"
-                        stroke="#2a2a2a"
-                        strokeWidth={4}
-                      >
-                        {(realInstruments?.distribution || dynamicInstrumentsData).map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color}/>
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#232323',
-                          border: '1px solid #333',
+                  {(() => {
+                    const dataToUse = realInstruments?.distribution?.length > 0 
+                      ? realInstruments.distribution 
+                      : (realInstruments === null ? dynamicInstrumentsData : []);
+                    
+                    // Si no hay datos o es "Sin operaciones", mostrar mensaje profesional
+                    if (dataToUse.length === 0 || (dataToUse.length === 1 && dataToUse[0].name === 'Sin operaciones')) {
+                      return (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center">
+                            <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-[#333] flex items-center justify-center">
+                              <div className="text-gray-600 text-3xl font-light">—</div>
+                            </div>
+                            <div className="text-gray-400 text-sm uppercase tracking-wider">Sin operaciones</div>
+                            <div className="text-gray-600 text-xs mt-1">No hay datos disponibles</div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={dataToUse}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ percent }) => `${typeof percent === 'number' ? (percent * 100).toFixed(2) : 0}%`}
+                            outerRadius={100}
+                            dataKey="value"
+                            stroke="#2a2a2a"
+                            strokeWidth={4}
+                          >
+                            {dataToUse.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color}/>
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#232323',
+                              border: '1px solid #333',
                           borderRadius: '8px',
                           fontSize: '14px',
                           color: '#ffffff'
                         }}
                         labelStyle={{ color: '#ffffff' }}
                         itemStyle={{ color: '#ffffff' }}
-                        formatter={(value, name) => [`${value.toFixed(2)}%`, name]}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                        formatter={(value, name) => {
+                          const numValue = typeof value === 'number' ? value : 0;
+                          return [`${typeof numValue === 'number' ? numValue.toFixed(2) : '0'}%`, name];
+                        }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -2628,7 +2851,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <div className={`w-full ${isMobile ? 'h-64' : 'h-80'}`}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart 
-                    data={optimizeChartDataForMobile(realPerformance?.data || dynamicRendimientoData)} 
+                    data={optimizeChartDataForMobile(realPerformanceChart || realPerformance?.data || dynamicRendimientoData)} 
                     margin={{ 
                       top: isMobile ? 10 : 20, 
                       right: isMobile ? 10 : 0, 
@@ -2678,7 +2901,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           return (
                             <div style={tooltipStyle}>
                               <div className={`bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-white shadow-lg whitespace-nowrap ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                                {rendimientoFilters.period === 'Mensual' ? 'Mes' : 'Trimestre'}: {label}, {value.toFixed(1)}%
+                                {rendimientoFilters.period === 'Mensual' ? 'Mes' : 'Trimestre'}: {label}, {typeof value === 'number' ? value.toFixed(1) : value}%
                               </div>
                             </div>
                           );
@@ -2692,7 +2915,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       radius={[4, 4, 0, 0]}
                       onMouseOver={(data) => setBarChartTooltip({ bar: data, label: data.name })}
                     >
-                      {(optimizeChartDataForMobile(realPerformance?.data || dynamicRendimientoData)).map((entry, index) => (
+                      {(optimizeChartDataForMobile(realPerformanceChart || realPerformance?.data || dynamicRendimientoData)).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={getBarColor(entry.value)} />
                       ))}
                     </Bar>

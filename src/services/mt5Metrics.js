@@ -10,7 +10,7 @@ import { getSession } from '../supabase/config';
 // Create axios instance with base configuration
 const baseURL = import.meta.env.DEV 
   ? '' // Use Vite proxy in development
-  : (import.meta.env.VITE_BROKER_API_URL || 'https://62.171.177.212:8443');
+  : (import.meta.env.VITE_BROKER_API_URL || 'https://apekapital.com:444');
 
 const mt5Api = axios.create({
   baseURL: baseURL,

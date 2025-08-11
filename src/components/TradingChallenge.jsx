@@ -12,6 +12,7 @@ export default function TradingChallengeUI() {
   const [accountTypeSelection, setAccountTypeSelection] = useState('Zero Spread');
   const [leverage, setLeverage] = useState('');
   const [showLeverageDropdown, setShowLeverageDropdown] = useState(false);
+  const [initialBalance, setInitialBalance] = useState('');  // Campo para balance inicial
   
   // Loading and feedback states
   const [isLoading, setIsLoading] = useState(false);
@@ -54,7 +55,8 @@ export default function TradingChallengeUI() {
         accountName: accountName.trim(),
         accountType,
         accountTypeSelection,
-        leverage
+        leverage,
+        ...(accountType === 'Real' && initialBalance && { initialBalance: parseFloat(initialBalance) })
       };
 
       const result = await createTradingAccount(currentUser.id, accountData);
@@ -73,6 +75,7 @@ export default function TradingChallengeUI() {
         // Reset form
         setAccountName('');
         setLeverage('');
+        setInitialBalance('');
         setAccountType('Real');
         setAccountTypeSelection('Zero Spread');
     } else {
@@ -209,6 +212,26 @@ export default function TradingChallengeUI() {
                 </div>
                   </div>
                   
+              {/* Initial Balance Input - Solo para cuentas reales */}
+              {accountType === 'Real' && (
+                <div className="mb-6 md:mb-8">
+                  <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">Balance Inicial (USD)</h3>
+                  <input
+                    type="number"
+                    value={initialBalance}
+                    onChange={(e) => setInitialBalance(e.target.value)}
+                    placeholder="10000"
+                    min="0"
+                    step="100"
+                    disabled={isLoading}
+                    className="w-full bg-transparent border border-gray-700 rounded-lg px-4 py-3 text-base md:text-lg focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-50"
+                  />
+                  <p className="text-gray-400 text-sm mt-2">
+                    Monto inicial que se depositará en la cuenta al crearla. Dejar vacío para crear sin balance.
+                  </p>
+                </div>
+              )}
+              
               {/* Leverage Selection */}
               <div className="mb-8 md:mb-10">
                 <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">Apalancamiento</h3>
