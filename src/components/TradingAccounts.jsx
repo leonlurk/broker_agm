@@ -595,8 +595,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 bandera: getInstrumentIcon(op.symbol || 'N/A'),
                 tipo: op.type === 'BUY' ? 'Compra' : op.type === 'SELL' ? 'Venta' : op.type,
                 lotaje: (op.volume || 0).toFixed(2),
-                stopLossFormatted: op.stop_loss ? op.stop_loss.toFixed(5) : '0.0',
-                takeProfitFormatted: op.take_profit ? op.take_profit.toFixed(5) : '0.0',
+                stopLossFormatted: op.stop_loss ? parseFloat(op.stop_loss).toFixed(5) : '0.0',
+                takeProfitFormatted: op.take_profit ? parseFloat(op.take_profit).toFixed(5) : '0.0',
                 precioApertura: (op.open_price || 0).toFixed(5),
                 precioCierre: (op.close_price || 0).toFixed(5),
                 pips: op.pips || 0,
@@ -2206,8 +2206,22 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Función para sincronizar manualmente
   const handleManualSync = async () => {
     try {
+      // Usar account_number en lugar de accountNumber
+      const accountNumber = selectedAccount?.account_number || selectedAccount?.accountNumber;
+      
+      if (!selectedAccount || !accountNumber) {
+        toast.error('No se encontró la cuenta seleccionada');
+        console.error('Selected account:', selectedAccount);
+        return;
+      }
+      
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/sync/account/${selectedAccount.accountNumber}`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://localhost:8443';
+      
+      console.log('Syncing account:', accountNumber);
+      console.log('API URL:', apiUrl);
+      
+      const response = await fetch(`${apiUrl}/api/v1/sync/account/${accountNumber}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -2220,7 +2234,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         // Refrescar los datos
         await refreshAccounts();
         // Recargar métricas
-        loadAccountMetrics(selectedAccount.accountNumber);
+        loadAccountMetrics(accountNumber);
       } else {
         toast.error('Error al sincronizar');
       }
