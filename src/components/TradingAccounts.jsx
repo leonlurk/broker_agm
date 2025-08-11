@@ -2242,8 +2242,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         toast.success(`Sincronización completada: ${result.deals_synced} operaciones actualizadas`);
         // Refrescar los datos
         await refreshAccounts();
-        // Recargar métricas
-        loadAccountMetrics(accountNumber);
+        // Las métricas se actualizarán automáticamente con refreshAccounts
       } else {
         toast.error('Error al sincronizar');
       }
