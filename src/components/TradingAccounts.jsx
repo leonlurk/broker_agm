@@ -2215,7 +2215,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         return;
       }
       
-      const token = localStorage.getItem('token');
+      // Obtener el token de Supabase como lo hacen los otros servicios
+      const { supabase } = await import('../supabase/config');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        toast.error('No se encontró sesión activa');
+        return;
+      }
+      
       // Usar la URL correcta de apekapital
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444';
       
@@ -2225,7 +2233,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       const response = await fetch(`${apiUrl}/api/v1/sync/account/${accountNumber}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${session.access_token}`
         }
       });
       
