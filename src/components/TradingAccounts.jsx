@@ -233,7 +233,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   
   // Estados para filtros del gráfico de rendimiento
   const [rendimientoFilters, setRendimientoFilters] = useState({
-    year: '2024',
+    year: '2025',
     period: 'Mensual'
   });
   const [barChartTooltip, setBarChartTooltip] = useState(null);
@@ -494,6 +494,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     scrollToTopManual(scrollContainerRef); // Scroll al volver a vista general
   };
 
+  // Ref para prevenir llamadas duplicadas
+  const loadingRef = useRef(false);
+  const lastLoadedAccountRef = useRef(null);
+  
   // useEffect para cargar datos reales de MT5 cuando se selecciona una cuenta con auto-refresh
   useEffect(() => {
     const loadRealMetricsData = async () => {
@@ -501,6 +505,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       
       const selectedAccount = getAllAccounts().find(acc => acc.id === selectedAccountId);
       if (!selectedAccount || !selectedAccount.account_number) return;
+      
+      // Prevenir llamadas duplicadas para la misma cuenta
+      if (loadingRef.current || lastLoadedAccountRef.current === selectedAccount.account_number) {
+        return;
+      }
+      
+      loadingRef.current = true;
       
       // No mostrar loading en auto-refresh, solo en carga inicial
       if (!realMetrics && !realStatistics) {
@@ -549,42 +560,73 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           
           // Actualizar historial de balance
           if (balanceHistory && balanceHistory.length > 0) {
-            console.log('[TradingAccounts] Usando historial de balance optimizado:', balanceHistory);
+            console.log('[TradingAccounts] Balance history recibido:', balanceHistory.length, 'puntos');
+            console.log('[TradingAccounts] Balance history muestra:', balanceHistory.slice(0, 2));
             // Formatear para el gráfico
             const formattedBalance = balanceHistory.map(item => ({
-              date: item.date,
-              value: item.value || item.balance || 0
+              date: item.timestamp || item.date,
+              timestamp: item.timestamp || item.date,
+              value: item.value || item.balance || 0,
+              balance: item.balance || item.value || 0
             }));
+            console.log('[TradingAccounts] Balance formateado:', formattedBalance.slice(0, 2));
             setRealBalanceHistory(formattedBalance);
+          } else {
+            console.log('[TradingAccounts] NO hay balance history!');
           }
         }
         
         // Usar operaciones del dashboard si están disponibles
         if (dashboardData.recent_operations && dashboardData.recent_operations.length > 0) {
-          // Usar operaciones del dashboard optimizado
+          // Transformar las operaciones al formato esperado por la tabla
           const transformedOps = {
-            operations: dashboardData.recent_operations.map(op => ({
-              id: op.ticket,
-              ticket: op.ticket,
-              symbol: op.symbol,
-              type: op.operation_type || op.type,
-              volume: op.volume,
-              openPrice: op.open_price || op.openPrice,
-              closePrice: op.close_price || op.closePrice,
-              openTime: op.open_time || op.openTime,
-              closeTime: op.close_time || op.closeTime,
-              stopLoss: op.stop_loss || op.stopLoss,
-              takeProfit: op.take_profit || op.takeProfit,
-              profit: op.profit,
-              swap: op.swap || 0,
-              commission: op.commission || 0,
-              status: op.status || 'CLOSED',
-              pips: Math.round(Math.abs((op.close_price || op.closePrice) - (op.open_price || op.openPrice)) * 10000),
-              stopLossPercentage: op.stop_loss ? 
-                Math.abs(((op.open_price || op.openPrice) - op.stop_loss) / (op.open_price || op.openPrice) * 100).toFixed(1) + '%' : '-',
-              takeProfitPercentage: op.take_profit ? 
-                Math.abs((op.take_profit - (op.open_price || op.openPrice)) / (op.open_price || op.openPrice) * 100).toFixed(1) + '%' : '-'
-            })),
+            operations: dashboardData.recent_operations.map(op => {
+              const openTime = op.open_time ? new Date(op.open_time) : null;
+              const closeTime = op.close_time ? new Date(op.close_time) : null;
+              
+              return {
+                // Formato para la tabla de historial
+                fechaApertura: openTime ? openTime.toLocaleDateString() : '-',
+                tiempoApertura: openTime ? openTime.toLocaleTimeString() : '-',
+                fechaCierre: closeTime ? closeTime.toLocaleDateString() : '-',
+                tiempoCierre: closeTime ? closeTime.toLocaleTimeString() : '-',
+                fechaISO: op.close_time || op.open_time,
+                instrumento: op.symbol || 'N/A',
+                bandera: getInstrumentIcon(op.symbol || 'N/A'),
+                tipo: op.type === 'BUY' ? 'Compra' : op.type === 'SELL' ? 'Venta' : op.type,
+                lotaje: (op.volume || 0).toFixed(2),
+                stopLoss: op.stop_loss ? op.stop_loss.toFixed(5) : '0.0',
+                takeProfit: op.take_profit ? op.take_profit.toFixed(5) : '0.0',
+                precioApertura: (op.open_price || 0).toFixed(5),
+                precioCierre: (op.close_price || 0).toFixed(5),
+                pips: op.pips || 0,
+                idPosicion: op.ticket || '-',
+                resultado: `$${(op.profit || 0).toFixed(2)}`,
+                resultadoPct: `${((op.profit || 0) / 10000 * 100).toFixed(1)}%`,
+                resultadoColor: (op.profit || 0) >= 0 ? 'text-green-400' : 'text-red-400',
+                ganancia: op.profit || 0,
+                stopLossPct: op.stop_loss ? 
+                  Math.abs((op.stop_loss - op.open_price) / op.open_price * 100).toFixed(1) + '%' : '-',
+                takeProfitPct: op.take_profit ? 
+                  Math.abs((op.take_profit - op.open_price) / op.open_price * 100).toFixed(1) + '%' : '-',
+                // También mantener los campos originales para compatibilidad
+                id: op.ticket,
+                ticket: op.ticket,
+                symbol: op.symbol,
+                type: op.operation_type || op.type,
+                volume: op.volume,
+                openPrice: op.open_price,
+                closePrice: op.close_price,
+                openTime: op.open_time,
+                closeTime: op.close_time,
+                stopLoss: op.stop_loss,
+                takeProfit: op.take_profit,
+                profit: op.profit,
+                swap: op.swap || 0,
+                commission: op.commission || 0,
+                status: op.status || 'CLOSED'
+              };
+            }),
             total_operations: dashboardData.recent_operations.length
           };
           setRealHistory(transformedOps);
@@ -602,6 +644,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       } finally {
         setIsLoadingMetrics(false);
         setIsRefreshing(false);
+        loadingRef.current = false;
+        // Guardar la cuenta cargada exitosamente
+        if (selectedAccount) {
+          lastLoadedAccountRef.current = selectedAccount.account_number;
+        }
       }
     };
     
@@ -629,7 +676,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         clearInterval(refreshInterval);
       }
     };
-  }, [selectedAccountId, rendimientoFilters.period, rendimientoFilters.year, historyFilters.dateFrom, historyFilters.dateTo]);
+    
+    // Resetear el ref cuando cambia la cuenta
+    return () => {
+      loadingRef.current = false;
+      if (selectedAccountId !== lastLoadedAccountRef.current) {
+        lastLoadedAccountRef.current = null;
+      }
+    };
+  }, [selectedAccountId]); // Solo recargar cuando cambia la cuenta seleccionada
 
   // Función helper para obtener el estado de la cuenta
   const getAccountStatus = (account) => {
@@ -736,6 +791,20 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // Generar datos de beneficio basados en el historial de balance real
   const generateBeneficioData = () => {
+    // Usar datos reales del balance history si están disponibles
+    if (realBalanceHistory && realBalanceHistory.length > 0) {
+      // Tomar los últimos 6 puntos para el gráfico
+      const recentData = realBalanceHistory.slice(-6);
+      return recentData.map(item => ({
+        name: new Date(item.date || item.timestamp).toLocaleDateString('es-ES', { 
+          day: '2-digit', 
+          month: 'short' 
+        }),
+        value: item.value || item.balance || 0
+      }));
+    }
+    
+    // Fallback si hay balanceData
     if (balanceData && balanceData.length > 0) {
       // Usar los datos reales del balance
       return balanceData.slice(-6).map(item => ({
@@ -761,6 +830,62 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   let instrumentosData = [];
   let rendimientoData = [];
 
+  // Función para obtener el icono del instrumento con fallback
+  const getInstrumentIcon = (symbol) => {
+    // Icono por defecto (moneda genérica)
+    const defaultIcon = 'https://cdn-icons-png.flaticon.com/512/2150/2150150.png';
+    
+    if (!symbol) return defaultIcon;
+    
+    // Mapeo de símbolos a iconos/banderas
+    const iconMap = {
+      'EURUSD': 'https://flagcdn.com/w40/eu.png',
+      'GBPUSD': 'https://flagcdn.com/w40/gb.png',
+      'USDJPY': 'https://flagcdn.com/w40/us.png',
+      'AUDUSD': 'https://flagcdn.com/w40/au.png',
+      'USDCAD': 'https://flagcdn.com/w40/us.png',  // US flag for USD pairs
+      'NZDUSD': 'https://flagcdn.com/w40/nz.png',
+      'EURJPY': 'https://flagcdn.com/w40/eu.png',
+      'GBPJPY': 'https://flagcdn.com/w40/gb.png',
+      'AUDJPY': 'https://flagcdn.com/w40/au.png',  // AU flag for AUD pairs
+      'EURGBP': 'https://flagcdn.com/w40/eu.png',
+      'XAUUSD': 'https://cdn-icons-png.flaticon.com/512/2318/2318032.png', // Gold icon
+      'GOLD': 'https://cdn-icons-png.flaticon.com/512/2318/2318032.png',
+      'XAGUSD': 'https://cdn-icons-png.flaticon.com/512/861/861184.png', // Silver icon
+      'BTCUSD': 'https://cdn-icons-png.flaticon.com/512/1490/1490849.png', // Bitcoin icon
+      'ETHUSD': 'https://cdn-icons-png.flaticon.com/512/7016/7016537.png', // Ethereum icon
+    };
+    
+    // Si existe un mapeo específico, usarlo
+    if (iconMap[symbol]) {
+      return iconMap[symbol];
+    }
+    
+    // Para otros pares, intentar obtener la bandera del primer país
+    if (symbol && symbol.length >= 6) {
+      const currency = symbol.substring(0, 3);
+      const currencyToCountry = {
+        'EUR': 'eu',
+        'USD': 'us',
+        'GBP': 'gb',
+        'JPY': 'jp',
+        'AUD': 'au',
+        'CAD': 'ca',
+        'NZD': 'nz',
+        'CHF': 'ch',
+        'SEK': 'se',
+        'NOK': 'no'
+      };
+      
+      if (currencyToCountry[currency]) {
+        return `https://flagcdn.com/w40/${currencyToCountry[currency]}.png`;
+      }
+    }
+    
+    // Icono por defecto para instrumentos desconocidos
+    return 'https://cdn-icons-png.flaticon.com/512/2150/2150150.png';
+  };
+
   // Transformar operaciones de Supabase al formato de la tabla
   const transformTradingOperations = (operations) => {
     if (!operations || operations.length === 0) return [];
@@ -772,10 +897,17 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       
       // Calcular pips según el instrumento
       let pips = 0;
-      if (op.symbol === 'EURUSD') {
-        pips = Math.round((op.close_price - op.open_price) * 10000);
-      } else if (op.symbol === 'XAUUSD') {
+      if (op.symbol && op.symbol.includes('JPY')) {
+        pips = Math.round((op.close_price - op.open_price) * 100);
+      } else if (op.symbol === 'XAUUSD' || op.symbol === 'GOLD') {
         pips = Math.round((op.close_price - op.open_price) * 10);
+      } else {
+        pips = Math.round((op.close_price - op.open_price) * 10000);
+      }
+      
+      // Si es venta, invertir el signo de los pips
+      if (op.operation_type === 'SELL' || op.type === 'SELL') {
+        pips = -pips;
       }
       
       // Formatear duración
@@ -800,7 +932,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         tiempoApertura: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
         tiempoCierre: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
         instrumento: op.symbol,
-        bandera: op.symbol === 'EURUSD' ? '/EU.svg' : '/gold.svg',
+        bandera: getInstrumentIcon(op.symbol),
         tipo: op.operation_type === 'BUY' ? 'Compra' : 'Venta',
         lotaje: op.volume.toFixed(2),
         stopLoss: op.stop_loss ? op.stop_loss.toFixed(5) : 'N/A',
@@ -1136,8 +1268,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     const dataSource = realHistory?.operations || historialData;
     return dataSource.filter(item => {
       // Filtro por instrumento
-      if (historyFilters.instrument !== 'Todos' && item.instrumento !== historyFilters.instrument) {
-        return false;
+      if (historyFilters.instrument !== 'Todos') {
+        // Normalizar ambos formatos (EUR/USD -> EURUSD)
+        const normalizedFilter = historyFilters.instrument.replace('/', '');
+        const normalizedInstrument = item.instrumento?.replace('/', '') || '';
+        if (normalizedInstrument !== normalizedFilter) {
+          return false;
+        }
       }
       
       // Filtro por tipo
@@ -1174,7 +1311,34 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // Función para generar datos del gráfico de beneficio total con optimización móvil
   const generateBenefitChartData = () => {
-    // Aplicar filtros del historial al gráfico
+    // Usar datos del balance history si están disponibles para el gráfico de beneficio
+    if (realBalanceHistory && realBalanceHistory.length > 0) {
+      // Calcular el beneficio acumulado desde el balance inicial
+      const initialBalance = realBalanceHistory[0]?.value || 0;
+      
+      // Tomar los últimos puntos según el filtro
+      let dataPoints = realBalanceHistory;
+      if (benefitChartFilter === 'Último mes') {
+        dataPoints = realBalanceHistory.slice(-30); // Últimos 30 días
+      } else if (benefitChartFilter === 'Últimos 3 meses') {
+        dataPoints = realBalanceHistory.slice(-90); // Últimos 90 días
+      }
+      
+      // Reducir puntos para evitar aglomeración
+      const step = Math.ceil(dataPoints.length / (isMobile ? 6 : 12));
+      const reducedData = dataPoints.filter((_, index) => index % step === 0 || index === dataPoints.length - 1);
+      
+      return reducedData.map(point => ({
+        date: new Date(point.date || point.timestamp).toLocaleDateString('es-ES', { 
+          day: '2-digit', 
+          month: 'short' 
+        }),
+        value: (point.value || point.balance || 0) - initialBalance,
+        dateISO: point.date || point.timestamp
+      }));
+    }
+    
+    // Fallback al código anterior si no hay datos de balance
     let dataToProcess = realHistory?.operations || historialData;
     
     // Aplicar filtros del historial si están activos
@@ -1313,15 +1477,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Función para generar datos de Balance
   const generateBalanceChartData = () => {
     // Usar datos del histórico de balance de Supabase
-    if (realBalanceChart && realBalanceChart.length > 0) {
+    if (realBalanceHistory && realBalanceHistory.length > 0) {
       // Reducir puntos para evitar superposición de fechas
-      const dataPoints = realBalanceChart.length;
-      let filteredData = realBalanceChart;
+      const dataPoints = realBalanceHistory.length;
+      let filteredData = realBalanceHistory;
       
       // Si hay más de 10 puntos, tomar solo algunos representativos
       if (dataPoints > 10) {
         const step = Math.floor(dataPoints / 8); // Mostrar máximo 8 puntos
-        filteredData = realBalanceChart.filter((_, index) => 
+        filteredData = realBalanceHistory.filter((_, index) => 
           index === 0 || // Primer punto
           index === dataPoints - 1 || // Último punto
           index % step === 0 // Puntos intermedios
@@ -1478,6 +1642,32 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // Función para generar datos de Retracción
   const generateDrawdownChartData = () => {
+    // Usar datos reales si están disponibles
+    if (realBalanceHistory && realBalanceHistory.length > 0) {
+      let peakBalance = realBalanceHistory[0]?.value || 0;
+      
+      return realBalanceHistory.map(point => {
+        const currentBalance = point.value || point.balance || 0;
+        
+        // Actualizar el pico si el balance actual es mayor
+        if (currentBalance > peakBalance) {
+          peakBalance = currentBalance;
+        }
+        
+        // Calcular drawdown como porcentaje desde el pico
+        const drawdown = peakBalance > 0 ? ((peakBalance - currentBalance) / peakBalance) * 100 : 0;
+        
+        return {
+          date: new Date(point.date || point.timestamp).toLocaleDateString('es-ES', { 
+            day: '2-digit', 
+            month: 'short' 
+          }),
+          value: parseFloat(drawdown.toFixed(2))
+        };
+      });
+    }
+    
+    // Fallback al código anterior si no hay datos reales
     let dataToProcess = historialData;
     
     // Aplicar mismos filtros
@@ -1725,16 +1915,18 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           { name: '4to Trimestre', value: 0 }
         ];
       } else {
-        return [{ name: new Date().getFullYear().toString(), value: 0 }];
+        return [{ name: '2025', value: 0 }];
       }
     }
     
     const selectedYear = parseInt(rendimientoFilters.year);
-    const balanceInitial = realBalanceHistory[0]?.value || realMetrics?.initial_balance || 0;
+    const balanceInitial = realBalanceHistory[0]?.value || realBalanceHistory[0]?.balance || realMetrics?.initial_balance || 18000;
     
     // Filtrar datos por año seleccionado
     const yearData = realBalanceHistory.filter(item => {
-      const itemYear = new Date(item.date).getFullYear();
+      const dateStr = item.date || item.timestamp;
+      if (!dateStr) return false;
+      const itemYear = new Date(dateStr).getFullYear();
       return itemYear === selectedYear;
     });
     
@@ -1742,16 +1934,20 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
       
       return months.map((monthName, index) => {
-        // Buscar el último balance del mes
+        // Buscar datos del mes
         const monthData = yearData.filter(item => {
-          const itemMonth = new Date(item.date).getMonth();
+          const itemMonth = new Date(item.date || item.timestamp).getMonth();
           return itemMonth === index;
         });
         
         if (monthData.length > 0) {
-          const lastBalance = monthData[monthData.length - 1].value;
-          const rendimiento = balanceInitial > 0 
-            ? ((lastBalance - balanceInitial) / balanceInitial) * 100 
+          // Obtener el primer y último balance del mes
+          const firstBalance = monthData[0].value || monthData[0].balance || balanceInitial;
+          const lastBalance = monthData[monthData.length - 1].value || monthData[monthData.length - 1].balance;
+          
+          // Calcular rendimiento del mes (no acumulado desde el inicio)
+          const rendimiento = firstBalance > 0 
+            ? ((lastBalance - firstBalance) / firstBalance) * 100 
             : 0;
           return { name: monthName, value: parseFloat(rendimiento.toFixed(2)) };
         }
@@ -1769,14 +1965,18 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       
       return quarters.map(quarter => {
         const quarterData = yearData.filter(item => {
-          const itemMonth = new Date(item.date).getMonth();
+          const itemMonth = new Date(item.date || item.timestamp).getMonth();
           return quarter.months.includes(itemMonth);
         });
         
         if (quarterData.length > 0) {
-          const lastBalance = quarterData[quarterData.length - 1].value;
-          const rendimiento = balanceInitial > 0 
-            ? ((lastBalance - balanceInitial) / balanceInitial) * 100 
+          // Obtener el primer y último balance del trimestre
+          const firstBalance = quarterData[0].value || quarterData[0].balance || balanceInitial;
+          const lastBalance = quarterData[quarterData.length - 1].value || quarterData[quarterData.length - 1].balance;
+          
+          // Calcular rendimiento del trimestre
+          const rendimiento = firstBalance > 0 
+            ? ((lastBalance - firstBalance) / firstBalance) * 100 
             : 0;
           return { name: quarter.name, value: parseFloat(rendimiento.toFixed(2)) };
         }
@@ -2746,7 +2946,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 </div>
 
                 {/* Gráfico */}
-                <div className="w-full h-56">
+                <div className="w-full h-64 pb-2">
                   {(() => {
                     const dataToUse = realInstruments?.distribution?.length > 0 
                       ? realInstruments.distribution 
@@ -2773,10 +2973,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           <Pie
                             data={dataToUse}
                             cx="50%"
-                            cy="50%"
+                            cy="45%"
                             labelLine={false}
                             label={({ percent }) => `${typeof percent === 'number' ? (percent * 100).toFixed(2) : 0}%`}
-                            outerRadius={100}
+                            outerRadius={85}
                             dataKey="value"
                             stroke="#2a2a2a"
                             strokeWidth={4}
@@ -2816,22 +3016,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <h2 className="text-xl sm:text-2xl font-bold text-white">Rendimiento</h2>
                   <div className="flex gap-2">
                     <button 
-                      onClick={() => updateRendimientoFilter('year', '2024')}
-                      className={`px-3 py-1 bg-transparent border rounded-full text-xs sm:text-sm font-medium transition ${
-                        rendimientoFilters.year === '2024' 
-                          ? 'border-cyan-400 text-cyan-400' 
-                          : 'border-gray-600 text-gray-400 hover:border-gray-400'
-                      }`}
-                    >
-                      2024
-                    </button>
-                    <button 
-                      onClick={() => updateRendimientoFilter('year', '2025')}
-                      className={`px-3 py-1 bg-transparent border rounded-full text-xs sm:text-sm font-medium transition ${
-                        rendimientoFilters.year === '2025' 
-                          ? 'border-cyan-400 text-cyan-400' 
-                          : 'border-gray-600 text-gray-400 hover:border-gray-400'
-                      }`}
+                      className="px-3 py-1 bg-transparent border rounded-full text-xs sm:text-sm font-medium border-cyan-400 text-cyan-400"
                     >
                       2025
                     </button>
@@ -3055,9 +3240,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex items-center gap-2">
                           <img 
-                            src={transaction.bandera} 
+                            src={transaction.bandera || 'https://cdn-icons-png.flaticon.com/512/2150/2150150.png'} 
                             alt={transaction.instrumento}
                             className="w-5 h-5 rounded-full object-cover"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://cdn-icons-png.flaticon.com/512/2150/2150150.png';
+                            }}
                           />
                           <span className="font-medium text-white">{transaction.instrumento}</span>
                           <span className={`text-xs px-2 py-1 rounded ${
@@ -3162,9 +3351,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         <td className="py-3 px-2">
                           <div className="flex items-center gap-2">
                             <img 
-                              src={transaction.bandera} 
+                              src={transaction.bandera || 'https://cdn-icons-png.flaticon.com/512/2150/2150150.png'} 
                               alt={transaction.instrumento}
                               className="w-5 h-5 rounded-full object-cover"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://cdn-icons-png.flaticon.com/512/2150/2150150.png';
+                              }}
                             />
                             <span className="text-white font-medium">{transaction.instrumento}</span>
                           </div>
@@ -3232,11 +3425,34 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               {/* Total para ambas vistas */}
               <div className="mt-4 sm:mt-6 pt-4 border-t border-[#333] flex justify-between items-center">
                 <span className="text-lg sm:text-xl font-bold text-white">Total</span>
-                <div className="text-lg sm:text-xl font-bold text-green-400">
-                    ${filteredHistorialData.reduce((sum, item) => sum + item.ganancia, 0).toFixed(2)}
-                  <span className="text-xs sm:text-sm bg-green-800 bg-opacity-30 text-green-400 px-2 py-1 rounded ml-2">
-                      +8.0% ↗
+                <div className="text-lg sm:text-xl font-bold" style={{ color: 'white' }}>
+                    ${filteredHistorialData.reduce((sum, item) => {
+                      const value = typeof item.ganancia === 'number' ? item.ganancia : parseFloat(item.ganancia) || 0;
+                      return sum + value;
+                    }, 0).toFixed(2)}
+                  {filteredHistorialData.length > 0 && (
+                    <span className={`text-xs sm:text-sm px-2 py-1 rounded ml-2 ${
+                      filteredHistorialData.reduce((sum, item) => {
+                        const value = typeof item.ganancia === 'number' ? item.ganancia : parseFloat(item.ganancia) || 0;
+                        return sum + value;
+                      }, 0) >= 0
+                        ? 'bg-green-800 bg-opacity-30 text-green-400'
+                        : 'bg-red-800 bg-opacity-30 text-red-400'
+                    }`}>
+                      {filteredHistorialData.reduce((sum, item) => {
+                        const value = typeof item.ganancia === 'number' ? item.ganancia : parseFloat(item.ganancia) || 0;
+                        return sum + value;
+                      }, 0) >= 0 ? '+' : ''}
+                      {((filteredHistorialData.reduce((sum, item) => {
+                        const value = typeof item.ganancia === 'number' ? item.ganancia : parseFloat(item.ganancia) || 0;
+                        return sum + value;
+                      }, 0) / 15000) * 100).toFixed(1)}% 
+                      {filteredHistorialData.reduce((sum, item) => {
+                        const value = typeof item.ganancia === 'number' ? item.ganancia : parseFloat(item.ganancia) || 0;
+                        return sum + value;
+                      }, 0) >= 0 ? '↗' : '↘'}
                     </span>
+                  )}
                 </div>
               </div>
             </div>
