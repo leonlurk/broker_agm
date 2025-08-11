@@ -897,12 +897,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       
       // Calcular pips según el instrumento
       let pips = 0;
+      const openPrice = parseFloat(op.open_price);
+      const closePrice = parseFloat(op.close_price);
+      
       if (op.symbol && op.symbol.includes('JPY')) {
-        pips = Math.round((op.close_price - op.open_price) * 100);
+        pips = Math.round((closePrice - openPrice) * 100);
       } else if (op.symbol === 'XAUUSD' || op.symbol === 'GOLD') {
-        pips = Math.round((op.close_price - op.open_price) * 10);
+        pips = Math.round((closePrice - openPrice) * 10);
       } else {
-        pips = Math.round((op.close_price - op.open_price) * 10000);
+        pips = Math.round((closePrice - openPrice) * 10000);
       }
       
       // Si es venta, invertir el signo de los pips
@@ -934,21 +937,21 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         instrumento: op.symbol,
         bandera: getInstrumentIcon(op.symbol),
         tipo: op.operation_type === 'BUY' ? 'Compra' : 'Venta',
-        lotaje: op.volume.toFixed(2),
-        stopLoss: op.stop_loss ? op.stop_loss.toFixed(5) : 'N/A',
+        lotaje: parseFloat(op.volume).toFixed(2),
+        stopLoss: op.stop_loss ? parseFloat(op.stop_loss).toFixed(5) : 'N/A',
         stopLossPct: op.stop_loss ? 
-          `-${Math.abs((op.open_price - op.stop_loss) / op.open_price * 100).toFixed(1)}%` : '-',
-        takeProfit: op.take_profit ? op.take_profit.toFixed(5) : 'N/A',
+          `-${Math.abs((parseFloat(op.open_price) - parseFloat(op.stop_loss)) / parseFloat(op.open_price) * 100).toFixed(1)}%` : '-',
+        takeProfit: op.take_profit ? parseFloat(op.take_profit).toFixed(5) : 'N/A',
         takeProfitPct: op.take_profit ? 
-          `+${Math.abs((op.take_profit - op.open_price) / op.open_price * 100).toFixed(1)}%` : '-',
-        precioApertura: op.open_price.toFixed(5),
-        precioCierre: op.close_price.toFixed(5),
+          `+${Math.abs((parseFloat(op.take_profit) - parseFloat(op.open_price)) / parseFloat(op.open_price) * 100).toFixed(1)}%` : '-',
+        precioApertura: parseFloat(op.open_price).toFixed(5),
+        precioCierre: parseFloat(op.close_price).toFixed(5),
         pips: pips,
         idPosicion: op.ticket,
-        resultado: op.profit >= 0 ? `+$${op.profit.toFixed(2)}` : `-$${Math.abs(op.profit).toFixed(2)}`,
-        resultadoColor: op.profit >= 0 ? 'text-green-400' : 'text-red-400',
-        resultadoPct: `${((op.profit / (op.volume * 1000)) * 100).toFixed(1)}%`,
-        ganancia: op.profit
+        resultado: parseFloat(op.profit) >= 0 ? `+$${parseFloat(op.profit).toFixed(2)}` : `-$${Math.abs(parseFloat(op.profit)).toFixed(2)}`,
+        resultadoColor: parseFloat(op.profit) >= 0 ? 'text-green-400' : 'text-red-400',
+        resultadoPct: `${((parseFloat(op.profit) / (parseFloat(op.volume) * 1000)) * 100).toFixed(1)}%`,
+        ganancia: parseFloat(op.profit)
       };
     });
   };
@@ -2200,16 +2203,52 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     );
   }
   
+  // Función para sincronizar manualmente
+  const handleManualSync = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/sync/account/${selectedAccount.accountNumber}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(`Sincronización completada: ${result.deals_synced} operaciones actualizadas`);
+        // Refrescar los datos
+        await refreshAccounts();
+        // Recargar métricas
+        loadAccountMetrics(selectedAccount.accountNumber);
+      } else {
+        toast.error('Error al sincronizar');
+      }
+    } catch (error) {
+      console.error('Error syncing:', error);
+      toast.error('Error al sincronizar la cuenta');
+    }
+  };
+
   return (
     <div className="flex flex-col p-3 sm:p-4 text-white">
-      {/* Back Button */}
-      <div className="mb-3 sm:mb-4">
+      {/* Back Button and Sync Button */}
+      <div className="mb-3 sm:mb-4 flex items-center justify-between">
         <img 
           src="/Back.svg" 
           alt="Back" 
           onClick={handleBackToOverview}
           className="w-8 h-8 sm:w-10 sm:h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
         />
+        <button
+          onClick={handleManualSync}
+          className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Sincronizar
+        </button>
       </div>
 
       {/* Layout responsivo - móvil: stack vertical, desktop: grid */}
