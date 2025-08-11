@@ -2216,7 +2216,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       }
       
       const token = localStorage.getItem('token');
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://localhost:8443';
+      // Usar la URL correcta de apekapital
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444';
       
       console.log('Syncing account:', accountNumber);
       console.log('API URL:', apiUrl);
