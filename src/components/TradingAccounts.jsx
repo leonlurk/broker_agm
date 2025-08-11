@@ -595,8 +595,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 bandera: getInstrumentIcon(op.symbol || 'N/A'),
                 tipo: op.type === 'BUY' ? 'Compra' : op.type === 'SELL' ? 'Venta' : op.type,
                 lotaje: (op.volume || 0).toFixed(2),
-                stopLoss: op.stop_loss ? op.stop_loss.toFixed(5) : '0.0',
-                takeProfit: op.take_profit ? op.take_profit.toFixed(5) : '0.0',
+                stopLossFormatted: op.stop_loss ? op.stop_loss.toFixed(5) : '0.0',
+                takeProfitFormatted: op.take_profit ? op.take_profit.toFixed(5) : '0.0',
                 precioApertura: (op.open_price || 0).toFixed(5),
                 precioCierre: (op.close_price || 0).toFixed(5),
                 pips: op.pips || 0,
@@ -2698,7 +2698,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <CustomTooltip content="Compara la ganancia potencial con la pérdida potencial. Un ratio de 1:3 significa que arriesgas 1 para ganar 3.">
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">Relación Riesgo Beneficio</h3>
-                <span className="text-xl font-bold">{realStatistics?.risk_reward_ratio || '0:0'}</span>
+                <span className="text-xl font-bold">
+                  {realStatistics?.risk_reward_ratio 
+                    ? `1:${parseFloat(realStatistics.risk_reward_ratio).toFixed(2)}` 
+                    : '1:0'}
+                </span>
               </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
