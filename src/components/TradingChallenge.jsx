@@ -56,7 +56,7 @@ export default function TradingChallengeUI() {
         accountType,
         accountTypeSelection,
         leverage,
-        ...(accountType === 'Real' && initialBalance && { initialBalance: parseFloat(initialBalance) })
+        ...(accountType === 'DEMO' && initialBalance && { initialBalance: parseFloat(initialBalance) })
       };
 
       const result = await createTradingAccount(currentUser.id, accountData);
@@ -125,7 +125,7 @@ export default function TradingChallengeUI() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Servidor:</span>
-                          <span className="text-white">{mt5Credentials.server || 'AGM-Server'}</span>
+                          <span className="text-white">{mt5Credentials.server || 'AlphaGlobalMarket-Server'}</span>
                         </div>
                       </div>
                       <p className="text-yellow-400 text-xs mt-3">
@@ -212,8 +212,8 @@ export default function TradingChallengeUI() {
                 </div>
                   </div>
                   
-              {/* Initial Balance Input - Solo para cuentas reales */}
-              {accountType === 'Real' && (
+              {/* Initial Balance Input - Solo para cuentas DEMO */}
+              {accountType === 'DEMO' && (
                 <div className="mb-6 md:mb-8">
                   <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">Balance Inicial (USD)</h3>
                   <input
@@ -227,7 +227,7 @@ export default function TradingChallengeUI() {
                     className="w-full bg-transparent border border-gray-700 rounded-lg px-4 py-3 text-base md:text-lg focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-50"
                   />
                   <p className="text-gray-400 text-sm mt-2">
-                    Monto inicial que se depositará en la cuenta al crearla. Dejar vacío para crear sin balance.
+                    Monto inicial para la cuenta demo. Las cuentas demo pueden practicar con fondos virtuales.
                   </p>
                 </div>
               )}

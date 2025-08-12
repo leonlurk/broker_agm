@@ -2017,10 +2017,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Función para renderizar las credenciales MT5 en móvil como tarjetas
   const renderMobileCredentials = (selectedAccount) => {
     const credentials = [
-      { label: 'Servidor MT5', value: selectedAccount.server || 'AGM-Server', field: 'Servidor' },
-      { label: 'Contraseña Master', value: selectedAccount.masterPassword || 'MT5Pass123', field: 'Contraseña Master', isPassword: true, showKey: 'master' },
+      { label: 'Servidor MT5', value: selectedAccount.server || 'AlphaGlobalMarket-Server', field: 'Servidor' },
+      { label: 'Contraseña Master', value: selectedAccount.master_password || selectedAccount.mt5_password || '••••••••', field: 'Contraseña Master', isPassword: true, showKey: 'master' },
       { label: 'Número de Cuenta', value: selectedAccount.account_number, field: 'Número de Cuenta' },
-      { label: 'Contraseña Investor', value: selectedAccount.investorPassword, field: 'Contraseña Investor', isPassword: true, showKey: 'investor', canConfigure: true }
+      { label: 'Contraseña Investor', value: selectedAccount.investor_password || selectedAccount.investorPassword, field: 'Contraseña Investor', isPassword: true, showKey: 'investor', canConfigure: true }
     ];
 
     return credentials.map((cred, index) => (
@@ -2230,6 +2230,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       console.log('Syncing account:', accountNumber);
       console.log('API URL:', apiUrl);
       
+      // Usar el endpoint manual sync con el worker
       const response = await fetch(`${apiUrl}/api/v1/sync/account/${accountNumber}`, {
         method: 'POST',
         headers: {
@@ -2379,24 +2380,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
                           <span className="text-gray-400">Balance actual: ${(selectedAccount.balance || 0).toFixed(2)}</span>
                   </div>
-                  {/* Indicador de actualización automática */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      {isRefreshing ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400 mr-2" />
-                      ) : (
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2" />
-                      )}
-                      <span className="text-xs text-gray-500">
-                        Auto-refresh activo (60s)
-                      </span>
-                    </div>
-                    {lastUpdated && (
+                  {/* Indicador de última actualización */}
+                  {lastUpdated && (
+                    <div className="flex items-center justify-end">
                       <span className="text-xs text-gray-500">
                         Actualizado: {lastUpdated.toLocaleTimeString()}
                       </span>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
                           <span className="text-gray-400">Cuenta Activa: 30 días</span>
@@ -2435,9 +2426,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     <div className="p-2 sm:p-3 bg-[#0f0f0f] rounded-lg relative group">
                       <span className="text-gray-400 text-xs block mb-1">Servidor MT5</span>
                       <div className="flex items-center justify-between">
-                        <div className="text-white font-medium text-sm">{selectedAccount.server || 'AGM-Server'}</div>
+                        <div className="text-white font-medium text-sm">{selectedAccount.server || 'AlphaGlobalMarket-Server'}</div>
                         <button
-                          onClick={() => copyToClipboard(selectedAccount.server || 'AGM-Server', 'Servidor')}
+                          onClick={() => copyToClipboard(selectedAccount.server || 'AlphaGlobalMarket-Server', 'Servidor')}
                           className={`${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity p-1 hover:bg-[#2a2a2a] rounded`}
                           title="Copiar servidor"
                         >
@@ -2456,7 +2447,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       <div className="flex items-center justify-between">
                         <div className="text-white font-medium flex items-center">
                           <span className="mr-2">
-                            {showPasswords.master ? (selectedAccount.masterPassword || 'MT5Pass123') : '••••••••'}
+                            {showPasswords.master ? (selectedAccount.master_password || selectedAccount.mt5_password || '••••••••') : '••••••••'}
                           </span>
                           <button
                             onClick={() => togglePasswordVisibility('master')}
@@ -2471,7 +2462,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           </button>
                         </div>
                         <button
-                          onClick={() => copyToClipboard(selectedAccount.masterPassword || 'MT5Pass123', 'Contraseña Master')}
+                          onClick={() => copyToClipboard(selectedAccount.master_password || selectedAccount.mt5_password || '', 'Contraseña Master')}
                           className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
                           title="Copiar contraseña master"
                         >

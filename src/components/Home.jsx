@@ -204,6 +204,9 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   // Obtener cuentas dinámicamente
   const accountsToShow = getAccountsByCategory(activeCategory);
   const allAccountsForSelector = getAllAccounts();
+  
+  // Filtrar solo cuentas reales para el tablero principal
+  const realAccountsOnly = getAccountsByCategory('Cuentas Reales');
 
   if (showUserInfo) {
     return (
@@ -404,24 +407,11 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
       <div className="mb-6 p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-3xl border border-[#333]"> 
          <h2 className="text-2xl font-semibold text-white mb-4">{t('home.yourAccounts')}</h2>
          <div className="flex flex-wrap items-center gap-3 mb-5">
-             {Object.keys(ACC_CAT).map((categoryKey) => {
-               const categoryName = ACC_CAT[categoryKey];
-               const categoryAccounts = getAccountsByCategory(categoryName);
-               
-               return (
-                 <button
-                     key={categoryName}
-                     onClick={() => handleAccountTabChange(categoryName)}
-                     className={`py-2 px-6 bg-gradient-to-br from-[#232323] to-[#202020] text-sm md:text-base font-medium rounded-full transition-colors focus:outline-none border ${ 
-                         activeCategory === categoryName
-                             ? 'border-cyan-500 text-white' 
-                             : 'border-[#333] text-gray-500 hover:text-gray-300 hover:border-gray-500' 
-                     }`}
-                 >
-                     {categoryName} ({categoryAccounts.length})
-                 </button>
-               );
-             })}
+             <button
+                 className="py-2 px-6 bg-gradient-to-br from-[#232323] to-[#202020] text-sm md:text-base font-medium rounded-full transition-colors focus:outline-none border border-cyan-500 text-white"
+             >
+                 Cuentas Reales ({realAccountsOnly.length})
+             </button>
          </div>
 
          {isLoading ? (
@@ -435,7 +425,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
            </div>
          ) : (
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-             {accountsToShow.length > 0 ? accountsToShow.slice(0, 3).map((account) => {
+             {realAccountsOnly.length > 0 ? realAccountsOnly.slice(0, 3).map((account) => {
                return (
                  <div
                      key={account.id}

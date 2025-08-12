@@ -50,7 +50,7 @@
     "cancelled": "Cancelado"
   },
   "copytrading": {
-    "title": "Copy Trading",
+    "title": "Copytrading",
     "followTrader": "Seguir Trader",
     "myInvestments": "Mis Inversiones",
     "performance": "Rendimiento",
@@ -66,7 +66,7 @@
     "receiveBalanceAccount": "Cuenta para Recibir Balance"
   },
   "pamm": {
-    "title": "PAMM",
+    "title": "Pamm",
     "investment": "Inversión",
     "management": "Gestión",
     "investors": "Inversores",

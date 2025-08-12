@@ -87,6 +87,13 @@ const Wallet = () => {
     }
   }, [operationData, selectedAccount, selectAccount]);
 
+  // Auto-seleccionar crypto cuando es la única opción
+  useEffect(() => {
+    if ((activeTab === 'depositar' || activeTab === 'retirar') && !selectedMethod) {
+      setSelectedMethod({ id: 'crypto', name: 'Criptomoneda', icon: '₿' });
+    }
+  }, [activeTab, selectedMethod]);
+
   // Cerrar dropdowns al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -233,7 +240,7 @@ const Wallet = () => {
       const transactionData = {
         user_id: userId,
         account_id: selectedAccount.id,
-        account_name: selectedAccount.accountName,
+        account_name: selectedAccount.account_name,
         amount: parseFloat(amount),
         currency: 'USD',
         type: activeTab,
@@ -242,7 +249,7 @@ const Wallet = () => {
         created_at: new Date().toISOString(),
         ...(selectedCoin && { coin: selectedCoin }),
         ...(walletAddress && { wallet_address: walletAddress }),
-        ...(transferToAccount && { to_account_id: transferToAccount.id, to_account_name: transferToAccount.accountName })
+        ...(transferToAccount && { to_account_id: transferToAccount.id, to_account_name: transferToAccount.account_name })
       };
 
       // Guardar en base de datos
@@ -252,15 +259,15 @@ const Wallet = () => {
       if (activeTab === 'depositar') {
         const depositAmount = parseFloat(amount);
         setSuccess(`Depósito de $${amount} USD iniciado correctamente`);
-        notifyDeposit(depositAmount, selectedAccount.accountName);
+        notifyDeposit(depositAmount, selectedAccount.account_name);
       } else if (activeTab === 'retirar') {
         const withdrawAmount = parseFloat(amount);
         setSuccess(`Retiro de $${amount} USD iniciado correctamente`);
-        notifyWithdrawal(withdrawAmount, selectedAccount.accountName);
+        notifyWithdrawal(withdrawAmount, selectedAccount.account_name);
       } else if (activeTab === 'transferir') {
         const transferAmount = parseFloat(amount);
-        setSuccess(`Transferencia de $${amount} USD de ${selectedAccount.accountName} a ${transferToAccount.accountName} iniciada correctamente`);
-        notifyTransfer(transferAmount, selectedAccount.accountName, transferToAccount.accountName);
+        setSuccess(`Transferencia de $${amount} USD de ${selectedAccount.account_name} a ${transferToAccount.account_name} iniciada correctamente`);
+        notifyTransfer(transferAmount, selectedAccount.account_name, transferToAccount.account_name);
       }
 
       // Limpiar formulario
@@ -305,20 +312,16 @@ const Wallet = () => {
     scrollToTop();
   };
 
-  // Opciones de métodos según el tab activo
+  // Opciones de métodos según el tab activo - Solo crypto
   const getMethodOptions = () => {
     if (activeTab === 'depositar') {
       return [
-        { id: 'bank_transfer', name: 'Transferencia Bancaria', icon: '🏦' },
-        { id: 'crypto', name: 'Criptomoneda', icon: '₿' },
-        { id: 'credit_card', name: 'Tarjeta de Crédito/Débito', icon: '💳' }
+        { id: 'crypto', name: 'Criptomoneda', icon: '₿' }
       ];
     }
     if (activeTab === 'retirar') {
       return [
-        { id: 'skrill', name: 'Skrill', icon: '💰' },
-        { id: 'crypto', name: 'Criptomoneda', icon: '₿' },
-        { id: 'bank_transfer', name: 'Transferencia Bancaria', icon: '🏦' }
+        { id: 'crypto', name: 'Criptomoneda', icon: '₿' }
       ];
     }
     return [];
@@ -379,7 +382,7 @@ const Wallet = () => {
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🔄</span>
                 <span>
-                  {transferToAccount ? `${transferToAccount.accountName} (${transferToAccount.accountNumber})` : 'Seleccionar cuenta destino'}
+                  {transferToAccount ? `${transferToAccount.account_name} (${transferToAccount.account_number})` : 'Seleccionar cuenta destino'}
                 </span>
               </div>
             </button>
@@ -395,8 +398,8 @@ const Wallet = () => {
                     >
                       <div className="flex justify-between items-center">
                         <div>
-                          <div className="font-medium text-white">{account.accountName}</div>
-                          <div className="text-xs text-[#9ca3af]">{account.accountType} • {account.accountNumber}</div>
+                          <div className="font-medium text-white">{account.account_name}</div>
+                          <div className="text-xs text-[#9ca3af]">{account.account_type} • {account.account_number}</div>
                         </div>
                         <div className="text-right">
                           <div className="font-semibold text-white">${(account.balance || 0).toLocaleString()}</div>
@@ -961,7 +964,7 @@ const Wallet = () => {
             className="flex items-center justify-between w-full max-w-md px-4 py-3 bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] hover:from-[#3a3a3a] hover:to-[#2e2e2e] rounded-xl border border-[#333] transition-all duration-200"
           >
             <span className="text-white font-medium">
-              {selectedAccount ? `${selectedAccount.accountName} (${selectedAccount.accountNumber})` : 'Seleccionar Cuenta'}
+              {selectedAccount ? `${selectedAccount.account_name} (${selectedAccount.account_number})` : 'Seleccionar Cuenta'}
             </span>
             <svg 
               className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${showAccountDropdown ? 'rotate-180' : ''}`} 
@@ -992,8 +995,8 @@ const Wallet = () => {
                     >
                       <div className="flex justify-between items-center">
                         <div>
-                          <div className="font-medium text-white">{account.accountName}</div>
-                          <div className="text-xs text-gray-400">{account.accountType} • {account.accountNumber}</div>
+                          <div className="font-medium text-white">{account.account_name}</div>
+                          <div className="text-xs text-gray-400">{account.account_type} • {account.account_number}</div>
                         </div>
                         <div className="text-right">
                           <div className="font-semibold text-white">${(account.balance || 0).toLocaleString()}</div>
