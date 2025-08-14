@@ -48,6 +48,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     nombre: '',
     apellido: ''
   });
+  const [accountFilter, setAccountFilter] = useState('all'); // 'all', 'real', 'demo'
   const dropdownRef = useRef(null);
 
   // Cargar datos del usuario desde la base de datos
@@ -207,6 +208,29 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   
   // Filtrar solo cuentas reales para el tablero principal
   const realAccountsOnly = getAccountsByCategory('Cuentas Reales');
+  
+  // Obtener todas las cuentas y filtrarlas según el filtro seleccionado
+  const getFilteredAccounts = () => {
+    let filteredAccounts = [];
+    
+    if (accountFilter === 'real') {
+      filteredAccounts = getAccountsByCategory('Cuentas Reales');
+    } else if (accountFilter === 'demo') {
+      filteredAccounts = getAccountsByCategory('Cuentas Demo');
+    } else {
+      // 'all' - obtener todas las cuentas
+      filteredAccounts = getAllAccounts();
+    }
+    
+    // Ordenar por fecha de creación (más reciente primero) y tomar solo las últimas 3
+    return filteredAccounts
+      .sort((a, b) => {
+        const dateA = new Date(a.created_at || 0);
+        const dateB = new Date(b.created_at || 0);
+        return dateB - dateA;
+      })
+      .slice(0, 3);
+  };
 
   if (showUserInfo) {
     return (
@@ -317,25 +341,21 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                       <div className="px-4 py-2 text-gray-500">{t('common.loading')}</div>
                     ) : error ? (
                       <div className="px-4 py-2 text-red-400">{t('common.error')}: {error}</div>
-                    ) : Object.keys(accounts).filter(category => accounts[category].length > 0).length > 0 ? (
-                      Object.keys(accounts).map(category => 
-                        accounts[category].length > 0 && (
-                      <div key={category} className="px-2 pt-2">
-                        <div className="px-2 pb-1 text-xs text-gray-500 font-semibold uppercase">{category}</div>
-                            {accounts[category].map(account => (
+                    ) : realAccountsOnly.length > 0 ? (
+                      <div className="px-2 pt-2">
+                        <div className="px-2 pb-1 text-xs text-gray-500 font-semibold uppercase">Cuentas Reales</div>
+                        {realAccountsOnly.map(account => (
                           <button
                             key={account.id}
                             onClick={() => handleWalletAccountSelect(account)}
                             className="w-full text-left px-2 py-1.5 rounded hover:bg-[#333] text-gray-300 hover:text-white block truncate"
                           >
-                                 {account.account_name} - ${(account.balance || 0).toFixed(2)}
+                            {account.account_name} - ${(account.balance || 0).toFixed(2)}
                           </button>
                         ))}
                       </div>
-                        )
-                      )
                     ) : (
-                         <div className="px-4 py-2 text-gray-500">{t('common.noAccountsAvailable')}</div>
+                      <div className="px-4 py-2 text-gray-500">{t('common.noAccountsAvailable')}</div>
                     )}
                   </div>
               )}
@@ -408,9 +428,34 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
          <h2 className="text-2xl font-semibold text-white mb-4">{t('home.yourAccounts')}</h2>
          <div className="flex flex-wrap items-center gap-3 mb-5">
              <button
-                 className="py-2 px-6 bg-gradient-to-br from-[#232323] to-[#202020] text-sm md:text-base font-medium rounded-full transition-colors focus:outline-none border border-cyan-500 text-white"
+                 onClick={() => setAccountFilter('all')}
+                 className={`py-2 px-6 text-sm md:text-base font-medium rounded-full transition-colors focus:outline-none border ${
+                   accountFilter === 'all' 
+                     ? 'bg-gradient-to-br from-[#232323] to-[#202020] border-cyan-500 text-white' 
+                     : 'bg-transparent border-gray-600 text-gray-400 hover:border-gray-500'
+                 }`}
+             >
+                 Todas ({getAllAccounts().length})
+             </button>
+             <button
+                 onClick={() => setAccountFilter('real')}
+                 className={`py-2 px-6 text-sm md:text-base font-medium rounded-full transition-colors focus:outline-none border ${
+                   accountFilter === 'real' 
+                     ? 'bg-gradient-to-br from-[#232323] to-[#202020] border-cyan-500 text-white' 
+                     : 'bg-transparent border-gray-600 text-gray-400 hover:border-gray-500'
+                 }`}
              >
                  Cuentas Reales ({realAccountsOnly.length})
+             </button>
+             <button
+                 onClick={() => setAccountFilter('demo')}
+                 className={`py-2 px-6 text-sm md:text-base font-medium rounded-full transition-colors focus:outline-none border ${
+                   accountFilter === 'demo' 
+                     ? 'bg-gradient-to-br from-[#232323] to-[#202020] border-cyan-500 text-white' 
+                     : 'bg-transparent border-gray-600 text-gray-400 hover:border-gray-500'
+                 }`}
+             >
+                 Cuentas Demo ({getAccountsByCategory('Cuentas Demo').length})
              </button>
          </div>
 
@@ -425,7 +470,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
            </div>
          ) : (
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-             {realAccountsOnly.length > 0 ? realAccountsOnly.slice(0, 3).map((account) => {
+             {getFilteredAccounts().length > 0 ? getFilteredAccounts().map((account) => {
                return (
                  <div
                      key={account.id}

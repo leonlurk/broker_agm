@@ -273,11 +273,36 @@ export const DatabaseAdapter = {
     getByUserId: async (userId) => {
       if (DATABASE_PROVIDER === 'supabase') {
         const { data, error } = await supabase
-          .from('trading_accounts')
+          .from('broker_accounts')
           .select('*')
           .eq('user_id', userId)
           .order('created_at', { ascending: false });
-        return { data, error };
+        
+        // Map broker_accounts fields to expected frontend format
+        const mappedData = data?.map(account => ({
+          id: account.id,
+          user_id: account.user_id,
+          account_number: account.login?.toString() || account.account_number,
+          account_name: account.name || `Account ${account.login}`,
+          // Convert database account_type values back to frontend format
+          // Database has: 'demo', 'standard', 'premium'
+          // Frontend expects: 'DEMO' or 'Real'
+          account_type: account.account_type === 'demo' ? 'DEMO' : 'Real',
+          account_type_selection: account.group_name || 'Market Direct',
+          leverage: account.leverage?.toString() || '100',
+          balance: account.balance || 0,
+          equity: account.equity || account.balance || 0,
+          margin: account.margin || 0,
+          free_margin: account.free_margin || account.balance || 0,
+          // MT5 Credentials
+          mt5_password: account.mt5_password || null,
+          mt5_investor_password: account.mt5_investor_password || null,
+          created_at: account.created_at,
+          updated_at: account.updated_at,
+          status: account.status || 'active'
+        })) || [];
+        
+        return { data: mappedData, error };
       } else {
         // Firebase implementation
         const { collection, query, where, getDocs } = await import('firebase/firestore');
@@ -298,11 +323,58 @@ export const DatabaseAdapter = {
     // Create account
     create: async (accountData) => {
       if (DATABASE_PROVIDER === 'supabase') {
+        // Map frontend fields to broker_accounts table structure
+        const mappedData = {
+          user_id: accountData.user_id,
+          // Map account_name to name (the actual column in broker_accounts)
+          name: accountData.account_name || accountData.name,
+          // Map account_number to both login and account_number
+          login: accountData.account_number || accountData.login,
+          account_number: accountData.account_number || accountData.login,
+          // Map account type - convert frontend values to valid database values
+          // Frontend sends 'Real' or 'DEMO', database expects 'standard', 'premium', or 'demo'
+          account_type: (accountData.account_type || '').toLowerCase() === 'demo' 
+            ? 'demo' 
+            : (accountData.account_type_selection || '').toLowerCase() === 'premium' 
+              ? 'premium' 
+              : 'standard',
+          // Map group_name instead of non-existent account_type_selection
+          group_name: accountData.account_type_selection || accountData.group_name || 'Market Direct',
+          leverage: parseInt(accountData.leverage) || 100,
+          balance: parseFloat(accountData.balance) || 0,
+          equity: parseFloat(accountData.equity || accountData.balance) || 0,
+          margin: parseFloat(accountData.margin) || 0,
+          free_margin: parseFloat(accountData.free_margin || accountData.balance) || 0,
+          // Additional fields that might be needed
+          email: accountData.email,
+          status: 'active',
+          currency: accountData.currency || 'USD'
+        };
+        
+        // Remove undefined/null fields
+        Object.keys(mappedData).forEach(key => {
+          if (mappedData[key] === undefined || mappedData[key] === null) {
+            delete mappedData[key];
+          }
+        });
+        
         const { data, error } = await supabase
-          .from('trading_accounts')
-          .insert([accountData])
+          .from('broker_accounts')
+          .insert([mappedData])
           .select()
           .single();
+        
+        // If successful, map back to frontend expected format
+        if (data && !error) {
+          const formattedData = {
+            ...data,
+            account_name: data.name,
+            account_number: data.login?.toString() || data.account_number,
+            account_type_selection: data.group_name
+          };
+          return { data: formattedData, error };
+        }
+        
         return { data, error };
       } else {
         // Firebase implementation
@@ -325,7 +397,7 @@ export const DatabaseAdapter = {
     update: async (accountId, updates) => {
       if (DATABASE_PROVIDER === 'supabase') {
         const { data, error } = await supabase
-          .from('trading_accounts')
+          .from('broker_accounts')
           .update(updates)
           .eq('id', accountId)
           .select()

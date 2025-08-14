@@ -4,7 +4,7 @@ import { useAccounts, ACCOUNT_CATEGORIES } from '../contexts/AccountsContext';
 import { Copy, Eye, EyeOff, Check, X, Settings, Menu, Filter, ArrowUpRight, Star, Search as SearchIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
-import { updateInvestorPassword } from '../services/tradingAccounts';
+// import { updateInvestorPassword } from '../services/tradingAccounts'; // Ya no necesario, investor password es solo lectura
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { DatabaseAdapter } from '../services/database.adapter';
 import CustomDropdown from './utils/CustomDropdown';
@@ -12,6 +12,7 @@ import CustomTooltip from './utils/CustomTooltip';
 import useTranslation from '../hooks/useTranslation';
 // Importar servicio optimizado
 import accountMetricsOptimized from '../services/accountMetricsOptimized';
+import SyncButton from './SyncButton';
 import { 
   getBalanceChartData, 
   recordBalanceSnapshot,
@@ -498,43 +499,39 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const loadingRef = useRef(false);
   const lastLoadedAccountRef = useRef(null);
   
-  // useEffect para cargar datos reales de MT5 cuando se selecciona una cuenta con auto-refresh
-  useEffect(() => {
-    const loadRealMetricsData = async () => {
-      if (!selectedAccountId) return;
+  // Función para cargar métricas de una cuenta
+  const loadAccountMetrics = async (account) => {
+    if (!account || !account.account_number) return;
+    
+    // Prevenir llamadas duplicadas para la misma cuenta
+    if (loadingRef.current || lastLoadedAccountRef.current === account.account_number) {
+      return;
+    }
+    
+    loadingRef.current = true;
+    
+    // No mostrar loading en auto-refresh, solo en carga inicial
+    if (!realMetrics && !realStatistics) {
+      setIsLoadingMetrics(true);
+    } else {
+      // Si ya hay datos, mostrar indicador de refresh
+      setIsRefreshing(true);
+    }
+    
+    try {
+      // Obtener todos los datos del dashboard desde el endpoint optimizado
+      const dashboardData = await accountMetricsOptimized.getDashboardData(
+        account.account_number,
+        'month'
+      );
       
-      const selectedAccount = getAllAccounts().find(acc => acc.id === selectedAccountId);
-      if (!selectedAccount || !selectedAccount.account_number) return;
+      // También obtener el historial de balance para el gráfico
+      const balanceHistory = await accountMetricsOptimized.getBalanceHistory(
+        account.account_number,
+        'month'
+      );
       
-      // Prevenir llamadas duplicadas para la misma cuenta
-      if (loadingRef.current || lastLoadedAccountRef.current === selectedAccount.account_number) {
-        return;
-      }
-      
-      loadingRef.current = true;
-      
-      // No mostrar loading en auto-refresh, solo en carga inicial
-      if (!realMetrics && !realStatistics) {
-        setIsLoadingMetrics(true);
-      } else {
-        // Si ya hay datos, mostrar indicador de refresh
-        setIsRefreshing(true);
-      }
-      
-      try {
-        // Obtener todos los datos del dashboard desde el endpoint optimizado
-        const dashboardData = await accountMetricsOptimized.getDashboardData(
-          selectedAccount.account_number,
-          'month'
-        );
-        
-        // También obtener el historial de balance para el gráfico
-        const balanceHistory = await accountMetricsOptimized.getBalanceHistory(
-          selectedAccount.account_number,
-          'month'
-        );
-        
-        // Procesar datos del dashboard
+      // Procesar datos del dashboard
         if (dashboardData) {
           // Actualizar métricas
           if (dashboardData.kpis) {
@@ -646,14 +643,21 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         setIsRefreshing(false);
         loadingRef.current = false;
         // Guardar la cuenta cargada exitosamente
-        if (selectedAccount) {
-          lastLoadedAccountRef.current = selectedAccount.account_number;
+        if (account) {
+          lastLoadedAccountRef.current = account.account_number;
         }
       }
     };
     
+  // useEffect para cargar datos reales de MT5 cuando se selecciona una cuenta con auto-refresh
+  useEffect(() => {
+    if (!selectedAccountId) return;
+    
+    const selectedAccount = getAllAccounts().find(acc => acc.id === selectedAccountId);
+    if (!selectedAccount || !selectedAccount.account_number) return;
+    
     // Cargar datos inmediatamente
-    loadRealMetricsData();
+    loadAccountMetrics(selectedAccount);
     
     // Auto-refresh desactivado por ahora - los datos se actualizan solo con refresh manual
     // Para reactivar, descomentar las siguientes líneas:
@@ -663,7 +667,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       console.log('[TradingAccounts] Configurando auto-refresh cada 60 segundos');
       refreshInterval = setInterval(() => {
         console.log('[TradingAccounts] Auto-refresh de métricas...', new Date().toISOString());
-        loadRealMetricsData();
+        loadAccountMetrics(selectedAccount);
       }, 60000); // 60 segundos
     }
     */
@@ -675,16 +679,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         console.log('[TradingAccounts] Limpiando intervalo de auto-refresh');
         clearInterval(refreshInterval);
       }
-    };
-    
-    // Resetear el ref cuando cambia la cuenta
-    return () => {
+      // Resetear el ref cuando cambia la cuenta
       loadingRef.current = false;
       if (selectedAccountId !== lastLoadedAccountRef.current) {
         lastLoadedAccountRef.current = null;
       }
     };
-  }, [selectedAccountId]); // Solo recargar cuando cambia la cuenta seleccionada
+  }, [selectedAccountId, getAllAccounts]); // Solo recargar cuando cambia la cuenta seleccionada
 
   // Función helper para obtener el estado de la cuenta
   const getAccountStatus = (account) => {
@@ -2241,9 +2242,25 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       if (response.ok) {
         const result = await response.json();
         toast.success(`Sincronización completada: ${result.deals_synced} operaciones actualizadas`);
+        
+        // Esperar un momento para que los datos se propaguen en la base de datos
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         // Refrescar los datos
         await refreshAccounts();
-        // Las métricas se actualizarán automáticamente con refreshAccounts
+        
+        // Esperar un poco más y forzar recarga de métricas
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Forzar recarga de métricas después de sync
+        const currentSelectedAccount = getAllAccounts().find(acc => acc.id === selectedAccountId);
+        if (currentSelectedAccount) {
+          // Limpiar el cache de la última cuenta cargada para forzar recarga
+          lastLoadedAccountRef.current = null;
+          loadingRef.current = false;
+          
+          await loadAccountMetrics(currentSelectedAccount);
+        }
       } else {
         toast.error('Error al sincronizar');
       }
@@ -2255,30 +2272,21 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   return (
     <div className="flex flex-col p-3 sm:p-4 text-white">
-      {/* Back Button and Sync Button */}
-      <div className="mb-3 sm:mb-4 flex items-center justify-between">
+      {/* Back Button */}
+      <div className="mb-3 sm:mb-4 flex items-center">
         <img 
           src="/Back.svg" 
           alt="Back" 
           onClick={handleBackToOverview}
           className="w-8 h-8 sm:w-10 sm:h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
         />
-        <button
-          onClick={handleManualSync}
-          className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Sincronizar
-        </button>
       </div>
 
       {/* Layout responsivo - móvil: stack vertical, desktop: grid */}
       <div className={`${isMobile ? 'space-y-4' : 'grid grid-cols-1 lg:grid-cols-12 gap-6'} mb-4 sm:mb-6`}>
         
         {/* COLUMNA CENTRAL - Tus Cuentas */}
-        <div className={`${isMobile ? 'w-full' : 'lg:col-span-5'} bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-t border-l border-r border-cyan-500`}>
+        <div className={`${isMobile ? 'w-full max-h-[400px]' : 'lg:col-span-5 max-h-[600px]'} bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-t border-l border-r border-cyan-500 flex flex-col overflow-hidden`}>
           <h1 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Tus Cuentas</h1>
           
           {/* Create Account Button */}
@@ -2308,23 +2316,24 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             ))}
           </div>
           
-          {/* Account List */}
-          <div className="space-y-2 sm:space-y-3">
-            {isLoading ? (
-              <div className="text-center text-gray-400 py-3 sm:py-4">
-                <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-cyan-500 mx-auto mb-2"></div>
-                <p className="text-xs sm:text-sm">Cargando cuentas...</p>
-              </div>
-            ) : error ? (
-              <div className="text-center text-red-400 py-3 sm:py-4">
-                <p className="text-xs sm:text-sm">Error: {error}</p>
-              </div>
-            ) : accountsForCurrentTab.length === 0 ? (
-              <div className="text-center text-gray-400 py-3 sm:py-4">
-                <p className="text-xs sm:text-sm">No hay cuentas en esta categoría</p>
-              </div>
-            ) : (
-              accountsForCurrentTab.map((account) => (
+          {/* Account List - ocupa el espacio restante con scroll */}
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-2">
+            <div className="space-y-2 sm:space-y-3">
+              {isLoading ? (
+                <div className="text-center text-gray-400 py-3 sm:py-4">
+                  <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-cyan-500 mx-auto mb-2"></div>
+                  <p className="text-xs sm:text-sm">Cargando cuentas...</p>
+                </div>
+              ) : error ? (
+                <div className="text-center text-red-400 py-3 sm:py-4">
+                  <p className="text-xs sm:text-sm">Error: {error}</p>
+                </div>
+              ) : accountsForCurrentTab.length === 0 ? (
+                <div className="text-center text-gray-400 py-3 sm:py-4">
+                  <p className="text-xs sm:text-sm">No hay cuentas en esta categoría</p>
+                </div>
+              ) : (
+                accountsForCurrentTab.map((account) => (
               <button 
                 key={account.id} 
                 className={`p-3 sm:p-4 w-full rounded-lg sm:rounded-xl border transition-all text-left ${
@@ -2345,6 +2354,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               </button>
               ))
             )}
+            </div>
           </div>
         </div>
         
@@ -2376,9 +2386,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
                           <span className="text-gray-400">{selectedAccount.account_name} (ID: {selectedAccount.account_number})</span>
                   </div>
-                  <div className="flex items-center">
-                    <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">Balance actual: ${(selectedAccount.balance || 0).toFixed(2)}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
+                      <span className="text-gray-400">Balance actual: ${(selectedAccount.balance || 0).toFixed(2)}</span>
+                    </div>
+                    <SyncButton accountNumber={selectedAccount.account_number} size="small" />
                   </div>
                   {/* Indicador de última actualización */}
                   {lastUpdated && (
@@ -2447,7 +2460,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       <div className="flex items-center justify-between">
                         <div className="text-white font-medium flex items-center">
                           <span className="mr-2">
-                            {showPasswords.master ? (selectedAccount.master_password || selectedAccount.mt5_password || '••••••••') : '••••••••'}
+                            {showPasswords.master ? (selectedAccount.mt5_password || selectedAccount.master_password || '••••••••') : '••••••••'}
                           </span>
                           <button
                             onClick={() => togglePasswordVisibility('master')}
@@ -2462,7 +2475,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           </button>
                         </div>
                         <button
-                          onClick={() => copyToClipboard(selectedAccount.master_password || selectedAccount.mt5_password || '', 'Contraseña Master')}
+                          onClick={() => copyToClipboard(selectedAccount.mt5_password || selectedAccount.master_password || '', 'Contraseña Master')}
                           className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
                           title="Copiar contraseña master"
                         >
@@ -2494,14 +2507,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       </div>
                     </div>
 
-                    {/* Contraseña Investor */}
+                    {/* Contraseña Investor - Solo lectura */}
                     <div className="p-3 bg-[#0f0f0f] rounded-lg relative group">
-                      <span className="text-gray-400 text-xs block mb-1">Contraseña Investor</span>
+                      <span className="text-gray-400 text-xs block mb-1">Contraseña Investor (Solo Lectura)</span>
                       <div className="flex items-center justify-between">
-                        {selectedAccount.investorPassword ? (
+                        {(selectedAccount.mt5_investor_password || selectedAccount.investorPassword) ? (
                           <div className="text-white font-medium flex items-center">
                             <span className="mr-2">
-                              {showPasswords.investor ? selectedAccount.investorPassword : '••••••••'}
+                              {showPasswords.investor ? (selectedAccount.mt5_investor_password || selectedAccount.investorPassword || '••••••••') : '••••••••'}
                             </span>
                             <button
                               onClick={() => togglePasswordVisibility('investor')}
@@ -2516,17 +2529,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                             </button>
                           </div>
                         ) : (
-                          <div 
-                            onClick={openInvestorModal}
-                            className="text-cyan-400 font-medium cursor-pointer hover:text-cyan-300 flex items-center gap-1"
-                          >
-                            <Settings size={14} />
-                            {t('common.configure')}
+                          <div className="text-gray-500 font-medium">
+                            No configurada
                           </div>
                         )}
-                        {selectedAccount.investorPassword && (
+                        {(selectedAccount.mt5_investor_password || selectedAccount.investorPassword) && (
                           <button
-                            onClick={() => copyToClipboard(selectedAccount.investorPassword, 'Contraseña Investor')}
+                            onClick={() => copyToClipboard(selectedAccount.mt5_investor_password || selectedAccount.investorPassword || '', 'Contraseña Investor')}
                             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
                             title="Copiar contraseña investor"
                           >

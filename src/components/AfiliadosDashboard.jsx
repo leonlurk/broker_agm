@@ -45,7 +45,7 @@ const AfiliadosDashboard = () => {
     {
       id: 1,
       nombre: 'Nombre trader',
-      tipoCuenta: 'Standard',
+      tipoCuenta: 'Market Direct',
       balance: 100,
       equidad: 105,
       lotesOperados: 10,
@@ -55,7 +55,7 @@ const AfiliadosDashboard = () => {
     {
       id: 2,
       nombre: 'Nombre trader',
-      tipoCuenta: 'Zero Spread',
+      tipoCuenta: 'Institucional',
       balance: 100,
       equidad: 105,
       lotesOperados: 10,
@@ -75,7 +75,7 @@ const AfiliadosDashboard = () => {
     {
       id: 4,
       nombre: 'Trader Beta',
-      tipoCuenta: 'Standard',
+      tipoCuenta: 'Market Direct',
       balance: 800,
       equidad: 825,
       lotesOperados: 30,
@@ -85,7 +85,7 @@ const AfiliadosDashboard = () => {
     {
       id: 5,
       nombre: 'Trader Gamma',
-      tipoCuenta: 'Zero Spread',
+      tipoCuenta: 'Institucional',
       balance: 2200,
       equidad: 2250,
       lotesOperados: 75,
@@ -111,7 +111,7 @@ const AfiliadosDashboard = () => {
       newData.push({
         id: i + 1,
         nombre: `Trader ${String.fromCharCode(65 + (i % 26))}${Math.floor(i / 26) + 1}`,
-        tipoCuenta: ['Standard', 'Premium', 'VIP', 'Zero Spread', 'ECN'][i % 5],
+        tipoCuenta: ['Market Direct', 'Premium', 'VIP', 'Institucional', 'ECN'][i % 5],
         balance: Math.floor(Math.random() * 5000) + 500,
         equidad: Math.floor(Math.random() * 5000) + 500,
         lotesOperados: Math.floor(Math.random() * 100) + 5,

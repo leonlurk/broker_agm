@@ -56,13 +56,14 @@ export const getDashboardData = async (accountNumber, period = 'month') => {
   try {
     logger.info('[API] Fetching dashboard data', { accountNumber, period });
     
+    // Usar el endpoint correcto de Supabase
     const response = await apiClient.get(
       `/supabase/accounts/${accountNumber}/dashboard`,
       { params: { period } }
     );
     
     logger.info('[API] Dashboard data received', response.data);
-    return response.data;
+    return response.data; // Ya viene en el formato correcto desde el backend
   } catch (error) {
     logger.error('[API] Error fetching dashboard data', error);
     

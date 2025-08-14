@@ -75,23 +75,30 @@ mt5Api.interceptors.response.use(
 const mapAccountTypeToGroup = (accountType, accountTypeSelection) => {
   // Map based on account type and selection
   if (accountType === 'DEMO') {
-    return 'demo\\forex-hedge-usd-01';
+    // For demo accounts, map based on accountTypeSelection
+    switch (accountTypeSelection?.toLowerCase()) {
+      case 'institucional':
+      case 'zero spread': // Legacy support
+        return 'demo\\Institucional';
+      case 'market direct':
+      case 'standard': // Legacy support
+        return 'demo\\MarketDirect';
+      default:
+        return 'demo\\MarketDirect'; // Default to MarketDirect for demo
+    }
   }
   
-  // For real accounts, map based on accountTypeSelection
+  // For real accounts, map based on accountTypeSelection  
   switch (accountTypeSelection?.toLowerCase()) {
-    case 'standard':
-      return 'real\\real';
-    case 'zero spread':
-    case 'premium':
-      return 'real\\A-Book';
-    case 'market direct':
-      return 'real\\MarketDirect';
     case 'institucional':
+    case 'zero spread': // Legacy support
     case 'vip':
       return 'real\\Institucional';
+    case 'market direct':
+    case 'standard': // Legacy support
+      return 'real\\MarketDirect';
     default:
-      return 'real\\real'; // Default to standard real account
+      return 'real\\MarketDirect'; // Default to MarketDirect for real
   }
 };
 
@@ -126,7 +133,7 @@ export const createMT5Account = async (userId, accountData) => {
     const response = await mt5Api.post('/api/v1/accounts/create', requestData);
 
     logger.info('[MT5 API] Account created successfully', {
-      login: response.data.login,
+      login: response.data.account_login,
       group: response.data.group
     });
 
@@ -136,7 +143,7 @@ export const createMT5Account = async (userId, accountData) => {
         login: response.data.account_login, // Backend retorna account_login
         password: response.data.account_password, // Backend retorna account_password
         investor_password: response.data.account_investor_password, // Backend retorna account_investor_password
-        server: response.data.server || 'AGM-Server',
+        server: response.data.server || 'AlphaGlobalMarket-Server',
         group: response.data.group,
         leverage: response.data.leverage,
         balance: response.data.balance
@@ -177,6 +184,88 @@ export const getMT5AccountDetails = async (login) => {
     return {
       success: false,
       error: error.response?.data?.detail || error.message || 'Error getting account details'
+    };
+  }
+};
+
+/**
+ * Get trading dashboard data (aggregated user data)
+ */
+export const getTradingDashboard = async () => {
+  try {
+    logger.info('[MT5 API] Getting trading dashboard');
+
+    const response = await mt5Api.get('/api/v1/trading/dashboard');
+
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    logger.error('[MT5 API] Error getting trading dashboard', {
+      error: error.message,
+      response: error.response?.data
+    });
+    
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Error getting dashboard data'
+    };
+  }
+};
+
+/**
+ * Get account statistics (trading performance)
+ */
+export const getAccountStatistics = async (accountLogin) => {
+  try {
+    logger.info('[MT5 API] Getting account statistics', { accountLogin });
+
+    const response = await mt5Api.get(`/api/v1/trading/accounts/${accountLogin}/statistics`);
+
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    logger.error('[MT5 API] Error getting account statistics', {
+      error: error.message,
+      response: error.response?.data
+    });
+    
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Error getting account statistics'
+    };
+  }
+};
+
+/**
+ * Detect trading strategies for account
+ */
+export const detectTradingStrategies = async (accountLogin = null) => {
+  try {
+    logger.info('[MT5 API] Detecting trading strategies', { accountLogin });
+
+    const url = accountLogin 
+      ? `/api/v1/trading/detect_strategies?account_login=${accountLogin}`
+      : '/api/v1/trading/detect_strategies';
+    
+    const response = await mt5Api.get(url);
+
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    logger.error('[MT5 API] Error detecting trading strategies', {
+      error: error.message,
+      response: error.response?.data
+    });
+    
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Error detecting strategies'
     };
   }
 };

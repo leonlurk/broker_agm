@@ -75,10 +75,24 @@ export const AccountsProvider = ({ children }) => {
         console.log('Debug AccountsContext - Organized accounts:', organizedAccounts);
         setAccounts(organizedAccounts);
         
-        // Seleccionar automáticamente la primera cuenta si no hay ninguna seleccionada
-        if (!selectedAccount && result.accounts.length > 0) {
-          console.log('Debug AccountsContext - Auto-selecting first account:', result.accounts[0]);
-          setSelectedAccount(result.accounts[0]);
+        // Seleccionar automáticamente la primera cuenta REAL si no hay ninguna seleccionada
+        // Si no hay cuentas reales, no seleccionar ninguna por defecto
+        if (!selectedAccount) {
+          const realAccounts = organizedAccounts[ACCOUNT_CATEGORIES.REAL];
+          if (realAccounts && realAccounts.length > 0) {
+            // Seleccionar la cuenta real más reciente (última creada)
+            const sortedRealAccounts = [...realAccounts].sort((a, b) => {
+              const dateA = new Date(a.created_at || 0);
+              const dateB = new Date(b.created_at || 0);
+              return dateB - dateA; // Más reciente primero
+            });
+            console.log('Debug AccountsContext - Auto-selecting most recent real account:', sortedRealAccounts[0]);
+            setSelectedAccount(sortedRealAccounts[0]);
+          } else {
+            console.log('Debug AccountsContext - No real accounts available for auto-selection');
+            // No seleccionar ninguna cuenta si no hay cuentas reales
+            setSelectedAccount(null);
+          }
         }
       } else {
         console.log('Debug AccountsContext - Error loading accounts:', result.error);
@@ -178,8 +192,25 @@ export const AccountsProvider = ({ children }) => {
     const savedAccountId = localStorage.getItem('selectedAccountId');
     if (savedAccountId && !selectedAccount) {
       const account = findAccountById(savedAccountId);
-      if (account) {
+      // Solo restaurar si es una cuenta real
+      if (account && account.account_type === 'Real') {
         setSelectedAccount(account);
+      } else {
+        // Si la cuenta guardada no es real, seleccionar la primera cuenta real disponible
+        const realAccounts = accounts[ACCOUNT_CATEGORIES.REAL];
+        if (realAccounts && realAccounts.length > 0) {
+          const sortedRealAccounts = [...realAccounts].sort((a, b) => {
+            const dateA = new Date(a.created_at || 0);
+            const dateB = new Date(b.created_at || 0);
+            return dateB - dateA;
+          });
+          setSelectedAccount(sortedRealAccounts[0]);
+          localStorage.setItem('selectedAccountId', sortedRealAccounts[0].id);
+        } else {
+          // No hay cuentas reales, limpiar la selección
+          setSelectedAccount(null);
+          localStorage.removeItem('selectedAccountId');
+        }
       }
     }
   }, [accounts]);

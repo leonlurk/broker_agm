@@ -9,7 +9,7 @@ export default function TradingChallengeUI() {
   const { notifyAccountCreated } = useNotifications();
   const [accountType, setAccountType] = useState('Real');
   const [accountName, setAccountName] = useState('');
-  const [accountTypeSelection, setAccountTypeSelection] = useState('Zero Spread');
+  const [accountTypeSelection, setAccountTypeSelection] = useState('Institucional');
   const [leverage, setLeverage] = useState('');
   const [showLeverageDropdown, setShowLeverageDropdown] = useState(false);
   const [initialBalance, setInitialBalance] = useState('');  // Campo para balance inicial
@@ -77,7 +77,7 @@ export default function TradingChallengeUI() {
         setLeverage('');
         setInitialBalance('');
         setAccountType('Real');
-        setAccountTypeSelection('Zero Spread');
+        setAccountTypeSelection('Institucional');
     } else {
         setError(result.error || 'Error al crear la cuenta');
       }
@@ -189,25 +189,25 @@ export default function TradingChallengeUI() {
                 <div className="flex space-x-3 md:space-x-4">
                   <button 
                     className={`px-6 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-base font-regular border focus:outline-none transition-colors ${
-                      accountTypeSelection === 'Zero Spread' 
+                      accountTypeSelection === 'Institucional' 
                         ? 'border-cyan-500 bg-transparent text-white' 
                         : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-gray-400'
                     }`}
-                    onClick={() => setAccountTypeSelection('Zero Spread')}
+                    onClick={() => setAccountTypeSelection('Institucional')}
                     disabled={isLoading}
                   >
-                    Zero Spread
+                    Institucional
                   </button>
                   <button 
                     className={`px-6 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-base font-regular border focus:outline-none transition-colors ${
-                      accountTypeSelection === 'Standard' 
+                      accountTypeSelection === 'Market Direct' 
                         ? 'border-cyan-500 bg-transparent text-white' 
                         : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-gray-400'
                     }`}
-                    onClick={() => setAccountTypeSelection('Standard')}
+                    onClick={() => setAccountTypeSelection('Market Direct')}
                     disabled={isLoading}
                   >
-                    Standard
+                    Market Direct
                   </button>
                 </div>
                   </div>

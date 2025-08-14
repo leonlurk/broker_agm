@@ -3,6 +3,7 @@ import { useAccounts, WALLET_OPERATIONS } from '../contexts/AccountsContext';
 import { DatabaseAdapter } from '../services/database.adapter';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContext';
+import CryptoDepositModal from './CryptoDepositModal';
 
 const Wallet = () => {
   const {
@@ -47,6 +48,7 @@ const Wallet = () => {
   const [showHistorialModal, setShowHistorialModal] = useState(false);
   const [showTransactionDetail, setShowTransactionDetail] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [showCryptoDepositModal, setShowCryptoDepositModal] = useState(false);
   const dropdownRef = useRef(null);
   const transferDropdownRef = useRef(null);
 
@@ -231,6 +233,19 @@ const Wallet = () => {
       return;
     }
 
+    // Si es un depósito crypto, abrir el modal especial
+    if (activeTab === 'depositar' && selectedMethod?.id === 'crypto' && selectedCoin) {
+      console.log('🚀 ABRIENDO MODAL CRYPTO:', {
+        activeTab,
+        selectedMethod,
+        selectedCoin,
+        amount,
+        userEmail: currentUser?.email
+      });
+      setShowCryptoDepositModal(true);
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
@@ -244,7 +259,7 @@ const Wallet = () => {
         amount: parseFloat(amount),
         currency: 'USD',
         type: activeTab,
-        method: activeTab === 'transferir' ? 'Transferencia Interna' : selectedMethod,
+        method: activeTab === 'transferir' ? 'Transferencia Interna' : selectedMethod?.name || selectedMethod,
         status: 'pending',
         created_at: new Date().toISOString(),
         ...(selectedCoin && { coin: selectedCoin }),
@@ -300,6 +315,47 @@ const Wallet = () => {
     setAcceptTerms(false);
   };
 
+  // Manejar confirmación de depósito crypto
+  const handleCryptoDepositConfirmed = async (depositData) => {
+    try {
+      // Crear registro de transacción
+      const transactionData = {
+        user_id: currentUser.id,
+        account_id: selectedAccount.id,
+        account_name: selectedAccount.account_name,
+        amount: parseFloat(amount),
+        currency: 'USD',
+        type: 'depositar',
+        method: 'Criptomoneda',
+        status: 'completed',
+        created_at: new Date().toISOString(),
+        coin: selectedCoin,
+        wallet_address: depositData.walletAddress,
+        tx_hash: depositData.txHash,
+        network: depositData.network
+      };
+
+      // Guardar en base de datos
+      await DatabaseAdapter.transactions.create(transactionData);
+
+      // Actualizar balance localmente
+      const depositAmount = parseFloat(amount);
+      setSuccess(`Depósito de $${amount} USD completado exitosamente`);
+      notifyDeposit(depositAmount, selectedAccount.account_name);
+
+      // Cerrar modal y resetear
+      setShowCryptoDepositModal(false);
+      resetForm();
+      
+      // Recargar cuentas y transacciones
+      await loadAccounts();
+      await loadTransactions();
+    } catch (error) {
+      console.error('Error processing crypto deposit:', error);
+      notifyError('Error en Depósito', 'Error al procesar el depósito crypto');
+    }
+  };
+
   // Wrapper para cambiar de paso y hacer scroll
   const goToStep = (step) => {
     setCurrentStep(step);
@@ -341,6 +397,7 @@ const Wallet = () => {
 
   // Debug: Log para verificar cuentas
   console.log('Debug Wallet - currentUser:', currentUser);
+  console.log('Debug Wallet - currentUser keys:', currentUser ? Object.keys(currentUser) : 'null');
   console.log('Debug Wallet - getAllAccounts():', getAllAccounts());
   console.log('Debug Wallet - availableAccounts:', availableAccounts);
   console.log('Debug Wallet - accounts from context:', accounts);
@@ -531,9 +588,9 @@ const Wallet = () => {
             {methods.map((method) => (
               <button 
                 key={method.id}
-                onClick={() => handleSelectMethod(method.id)}
+                onClick={() => handleSelectMethod(method)}
                 className={`w-full p-4 text-left rounded-lg border-2 font-medium transition-all ${
-                  selectedMethod === method.id
+                  selectedMethod?.id === method.id
                     ? 'bg-[#374151] border-[#06b6d4] text-white' 
                     : 'bg-[#1e1e1e] border-[#4b5563] text-[#9ca3af] hover:bg-[#374151] hover:text-white'
                 }`}
@@ -551,12 +608,12 @@ const Wallet = () => {
         <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 2 ? 'border-[#06b6d4]' : 'border-[#334155]'} ${currentStep < 2 ? 'opacity-60' : ''}`}>
           <h3 className="text-lg font-semibold mb-2 text-white">Paso 2</h3>
           <p className="text-[#9ca3af] mb-6 text-sm">
-            {selectedMethod === 'crypto' ? 'Seleccionar moneda' : 'Detalles del método'}
+            {selectedMethod?.id === 'crypto' ? 'Seleccionar moneda' : 'Detalles del método'}
           </p>
           
           {currentStep >= 2 && (
             <div className="space-y-3">
-              {selectedMethod === 'crypto' ? (
+              {selectedMethod?.id === 'crypto' ? (
                 cryptoOptions.map((crypto) => (
                   <button 
                     key={crypto.id}
@@ -580,9 +637,9 @@ const Wallet = () => {
               ) : (
                 <div className="p-4 bg-[#1e1e1e] rounded-lg border border-[#334155]">
                   <p className="text-[#9ca3af] text-sm">
-                    {selectedMethod === 'bank_transfer' && 'Se procesará mediante transferencia bancaria'}
-                    {selectedMethod === 'credit_card' && 'Se procesará mediante tarjeta de crédito'}
-                    {selectedMethod === 'skrill' && 'Se procesará mediante Skrill'}
+                    {selectedMethod?.id === 'bank_transfer' && 'Se procesará mediante transferencia bancaria'}
+                    {selectedMethod?.id === 'credit_card' && 'Se procesará mediante tarjeta de crédito'}
+                    {selectedMethod?.id === 'skrill' && 'Se procesará mediante Skrill'}
                   </p>
                   <button 
                     onClick={() => goToStep(3)}
@@ -616,7 +673,7 @@ const Wallet = () => {
                 />
               </div>
 
-              {selectedMethod === 'crypto' && activeTab === 'retirar' && (
+              {selectedMethod?.id === 'crypto' && activeTab === 'retirar' && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-[#9ca3af] mb-2">
                     Dirección de Wallet
@@ -1235,6 +1292,16 @@ const Wallet = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Depósito Crypto */}
+      <CryptoDepositModal
+        isOpen={showCryptoDepositModal}
+        onClose={() => setShowCryptoDepositModal(false)}
+        selectedCoin={selectedCoin}
+        amount={amount}
+        onDepositConfirmed={handleCryptoDepositConfirmed}
+        userEmail={currentUser?.email}
+      />
     </div>
   );
 };

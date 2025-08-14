@@ -1,7 +1,7 @@
 import { DatabaseAdapter } from './database.adapter';
 import { logger } from '../utils/logger';
 import { createMT5Account } from './mt5Api';
-import { getCurrentUser } from '../supabase/config';
+import { getCurrentUser, supabase } from '../supabase/config';
 
 // Collection name for trading accounts
 const TRADING_ACCOUNTS_COLLECTION = "trading_accounts";
@@ -48,26 +48,59 @@ export const createTradingAccount = async (userId, accountData) => {
     // Use MT5 login as account number
     const accountNumber = mt5Result.data.login?.toString() || generateAccountNumber();
 
-    // Prepare account data - matching existing schema (only columns that exist)
-    const newAccount = {
-      user_id: userId, // Changed from userId to user_id
-      account_number: accountNumber, // MT5 login number
-      account_name: accountData.accountName, // Changed from accountName to account_name
-      account_type: accountData.accountType, // 'DEMO' or 'Real'
-      account_type_selection: accountData.accountTypeSelection, // 'Zero Spread' or 'Standard' - changed from accountTypeSelection
-      leverage: (mt5Result.data.leverage || accountData.leverage).toString(), // Convert to string as per schema
-      balance: mt5Result.data.balance || 0,
-      equity: mt5Result.data.balance || 0,
-      margin: 0,
-      free_margin: mt5Result.data.balance || 0
-      // Note: Removed mt5_login, mt5_password, mt5_investor_password, mt5_group, margin_level
-      // as these columns don't exist in the trading_accounts table
-      // The MT5 credentials are stored in broker_accounts table instead
-    };
-
-    // Add to database
-    const { data: createdAccount, error } = await DatabaseAdapter.tradingAccounts.create(newAccount);
-    if (error) throw error;
+    // The MT5 API backend already created the account in broker_accounts
+    // We just need to fetch it to get the created account data
+    // Wait a moment for the backend to complete the insertion
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Fetch the created account from broker_accounts first to get the ID
+    const { data: updatedAccounts } = await DatabaseAdapter.tradingAccounts.getByUserId(userId);
+    let createdAccount = updatedAccounts?.find(acc => 
+      acc.login?.toString() === accountNumber || 
+      acc.account_number?.toString() === accountNumber
+    );
+    
+    // Save the MT5 passwords to the database if we found the account
+    if (createdAccount && (mt5Result.data.password || mt5Result.data.investor_password)) {
+      logger.info('Saving MT5 credentials to database', { 
+        accountId: createdAccount.id, 
+        accountNumber 
+      });
+      
+      const updateResult = await DatabaseAdapter.tradingAccounts.update(createdAccount.id, {
+        mt5_password: mt5Result.data.password,
+        mt5_investor_password: mt5Result.data.investor_password
+      });
+      
+      if (updateResult.error) {
+        logger.error('Failed to save MT5 credentials', updateResult.error);
+      } else {
+        logger.info('MT5 credentials saved successfully');
+        // Update the local object with the passwords
+        createdAccount.mt5_password = mt5Result.data.password;
+        createdAccount.mt5_investor_password = mt5Result.data.investor_password;
+      }
+    }
+    
+    if (!createdAccount) {
+      // If we can't find it, create a minimal record to return
+      // This is just for the response, the actual account exists in broker_accounts
+      createdAccount = {
+        id: `temp-${accountNumber}`,
+        user_id: userId,
+        account_number: accountNumber,
+        login: accountNumber,
+        account_name: accountData.accountName,
+        account_type: accountData.accountType,
+        leverage: mt5Result.data.leverage || accountData.leverage,
+        balance: mt5Result.data.balance || 0,
+        equity: mt5Result.data.balance || 0,
+        margin: 0,
+        free_margin: mt5Result.data.balance || 0
+      };
+      
+      logger.warn('Could not find created account in broker_accounts, using fallback data', { accountNumber });
+    }
     
     logger.info('Trading account created successfully', { 
       accountId: createdAccount.id, 
@@ -75,6 +108,29 @@ export const createTradingAccount = async (userId, accountData) => {
       mt5Login: mt5Result.data.login,
       accountType: accountData.accountType 
     });
+
+    // Force sync of the new account to get real balance from MT5
+    // This ensures the balance shown is the actual MT5 balance
+    try {
+      logger.info('Forcing sync for new account', { accountNumber });
+      const syncUrl = `${import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444'}/api/v1/supabase/accounts/${accountNumber}/sync`;
+      
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        await fetch(syncUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        logger.info('Sync triggered for new account', { accountNumber });
+      }
+    } catch (syncError) {
+      // Don't fail the account creation if sync fails
+      logger.error('Failed to sync new account (non-critical)', syncError);
+    }
 
     return {
       success: true,
