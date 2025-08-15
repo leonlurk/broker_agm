@@ -415,8 +415,16 @@ const Wallet = () => {
 
   // Filtrar cuentas disponibles para selección - Solo cuentas reales
   const availableAccounts = getAllAccounts().filter(account => {
-    // Solo mostrar cuentas reales
-    if (account.account_type !== 'Real') return false;
+    // Solo mostrar cuentas reales (verificar diferentes variaciones del campo)
+    const isRealAccount = account.account_type === 'Real' || 
+                         account.account_type === 'real' || 
+                         account.accountType === 'Real' ||
+                         account.accountType === 'real' ||
+                         account.type === 'Real' ||
+                         account.type === 'real';
+    
+    if (!isRealAccount) return false;
+    
     // En transferencias, excluir la cuenta origen
     if (currentOperation === WALLET_OPERATIONS.TRANSFER && account.id === selectedAccount?.id) return false;
     return true;

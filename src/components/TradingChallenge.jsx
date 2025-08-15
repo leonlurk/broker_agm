@@ -3,11 +3,13 @@ import { ChevronDown } from 'lucide-react';
 import { createTradingAccount } from '../services/tradingAccounts';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContext';
+import { useAccounts } from '../contexts/AccountsContext';
 import emailServiceProxy from '../services/emailServiceProxy';
 
 export default function TradingChallengeUI() {
   const { currentUser } = useAuth();
   const { notifyAccountCreated } = useNotifications();
+  const { loadAccounts } = useAccounts();
   const [accountType, setAccountType] = useState('Real');
   const [accountName, setAccountName] = useState('');
   const [accountTypeSelection, setAccountTypeSelection] = useState('Institucional');
@@ -88,6 +90,9 @@ export default function TradingChallengeUI() {
         
         // Crear notificación
         notifyAccountCreated(accountName.trim(), `${accountType} - ${accountTypeSelection}`);
+        
+        // Reload accounts to show the new one immediately
+        await loadAccounts();
         
         // Reset form
         setAccountName('');

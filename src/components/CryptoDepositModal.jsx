@@ -152,8 +152,8 @@ const CryptoDepositModal = ({
   const relevantWallet = getRelevantWallet();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 overflow-y-auto py-4">
-      <div className="bg-[#1e1e1e] rounded-2xl p-6 max-w-md w-full mx-4 border border-[#334155] my-auto max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
+      <div className="bg-[#1e1e1e] rounded-2xl p-6 max-w-lg w-full mx-auto border border-[#334155] max-h-[85vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">Depósito Crypto</h2>
