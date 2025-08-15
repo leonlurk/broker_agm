@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { createTradingAccount } from '../services/tradingAccounts';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContext';
+import emailServiceProxy from '../services/emailServiceProxy';
 
 export default function TradingChallengeUI() {
   const { currentUser } = useAuth();
@@ -67,6 +68,22 @@ export default function TradingChallengeUI() {
         // Store MT5 credentials if available
         if (result.mt5Credentials) {
           setMt5Credentials(result.mt5Credentials);
+          
+          // Send MT5 credentials email
+          try {
+            await emailServiceProxy.sendAccountCredentials(
+              { email: currentUser.email, name: currentUser.displayName || 'Usuario' },
+              {
+                login: result.mt5Credentials.login,
+                password: result.mt5Credentials.password,
+                server: result.mt5Credentials.server || 'AlphaGlobalMarket-Demo',
+                accountType: accountType
+              }
+            );
+            console.log('[TradingChallenge] MT5 credentials email sent');
+          } catch (emailError) {
+            console.error('[TradingChallenge] Error sending credentials email:', emailError);
+          }
         }
         
         // Crear notificación

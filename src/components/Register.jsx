@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AuthAdapter } from '../services/database.adapter';
 import { useNavigate, useLocation } from 'react-router-dom';
+import emailServiceProxy from '../services/emailServiceProxy';
 
 const Register = ({ onLoginClick }) => {
   const [firstName, setFirstName] = useState('');
@@ -71,6 +72,19 @@ const Register = ({ onLoginClick }) => {
       
       // Success
       console.log('[Register] Registration successful, user object:', user);
+      
+      // Send welcome email
+      try {
+        await emailServiceProxy.sendWelcomeEmail({
+          email: email,
+          name: `${firstName} ${lastName}`.trim() || username
+        });
+        console.log('[Register] Welcome email sent successfully');
+      } catch (emailError) {
+        console.error('[Register] Error sending welcome email:', emailError);
+        // Don't block registration if email fails
+      }
+      
       setMessage('¡Registro exitoso! Por favor verifica tu correo electrónico para activar tu cuenta.');
       setUsername(''); // Clear form on success
       setEmail('');

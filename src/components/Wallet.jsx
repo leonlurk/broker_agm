@@ -4,6 +4,7 @@ import { DatabaseAdapter } from '../services/database.adapter';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import CryptoDepositModal from './CryptoDepositModal';
+import emailServiceProxy from '../services/emailServiceProxy';
 
 const Wallet = () => {
   const {
@@ -275,10 +276,32 @@ const Wallet = () => {
         const depositAmount = parseFloat(amount);
         setSuccess(`Depósito de $${amount} USD iniciado correctamente`);
         notifyDeposit(depositAmount, selectedAccount.account_name);
+        
+        // Send deposit confirmation email
+        try {
+          await emailServiceProxy.sendDepositConfirmation(
+            { email: currentUser.email, name: currentUser.displayName || 'Usuario' },
+            { amount: depositAmount, accountName: selectedAccount.account_name, currency: 'USD', method: selectedMethod }
+          );
+          console.log('[Wallet] Deposit confirmation email sent');
+        } catch (emailError) {
+          console.error('[Wallet] Error sending deposit email:', emailError);
+        }
       } else if (activeTab === 'retirar') {
         const withdrawAmount = parseFloat(amount);
         setSuccess(`Retiro de $${amount} USD iniciado correctamente`);
         notifyWithdrawal(withdrawAmount, selectedAccount.account_name);
+        
+        // Send withdrawal confirmation email  
+        try {
+          await emailServiceProxy.sendWithdrawalConfirmation(
+            { email: currentUser.email, name: currentUser.displayName || 'Usuario' },
+            { amount: withdrawAmount, accountName: selectedAccount.account_name, currency: 'USD', method: selectedMethod }
+          );
+          console.log('[Wallet] Withdrawal confirmation email sent');
+        } catch (emailError) {
+          console.error('[Wallet] Error sending withdrawal email:', emailError);
+        }
       } else if (activeTab === 'transferir') {
         const transferAmount = parseFloat(amount);
         setSuccess(`Transferencia de $${amount} USD de ${selectedAccount.account_name} a ${transferToAccount.account_name} iniciada correctamente`);

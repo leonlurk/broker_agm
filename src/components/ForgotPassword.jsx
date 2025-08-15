@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthAdapter } from '../services/database.adapter';
+import emailServiceProxy from '../services/emailServiceProxy';
 
 const ForgotPassword = ({ onContinue, onLoginClick }) => {
   const [username, setUsername] = useState('');
@@ -19,6 +20,19 @@ const ForgotPassword = ({ onContinue, onLoginClick }) => {
       
       if (error) {
         throw new Error(error.message || 'Error al enviar el correo de recuperación');
+      }
+      
+      // Send password reset email through Brevo
+      try {
+        const resetLink = `https://alphaglobalmarket.io/reset-password?email=${encodeURIComponent(email)}`;
+        await emailServiceProxy.sendPasswordResetEmail(
+          { email: email, name: username || 'Usuario' },
+          resetLink
+        );
+        console.log('[ForgotPassword] Password reset email sent via Brevo');
+      } catch (emailError) {
+        console.error('[ForgotPassword] Error sending reset email via Brevo:', emailError);
+        // Don't block the flow if Brevo fails, Firebase already sent one
       }
       
       setMessage('Se ha enviado un correo de recuperación a tu dirección de email');
