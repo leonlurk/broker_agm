@@ -9,146 +9,17 @@ import { scrollToTopManual } from '../hooks/useScrollToTop';
 import useTranslation from '../hooks/useTranslation';
 import { getMasterTraders, getMySubscriptions, getInvestorPortfolio } from '../services/copytradingService';
 
-// Mock data para el dashboard del inversor (TEMPORAL - será reemplazado por datos reales)
-const mockPortfolioData = {
-  totalBalance: 15250.75,
-  totalPnL: 2100.50,
-  totalPnLPercentage: 16.7,
-  activeCapital: 13000.00
+// Estados iniciales vacíos para datos dinámicos
+const initialPortfolioData = {
+  totalBalance: 0,
+  totalPnL: 0,
+  totalPnLPercentage: 0,
+  activeCapital: 0
 };
 
-const mockCopiedTraders = [
-  {
-    id: 1,
-    name: "Maestro FX",
-    avatar: "/Avatar1.png",
-    personalPnL: 520.10,
-    personalPnLPercentage: 8.3,
-    assignedCapital: 5000.00,
-    status: "active"
-  },
-  {
-    id: 2,
-    name: "CryptoKing",
-    avatar: "/Avatar2.png", 
-    personalPnL: 1280.20,
-    personalPnLPercentage: 12.8,
-    assignedCapital: 4500.00,
-    status: "active"
-  },
-  {
-    id: 3,
-    name: "Piloto de Ganancias",
-    avatar: "/Avatar3.png",
-    personalPnL: 300.20,
-    personalPnLPercentage: 8.6,
-    assignedCapital: 3500.00,
-    status: "paused"
-  }
-];
+const initialHistoricalData = [];
 
-const mockHistoricalData = [
-  { date: '01/12', value: 13150 },
-  { date: '05/12', value: 13350 },
-  { date: '10/12', value: 14100 },
-  { date: '15/12', value: 13850 },
-  { date: '20/12', value: 14500 },
-  { date: '25/12', value: 15000 },
-  { date: '30/12', value: 15250 },
-];
-
-const mockTradersForExplorer = [
-  {
-    id: 1,
-    name: "Maestro FX Pro",
-    avatar: "/Avatar1.png",
-    monthlyPerformance: 24.5,
-    riskLevel: "Moderado",
-    aum: 125000,
-    followers: 45,
-    maxDrawdown: 8.2,
-    winRate: 78,
-    avgHoldTime: "2.5h",
-    rating: 4.8,
-    strategy: "Scalping EUR/USD",
-    isVerified: true
-  },
-  {
-    id: 2,
-    name: "CryptoKing Elite",
-    avatar: "/Avatar2.png",
-    monthlyPerformance: 18.3,
-    riskLevel: "Alto",
-    aum: 89000,
-    followers: 32,
-    maxDrawdown: 15.7,
-    winRate: 65,
-    avgHoldTime: "6.2h",
-    rating: 4.5,
-    strategy: "Swing Trading BTC",
-    isVerified: true
-  },
-  {
-    id: 3,
-    name: "SafeTrader",
-    avatar: "/Avatar3.png",
-    monthlyPerformance: 12.1,
-    riskLevel: "Bajo",
-    aum: 95000,
-    followers: 67,
-    maxDrawdown: 4.3,
-    winRate: 85,
-    avgHoldTime: "12h",
-    rating: 4.9,
-    strategy: "Conservador Diversificado",
-    isVerified: true
-  },
-  {
-    id: 4,
-    name: "TechAnalyst",
-    avatar: "/Avatar4.png",
-    monthlyPerformance: 31.2,
-    riskLevel: "Alto",
-    aum: 156000,
-    followers: 28,
-    maxDrawdown: 22.1,
-    winRate: 72,
-    avgHoldTime: "4.8h",
-    rating: 4.3,
-    strategy: "Análisis Técnico Avanzado",
-    isVerified: false
-  },
-  {
-    id: 5,
-    name: "DiversifiedPro",
-    avatar: "/Avatar5.png",
-    monthlyPerformance: 16.8,
-    riskLevel: "Moderado",
-    aum: 203000,
-    followers: 89,
-    maxDrawdown: 11.4,
-    winRate: 74,
-    avgHoldTime: "8.1h",
-    rating: 4.7,
-    strategy: "Portafolio Diversificado",
-    isVerified: true
-  },
-  {
-    id: 6,
-    name: "QuickGains",
-    avatar: "/Avatar6.png",
-    monthlyPerformance: 27.9,
-    riskLevel: "Alto",
-    aum: 67000,
-    followers: 23,
-    maxDrawdown: 18.9,
-    winRate: 68,
-    avgHoldTime: "1.2h",
-    rating: 4.1,
-    strategy: "Day Trading Agresivo",
-    isVerified: false
-  }
-];
+// Los traders se cargarán dinámicamente desde la API
 
 const Inversor = () => {
   const { t } = useTranslation();
@@ -172,8 +43,8 @@ const Inversor = () => {
   const [realTraders, setRealTraders] = useState([]);
   const [isLoadingTraders, setIsLoadingTraders] = useState(true);
   const [subscriptions, setSubscriptions] = useState([]);
-  const [portfolioData, setPortfolioData] = useState(mockPortfolioData); // Temporal hasta tener endpoint de portfolio
-  const [historicalData, setHistoricalData] = useState(mockHistoricalData);
+  const [portfolioData, setPortfolioData] = useState(initialPortfolioData);
+  const [historicalData, setHistoricalData] = useState(initialHistoricalData);
   
   // Estados para el modal de seguir trader
   const [showSeguirModal, setShowSeguirModal] = useState(false);
@@ -309,9 +180,9 @@ const Inversor = () => {
       } catch (error) {
         console.error('Error loading traders data:', error);
         console.error('Error details:', error.response?.data || error.message);
-        // En caso de error, usar datos mock como fallback
-        setFilteredTraders(mockTradersForExplorer);
-        setPortfolioData(mockPortfolioData);
+        // En caso de error, usar arrays vacíos
+        setFilteredTraders([]);
+        setPortfolioData(initialPortfolioData);
       } finally {
         setIsLoadingTraders(false);
       }
@@ -320,36 +191,10 @@ const Inversor = () => {
     fetchTradersData();
   }, []);
 
-  // Efecto para inicializar comentarios con datos mock
+  // Efecto para inicializar comentarios - vacío hasta cargarlos de la API
   useEffect(() => {
-    // Initialize comments with mock data when component mounts
-    const mockComments = [
-      {
-        id: 1,
-        user: 'InvestorPro',
-        avatar: '/user1.png',
-        date: '2024-01-10',
-        rating: 5,
-        comment: 'Excelente trader, muy consistente en sus estrategias. He estado copiándolo por 3 meses y los resultados son fantásticos.'
-      },
-      {
-        id: 2,
-        user: 'TradingNewbie',
-        avatar: '/user2.png',
-        date: '2024-01-08',
-        rating: 4,
-        comment: 'Buen rendimiento general, aunque a veces las operaciones duran más de lo esperado. Recomendado para perfiles conservadores.'
-      },
-      {
-        id: 3,
-        user: 'CopyMaster',
-        avatar: '/user3.png',
-        date: '2024-01-05',
-        rating: 5,
-        comment: 'Profesional serio con una estrategia bien definida. El análisis de riesgo es impecable.'
-      }
-    ];
-    setComments(mockComments);
+    // Los comentarios se cargarán dinámicamente desde la API cuando se implemente
+    setComments([]);
   }, []);
 
   const handleExploreTraders = () => {
@@ -468,108 +313,39 @@ const Inversor = () => {
     // await submitTraderComment(commentData);
   };
 
-  const mockTraderProfileData = {
+  // Datos del perfil del trader - completamente dinámicos desde la API
+  const traderProfileData = selectedTrader ? {
     performance: {
-      chartData: [
-        { date: '01/12', value: 10000, drawdown: 0 },
-        { date: '05/12', value: 10350, drawdown: -2.1 },
-        { date: '10/12', value: 11200, drawdown: -1.5 },
-        { date: '15/12', value: 10950, drawdown: -3.2 },
-        { date: '20/12', value: 11800, drawdown: -0.8 },
-        { date: '25/12', value: 12300, drawdown: -1.2 },
-        { date: '30/12', value: 12450, drawdown: 0 },
-      ],
-      periods: {
-        '1M': { return: 24.5, sharpe: 1.8, volatility: 12.3 },
-        '3M': { return: 68.2, sharpe: 2.1, volatility: 11.8 },
-        '6M': { return: 142.7, sharpe: 2.3, volatility: 13.1 },
-        '1Y': { return: 284.6, sharpe: 2.0, volatility: 14.2 }
+      chartData: selectedTrader.performanceChart || [],
+      periods: selectedTrader.performancePeriods || {
+        '1M': { return: 0, sharpe: 0, volatility: 0 },
+        '3M': { return: 0, sharpe: 0, volatility: 0 },
+        '6M': { return: 0, sharpe: 0, volatility: 0 },
+        '1Y': { return: 0, sharpe: 0, volatility: 0 }
       }
     },
-    statistics: {
-      totalTrades: 1247,
-      winningTrades: 973,
-      losingTrades: 274,
-      avgWinAmount: 125.50,
-      avgLossAmount: -89.30,
-      largestWin: 890.20,
-      largestLoss: -456.80,
-      avgTradeDuration: '2.5h',
-      profitFactor: 1.95,
-      recoveryFactor: 2.8,
-      calmarRatio: 3.2
+    statistics: selectedTrader.statistics || {
+      totalTrades: 0,
+      winningTrades: 0,
+      losingTrades: 0,
+      avgWinAmount: 0,
+      avgLossAmount: 0,
+      largestWin: 0,
+      largestLoss: 0,
+      avgTradeDuration: 'N/A',
+      profitFactor: 0,
+      recoveryFactor: 0,
+      calmarRatio: 0
     },
-    tradeHistory: [
-      {
-        id: 1,
-        symbol: 'EUR/USD',
-        type: 'BUY',
-        openTime: '2024-01-15 09:30',
-        closeTime: '2024-01-15 12:45',
-        openPrice: 1.0875,
-        closePrice: 1.0912,
-        lotSize: 0.5,
-        pnl: 185.00,
-        pnlPercentage: 1.7
-      },
-      {
-        id: 2,
-        symbol: 'GBP/USD',
-        type: 'SELL',
-        openTime: '2024-01-14 14:20',
-        closeTime: '2024-01-14 16:10',
-        openPrice: 1.2654,
-        closePrice: 1.2598,
-        lotSize: 0.3,
-        pnl: 168.00,
-        pnlPercentage: 2.1
-      },
-      {
-        id: 3,
-        symbol: 'USD/JPY',
-        type: 'BUY',
-        openTime: '2024-01-13 08:15',
-        closeTime: '2024-01-13 11:30',
-        openPrice: 149.75,
-        closePrice: 148.92,
-        lotSize: 0.2,
-        pnl: -166.00,
-        pnlPercentage: -1.3
-      }
-    ],
-    comments: [
-      {
-        id: 1,
-        user: 'InvestorPro',
-        avatar: '/user1.png',
-        date: '2024-01-10',
-        rating: 5,
-        comment: 'Excelente trader, muy consistente en sus estrategias. He estado copiándolo por 3 meses y los resultados son fantásticos.'
-      },
-      {
-        id: 2,
-        user: 'TradingNewbie',
-        avatar: '/user2.png',
-        date: '2024-01-08',
-        rating: 4,
-        comment: 'Buen rendimiento general, aunque a veces las operaciones duran más de lo esperado. Recomendado para perfiles conservadores.'
-      },
-      {
-        id: 3,
-        user: 'CopyMaster',
-        avatar: '/user3.png',
-        date: '2024-01-05',
-        rating: 5,
-        comment: 'Profesional serio con una estrategia bien definida. El análisis de riesgo es impecable.'
-      }
-    ],
-    instruments: [
-      { name: 'EUR/USD', value: 35.2 },
-      { name: 'GBP/USD', value: 28.7 },
-      { name: 'USD/JPY', value: 18.5 },
-      { name: 'XAU/USD', value: 12.3 },
-      { name: 'US100', value: 5.3 }
-    ]
+    tradeHistory: selectedTrader.tradeHistory || [],
+    comments: comments, // Usar el estado de comentarios dinámico
+    instruments: selectedTrader?.instruments || []
+  } : {
+    performance: { chartData: [], periods: {} },
+    statistics: {},
+    trades: [],
+    comments: [],
+    instruments: []
   };
 
   // Colores para el PieChart de instrumentos
@@ -609,23 +385,23 @@ const Inversor = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center md:text-left">
               <p className="text-gray-400 text-sm mb-1">Balance Total</p>
-              <p className="text-2xl font-bold text-white">{formatCurrency(mockPortfolioData.totalBalance)}</p>
+              <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.total_balance || portfolioData.totalBalance || 0)}</p>
             </div>
             <div className="text-center md:text-left">
               <p className="text-gray-400 text-sm mb-1">P&L Total</p>
               <div className="flex items-center justify-center md:justify-start gap-2">
-                <p className={`text-2xl font-bold ${mockPortfolioData.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {formatCurrency(mockPortfolioData.totalPnL)}
+                <p className={`text-2xl font-bold ${(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {formatCurrency(portfolioData.total_pnl || portfolioData.totalPnL || 0)}
                 </p>
-                <div className={`flex items-center gap-1 ${mockPortfolioData.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {mockPortfolioData.totalPnL >= 0 ? <ArrowUp size={20} /> : <TrendingDown size={20} />}
-                  <span className="text-sm font-medium">({formatPercentage(mockPortfolioData.totalPnLPercentage)})</span>
+                <div className={`flex items-center gap-1 ${(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? <ArrowUp size={20} /> : <TrendingDown size={20} />}
+                  <span className="text-sm font-medium">({formatPercentage(portfolioData.total_pnl_percentage || portfolioData.totalPnLPercentage || 0)})</span>
                 </div>
               </div>
             </div>
             <div className="text-center md:text-left">
               <p className="text-gray-400 text-sm mb-1">Capital Activo</p>
-              <p className="text-2xl font-bold text-white">{formatCurrency(mockPortfolioData.activeCapital)}</p>
+              <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.active_capital || portfolioData.activeCapital || 0)}</p>
             </div>
           </div>
         </div>
@@ -634,7 +410,7 @@ const Inversor = () => {
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4 text-cyan-400">Traders Copiados</h2>
           <div className="space-y-4">
-            {(subscriptions.length > 0 ? subscriptions : mockCopiedTraders).map((trader) => (
+            {subscriptions.map((trader) => (
               <div key={trader.id} className="bg-[#1C1C1C] rounded-xl border border-[#333] p-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   {/* Trader Info */}
@@ -1246,7 +1022,7 @@ const Inversor = () => {
                 <h3 className="text-lg font-semibold mb-4 text-cyan-400">Rendimiento</h3>
                 <div className="h-64 mb-4">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={mockTraderProfileData.performance.chartData}>
+                    <AreaChart data={traderProfileData?.performance?.chartData || []}>
                       <XAxis 
                         dataKey="date" 
                         axisLine={false} 
@@ -1285,7 +1061,7 @@ const Inversor = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-4 text-cyan-400">Métricas</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {Object.entries(mockTraderProfileData.performance.periods).map(([period, data]) => (
+                  {Object.entries(traderProfileData?.performance?.periods || {}).map(([period, data]) => (
                     <div key={period} className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
                       <h4 className="font-semibold text-white mb-3">{period}</h4>
                       <div className="space-y-2">
@@ -1324,15 +1100,15 @@ const Inversor = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-gray-400">Total Trades</span>
-                      <span className="text-white font-medium">{mockTraderProfileData.statistics.totalTrades}</span>
+                      <span className="text-white font-medium">{traderProfileData?.statistics?.totalTrades || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Trades Ganadores</span>
-                      <span className="text-green-400 font-medium">{mockTraderProfileData.statistics.winningTrades}</span>
+                      <span className="text-green-400 font-medium">{traderProfileData?.statistics?.winningTrades || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Trades Perdedores</span>
-                      <span className="text-red-400 font-medium">{mockTraderProfileData.statistics.losingTrades}</span>
+                      <span className="text-red-400 font-medium">{traderProfileData?.statistics?.losingTrades || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Tasa de Éxito</span>
@@ -1350,19 +1126,19 @@ const Inversor = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-gray-400">Ganancia Promedio</span>
-                      <span className="text-green-400 font-medium">${mockTraderProfileData.statistics.avgWinAmount}</span>
+                      <span className="text-green-400 font-medium">${traderProfileData?.statistics?.avgWinAmount || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Pérdida Promedio</span>
-                      <span className="text-red-400 font-medium">${mockTraderProfileData.statistics.avgLossAmount}</span>
+                      <span className="text-red-400 font-medium">${traderProfileData?.statistics?.avgLossAmount || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Mayor Ganancia</span>
-                      <span className="text-green-400 font-medium">${mockTraderProfileData.statistics.largestWin}</span>
+                      <span className="text-green-400 font-medium">${traderProfileData?.statistics?.largestWin || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Mayor Pérdida</span>
-                      <span className="text-red-400 font-medium">${mockTraderProfileData.statistics.largestLoss}</span>
+                      <span className="text-red-400 font-medium">${traderProfileData?.statistics?.largestLoss || 0}</span>
                     </div>
                   </div>
                 </div>
@@ -1376,19 +1152,19 @@ const Inversor = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-gray-400">Factor de Ganancia</span>
-                      <span className="text-white font-medium">{mockTraderProfileData.statistics.profitFactor}</span>
+                      <span className="text-white font-medium">{traderProfileData?.statistics?.profitFactor || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Recovery Factor</span>
-                      <span className="text-white font-medium">{mockTraderProfileData.statistics.recoveryFactor}</span>
+                      <span className="text-white font-medium">{traderProfileData?.statistics?.recoveryFactor || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Calmar Ratio</span>
-                      <span className="text-white font-medium">{mockTraderProfileData.statistics.calmarRatio}</span>
+                      <span className="text-white font-medium">{traderProfileData?.statistics?.calmarRatio || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Duración Promedio</span>
-                      <span className="text-white font-medium">{mockTraderProfileData.statistics.avgTradeDuration}</span>
+                      <span className="text-white font-medium">{traderProfileData?.statistics?.avgTradeDuration || '0h'}</span>
                     </div>
                   </div>
                 </div>
@@ -1442,7 +1218,7 @@ const Inversor = () => {
               
               <div className="h-64 mb-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={mockTraderProfileData.performance.chartData}>
+                  <AreaChart data={traderProfileData?.performance?.chartData || []}>
                     <defs>
                       <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>

@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { AuthAdapter } from './database.adapter'; // Importamos el adapter para obtener el token
 
-// La URL base de tu nuevo backend de Node.js desplegado en el VPS
-// Esto debería estar en un archivo .env en tu proyecto de React
-const API_BASE_URL = import.meta.env.VITE_LOGIC_API_URL || 'http://localhost/api';
-// Ahora conectado a tu backend Copy-PAMM enterprise que corre en localhost
+// La URL base para Copy Trading - usa el dominio público con SSL
+// MT5Manager en producción hace proxy interno a Copy-PAMM (localhost:8080)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444';
+// Conectado a MT5Manager producción que hace proxy hacia Copy-PAMM API interna
 
 // Creamos una instancia de Axios para nuestro servicio de lógica
 const logicApiClient = axios.create({
@@ -53,7 +53,7 @@ logicApiClient.interceptors.request.use(
  */
 export const followMaster = async (masterUserId, followerMt5AccountId, riskRatio = 1.0) => {
   try {
-    const response = await logicApiClient.post('/copy/follow', {
+    const response = await logicApiClient.post('/api/v1/copy/follow', {
       masterUserId,
       followerMt5AccountId,
       riskRatio
@@ -71,7 +71,7 @@ export const followMaster = async (masterUserId, followerMt5AccountId, riskRatio
  */
 export const getMasterTraders = async () => {
   try {
-    const response = await logicApiClient.get('/copy/masters');
+    const response = await logicApiClient.get('/api/v1/copy/masters');
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al obtener los traders' };
@@ -86,7 +86,7 @@ export const getMasterTraders = async () => {
  */
 export const unfollowMaster = async (masterUserId, followerMt5AccountId) => {
   try {
-    const response = await logicApiClient.post('/copy/unfollow', {
+    const response = await logicApiClient.post('/api/v1/copy/unfollow', {
       masterUserId,
       followerMt5AccountId,
     });
@@ -105,7 +105,7 @@ export const unfollowMaster = async (masterUserId, followerMt5AccountId) => {
  */
 export const updateCopyConfig = async (masterUserId, followerMt5AccountId, riskRatio) => {
   try {
-    const response = await logicApiClient.put('/copy/config', {
+    const response = await logicApiClient.put('/api/v1/copy/config', {
       masterUserId,
       followerMt5AccountId,
       riskRatio,
@@ -123,7 +123,7 @@ export const updateCopyConfig = async (masterUserId, followerMt5AccountId, riskR
 export const getMySubscriptions = async () => {
   try {
     // El ID de usuario se obtiene del token en el backend
-    const response = await logicApiClient.get('/copy/subscriptions');
+    const response = await logicApiClient.get('/api/v1/copy/subscriptions');
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al obtener las suscripciones' };
@@ -137,7 +137,7 @@ export const getMySubscriptions = async () => {
 export const getFollowers = async () => {
   try {
     // El backend identifica al gestor a través del token de autenticación.
-    const response = await logicApiClient.get('/copy/followers');
+    const response = await logicApiClient.get('/api/v1/copy/followers');
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al obtener los seguidores' };
@@ -150,7 +150,7 @@ export const getFollowers = async () => {
  */
 export const getInvestorPortfolio = async () => {
   try {
-    const response = await logicApiClient.get('/copy/portfolio');
+    const response = await logicApiClient.get('/api/v1/copy/portfolio');
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al obtener el portfolio' };
@@ -163,7 +163,7 @@ export const getInvestorPortfolio = async () => {
  */
 export const getTraderStats = async () => {
   try {
-    const response = await logicApiClient.get('/copy/trader-stats');
+    const response = await logicApiClient.get('/api/v1/copy/trader-stats');
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al obtener estadísticas del trader' };

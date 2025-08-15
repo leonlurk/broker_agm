@@ -6,130 +6,29 @@ import ConfigurarGestorModal from './ConfigurarGestorModal';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import useTranslation from '../hooks/useTranslation';
 
-// Mock data para el dashboard del trader
-const mockTraderDashboardData = {
+// Datos iniciales vacíos - se cargarán dinámicamente desde la API
+const initialTraderDashboardData = {
   overview: {
-    totalAUM: 245000,
-    monthlyReturn: 18.7,
-    totalFollowers: 89,
-    activeFollowers: 67,
-    totalCommissions: 3450.50,
-    monthlyCommissions: 890.25,
-    riskScore: 6.8,
-    maxDrawdown: 12.3
+    totalAUM: 0,
+    monthlyReturn: 0,
+    totalFollowers: 0,
+    activeFollowers: 0,
+    totalCommissions: 0,
+    monthlyCommissions: 0,
+    riskScore: 0,
+    maxDrawdown: 0
   },
-  performanceChart: [
-    { date: '01/12', portfolio: 220000, benchmark: 215000 },
-    { date: '05/12', portfolio: 225000, benchmark: 218000 },
-    { date: '10/12', portfolio: 231000, benchmark: 220000 },
-    { date: '15/12', portfolio: 238000, benchmark: 223000 },
-    { date: '20/12', portfolio: 242000, benchmark: 225000 },
-    { date: '25/12', portfolio: 245000, benchmark: 227000 },
-    { date: '30/12', portfolio: 245000, benchmark: 229000 },
-  ],
-  topInvestors: [
-    {
-      id: 1,
-      name: "Carlos Mendez",
-      avatar: "/investor1.png",
-      investedAmount: 25000,
-      monthlyPnL: 1890.50,
-      monthlyPnLPercentage: 7.6,
-      startDate: "2024-10-15",
-      status: "active",
-      totalPnL: 3250.75,
-      totalPnLPercentage: 13.0,
-      email: "carlos.mendez@email.com",
-      copyPercentage: 95,
-      lastActivity: "2024-01-15"
-    },
-    {
-      id: 2,
-      name: "Ana Rodriguez",
-      avatar: "/investor2.png",
-      investedAmount: 15000,
-      monthlyPnL: 1125.80,
-      monthlyPnLPercentage: 7.5,
-      startDate: "2024-11-02",
-      status: "active",
-      totalPnL: 1890.25,
-      totalPnLPercentage: 12.6,
-      email: "ana.rodriguez@email.com",
-      copyPercentage: 80,
-      lastActivity: "2024-01-15"
-    },
-    {
-      id: 3,
-      name: "Miguel Torres",
-      avatar: "/investor3.png",
-      investedAmount: 32000,
-      monthlyPnL: 2688.00,
-      monthlyPnLPercentage: 8.4,
-      startDate: "2024-09-20",
-      status: "active",
-      totalPnL: 4520.80,
-      totalPnLPercentage: 14.1,
-      email: "miguel.torres@email.com",
-      copyPercentage: 90,
-      lastActivity: "2024-01-15"
-    },
-    {
-      id: 4,
-      name: "Sofia Vega",
-      avatar: "/investor4.png",
-      investedAmount: 18500,
-      monthlyPnL: 1351.50,
-      monthlyPnLPercentage: 7.3,
-      startDate: "2024-11-10",
-      status: "paused",
-      totalPnL: 1890.75,
-      totalPnLPercentage: 10.2,
-      email: "sofia.vega@email.com",
-      copyPercentage: 0,
-      lastActivity: "2024-01-12"
-    }
-  ],
-  recentTrades: [
-    {
-      id: 1,
-      symbol: "EUR/USD",
-      type: "BUY",
-      time: "10:30",
-      size: 2.5,
-      pnl: 125.50,
-      followers: 45
-    },
-    {
-      id: 2,
-      symbol: "GBP/USD",
-      type: "SELL",
-      time: "09:15",
-      size: 1.8,
-      pnl: -89.20,
-      followers: 38
-    },
-    {
-      id: 3,
-      symbol: "USD/JPY",
-      type: "BUY",
-      time: "08:45",
-      size: 3.2,
-      pnl: 245.80,
-      followers: 52
-    }
-  ],
-  followerDistribution: [
-    { name: "Activos", value: 67, color: "#22d3ee" },
-    { name: "Pausados", value: 15, color: "#fbbf24" },
-    { name: "Inactivos", value: 7, color: "#ef4444" }
-  ]
+  performanceChart: [],
+  topInvestors: [],
+  recentTrades: [],
+  followerDistribution: []
 };
 
 const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
   const { t } = useTranslation();
   const [view, setView] = useState('dashboard'); // dashboard, myInvestors, profileEdit
   const [investors, setInvestors] = useState([]);
-  const [traderStats, setTraderStats] = useState(mockTraderDashboardData);
+  const [traderStats, setTraderStats] = useState(initialTraderDashboardData);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showConfigurarModal, setShowConfigurarModal] = useState(false);
@@ -174,12 +73,12 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
         
         // Cargar estadísticas del trader y seguidores en paralelo
         const [statsData, followersData] = await Promise.all([
-          getTraderStats().catch(() => mockTraderDashboardData),
+          getTraderStats().catch(() => null),
           getFollowers().catch(() => [])
         ]);
         
         // Actualizar estadísticas del trader
-        if (statsData && statsData !== mockTraderDashboardData) {
+        if (statsData) {
           setTraderStats({
             overview: {
               totalAUM: statsData.overview?.total_aum || 0,
@@ -191,8 +90,10 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               riskScore: statsData.overview?.risk_score || 0,
               maxDrawdown: statsData.overview?.max_drawdown || 0
             },
-            performanceChart: statsData.performance_chart || mockTraderDashboardData.performanceChart,
-            topInvestors: statsData.followers_list || []
+            performanceChart: statsData.performance_chart || [],
+            topInvestors: statsData.followers_list || [],
+            recentTrades: statsData.recent_trades || [],
+            followerDistribution: statsData.follower_distribution || []
           });
           
           // Usar la lista de inversores del API si está disponible
@@ -220,14 +121,14 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           }
         } else {
           // Usar datos mock como fallback
-          setInvestors(mockTraderDashboardData.topInvestors);
+          setInvestors(traderStats.topInvestors || []);
         }
         
       } catch (err) {
         console.error('Error loading trader data:', err);
         setError('No se pudieron cargar los datos.');
         // Usar datos mock como fallback en caso de error
-        setInvestors(mockTraderDashboardData.topInvestors);
+        setInvestors(traderStats.topInvestors || []);
       } finally {
         setIsLoading(false);
       }
@@ -351,69 +252,8 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
     }));
   };
 
-  const mockAllInvestors = [
-    ...mockTraderDashboardData.topInvestors,
-    {
-      id: 5,
-      name: "Roberto Silva",
-      avatar: "/investor5.png",
-      investedAmount: 8500,
-      monthlyPnL: 612.50,
-      monthlyPnLPercentage: 7.2,
-      startDate: "2024-08-15",
-      status: "active",
-      totalPnL: 1890.75,
-      totalPnLPercentage: 22.2,
-      email: "roberto.silva@email.com",
-      copyPercentage: 85,
-      lastActivity: "2024-01-15"
-    },
-    {
-      id: 6,
-      name: "Laura Martinez",
-      avatar: "/investor6.png",
-      investedAmount: 12000,
-      monthlyPnL: -156.80,
-      monthlyPnLPercentage: -1.3,
-      startDate: "2024-12-01",
-      status: "active",
-      totalPnL: -156.80,
-      totalPnLPercentage: -1.3,
-      email: "laura.martinez@email.com",
-      copyPercentage: 100,
-      lastActivity: "2024-01-15"
-    },
-    {
-      id: 7,
-      name: "Diego Fernandez",
-      avatar: "/investor7.png",
-      investedAmount: 22000,
-      monthlyPnL: 0,
-      monthlyPnLPercentage: 0,
-      startDate: "2024-11-20",
-      status: "paused",
-      totalPnL: 1540.60,
-      totalPnLPercentage: 7.0,
-      email: "diego.fernandez@email.com",
-      copyPercentage: 0,
-      lastActivity: "2024-01-10"
-    },
-    {
-      id: 8,
-      name: "Carmen Lopez",
-      avatar: "/investor8.png",
-      investedAmount: 5500,
-      monthlyPnL: 0,
-      monthlyPnLPercentage: 0,
-      startDate: "2024-09-10",
-      status: "inactive",
-      totalPnL: 890.30,
-      totalPnLPercentage: 16.2,
-      email: "carmen.lopez@email.com",
-      copyPercentage: 0,
-      lastActivity: "2024-01-05"
-    }
-  ];
+  // Get all investors data dynamically
+  const allInvestors = traderStats.topInvestors || [];
 
   const toggleInvestorActions = (investorId) => {
     setShowInvestorActions(prev => ({
@@ -429,7 +269,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
   };
 
   const getFilteredInvestors = () => {
-    let filtered = mockAllInvestors;
+    let filtered = allInvestors;
     
     // Filter by search term
     if (searchTerm) {
@@ -660,7 +500,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               <Users size={20} className="text-cyan-400" />
               <span className="text-cyan-400 font-medium">Total</span>
             </div>
-            <p className="text-2xl font-bold text-white">{mockAllInvestors.length}</p>
+            <p className="text-2xl font-bold text-white">{allInvestors.length}</p>
           </div>
           
           <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
@@ -668,7 +508,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               <UserCheck size={20} className="text-green-400" />
               <span className="text-green-400 font-medium">Activos</span>
             </div>
-            <p className="text-2xl font-bold text-white">{mockAllInvestors.filter(i => i.status === 'active').length}</p>
+            <p className="text-2xl font-bold text-white">{allInvestors.filter(i => i.status === 'active').length}</p>
           </div>
           
           <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
@@ -677,7 +517,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               <span className="text-cyan-400 font-medium">AUM</span>
             </div>
             <p className="text-2xl font-bold text-white">
-              {formatAUM(mockAllInvestors.reduce((sum, inv) => sum + (inv.investedAmount || 0), 0))}
+              {formatAUM(allInvestors.reduce((sum, inv) => sum + (inv.investedAmount || 0), 0))}
             </p>
           </div>
           
@@ -688,8 +528,8 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
             </div>
             <p className="text-2xl font-bold text-green-400">
               {formatPercentage(
-                mockAllInvestors.length > 0 
-                  ? mockAllInvestors.reduce((sum, inv) => sum + (inv.totalPnLPercentage || 0), 0) / mockAllInvestors.length
+                allInvestors.length > 0 
+                  ? allInvestors.reduce((sum, inv) => sum + (inv.totalPnLPercentage || 0), 0) / allInvestors.length
                   : 0
               )}
             </p>
@@ -894,7 +734,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
         {/* Results Summary */}
         {filteredInvestors.length > 0 && (
           <div className="mt-6 text-center text-gray-400">
-            Mostrando {filteredInvestors.length} de {mockAllInvestors.length} inversores
+            Mostrando {filteredInvestors.length} de {allInvestors.length} inversores
           </div>
         )}
       </div>

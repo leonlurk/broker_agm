@@ -17,35 +17,9 @@ const CopiarEstrategiaModal = ({ isOpen, onClose, onConfirm }) => {
 
   const [errors, setErrors] = useState({});
 
-  // Datos mock de gestores disponibles para copiar
+  // Dynamic managers data - would be fetched from API
   const gestoresDisponibles = [
-    {
-      id: 'gestor1',
-      nombre: 'Alpha Capital Fund',
-      rendimiento: 28.5,
-      drawdown: 8.2,
-      sharpeRatio: 2.1,
-      inversores: 145,
-      capitalGestionado: 2500000
-    },
-    {
-      id: 'gestor2',
-      nombre: 'Momentum Trading Pro',
-      rendimiento: 35.2,
-      drawdown: 12.5,
-      sharpeRatio: 1.8,
-      inversores: 89,
-      capitalGestionado: 1800000
-    },
-    {
-      id: 'gestor3',
-      nombre: 'Conservative Growth',
-      rendimiento: 18.7,
-      drawdown: 4.8,
-      sharpeRatio: 2.4,
-      inversores: 203,
-      capitalGestionado: 4200000
-    }
+    // Will be populated from API call to get available trading managers
   ];
 
   const mercadosDisponibles = ['Forex', 'Criptomonedas', 'Acciones', 'Índices', 'Materias Primas'];

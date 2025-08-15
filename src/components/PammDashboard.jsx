@@ -153,6 +153,7 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
             showDropdown={showDropdown}
             toggleDropdown={toggleDropdown}
             t={t}
+            myFunds={myFunds}
         />;
     }
 
@@ -201,56 +202,13 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
     );
 };
 
-// Mock data para el dashboard PAMM inversor
-const mockPammPortfolioData = {
-    totalBalance: 28750.50,
-    totalPnL: 3850.75,
-    totalPnLPercentage: 15.4,
-    activeCapital: 25000.00
+// Estados iniciales vacíos - datos dinámicos desde la API
+const initialPammPortfolioData = {
+    totalBalance: 0,
+    totalPnL: 0,
+    totalPnLPercentage: 0,
+    activeCapital: 0
 };
-
-const mockInvestedFunds = [
-    {
-        id: 1,
-        name: "Alpha Growth PAMM",
-        manager: "Roberto Silva",
-        personalPnL: 1250.30,
-        personalPnLPercentage: 12.5,
-        investedAmount: 10000.00,
-        status: "active",
-        fundType: "Crecimiento"
-    },
-    {
-        id: 2,
-        name: "Forex Conservative Fund",
-        manager: "Maria Rodriguez",
-        personalPnL: 1890.45,
-        personalPnLPercentage: 18.9,
-        investedAmount: 10000.00,
-        status: "active",
-        fundType: "Conservador"
-    },
-    {
-        id: 3,
-        name: "High Yield PAMM",
-        manager: "Carlos Mendez",
-        personalPnL: 710.00,
-        personalPnLPercentage: 14.2,
-        investedAmount: 5000.00,
-        status: "paused",
-        fundType: "Alto Rendimiento"
-    }
-];
-
-const mockPammHistoricalData = [
-    { date: '01/12', value: 25000 },
-    { date: '05/12', value: 25850 },
-    { date: '10/12', value: 26200 },
-    { date: '15/12', value: 27100 },
-    { date: '20/12', value: 27800 },
-    { date: '25/12', value: 28400 },
-    { date: '30/12', value: 28750 },
-];
 
 const PammDashboardView = ({ 
     formatCurrency, 
@@ -262,8 +220,13 @@ const PammDashboardView = ({
     onViewFundDetails,
     showDropdown,
     toggleDropdown,
-    t
+    t,
+    myFunds = { summary: {}, funds: [] }
 }) => {
+    // Usar datos dinámicos del prop myFunds
+    const portfolioData = myFunds.summary || initialPammPortfolioData;
+    const investedFunds = myFunds.funds || [];
+    const historicalData = myFunds.historicalData || [];
     return (
         <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333]">
             {/* Header */}
@@ -296,23 +259,23 @@ const PammDashboardView = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="text-center md:text-left">
                         <p className="text-gray-400 text-sm mb-1">Balance Total</p>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(mockPammPortfolioData.totalBalance || 0)}</p>
+                        <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.totalBalance || 0)}</p>
                     </div>
                     <div className="text-center md:text-left">
                         <p className="text-gray-400 text-sm mb-1">P&L Total</p>
                         <div className="flex items-center justify-center md:justify-start gap-2">
-                            <p className={`text-2xl font-bold ${(mockPammPortfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                {formatCurrency(mockPammPortfolioData.totalPnL || 0)}
+                            <p className={`text-2xl font-bold ${(portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                {formatCurrency(portfolioData.totalPnL || 0)}
                             </p>
-                            <div className={`flex items-center gap-1 ${(mockPammPortfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                {(mockPammPortfolioData.totalPnL || 0) >= 0 ? <ArrowUp size={20} /> : <TrendingDown size={20} />}
-                                <span className="text-sm font-medium">({formatPercentage(mockPammPortfolioData.totalPnLPercentage || 0)})</span>
+                            <div className={`flex items-center gap-1 ${(portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                {(portfolioData.totalPnL || 0) >= 0 ? <ArrowUp size={20} /> : <TrendingDown size={20} />}
+                                <span className="text-sm font-medium">({formatPercentage(portfolioData.totalPnLPercentage || 0)})</span>
                             </div>
                         </div>
                     </div>
                     <div className="text-center md:text-left">
                         <p className="text-gray-400 text-sm mb-1">Capital Activo</p>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(mockPammPortfolioData.activeCapital || 0)}</p>
+                        <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.activeCapital || 0)}</p>
                     </div>
                 </div>
             </div>
@@ -321,7 +284,7 @@ const PammDashboardView = ({
             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
                 <h2 className="text-xl font-semibold mb-4 text-cyan-400">{t('pamm.myFunds')}</h2>
                 <div className="space-y-4">
-                    {mockInvestedFunds.map((fund) => (
+                    {investedFunds.map((fund) => (
                         <div key={fund.id} className="bg-[#1C1C1C] rounded-xl border border-[#333] p-4">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 {/* Fund Info */}
@@ -399,7 +362,7 @@ const PammDashboardView = ({
                 </div>
                 <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={mockPammHistoricalData}>
+                        <AreaChart data={historicalData}>
                             <XAxis 
                                 dataKey="date" 
                                 axisLine={false} 
@@ -447,119 +410,7 @@ const PammDashboardView = ({
     );
 };
 
-// Mock data para fondos PAMM disponibles
-const mockAvailablePammFunds = [
-    {
-        id: 1,
-        name: "Alpha Growth PAMM",
-        manager: "Roberto Silva",
-        totalReturn: 34.5,
-        monthlyReturn: 18.7,
-        aum: 2450000,
-        investors: 156,
-        riskLevel: "Moderado",
-        maxDrawdown: -8.3,
-        sharpeRatio: 1.85,
-        winRate: 68.5,
-        minInvestment: 1000,
-        managementFee: 2.0,
-        performanceFee: 20.0,
-        lockupDays: 30,
-        strategy: "Crecimiento Balanceado",
-        markets: ["Forex", "Índices"],
-        since: "Ene 2023",
-        type: "Verificado",
-        description: "Estrategia de crecimiento balanceado con enfoque en Forex e índices principales."
-    },
-    {
-        id: 2,
-        name: "Conservative Income Fund",
-        manager: "María González",
-        totalReturn: 16.2,
-        monthlyReturn: 8.3,
-        aum: 1250000,
-        investors: 89,
-        riskLevel: "Bajo",
-        maxDrawdown: -4.1,
-        sharpeRatio: 2.1,
-        winRate: 72.3,
-        minInvestment: 500,
-        managementFee: 1.5,
-        performanceFee: 15.0,
-        lockupDays: 15,
-        strategy: "Ingresos Conservadores",
-        markets: ["Forex", "Bonos"],
-        since: "Mar 2023",
-        type: "Premium",
-        description: "Fondo conservador enfocado en generación de ingresos estables con bajo riesgo."
-    },
-    {
-        id: 3,
-        name: "Aggressive Tech PAMM",
-        manager: "Carlos Mendez",
-        totalReturn: 58.9,
-        monthlyReturn: 24.1,
-        aum: 890000,
-        investors: 67,
-        riskLevel: "Alto",
-        maxDrawdown: -15.3,
-        sharpeRatio: 1.6,
-        winRate: 64.2,
-        minInvestment: 2000,
-        managementFee: 2.5,
-        performanceFee: 25.0,
-        lockupDays: 60,
-        strategy: "Tecnología Agresiva",
-        markets: ["Criptomonedas", "Acciones Tech"],
-        since: "Jun 2023",
-        type: "Nuevo",
-        description: "Estrategia agresiva enfocada en tecnología y criptomonedas con alto potencial."
-    },
-    {
-        id: 4,
-        name: "Forex Master Fund",
-        manager: "Ana Martínez",
-        totalReturn: 42.7,
-        monthlyReturn: 15.9,
-        aum: 3200000,
-        investors: 203,
-        riskLevel: "Moderado",
-        maxDrawdown: -9.8,
-        sharpeRatio: 1.9,
-        winRate: 69.1,
-        minInvestment: 1500,
-        managementFee: 2.0,
-        performanceFee: 20.0,
-        lockupDays: 45,
-        strategy: "Forex Especializado",
-        markets: ["Forex"],
-        since: "Nov 2022",
-        type: "Verificado",
-        description: "Especialista en mercado Forex con estrategias probadas y gestión de riesgo avanzada."
-    },
-    {
-        id: 5,
-        name: "PAMM Crecimiento Balanceado",
-        manager: "Diego Torres",
-        totalReturn: 28.4,
-        monthlyReturn: 12.6,
-        aum: 1850000,
-        investors: 124,
-        riskLevel: "Moderado",
-        maxDrawdown: -6.7,
-        sharpeRatio: 2.0,
-        winRate: 70.8,
-        minInvestment: 750,
-        managementFee: 1.8,
-        performanceFee: 18.0,
-        lockupDays: 30,
-        strategy: "Crecimiento Equilibrado",
-        markets: ["Forex", "Índices", "Materias Primas"],
-        since: "Ago 2022",
-        type: "Premium",
-        description: "Estrategia diversificada que combina múltiples mercados para un crecimiento equilibrado."
-    }
-];
+// Los fondos PAMM se cargan dinámicamente desde la API
 
 const PammExplorerView = ({ 
     formatCurrency, 
@@ -576,9 +427,12 @@ const PammExplorerView = ({
     setShowFilters,
     filters,
     setFilters,
-    t
+    t,
+    availableFunds = []
 }) => {
     const [expandedFund, setExpandedFund] = useState(null);
+    const [isLoadingFunds, setIsLoadingFunds] = useState(true);
+    const [funds, setFunds] = useState([]);
     
     // Custom dropdown states
     const [showFundTypeDropdown, setShowFundTypeDropdown] = useState(false);
@@ -587,6 +441,24 @@ const PammExplorerView = ({
     // Dropdown refs
     const fundTypeDropdownRef = useRef(null);
     const riskLevelDropdownRef = useRef(null);
+    
+    // Cargar fondos PAMM disponibles
+    useEffect(() => {
+        const fetchAvailableFunds = async () => {
+            try {
+                setIsLoadingFunds(true);
+                const fundsData = await getPammFunds();
+                setFunds(fundsData);
+            } catch (error) {
+                console.error('Error loading PAMM funds:', error);
+                setFunds([]);
+            } finally {
+                setIsLoadingFunds(false);
+            }
+        };
+        
+        fetchAvailableFunds();
+    }, []);
     
     const getTypeColor = (type) => {
         switch (type) {
@@ -623,7 +495,7 @@ const PammExplorerView = ({
         setExpandedFund(expandedFund === fundId ? null : fundId);
     };
     
-    const filteredFunds = mockAvailablePammFunds.filter(fund => {
+    const filteredFunds = funds.filter(fund => {
         const matchesSearch = searchTerm === '' || 
             fund.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             fund.manager.toLowerCase().includes(searchTerm.toLowerCase());
@@ -958,16 +830,8 @@ const PammFundProfileView = ({
         );
     }
     
-    // Mock historical data for chart
-    const mockHistoricalData = [
-        { date: '01/12', value: 100000 },
-        { date: '05/12', value: 105200 },
-        { date: '10/12', value: 108900 },
-        { date: '15/12', value: 112400 },
-        { date: '20/12', value: 119800 },
-        { date: '25/12', value: 125600 },
-        { date: '30/12', value: fund.aum },
-    ];
+    // Datos históricos del fondo - cargados dinámicamente
+    const historicalData = fund.historicalData || [];
     
     return (
         <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333] space-y-6">
@@ -1121,7 +985,7 @@ const PammFundProfileView = ({
                             <h3 className="text-lg font-semibold mb-4">Evolución del Fondo</h3>
                             <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={mockHistoricalData}>
+                                    <AreaChart data={historicalData}>
                                         <XAxis 
                                             dataKey="date" 
                                             axisLine={false} 

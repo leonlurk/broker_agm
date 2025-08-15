@@ -5,114 +5,29 @@ import CrearPAMMModal from './CrearPAMMModal';
 import CopiarEstrategiaModal from './CopiarEstrategiaModal';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 
-// Datos mock para el dashboard del gestor PAMM
-const mockPAMMGestorData = {
-  totalCapital: 250000,
-  rendimiento: 18.5,
-  numeroInversores: 12,
-  comisionesGeneradas: 5200,
-  drawdownMaximo: -8.3,
-  sharpeRatio: 1.85,
-  // Datos adicionales para el dashboard
-  nombreFondo: "Alpha Growth Fund",
-  tipoEstrategia: "Moderado",
-  managementFee: 2.0,
-  performanceFee: 20.0,
-  lockupPeriod: 30,
-  mercadosOperados: ["Forex", "Criptomonedas", "Acciones"],
-  rendimientoMensual: [2.1, 3.8, -1.2, 4.5, 2.8, 1.9, 3.2, 2.5, 4.1, 1.8, 2.7, 3.5],
-  operacionesExitosas: 142,
-  operacionesTotales: 207,
-  winRate: 68.5,
-  volumenOperado: 250000,
-  tiempoPromedioOperacion: "2.5 horas",
-  pairesOperados: ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD"],
-  // Lista de inversores mock
-  inversores: [
-    {
-      id: 1,
-      nombre: "Carlos Rodriguez",
-      montoInvertido: 15000,
-      fechaEntrada: "2024-01-15",
-      gananciaActual: 2750,
-      rendimientoPersonal: 18.3,
-      estado: "Activo"
-    },
-    {
-      id: 2,
-      nombre: "Maria González",
-      montoInvertido: 8500,
-      fechaEntrada: "2024-02-03",
-      gananciaActual: 1190,
-      rendimientoPersonal: 14.0,
-      estado: "Activo"
-    },
-    {
-      id: 3,
-      nombre: "Roberto Silva",
-      montoInvertido: 25000,
-      fechaEntrada: "2023-12-10",
-      gananciaActual: 5250,
-      rendimientoPersonal: 21.0,
-      estado: "Activo"
-    },
-    {
-      id: 4,
-      nombre: "Ana Martínez",
-      montoInvertido: 12000,
-      fechaEntrada: "2024-01-28",
-      gananciaActual: 1800,
-      rendimientoPersonal: 15.0,
-      estado: "Activo"
-    }
-  ],
-  // Lista de traders disponibles para copiar estrategia
-  tradersDisponibles: [
-    {
-      id: 1,
-      nombre: "Alpha Capital Fund",
-      rendimiento: 28.5,
-      drawdown: 8.2,
-      sharpeRatio: 2.1,
-      inversores: 145,
-      capitalGestionado: 2500000,
-      tipoEstrategia: "Agresivo",
-      mercados: ["Forex", "Criptomonedas"]
-    },
-    {
-      id: 2,
-      nombre: "Momentum Trading Pro",
-      rendimiento: 35.2,
-      drawdown: 12.5,
-      sharpeRatio: 1.8,
-      inversores: 89,
-      capitalGestionado: 1800000,
-      tipoEstrategia: "Moderado",
-      mercados: ["Forex", "Acciones"]
-    },
-    {
-      id: 3,
-      nombre: "Conservative Growth",
-      rendimiento: 18.7,
-      drawdown: 4.8,
-      sharpeRatio: 2.4,
-      inversores: 203,
-      capitalGestionado: 4200000,
-      tipoEstrategia: "Conservador",
-      mercados: ["Forex", "Índices"]
-    },
-    {
-      id: 4,
-      nombre: "Tech Growth Fund",
-      rendimiento: 42.1,
-      drawdown: 15.3,
-      sharpeRatio: 1.6,
-      inversores: 67,
-      capitalGestionado: 1200000,
-      tipoEstrategia: "Agresivo",
-      mercados: ["Criptomonedas", "Acciones"]
-    }
-  ]
+// Datos iniciales vacíos - se cargarán dinámicamente desde la API
+const initialPAMMGestorData = {
+  totalCapital: 0,
+  rendimiento: 0,
+  numeroInversores: 0,
+  comisionesGeneradas: 0,
+  drawdownMaximo: 0,
+  sharpeRatio: 0,
+  nombreFondo: "",
+  tipoEstrategia: "",
+  managementFee: 0,
+  performanceFee: 0,
+  lockupPeriod: 0,
+  mercadosOperados: [],
+  rendimientoMensual: [],
+  operacionesExitosas: 0,
+  operacionesTotales: 0,
+  winRate: 0,
+  volumenOperado: 0,
+  tiempoPromedioOperacion: "N/A",
+  pairesOperados: [],
+  inversores: [],
+  tradersDisponibles: []
 };
 
 // Componente para una tarjeta de estadística individual
@@ -137,16 +52,38 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   const [selectedInvestor, setSelectedInvestor] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [investors] = useState(mockPAMMGestorData.inversores);
-  const [tradersDisponibles] = useState(mockPAMMGestorData.tradersDisponibles);
-  const [isLoading] = useState(false);
-  const [error] = useState(null);
+  const [gestorData, setGestorData] = useState(initialPAMMGestorData);
+  const [investors, setInvestors] = useState([]);
+  const [tradersDisponibles, setTradersDisponibles] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showCrearFondoModal, setShowCrearFondoModal] = useState(false);
   const [showCopiarEstrategiaModal, setShowCopiarEstrategiaModal] = useState(false);
   const [showFundConfigModal, setShowFundConfigModal] = useState(false);
   const [selectedFundForConfig, setSelectedFundForConfig] = useState(null);
 
-  const data = mockPAMMGestorData;
+  const data = gestorData;
+  
+  // Cargar datos del gestor PAMM desde la API
+  useEffect(() => {
+    const fetchGestorData = async () => {
+      try {
+        setIsLoading(true);
+        // Aquí se cargarán los datos desde la API cuando esté disponible
+        // const response = await getPammGestorData();
+        // setGestorData(response.data);
+        // setInvestors(response.data.inversores || []);
+        // setTradersDisponibles(response.data.tradersDisponibles || []);
+      } catch (error) {
+        console.error('Error loading PAMM gestor data:', error);
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchGestorData();
+  }, []);
 
   // Efecto para hacer scroll hacia arriba cuando cambie la vista
   useEffect(() => {
@@ -204,51 +141,8 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
     return matchesSearch && matchesStatus;
   });
 
-  // Mock data for account cards with extended information
-  const accountsData = [
-    {
-      id: 1,
-      name: "Alpha Growth Fund",
-      type: "PAMM",
-      balance: 245000,
-      monthlyReturn: 18.7,
-      totalReturn: 34.5,
-      investors: 12,
-      status: "Activo",
-      managementFee: 2.0,
-      performanceFee: 20.0,
-      maxDrawdown: -8.3,
-      winRate: 68.5,
-      totalTrades: 207,
-      strategy: "Crecimiento Agresivo",
-      createdDate: "2024-01-15",
-      lockupPeriod: 30,
-      minInvestment: 1000,
-      riskLevel: "Alto",
-      sharpeRatio: 1.85
-    },
-    {
-      id: 2,
-      name: "Conservative PAMM",
-      type: "PAMM",
-      balance: 125000,
-      monthlyReturn: 8.3,
-      totalReturn: 16.2,
-      investors: 8,
-      status: "Activo",
-      managementFee: 1.5,
-      performanceFee: 15.0,
-      maxDrawdown: -4.1,
-      winRate: 72.3,
-      totalTrades: 156,
-      strategy: "Conservador",
-      createdDate: "2024-02-10",
-      lockupPeriod: 15,
-      minInvestment: 500,
-      riskLevel: "Bajo",
-      sharpeRatio: 2.1
-    }
-  ];
+  // Dynamic accounts data from PAMM manager dashboard API
+  const accountsData = pammGestorData?.accounts || [];
 
   if (view === 'fundDetail' && selectedInvestor) {
     const fund = selectedInvestor;

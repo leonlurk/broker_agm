@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { AuthAdapter } from './database.adapter'; // Importamos el adapter para obtener el token
 
-// La URL base de tu nuevo backend de Node.js desplegado en el VPS
-// Esto debería estar en un archivo .env en tu proyecto de React
-const API_BASE_URL = import.meta.env.VITE_LOGIC_API_URL || 'http://localhost/api';
-// Ahora conectado a tu backend Copy-PAMM enterprise que corre en localhost
+// La URL base para PAMM - usa el dominio público con SSL
+// MT5Manager en producción hace proxy interno a Copy-PAMM (localhost:8080)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444';
+// Conectado a MT5Manager producción que hace proxy hacia Copy-PAMM API interna
 
 // Creamos una instancia de Axios para nuestro servicio de lógica
 const logicApiClient = axios.create({
@@ -47,7 +47,7 @@ logicApiClient.interceptors.request.use(
  */
 export const getPammFunds = async () => {
   try {
-    const response = await logicApiClient.get('/pamm/funds');
+    const response = await logicApiClient.get('/api/v1/pamm/funds');
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al obtener los fondos PAMM' };
@@ -61,7 +61,7 @@ export const getPammFunds = async () => {
  */
 export const getFundDetails = async (fundId) => {
   try {
-    const response = await logicApiClient.get(`/pamm/funds/${fundId}`);
+    const response = await logicApiClient.get(`/api/v1/pamm/funds/${fundId}`);
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al obtener los detalles del fondo' };
@@ -74,7 +74,7 @@ export const getFundDetails = async (fundId) => {
  */
 export const getMyPammInvestments = async () => {
   try {
-    const response = await logicApiClient.get('/pamm/investments');
+    const response = await logicApiClient.get('/api/v1/pamm/investments');
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al obtener mis inversiones PAMM' };
@@ -87,7 +87,7 @@ export const getMyPammInvestments = async () => {
  */
 export const getMyFunds = async () => {
   try {
-    const response = await logicApiClient.get('/pamm/my-funds');
+    const response = await logicApiClient.get('/api/v1/pamm/my-funds');
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al obtener mis fondos PAMM' };
@@ -100,7 +100,7 @@ export const getMyFunds = async () => {
  */
 export const getManagerStats = async () => {
   try {
-    const response = await logicApiClient.get('/pamm/manager-stats');
+    const response = await logicApiClient.get('/api/v1/pamm/manager-stats');
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al obtener estadísticas del manager' };
@@ -116,7 +116,7 @@ export const getManagerStats = async () => {
  */
 export const joinPammFund = async (fundId, mt5AccountId, investedAmount) => {
   try {
-    const response = await logicApiClient.post('/pamm/join', {
+    const response = await logicApiClient.post('/api/v1/pamm/join', {
       fund_id: fundId,
       investor_mt5_account_id: mt5AccountId,
       invested_amount: investedAmount
@@ -134,7 +134,7 @@ export const joinPammFund = async (fundId, mt5AccountId, investedAmount) => {
  */
 export const leavePammFund = async (fundId) => {
   try {
-    const response = await logicApiClient.post('/pamm/leave', {
+    const response = await logicApiClient.post('/api/v1/pamm/leave', {
       fund_id: fundId
     });
     return response.data;
@@ -150,7 +150,7 @@ export const leavePammFund = async (fundId) => {
  */
 export const createPammFund = async (fundData) => {
   try {
-    const response = await logicApiClient.post('/pamm/create', fundData);
+    const response = await logicApiClient.post('/api/v1/pamm/create', fundData);
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al crear el fondo PAMM' };
