@@ -111,6 +111,19 @@ export const AccountsProvider = ({ children }) => {
     loadAccounts();
   }, [currentUser]);
 
+  // Polling automático para actualizar cuentas cada 30 segundos
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Configurar intervalo de actualización
+    const interval = setInterval(() => {
+      console.log('Auto-refreshing accounts...');
+      loadAccounts();
+    }, 30000); // 30 segundos
+
+    return () => clearInterval(interval);
+  }, [currentUser]);
+
   // Función para iniciar una operación de billetera
   const startWalletOperation = (operation, account = null, data = null) => {
     setCurrentOperation(operation);

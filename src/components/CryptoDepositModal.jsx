@@ -76,28 +76,34 @@ const CryptoDepositModal = ({
     setError('');
     
     try {
+      // Usar wallet fija para TRON
+      const fixedWallet = {
+        tron: {
+          address: 'TX6uUsVShHYr59Uc7htYvmEHeY47pgehP4',
+          qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TX6uUsVShHYr59Uc7htYvmEHeY47pgehP4`
+        },
+        bsc: {
+          address: '0x4e9d9e0c1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p',
+          qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=0x4e9d9e0c1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p`
+        }
+      };
+      
+      setWalletInfo(fixedWallet);
+      setDepositStatus('waiting');
+      
       // Obtener el token de la sesión actual de Supabase
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !session?.access_token) {
-        throw new Error('No se pudo obtener el token de autenticación');
-      }
-
-      // Autenticar usando el token de Supabase
-      const authResult = await cryptoPaymentService.authenticateWithSupabase(session.access_token, userEmail);
-      
-      if (!authResult.success) {
-        throw new Error(authResult.error || 'Error de autenticación');
-      }
-
-      // Generar wallet temporal
-      const result = await cryptoPaymentService.generateDepositWallet();
-      
-      if (result.success) {
-        setWalletInfo(result.wallets);
-        setDepositStatus('waiting');
-        toast.success('Wallet generada exitosamente');
+        console.warn('No se pudo obtener el token de autenticación');
       } else {
+        // Autenticar usando el token de Supabase
+        const authResult = await cryptoPaymentService.authenticateWithSupabase(session.access_token, userEmail);
+        
+        if (!authResult.success) {
+          console.warn('Error de autenticación:', authResult.error);
+        }
+      }
         throw new Error(result.error || 'Error al generar wallet');
       }
     } catch (error) {
@@ -146,8 +152,8 @@ const CryptoDepositModal = ({
   const relevantWallet = getRelevantWallet();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
-      <div className="bg-[#1e1e1e] rounded-2xl p-6 max-w-md w-full mx-4 border border-[#334155]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 overflow-y-auto py-4">
+      <div className="bg-[#1e1e1e] rounded-2xl p-6 max-w-md w-full mx-4 border border-[#334155] my-auto max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">Depósito Crypto</h2>

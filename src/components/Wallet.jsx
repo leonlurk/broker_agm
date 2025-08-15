@@ -413,10 +413,14 @@ const Wallet = () => {
     { id: 'USDT_TRC20', name: 'USDT (TRC-20)', network: 'Tron', min: 12, confirmations: 20 }
   ];
 
-  // Filtrar cuentas disponibles para selección
-  const availableAccounts = getAllAccounts().filter(account => 
-    currentOperation !== WALLET_OPERATIONS.TRANSFER || account.id !== selectedAccount?.id
-  );
+  // Filtrar cuentas disponibles para selección - Solo cuentas reales
+  const availableAccounts = getAllAccounts().filter(account => {
+    // Solo mostrar cuentas reales
+    if (account.account_type !== 'Real') return false;
+    // En transferencias, excluir la cuenta origen
+    if (currentOperation === WALLET_OPERATIONS.TRANSFER && account.id === selectedAccount?.id) return false;
+    return true;
+  });
 
   // Debug: Log para verificar cuentas
   console.log('Debug Wallet - currentUser:', currentUser);
