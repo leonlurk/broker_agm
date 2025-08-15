@@ -406,10 +406,8 @@ const Wallet = () => {
     return [];
   };
 
-  // Opciones de criptomonedas
+  // Opciones de criptomonedas - Solo USDT TRC-20
   const getCryptoOptions = () => [
-    { id: 'USDT_ETH', name: 'USDT (ETH)', network: 'Ethereum', min: 25, confirmations: 3 },
-    { id: 'USDC_ETH', name: 'USDC (ETH)', network: 'Ethereum', min: 25, confirmations: 3 },
     { id: 'USDT_TRC20', name: 'USDT (TRC-20)', network: 'Tron', min: 12, confirmations: 20 }
   ];
 
