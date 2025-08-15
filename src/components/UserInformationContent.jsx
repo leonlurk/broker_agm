@@ -352,6 +352,24 @@ const UserInformationContent = ({ onBack }) => {
 
         {/* Additional Fields Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          {/* Email - Solo lectura */}
+          <div className="relative">
+            <input 
+              type="email"
+              value={currentUser?.email || ''}
+              readOnly
+              placeholder="Email"
+              className="w-full border border-[rgba(60,60,60,1)] rounded-50 px-6 py-3 text-gray-400 placeholder-gray-400 cursor-not-allowed select-none"
+              style={{ 
+                fontFamily: 'Poppins', 
+                fontWeight: 400, 
+                fontSize: '16px',
+                background: 'linear-gradient(122.63deg, rgba(34, 34, 34, 1) 0%, rgba(53, 53, 53, 1) 100%)'
+              }}
+            />
+            <Mail size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          </div>
+          
           {/* Fecha de nacimiento */}
           <div className="relative">
             <input 
