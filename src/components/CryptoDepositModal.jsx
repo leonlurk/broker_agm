@@ -104,8 +104,6 @@ const CryptoDepositModal = ({
           console.warn('Error de autenticación:', authResult.error);
         }
       }
-        throw new Error(result.error || 'Error al generar wallet');
-      }
     } catch (error) {
       console.error('Error generating wallet:', error);
       setError(error.message || 'Error al generar la dirección de depósito');
