@@ -430,14 +430,14 @@ const Wallet = () => {
     return true;
   });
 
-  // Debug: Log para verificar cuentas
-  console.log('Debug Wallet - currentUser:', currentUser);
-  console.log('Debug Wallet - currentUser keys:', currentUser ? Object.keys(currentUser) : 'null');
-  console.log('Debug Wallet - getAllAccounts():', getAllAccounts());
-  console.log('Debug Wallet - availableAccounts:', availableAccounts);
-  console.log('Debug Wallet - accounts from context:', accounts);
-  console.log('Debug Wallet - isLoading:', isLoading);
-  console.log('Debug Wallet - error:', error);
+  // Debug: Log para verificar cuentas (comentado para reducir ruido)
+  // console.log('Debug Wallet - currentUser:', currentUser);
+  // console.log('Debug Wallet - currentUser keys:', currentUser ? Object.keys(currentUser) : 'null');
+  // console.log('Debug Wallet - getAllAccounts():', getAllAccounts());
+  // console.log('Debug Wallet - availableAccounts:', availableAccounts);
+  // console.log('Debug Wallet - accounts from context:', accounts);
+  // console.log('Debug Wallet - isLoading:', isLoading);
+  // console.log('Debug Wallet - error:', error);
 
   // Filtrar transacciones según el filtro activo
   const filteredTransactions = transactions.filter(transaction => {
@@ -988,7 +988,7 @@ const Wallet = () => {
               }}
               className={`px-4 py-2 rounded-md transition-all ${
                 activeTab === 'depositar'
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/20'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -1001,7 +1001,7 @@ const Wallet = () => {
               }}
               className={`px-4 py-2 rounded-md transition-all ${
                 activeTab === 'retirar'
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-500/20'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -1014,7 +1014,7 @@ const Wallet = () => {
               }}
               className={`px-4 py-2 rounded-md transition-all ${
                 activeTab === 'transferir'
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/20'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
