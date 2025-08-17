@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Trash2, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Trash2, Check, AlertTriangle } from 'lucide-react';
 import { useNotifications } from '../contexts/NotificationsContext';
 
 const NotificationsModal = ({ onClose }) => {
@@ -12,16 +12,38 @@ const NotificationsModal = ({ onClose }) => {
     markAllAsRead 
   } = useNotifications();
 
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [deletingNotificationId, setDeletingNotificationId] = useState(null);
+
   const handleMarkAsRead = (notificationId) => {
     markAsRead(notificationId);
   };
 
   const handleDeleteNotification = (notificationId) => {
-    deleteNotification(notificationId);
+    setDeletingNotificationId(notificationId);
+    setShowConfirmDelete(true);
+  };
+
+  const confirmDelete = () => {
+    if (deletingNotificationId) {
+      deleteNotification(deletingNotificationId);
+    } else {
+      // Eliminar todas
+      clearAllNotifications();
+    }
+    setShowConfirmDelete(false);
+    setDeletingNotificationId(null);
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmDelete(false);
+    setDeletingNotificationId(null);
   };
 
   const handleClearAll = () => {
-    clearAllNotifications();
+    if (notifications.length === 0) return;
+    setDeletingNotificationId(null); // null indica eliminar todas
+    setShowConfirmDelete(true);
   };
 
   const formatTimestamp = (timestamp) => {
@@ -45,7 +67,7 @@ const NotificationsModal = ({ onClose }) => {
       {/* Overlay */}
       <div 
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" 
-        onClick={onClose}
+        onClick={showConfirmDelete ? null : onClose}
       ></div>
       
       {/* Modal content */}
@@ -74,11 +96,12 @@ const NotificationsModal = ({ onClose }) => {
                 )}
                 <button
                   onClick={handleClearAll}
-                  className="text-red-400 hover:text-red-300 transition-colors focus:outline-none text-sm flex items-center gap-1"
-                  title="Eliminar todas"
+                  disabled={notifications.length === 0}
+                  className="text-red-400 hover:text-red-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors focus:outline-none text-sm flex items-center gap-1"
+                  title={notifications.length === 0 ? "No hay notificaciones" : "Eliminar todas"}
                 >
                   <Trash2 size={16} />
-                  Limpiar
+                  Limpiar ({notifications.length})
                 </button>
               </>
             )}
@@ -163,6 +186,46 @@ const NotificationsModal = ({ onClose }) => {
           )}
         </div>
       </div>
+
+      {/* Modal de confirmación de eliminación */}
+      {showConfirmDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+          <div className="fixed inset-0 bg-black bg-opacity-70"></div>
+          <div className="bg-[#1a1a1a] border border-red-500/20 rounded-2xl w-full max-w-md z-10 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-red-500/20 p-2 rounded-full">
+                <AlertTriangle className="w-6 h-6 text-red-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">
+                {deletingNotificationId ? 'Eliminar Notificación' : 'Limpiar Todas'}
+              </h3>
+            </div>
+            
+            <p className="text-gray-300 mb-6">
+              {deletingNotificationId 
+                ? '¿Estás seguro de que quieres eliminar esta notificación? Esta acción no se puede deshacer.'
+                : `¿Estás seguro de que quieres eliminar todas las notificaciones (${notifications.length})? Esta acción no se puede deshacer.`
+              }
+            </p>
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 bg-[#333] text-white rounded-xl hover:bg-[#404040] transition-colors focus:outline-none"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors focus:outline-none flex items-center gap-2"
+              >
+                <Trash2 size={16} />
+                {deletingNotificationId ? 'Eliminar' : 'Limpiar Todo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

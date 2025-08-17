@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthAdapter } from '../services/database.adapter';
-import { Trash2, PlusCircle } from 'lucide-react';
+import { Trash2, PlusCircle, ChevronDown } from 'lucide-react';
 
 const PaymentMethodSettings = ({ onBack }) => {
   const { currentUser, userData, refreshUserData } = useAuth();
@@ -18,8 +18,38 @@ const PaymentMethodSettings = ({ onBack }) => {
   const [holderId, setHolderId] = useState('');
   
   const [feedback, setFeedback] = useState({ message: '', type: '' });
+  
+  // Estados para el dropdown de red
+  const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
+  const networkDropdownRef = useRef(null);
 
   const paymentMethods = userData?.paymentMethods || [];
+  
+  // Opciones de red disponibles
+  const networkOptions = [
+    { value: 'USDT TRC20', label: 'USDT TRC20' },
+    { value: 'USDT ERC20', label: 'USDT ERC20' },
+    { value: 'BTC', label: 'BTC' }
+  ];
+
+  // Cerrar dropdown cuando se hace click fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (networkDropdownRef.current && !networkDropdownRef.current.contains(event.target)) {
+        setIsNetworkDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleNetworkSelect = (networkValue) => {
+    setCryptoNetwork(networkValue);
+    setIsNetworkDropdownOpen(false);
+  };
 
   const handleAddMethod = async (e) => {
     e.preventDefault();
@@ -128,12 +158,35 @@ const PaymentMethodSettings = ({ onBack }) => {
             <>
               {/* Campos Crypto */}
               <div>
-                <label htmlFor="cryptoNetwork" className="block text-sm font-medium text-gray-300 mb-1">Red</label>
-                <select id="cryptoNetwork" value={cryptoNetwork} onChange={e => setCryptoNetwork(e.target.value)} className="w-full p-2 bg-[#1a1a1a] border border-[#444] rounded-lg focus:outline-none focus:border-cyan-500">
-                  <option>USDT TRC20</option>
-                  <option>USDT ERC20</option>
-                  <option>BTC</option>
-                </select>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Red</label>
+                <div className="relative" ref={networkDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
+                    className="w-full p-2 bg-[#1a1a1a] border border-[#444] rounded-lg focus:outline-none focus:border-cyan-500 text-left flex items-center justify-between text-white"
+                  >
+                    <span>{cryptoNetwork}</span>
+                    <ChevronDown 
+                      size={20} 
+                      className={`text-gray-400 transition-transform ${isNetworkDropdownOpen ? 'rotate-180' : ''}`} 
+                    />
+                  </button>
+                  
+                  {isNetworkDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#2d2d2d] border border-[#444] rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
+                      {networkOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => handleNetworkSelect(option.value)}
+                          className="w-full text-left px-3 py-2 text-white hover:bg-[#404040] transition-colors first:rounded-t-lg last:rounded-b-lg"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label htmlFor="cryptoAddress" className="block text-sm font-medium text-gray-300 mb-1">Dirección de la Billetera</label>

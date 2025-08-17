@@ -50,6 +50,9 @@ export const NotificationsProvider = ({ children }) => {
   useEffect(() => {
     if (notifications.length > 0) {
       localStorage.setItem('agm_notifications', JSON.stringify(notifications));
+    } else {
+      // Si no hay notificaciones, asegurarse de limpiar el localStorage
+      localStorage.removeItem('agm_notifications');
     }
   }, [notifications]);
 
@@ -90,20 +93,25 @@ export const NotificationsProvider = ({ children }) => {
 
   // Función para eliminar una notificación
   const deleteNotification = (notificationId) => {
+    console.log('Deleting notification:', notificationId); // Para debug
     setNotifications(prev => {
       const notification = prev.find(n => n.id === notificationId);
       if (notification && !notification.read) {
         setUnreadCount(current => Math.max(0, current - 1));
       }
-      return prev.filter(n => n.id !== notificationId);
+      const newNotifications = prev.filter(n => n.id !== notificationId);
+      console.log('Remaining notifications:', newNotifications.length); // Para debug
+      return newNotifications;
     });
   };
 
   // Función para limpiar todas las notificaciones
   const clearAllNotifications = () => {
+    console.log('Clearing all notifications...'); // Para debug
     setNotifications([]);
     setUnreadCount(0);
     localStorage.removeItem('agm_notifications');
+    console.log('All notifications cleared successfully'); // Para debug
   };
 
   // Funciones de conveniencia para diferentes tipos de notificaciones

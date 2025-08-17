@@ -51,9 +51,9 @@ const UserInformationContent = ({ onBack }) => {
     apellido: z.string().min(2, { message: t('validation.lastNameMinLength') }),
     pais: z.string().min(1, { message: t('validation.countryRequired') }),
     ciudad: z.string().min(2, { message: t('validation.cityMinLength') }),
-    phoneCode: z.string(),
-    phoneNumber: z.string().min(6, { message: t('validation.phoneNumberTooShort') }),
-    photoURL: z.string().refine(
+    phonecode: z.string(),
+    phonenumber: z.string().min(6, { message: t('validation.phoneNumberTooShort') }),
+    photourl: z.string().refine(
       (val) => {
         if (!val) return true;
         return val.startsWith('http://') || val.startsWith('https://') || val.startsWith('/');
@@ -67,10 +67,11 @@ const UserInformationContent = ({ onBack }) => {
     apellido: '',
     pais: '',
     ciudad: '',
-    phoneCode: '+54',
-    phoneNumber: '',
-    photoURL: '',
-    fechaNacimiento: '',
+    phonecode: '+54',
+    phonenumber: '',
+    photourl: '',
+    fechanacimiento: '',
+    gender: '' // Agregado para evitar controlled/uncontrolled error
   });
   const [initialData, setInitialData] = useState({});
   const [countries, setCountries] = useState([]);
@@ -79,7 +80,8 @@ const UserInformationContent = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [formSaving, setFormSaving] = useState(false);
   const [errors, setErrors] = useState({});
-  const [isDateFocused, setIsDateFocused] = useState(false);
+  const [showGenderDropdown, setShowGenderDropdown] = useState(false);
+  const genderDropdownRef = useRef(null);
   
   // Country selector states
   const [countrySearch, setCountrySearch] = useState('');
@@ -101,14 +103,16 @@ const UserInformationContent = ({ onBack }) => {
           apellido: userData.apellido || '',
           pais: userData.pais || '',
           ciudad: userData.ciudad || '',
-          phoneCode: userData.phoneCode || '+54',
-          phoneNumber: userData.phoneNumber || '',
-          photoURL: userData.photoURL || currentUser.photoURL || '/IconoPerfil.svg',
+          phonecode: userData.phonecode || '+54',
+          phonenumber: userData.phonenumber || '',
+          photourl: userData.photourl || currentUser.photoURL || '/IconoPerfil.svg',
+          fechanacimiento: userData.fechanacimiento || '',
+          gender: userData.gender || ''
         };
 
         setFormData(fullData);
         setInitialData(fullData);
-        setPreview(fullData.photoURL);
+        setPreview(fullData.photourl);
         
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -151,11 +155,14 @@ const UserInformationContent = ({ onBack }) => {
     }
   }, [countrySearch, countries]);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target)) {
         setIsCountryDropdownOpen(false);
+      }
+      if (genderDropdownRef.current && !genderDropdownRef.current.contains(event.target)) {
+        setShowGenderDropdown(false);
       }
     };
 
@@ -178,7 +185,7 @@ const UserInformationContent = ({ onBack }) => {
     setFormData(prev => ({
       ...prev,
       pais: countryName,
-      phoneCode: selectedCountry ? selectedCountry.code : '',
+      phonecode: selectedCountry ? selectedCountry.code : '',
       ciudad: ''
     }));
     setCountrySearch('');
@@ -240,7 +247,7 @@ const UserInformationContent = ({ onBack }) => {
         const userId = currentUser.id;
         const uploadResult = await StorageAdapter.uploadProfilePicture(userId, profileImageFile, fileName);
         if (!uploadResult.success) throw new Error(uploadResult.error);
-        updatedData.photoURL = uploadResult.url;
+        updatedData.photourl = uploadResult.url;
         toast.success('Imagen subida', { id: toastIdUpload });
       }
 
@@ -263,7 +270,7 @@ const UserInformationContent = ({ onBack }) => {
   
   const handleCancel = () => {
     setFormData(initialData);
-    setPreview(initialData.photoURL);
+    setPreview(initialData.photourl);
     setProfileImageFile(null);
     setErrors({});
   }
@@ -373,38 +380,28 @@ const UserInformationContent = ({ onBack }) => {
           {/* Fecha de nacimiento */}
           <div className="relative">
             <input 
-              type="text"
-              name="fechaNacimiento"
-              value={formData.fechaNacimiento}
+              type="date"
+              name="fechanacimiento"
+              value={formData.fechanacimiento}
               onChange={handleInputChange}
-              placeholder="Fecha de nacimiento"
-              onFocus={(e) => {
-                e.target.type = 'date';
-                setIsDateFocused(true);
-              }}
-              onBlur={(e) => {
-                if (!e.target.value) {
-                  e.target.type = 'text';
-                }
-                setIsDateFocused(false);
-              }}
-              className="w-full border border-[rgba(60,60,60,1)] rounded-50 px-6 py-3 text-gray-400 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              max={new Date().toISOString().split('T')[0]} // No permitir fechas futuras
+              className="w-full border border-[rgba(60,60,60,1)] rounded-50 px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-cyan-500"
               style={{ 
                 fontFamily: 'Poppins', 
                 fontWeight: 400, 
                 fontSize: '16px',
-                background: 'linear-gradient(122.63deg, rgba(34, 34, 34, 1) 0%, rgba(53, 53, 53, 1) 100%)'
+                background: 'linear-gradient(122.63deg, rgba(34, 34, 34, 1) 0%, rgba(53, 53, 53, 1) 100%)',
+                colorScheme: 'dark'
               }}
             />
-            {!isDateFocused && !formData.fechaNacimiento && (
-              <Calendar size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            )}
           </div>
           
           {/* Género */}
-          <div className="relative">
-            <select 
-              className="w-full border border-[rgba(60,60,60,1)] rounded-50 px-6 py-3 text-gray-400 focus:outline-none focus:ring-1 focus:ring-cyan-500 appearance-none" 
+          <div className="relative" ref={genderDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setShowGenderDropdown(!showGenderDropdown)}
+              className="w-full border border-[rgba(60,60,60,1)] rounded-50 px-6 py-3 text-left flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-cyan-500"
               style={{ 
                 fontFamily: 'Poppins', 
                 fontWeight: 400, 
@@ -412,12 +409,52 @@ const UserInformationContent = ({ onBack }) => {
                 background: 'linear-gradient(122.63deg, rgba(34, 34, 34, 1) 0%, rgba(53, 53, 53, 1) 100%)'
               }}
             >
-              <option value="">Género</option>
-              <option value="masculino">Masculino</option>
-              <option value="femenino">Femenino</option>
-              <option value="otro">Otro</option>
-            </select>
-            <ChevronDown size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <span className={formData.gender ? 'text-white' : 'text-gray-400'}>
+                {formData.gender === 'masculino' ? 'Masculino' : 
+                 formData.gender === 'femenino' ? 'Femenino' : 
+                 formData.gender === 'otro' ? 'Otro' : 
+                 'Seleccionar género'}
+              </span>
+              <ChevronDown 
+                size={20} 
+                className={`text-gray-400 transition-transform ${showGenderDropdown ? 'rotate-180' : ''}`} 
+              />
+            </button>
+            
+            {showGenderDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#404040] border border-[#333] rounded-xl shadow-lg z-50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, gender: 'masculino' }));
+                    setShowGenderDropdown(false);
+                  }}
+                  className="w-full text-left px-4 py-3 text-white hover:bg-[#2D2D2D] transition-colors"
+                >
+                  Masculino
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, gender: 'femenino' }));
+                    setShowGenderDropdown(false);
+                  }}
+                  className="w-full text-left px-4 py-3 text-white hover:bg-[#2D2D2D] transition-colors"
+                >
+                  Femenino
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, gender: 'otro' }));
+                    setShowGenderDropdown(false);
+                  }}
+                  className="w-full text-left px-4 py-3 text-white hover:bg-[#2D2D2D] transition-colors rounded-b-xl"
+                >
+                  Otro
+                </button>
+              </div>
+            )}
           </div>
           
           {/* País */}
@@ -503,11 +540,11 @@ const UserInformationContent = ({ onBack }) => {
           <div className="relative">
             <input 
               type="tel" 
-              name="phoneNumber" 
+              name="phonenumber" 
               placeholder="Teléfono" 
-              value={formData.phoneNumber} 
+              value={formData.phonenumber} 
               onChange={handleInputChange} 
-              className={`w-full border ${errors.phoneNumber ? 'border-red-500' : 'border-[rgba(60,60,60,1)]'} rounded-50 px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-cyan-500`}
+              className={`w-full border ${errors.phonenumber ? 'border-red-500' : 'border-[rgba(60,60,60,1)]'} rounded-50 px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-cyan-500`}
               style={{ 
                 fontFamily: 'Poppins', 
                 fontWeight: 400, 
@@ -516,7 +553,7 @@ const UserInformationContent = ({ onBack }) => {
               }}
             />
             <ChevronDown size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>}
+            {errors.phonenumber && <p className="text-red-500 text-xs mt-1">{errors.phonenumber}</p>}
           </div>
           
           {/* Save Button */}
