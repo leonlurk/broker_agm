@@ -445,7 +445,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       [t('accounts.live')]: getAccountsByCategory(ACC_CAT.REAL),
       [t('accounts.demo')]: getAccountsByCategory(ACC_CAT.DEMO),
       ['Copytrading']: getAccountsByCategory(ACC_CAT.COPYTRADING),
-      ['Pamm']: getAccountsByCategory(ACC_CAT.PAMM)
+      ['PAMM']: getAccountsByCategory(ACC_CAT.PAMM)
     };
   };
 
@@ -2092,7 +2092,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           
           {/* Tab Navigation */}
           <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-2'} mb-4 sm:mb-6`}>
-            {[t('trading.all'), t('accounts.live'), t('accounts.demo'), 'Copytrading', 'Pamm'].map((tab) => (
+            {[t('trading.all'), t('accounts.live'), t('accounts.demo'), 'Copytrading', 'PAMM'].map((tab) => (
               <button
                 key={tab}
                 className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${

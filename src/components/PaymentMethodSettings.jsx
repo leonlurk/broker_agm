@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthAdapter } from '../services/database.adapter';
-import { Trash2, PlusCircle, ChevronDown } from 'lucide-react';
+import { Trash2, PlusCircle, ChevronDown, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const PaymentMethodSettings = ({ onBack }) => {
   const { currentUser, userData, refreshUserData } = useAuth();
@@ -10,14 +11,13 @@ const PaymentMethodSettings = ({ onBack }) => {
   
   // Crypto fields
   const [cryptoAddress, setCryptoAddress] = useState('');
-  const [cryptoNetwork, setCryptoNetwork] = useState('USDT TRC20');
+  const [cryptoNetwork, setCryptoNetwork] = useState('tron_trc20');
+  const [addressError, setAddressError] = useState('');
 
   // Bank fields
   const [cbu, setCbu] = useState('');
   const [holderName, setHolderName] = useState('');
   const [holderId, setHolderId] = useState('');
-  
-  const [feedback, setFeedback] = useState({ message: '', type: '' });
   
   // Estados para el dropdown de red
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
@@ -25,12 +25,43 @@ const PaymentMethodSettings = ({ onBack }) => {
 
   const paymentMethods = userData?.paymentMethods || [];
   
-  // Opciones de red disponibles
+  // Opciones de red disponibles con validación y formato mejorado
   const networkOptions = [
-    { value: 'USDT TRC20', label: 'USDT TRC20' },
-    { value: 'USDT ERC20', label: 'USDT ERC20' },
-    { value: 'BTC', label: 'BTC' }
+    { 
+      value: 'tron_trc20', 
+      label: 'Tether USD - Tron (TRC-20)',
+      placeholder: 'TJk2UJsS9x...',
+      regex: /^T[A-Za-z1-9]{33}$/,
+      errorMessage: 'La dirección Tron debe comenzar con "T" y tener 34 caracteres'
+    },
+    { 
+      value: 'ethereum_erc20', 
+      label: 'Tether USD - Ethereum (ERC-20)',
+      placeholder: '0x742d35Cc6...',
+      regex: /^0x[a-fA-F0-9]{40}$/,
+      errorMessage: 'La dirección Ethereum debe comenzar con "0x" y tener 42 caracteres'
+    },
+    { 
+      value: 'bitcoin', 
+      label: 'Bitcoin - Red Principal',
+      placeholder: 'bc1qxy2kgdyg...',
+      regex: /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/,
+      errorMessage: 'Dirección Bitcoin inválida. Debe ser una dirección Legacy o SegWit válida'
+    }
   ];
+
+  // Función para validar direcciones crypto
+  const validateCryptoAddress = (address, network) => {
+    const selectedNetwork = networkOptions.find(n => n.value === network);
+    if (!selectedNetwork) return false;
+    
+    return selectedNetwork.regex.test(address);
+  };
+
+  // Obtener el network seleccionado actual
+  const getCurrentNetwork = () => {
+    return networkOptions.find(n => n.value === cryptoNetwork) || networkOptions[0];
+  };
 
   // Cerrar dropdown cuando se hace click fuera
   useEffect(() => {
@@ -49,52 +80,118 @@ const PaymentMethodSettings = ({ onBack }) => {
   const handleNetworkSelect = (networkValue) => {
     setCryptoNetwork(networkValue);
     setIsNetworkDropdownOpen(false);
+    setCryptoAddress(''); // Limpiar dirección al cambiar de red
+    setAddressError(''); // Limpiar error
+  };
+
+  // Validar dirección en tiempo real
+  const handleAddressChange = (e) => {
+    const address = e.target.value;
+    setCryptoAddress(address);
+    
+    if (address && !validateCryptoAddress(address, cryptoNetwork)) {
+      const network = getCurrentNetwork();
+      setAddressError(network.errorMessage);
+    } else {
+      setAddressError('');
+    }
   };
 
   const handleAddMethod = async (e) => {
     e.preventDefault();
-    setFeedback({ message: '', type: '' });
 
     let newMethod;
     if (methodType === 'crypto') {
       if (!alias || !cryptoAddress || !cryptoNetwork) {
-        setFeedback({ message: 'Por favor, complete todos los campos de la billetera.', type: 'error' });
+        toast.error('Por favor, complete todos los campos de la billetera.');
         return;
       }
+      
+      // Validar dirección crypto
+      if (!validateCryptoAddress(cryptoAddress, cryptoNetwork)) {
+        const network = getCurrentNetwork();
+        toast.error(network.errorMessage);
+        return;
+      }
+      
       newMethod = { type: 'crypto', alias, address: cryptoAddress, network: cryptoNetwork };
     } else { // bank
       if (!alias || !cbu || !holderName || !holderId) {
-        setFeedback({ message: 'Por favor, complete todos los campos de la cuenta bancaria.', type: 'error' });
+        toast.error('Por favor, complete todos los campos de la cuenta bancaria.');
         return;
       }
+      
+      // Validar CBU (22 dígitos)
+      if (!/^\d{22}$/.test(cbu.replace(/[^0-9]/g, ''))) {
+        toast.error('El CBU/CVU debe tener exactamente 22 números');
+        return;
+      }
+      
+      // Validar CUIT/CUIL (11 dígitos)
+      if (!/^\d{11}$/.test(holderId.replace(/[^0-9]/g, ''))) {
+        toast.error('El CUIT/CUIL debe tener exactamente 11 números');
+        return;
+      }
+      
       newMethod = { type: 'bank', alias, cbu, holderName, holderId };
     }
 
+    const loadingToast = toast.loading('Agregando método de pago...');
+    
     const result = await AuthAdapter.addPaymentMethod(currentUser.id, newMethod);
     if (result.success) {
-      setFeedback({ message: 'Método de pago agregado con éxito.', type: 'success' });
+      toast.success('Método de pago agregado con éxito', { id: loadingToast });
       await refreshUserData(); // Refresh user data to get the new list
       // Reset form
       setAlias('');
       setCryptoAddress('');
+      setAddressError('');
       setCbu('');
       setHolderName('');
       setHolderId('');
     } else {
-      setFeedback({ message: `Error: ${result.error}`, type: 'error' });
+      toast.error(`Error: ${result.error}`, { id: loadingToast });
     }
   };
 
   const handleDeleteMethod = async (method) => {
-    if (window.confirm(`¿Estás seguro de que quieres eliminar el método "${method.alias}"?`)) {
-      const result = await AuthAdapter.deletePaymentMethod(currentUser.id, method);
-      if (result.success) {
-        setFeedback({ message: 'Método de pago eliminado con éxito.', type: 'success' });
-        await refreshUserData();
-      } else {
-        setFeedback({ message: `Error al eliminar: ${result.error}`, type: 'error' });
-      }
-    }
+    // Usar una confirmación con toast más elegante
+    const confirmDelete = () => {
+      toast((t) => (
+        <div>
+          <p className="font-medium mb-2">¿Eliminar "{method.alias}"?</p>
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                toast.dismiss(t.id);
+                const loadingToast = toast.loading('Eliminando...');
+                const result = await AuthAdapter.deletePaymentMethod(currentUser.id, method);
+                if (result.success) {
+                  toast.success('Método de pago eliminado', { id: loadingToast });
+                  await refreshUserData();
+                } else {
+                  toast.error(`Error: ${result.error}`, { id: loadingToast });
+                }
+              }}
+              className="px-3 py-1 bg-red-500 text-white rounded-md text-sm"
+            >
+              Eliminar
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="px-3 py-1 bg-gray-600 text-white rounded-md text-sm"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ), {
+        duration: 5000,
+        position: 'top-center',
+      });
+    };
+    
+    confirmDelete();
   };
 
   return (
@@ -110,12 +207,6 @@ const PaymentMethodSettings = ({ onBack }) => {
         <h1 className="text-2xl md:text-3xl font-semibold">Configurar Métodos de Pago</h1>
       </div>
 
-      {feedback.message && (
-        <div className={`p-3 mb-4 rounded-lg text-center ${feedback.type === 'error' ? 'bg-red-500 bg-opacity-30 text-red-300' : 'bg-green-500 bg-opacity-30 text-green-300'}`}>
-          {feedback.message}
-        </div>
-      )}
-
       {/* Lista de métodos existentes */}
       <div className="mb-8">
         <h2 className="text-xl font-bold mb-4">Tus Métodos de Pago</h2>
@@ -125,7 +216,16 @@ const PaymentMethodSettings = ({ onBack }) => {
               <div key={method.id} className="p-4 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-lg flex justify-between items-center border border-[#333]">
                 <div>
                   <p className="font-bold">{method.alias} <span className="text-xs font-normal text-gray-400">({method.type === 'crypto' ? 'Crypto' : 'Banco'})</span></p>
-                  <p className="text-sm text-gray-300">{method.type === 'crypto' ? `${method.network}: ${method.address}` : `CBU/CVU: ${method.cbu}`}</p>
+                  <p className="text-sm text-gray-300">
+                    {method.type === 'crypto' 
+                      ? `${networkOptions.find(n => n.value === method.network)?.label || method.network}`
+                      : `CBU/CVU: ${method.cbu}`}
+                  </p>
+                  {method.type === 'crypto' && (
+                    <p className="text-xs text-gray-500 mt-1 font-mono truncate">
+                      {method.address}
+                    </p>
+                  )}
                 </div>
                 <button onClick={() => handleDeleteMethod(method)} className="p-2 hover:bg-red-500/20 rounded-full text-red-400">
                   <Trash2 size={18} />
@@ -165,7 +265,7 @@ const PaymentMethodSettings = ({ onBack }) => {
                     onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
                     className="w-full p-2 bg-[#1a1a1a] border border-[#444] rounded-lg focus:outline-none focus:border-cyan-500 text-left flex items-center justify-between text-white"
                   >
-                    <span>{cryptoNetwork}</span>
+                    <span>{getCurrentNetwork().label}</span>
                     <ChevronDown 
                       size={20} 
                       className={`text-gray-400 transition-transform ${isNetworkDropdownOpen ? 'rotate-180' : ''}`} 
@@ -189,8 +289,26 @@ const PaymentMethodSettings = ({ onBack }) => {
                 </div>
               </div>
               <div>
-                <label htmlFor="cryptoAddress" className="block text-sm font-medium text-gray-300 mb-1">Dirección de la Billetera</label>
-                <input type="text" id="cryptoAddress" value={cryptoAddress} onChange={e => setCryptoAddress(e.target.value)} className="w-full p-2 bg-[#1a1a1a] border border-[#444] rounded-lg focus:outline-none focus:border-cyan-500" />
+                <label htmlFor="cryptoAddress" className="block text-sm font-medium text-gray-300 mb-1">
+                  Dirección de la Billetera
+                </label>
+                <input 
+                  type="text" 
+                  id="cryptoAddress" 
+                  value={cryptoAddress} 
+                  onChange={handleAddressChange}
+                  placeholder={getCurrentNetwork().placeholder}
+                  className={`w-full p-2 bg-[#1a1a1a] border ${addressError ? 'border-red-500' : 'border-[#444]'} rounded-lg focus:outline-none focus:border-cyan-500 font-mono text-sm`}
+                />
+                {addressError && (
+                  <div className="mt-1 flex items-start gap-1">
+                    <AlertCircle size={14} className="text-red-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-red-400">{addressError}</p>
+                  </div>
+                )}
+                {!addressError && cryptoAddress && (
+                  <p className="text-xs text-green-400 mt-1">Dirección válida</p>
+                )}
               </div>
             </>
           ) : (

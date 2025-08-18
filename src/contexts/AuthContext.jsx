@@ -21,6 +21,17 @@ export const AuthProvider = ({ children }) => {
     const userId = user.uid || user.id;
     const { data, error } = await DatabaseAdapter.users.getById(userId);
     if (data && !error) {
+      // También cargar los métodos de pago desde la tabla dedicada
+      if (AuthAdapter.isSupabase()) {
+        try {
+          const { getPaymentMethods } = await import('../supabase/auth');
+          const { data: paymentMethods } = await getPaymentMethods(userId);
+          data.paymentMethods = paymentMethods || [];
+        } catch (error) {
+          logger.error("[AUTH] Error loading payment methods", error);
+          data.paymentMethods = [];
+        }
+      }
       setUserData(data);
     }
   };
@@ -57,6 +68,17 @@ export const AuthProvider = ({ children }) => {
           
           if (data && !error) {
             logger.auth("User data fetched successfully");
+            // También cargar los métodos de pago desde la tabla dedicada
+            if (AuthAdapter.isSupabase()) {
+              try {
+                const { getPaymentMethods } = await import('../supabase/auth');
+                const { data: paymentMethods } = await getPaymentMethods(userId);
+                data.paymentMethods = paymentMethods || [];
+              } catch (error) {
+                logger.error("[AUTH] Error loading payment methods", error);
+                data.paymentMethods = [];
+              }
+            }
             setUserData(data);
           } else if (error) {
             // Don't sign out on error, just use minimal data
