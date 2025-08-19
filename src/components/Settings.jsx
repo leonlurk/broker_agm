@@ -54,7 +54,7 @@ const Settings = ({ onBack }) => {
             </p>
             <div className="bg-[#1a1a1a] border border-[#333] rounded-lg p-3">
               <p className="text-xs text-gray-400 mb-1">Correo de soporte:</p>
-              <p className="text-cyan-400 font-medium">soporte@agmbroker.com</p>
+              <p className="text-cyan-400 font-medium">support@alphaglobalmarket.io</p>
             </div>
           </div>
           

@@ -460,39 +460,41 @@ export const onAuthStateChange = (callback) => {
 
 /**
  * Add payment method to user profile
- * Mirrors Firebase addPaymentMethod function
+ * Uses dedicated payment_methods table in Supabase
  */
 export const addPaymentMethod = async (userId, newMethod) => {
   try {
-    // First get current metadata
-    const { data: userData, error: fetchError } = await supabase
-      .from(USERS_TABLE)
-      .select('metadata')
-      .eq('id', userId)
+    logger.info('[Supabase] Adding payment method for user', userId);
+    
+    // Prepare the payment method data for insertion
+    const paymentMethodData = {
+      user_id: userId,
+      type: newMethod.type,
+      alias: newMethod.alias,
+      // Crypto fields (will be null for bank type)
+      network: newMethod.type === 'crypto' ? newMethod.network : null,
+      address: newMethod.type === 'crypto' ? newMethod.address : null,
+      // Bank fields (will be null for crypto type)
+      cbu: newMethod.type === 'bank' ? newMethod.cbu : null,
+      holder_name: newMethod.type === 'bank' ? newMethod.holderName : null,
+      holder_id: newMethod.type === 'bank' ? newMethod.holderId : null,
+      is_active: true
+    };
+    
+    // Insert into dedicated payment_methods table
+    const { data, error } = await supabase
+      .from('payment_methods')
+      .insert([paymentMethodData])
+      .select()
       .single();
     
-    if (fetchError) throw fetchError;
+    if (error) {
+      logger.error('[Supabase] Error inserting payment method', error);
+      throw error;
+    }
     
-    const currentMetadata = userData.metadata || {};
-    const currentMethods = currentMetadata.payment_methods || [];
-    const methodWithId = { ...newMethod, id: `pm_${Date.now()}` };
-    const updatedMethods = [...currentMethods, methodWithId];
-    
-    // Update metadata with new payment methods
-    const { error: updateError } = await supabase
-      .from(USERS_TABLE)
-      .update({ 
-        metadata: {
-          ...currentMetadata,
-          payment_methods: updatedMethods
-        }
-      })
-      .eq('id', userId);
-    
-    if (updateError) throw updateError;
-    
-    logger.auth('[Supabase] Payment method added successfully');
-    return { success: true, newMethod: methodWithId, error: null };
+    logger.auth('[Supabase] Payment method added successfully', data);
+    return { success: true, newMethod: data, error: null };
   } catch (error) {
     logger.error('[Supabase] Error adding payment method', error);
     return { success: false, error: error.message };
@@ -501,38 +503,52 @@ export const addPaymentMethod = async (userId, newMethod) => {
 
 /**
  * Delete payment method from user profile
- * Mirrors Firebase deletePaymentMethod function
+ * Uses dedicated payment_methods table in Supabase
  */
 export const deletePaymentMethod = async (userId, methodToDelete) => {
   try {
-    // First get current metadata
-    const { data: userData, error: fetchError } = await supabase
-      .from(USERS_TABLE)
-      .select('metadata')
-      .eq('id', userId)
-      .single();
+    logger.info('[Supabase] Deleting payment method', methodToDelete.id);
     
-    if (fetchError) throw fetchError;
+    // Delete from payment_methods table
+    const { error } = await supabase
+      .from('payment_methods')
+      .delete()
+      .eq('id', methodToDelete.id)
+      .eq('user_id', userId); // Extra security check
     
-    const currentMetadata = userData.metadata || {};
-    const currentMethods = currentMetadata.payment_methods || [];
-    const updatedMethods = currentMethods.filter(method => method.id !== methodToDelete.id);
-    
-    // Update metadata with filtered payment methods
-    const { error: updateError } = await supabase
-      .from(USERS_TABLE)
-      .update({ 
-        metadata: {
-          ...currentMetadata,
-          payment_methods: updatedMethods
-        }
-      })
-      .eq('id', userId);
-    
-    if (updateError) throw updateError;
+    if (error) {
+      logger.error('[Supabase] Error deleting payment method', error);
+      throw error;
+    }
     
     logger.auth('[Supabase] Payment method deleted successfully');
     return { success: true, error: null };
+  } catch (error) {
+    logger.error('[Supabase] Error deleting payment method', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get payment methods for a user
+ * Uses dedicated payment_methods table in Supabase
+ */
+export const getPaymentMethods = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('payment_methods')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      logger.error('[Supabase] Error fetching payment methods', error);
+      return { data: [], error };
+    }
+    
+    logger.info(`[Supabase] Found ${data?.length || 0} payment methods for user`);
+    return { data: data || [], error: null };
   } catch (error) {
     logger.error('[Supabase] Error deleting payment method', error);
     return { success: false, error: error.message };
@@ -565,5 +581,6 @@ export default {
   onAuthStateChange,
   addPaymentMethod,
   deletePaymentMethod,
+  getPaymentMethods,
   verifyCode
 };

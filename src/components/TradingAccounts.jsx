@@ -12,7 +12,6 @@ import CustomTooltip from './utils/CustomTooltip';
 import useTranslation from '../hooks/useTranslation';
 // Importar servicio optimizado
 import accountMetricsOptimized from '../services/accountMetricsOptimized';
-import SyncButton from './SyncButton';
 import { 
   getBalanceChartData, 
   recordBalanceSnapshot,
@@ -445,7 +444,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       [t('accounts.live')]: getAccountsByCategory(ACC_CAT.REAL),
       [t('accounts.demo')]: getAccountsByCategory(ACC_CAT.DEMO),
       ['Copytrading']: getAccountsByCategory(ACC_CAT.COPYTRADING),
-      ['Pamm']: getAccountsByCategory(ACC_CAT.PAMM)
+      ['PAMM']: getAccountsByCategory(ACC_CAT.PAMM)
     };
   };
 
@@ -689,21 +688,27 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // Función helper para obtener el estado de la cuenta
   const getAccountStatus = (account) => {
-    if (!account) return { status: 'Inactiva', statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
+    if (!account) return { status: 'Inactivo', statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
     
     // Usar el status si existe, sino determinar basado en balance
     if (account.status) {
-      // Normalizar el status (Active -> Activa, Inactive -> Inactiva)
-      const normalizedStatus = account.status === 'Active' ? 'Activa' : 
-                               account.status === 'Inactive' ? 'Inactiva' : 
-                               account.status;
+      // Convertir el status a lowercase para comparación
+      const statusLower = account.status.toLowerCase();
       
-      // Verde para Active/Activa, Gris para Inactive/Inactiva, Rojo para otros
-      const isActive = account.status === 'Active' || account.status === 'Activa';
-      const isInactive = account.status === 'Inactive' || account.status === 'Inactiva';
+      // Determinar si está activo o inactivo
+      const isActive = statusLower.includes('activ') && !statusLower.includes('inactiv');
+      const isInactive = statusLower.includes('inactiv');
+      
+      // Normalizar el texto mostrado
+      let displayStatus = account.status;
+      if (isActive) {
+        displayStatus = 'Activo';
+      } else if (isInactive) {
+        displayStatus = 'Inactivo';
+      }
       
       return {
-        status: normalizedStatus,
+        status: displayStatus,
         statusColor: isActive ? 'bg-green-800 bg-opacity-30 text-green-400' : 
                     isInactive ? 'bg-gray-800 bg-opacity-30 text-gray-400' :
                     'bg-red-800 bg-opacity-30 text-red-400'
@@ -713,9 +718,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     // Fallback basado en balance
     const balance = account.balance || 0;
     if (balance > 0) {
-      return { status: 'Activa', statusColor: 'bg-green-800 bg-opacity-30 text-green-400' };
+      return { status: 'Activo', statusColor: 'bg-green-800 bg-opacity-30 text-green-400' };
     } else {
-      return { status: 'Inactiva', statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
+      return { status: 'Inactivo', statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
     }
   };
   
@@ -2037,38 +2042,38 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               {t('common.configure')}
             </div>
           ) : (
-            <div className="text-white font-medium text-sm flex items-center">
-              <span className="mr-2">
-                {cred.isPassword && showPasswords[cred.showKey] === false ? '••••••••' : cred.value}
-              </span>
-              {cred.isPassword && (
-                <button
-                  onClick={() => togglePasswordVisibility(cred.showKey)}
-                  className="p-1 hover:bg-[#2a2a2a] rounded"
-                  title={showPasswords[cred.showKey] ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                >
-                  {showPasswords[cred.showKey] ? (
-                    <EyeOff size={12} className="text-gray-400 hover:text-white" />
-                  ) : (
-                    <Eye size={12} className="text-gray-400 hover:text-white" />
-                  )}
-                </button>
-              )}
+            <div className="text-white font-medium text-sm">
+              {cred.isPassword && showPasswords[cred.showKey] === false ? '••••••••' : cred.value}
             </div>
           )}
-          {cred.value && (
-            <button
-              onClick={() => copyToClipboard(cred.value, cred.field)}
-              className="opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
-              title={`Copiar ${cred.label.toLowerCase()}`}
-            >
-              {copiedField === cred.field ? (
-                <Check size={12} className="text-green-400" />
-              ) : (
-                <Copy size={12} className="text-gray-400 hover:text-white" />
-              )}
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            {cred.isPassword && (
+              <button
+                onClick={() => togglePasswordVisibility(cred.showKey)}
+                className="p-1 hover:bg-[#2a2a2a] rounded"
+                title={showPasswords[cred.showKey] ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {showPasswords[cred.showKey] ? (
+                  <EyeOff size={12} className="text-gray-400 hover:text-white" />
+                ) : (
+                  <Eye size={12} className="text-gray-400 hover:text-white" />
+                )}
+              </button>
+            )}
+            {cred.value && (
+              <button
+                onClick={() => copyToClipboard(cred.value, cred.field)}
+                className="opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
+                title={`Copiar ${cred.label.toLowerCase()}`}
+              >
+                {copiedField === cred.field ? (
+                  <Check size={12} className="text-green-400" />
+                ) : (
+                  <Copy size={12} className="text-gray-400 hover:text-white" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     ));
@@ -2092,7 +2097,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           
           {/* Tab Navigation */}
           <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-2'} mb-4 sm:mb-6`}>
-            {[t('trading.all'), t('accounts.live'), t('accounts.demo'), 'Copytrading', 'Pamm'].map((tab) => (
+            {[t('trading.all'), t('accounts.live'), t('accounts.demo'), 'Copytrading', 'PAMM'].map((tab) => (
               <button
                 key={tab}
                 className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
@@ -2391,7 +2396,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
                       <span className="text-gray-400">Balance actual: ${(selectedAccount.balance || 0).toFixed(2)}</span>
                     </div>
-                    <SyncButton accountNumber={selectedAccount.account_number} size="small" />
                   </div>
                   {/* Indicador de última actualización */}
                   {lastUpdated && (
@@ -2458,10 +2462,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     <div className="p-3 bg-[#0f0f0f] rounded-lg relative group">
                       <span className="text-gray-400 text-xs block mb-1">Contraseña Master</span>
                       <div className="flex items-center justify-between">
-                        <div className="text-white font-medium flex items-center">
-                          <span className="mr-2">
-                            {showPasswords.master ? (selectedAccount.mt5_password || selectedAccount.master_password || '••••••••') : '••••••••'}
-                          </span>
+                        <div className="text-white font-medium">
+                          {showPasswords.master ? (selectedAccount.mt5_password || selectedAccount.master_password || '••••••••') : '••••••••'}
+                        </div>
+                        <div className="flex items-center gap-1">
                           <button
                             onClick={() => togglePasswordVisibility('master')}
                             className="p-1 hover:bg-[#2a2a2a] rounded"
@@ -2473,18 +2477,18 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                               <Eye size={14} className="text-gray-400 hover:text-white" />
                             )}
                           </button>
+                          <button
+                            onClick={() => copyToClipboard(selectedAccount.mt5_password || selectedAccount.master_password || '', 'Contraseña Master')}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
+                            title="Copiar contraseña master"
+                          >
+                            {copiedField === 'Contraseña Master' ? (
+                              <Check size={14} className="text-green-400" />
+                            ) : (
+                              <Copy size={14} className="text-gray-400 hover:text-white" />
+                            )}
+                          </button>
                         </div>
-                        <button
-                          onClick={() => copyToClipboard(selectedAccount.mt5_password || selectedAccount.master_password || '', 'Contraseña Master')}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
-                          title="Copiar contraseña master"
-                        >
-                          {copiedField === 'Contraseña Master' ? (
-                            <Check size={14} className="text-green-400" />
-                          ) : (
-                            <Copy size={14} className="text-gray-400 hover:text-white" />
-                          )}
-                        </button>
                       </div>
                     </div>
 
@@ -2512,39 +2516,39 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       <span className="text-gray-400 text-xs block mb-1">Contraseña Investor (Solo Lectura)</span>
                       <div className="flex items-center justify-between">
                         {(selectedAccount.mt5_investor_password || selectedAccount.investorPassword) ? (
-                          <div className="text-white font-medium flex items-center">
-                            <span className="mr-2">
+                          <>
+                            <div className="text-white font-medium">
                               {showPasswords.investor ? (selectedAccount.mt5_investor_password || selectedAccount.investorPassword || '••••••••') : '••••••••'}
-                            </span>
-                            <button
-                              onClick={() => togglePasswordVisibility('investor')}
-                              className="p-1 hover:bg-[#2a2a2a] rounded"
-                              title={showPasswords.investor ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                            >
-                              {showPasswords.investor ? (
-                                <EyeOff size={14} className="text-gray-400 hover:text-white" />
-                              ) : (
-                                <Eye size={14} className="text-gray-400 hover:text-white" />
-                              )}
-                            </button>
-                          </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => togglePasswordVisibility('investor')}
+                                className="p-1 hover:bg-[#2a2a2a] rounded"
+                                title={showPasswords.investor ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                              >
+                                {showPasswords.investor ? (
+                                  <EyeOff size={14} className="text-gray-400 hover:text-white" />
+                                ) : (
+                                  <Eye size={14} className="text-gray-400 hover:text-white" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => copyToClipboard(selectedAccount.mt5_investor_password || selectedAccount.investorPassword || '', 'Contraseña Investor')}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
+                                title="Copiar contraseña investor"
+                              >
+                                {copiedField === 'Contraseña Investor' ? (
+                                  <Check size={14} className="text-green-400" />
+                                ) : (
+                                  <Copy size={14} className="text-gray-400 hover:text-white" />
+                                )}
+                              </button>
+                            </div>
+                          </>
                         ) : (
                           <div className="text-gray-500 font-medium">
                             No configurada
                           </div>
-                        )}
-                        {(selectedAccount.mt5_investor_password || selectedAccount.investorPassword) && (
-                          <button
-                            onClick={() => copyToClipboard(selectedAccount.mt5_investor_password || selectedAccount.investorPassword || '', 'Contraseña Investor')}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
-                            title="Copiar contraseña investor"
-                          >
-                            {copiedField === 'Contraseña Investor' ? (
-                              <Check size={14} className="text-green-400" />
-                            ) : (
-                              <Copy size={14} className="text-gray-400 hover:text-white" />
-                            )}
-                          </button>
                         )}
                       </div>
                     </div>

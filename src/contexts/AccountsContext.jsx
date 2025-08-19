@@ -115,13 +115,16 @@ export const AccountsProvider = ({ children }) => {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Configurar intervalo de actualización
+    // Auto-refresh deshabilitado para evitar interrupciones en la navegación
+    // Si necesitas actualización automática, descomentar las siguientes líneas:
+    /*
     const interval = setInterval(() => {
       console.log('Auto-refreshing accounts...');
       loadAccounts();
     }, 30000); // 30 segundos
 
     return () => clearInterval(interval);
+    */
   }, [currentUser]);
 
   // Función para iniciar una operación de billetera
