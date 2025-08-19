@@ -168,6 +168,34 @@ export const NotificationsProvider = ({ children }) => {
       icon: NOTIFICATION_ICONS[NOTIFICATION_TYPES.ERROR]
     });
   };
+  
+  // KYC Notification Functions
+  const notifyKYCSubmitted = () => {
+    return addNotification({
+      type: NOTIFICATION_TYPES.INFO,
+      title: 'Verificación KYC Enviada',
+      message: 'Sus documentos han sido enviados exitosamente. Le notificaremos cuando se complete la revisión.',
+      icon: '/shield.png'
+    });
+  };
+  
+  const notifyKYCApproved = () => {
+    return addNotification({
+      type: NOTIFICATION_TYPES.SUCCESS,
+      title: 'KYC Aprobado',
+      message: '¡Felicitaciones! Su verificación KYC ha sido aprobada. Ahora tiene acceso completo a todas las funciones.',
+      icon: NOTIFICATION_ICONS[NOTIFICATION_TYPES.SUCCESS]
+    });
+  };
+  
+  const notifyKYCRejected = (reason) => {
+    return addNotification({
+      type: NOTIFICATION_TYPES.WARNING,
+      title: 'KYC Rechazado',
+      message: reason || 'Su verificación KYC ha sido rechazada. Por favor, revise los requisitos y vuelva a enviar sus documentos.',
+      icon: '/shield.png'
+    });
+  };
 
   const value = {
     notifications,
@@ -183,7 +211,11 @@ export const NotificationsProvider = ({ children }) => {
     notifyWithdrawal,
     notifyTransfer,
     notifyTradingGoal,
-    notifyError
+    notifyError,
+    // KYC notifications
+    notifyKYCSubmitted,
+    notifyKYCApproved,
+    notifyKYCRejected
   };
 
   return (

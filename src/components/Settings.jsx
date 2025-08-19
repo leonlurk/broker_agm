@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronDown, ChevronRight, X, Check, AlertCircle, Clock } from 'lucide-react';
 import KYCVerification from './KYCVerification';
 import { useAuth } from '../contexts/AuthContext';
 import PaymentMethodSettings from './PaymentMethodSettings';
+import kycService from '../services/kycService';
 
 const Settings = ({ onBack }) => {
   const [expandedSection, setExpandedSection] = useState(null);
@@ -10,8 +11,25 @@ const Settings = ({ onBack }) => {
   const [showPaymentSettings, setShowPaymentSettings] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [kycStatus, setKycStatus] = useState(null);
   
   const { currentUser } = useAuth();
+  
+  // Check KYC status
+  useEffect(() => {
+    const checkKYCStatus = async () => {
+      if (currentUser?.uid) {
+        const status = await kycService.getKYCStatus(currentUser.id || currentUser.uid);
+        setKycStatus(status);
+      }
+    };
+    checkKYCStatus();
+    
+    // Recheck when returning from KYC page
+    if (!showKYC) {
+      checkKYCStatus();
+    }
+  }, [currentUser, showKYC]);
 
   const toggleSection = (section) => {
     if (expandedSection === section) {
@@ -120,7 +138,27 @@ const Settings = ({ onBack }) => {
               <div className="space-y-4">
                 <div className="p-3 rounded-full bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] cursor-pointer" onClick={() => setShowKYC(true)}>
                   <div className="flex justify-between items-center">
-                    <span>Verificacion KYC</span>
+                    <div className="flex items-center gap-3">
+                      <span>Verificacion KYC</span>
+                      {/* KYC Status Indicator */}
+                      {kycStatus && (
+                        <span className={`
+                          px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1
+                          ${kycStatus.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' :
+                            kycStatus.status === 'approved' ? 'bg-green-500/20 text-green-500' :
+                            kycStatus.status === 'rejected' ? 'bg-red-500/20 text-red-500' :
+                            'bg-gray-500/20 text-gray-400'}
+                        `}>
+                          {kycStatus.status === 'pending' && <Clock size={12} />}
+                          {kycStatus.status === 'approved' && <Check size={12} />}
+                          {kycStatus.status === 'rejected' && <AlertCircle size={12} />}
+                          {kycStatus.status === 'pending' ? 'En Proceso' :
+                           kycStatus.status === 'approved' ? 'Aprobado' :
+                           kycStatus.status === 'rejected' ? 'Rechazado' :
+                           'No Enviado'}
+                        </span>
+                      )}
+                    </div>
                     <ChevronRight className="h-5 w-5 text-gray-400" />
                   </div>
                 </div>

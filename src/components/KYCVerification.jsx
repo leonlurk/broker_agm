@@ -3,10 +3,12 @@ import { ChevronDown, Search, Upload, Check, X, AlertCircle } from 'lucide-react
 import axios from 'axios';
 import kycService from '../services/kycService';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotifications } from '../contexts/NotificationsContext';
 import toast from 'react-hot-toast';
 
 const KYCVerification = ({ onBack }) => {
   const { currentUser } = useAuth();
+  const { notifyKYCSubmitted } = useNotifications();
   const [selectedDocType, setSelectedDocType] = useState('identity');
   const [selectedResidenceCountry, setSelectedResidenceCountry] = useState('Argentina');
   const [selectedDocumentCountry, setSelectedDocumentCountry] = useState('Argentina');
@@ -238,6 +240,9 @@ const KYCVerification = ({ onBack }) => {
       if (result.success) {
         toast.success('Documentos enviados exitosamente. Le notificaremos cuando se complete la verificación.');
         
+        // Send notification
+        notifyKYCSubmitted();
+        
         // Update status
         setKycStatus({ status: 'pending' });
         
@@ -304,6 +309,118 @@ const KYCVerification = ({ onBack }) => {
       </div>
     );
   };
+  
+  // Status Card Component (Replaces form when status is pending or approved)
+  const StatusCard = () => {
+    const statusConfig = {
+      pending: {
+        bg: 'from-yellow-500/20 to-yellow-600/10',
+        borderColor: 'border-yellow-500/50',
+        iconBg: 'bg-yellow-500/20',
+        icon: AlertCircle,
+        iconColor: 'text-yellow-500',
+        title: 'Verificación en Proceso',
+        subtitle: 'Sus documentos están siendo revisados',
+        description: 'Nuestro equipo está verificando los documentos que ha enviado. Este proceso generalmente toma entre 24 a 48 horas hábiles.',
+        showResubmit: false
+      },
+      approved: {
+        bg: 'from-green-500/20 to-green-600/10',
+        borderColor: 'border-green-500/50',
+        iconBg: 'bg-green-500/20',
+        icon: Check,
+        iconColor: 'text-green-500',
+        title: 'Verificación Completada',
+        subtitle: 'Su cuenta ha sido verificada exitosamente',
+        description: 'Felicitaciones! Su verificación KYC ha sido aprobada. Ahora tiene acceso completo a todas las funciones de la plataforma.',
+        showResubmit: false
+      },
+      rejected: {
+        bg: 'from-red-500/20 to-red-600/10',
+        borderColor: 'border-red-500/50',
+        iconBg: 'bg-red-500/20',
+        icon: X,
+        iconColor: 'text-red-500',
+        title: 'Verificación Rechazada',
+        subtitle: 'Sus documentos no pudieron ser verificados',
+        description: kycStatus?.details?.rejectionReason || 'Los documentos enviados no cumplen con los requisitos. Por favor, vuelva a enviar documentos válidos.',
+        showResubmit: true
+      }
+    };
+    
+    const config = statusConfig[kycStatus?.status];
+    if (!config) return null;
+    
+    const Icon = config.icon;
+    
+    return (
+      <div className="min-h-[600px] flex items-center justify-center">
+        <div className={`max-w-2xl w-full bg-gradient-to-br ${config.bg} ${config.borderColor} border-2 rounded-2xl p-8`}>
+          <div className="flex flex-col items-center text-center">
+            {/* Icon */}
+            <div className={`${config.iconBg} p-6 rounded-full mb-6`}>
+              <Icon className={config.iconColor} size={48} />
+            </div>
+            
+            {/* Title & Subtitle */}
+            <h2 className="text-3xl font-semibold text-white mb-2">{config.title}</h2>
+            <p className="text-lg text-gray-400 mb-6">{config.subtitle}</p>
+            
+            {/* Description */}
+            <p className="text-gray-300 mb-8 max-w-md">{config.description}</p>
+            
+            {/* Submission Details */}
+            {kycStatus?.details?.submittedAt && (
+              <div className="bg-black/30 rounded-xl p-4 mb-6 w-full max-w-md">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Fecha de envío:</span>
+                    <span className="text-white">
+                      {new Date(kycStatus.details.submittedAt).toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  {kycStatus?.details?.reviewedAt && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Fecha de revisión:</span>
+                      <span className="text-white">
+                        {new Date(kycStatus.details.reviewedAt).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Actions */}
+            <div className="flex gap-4">
+              <button
+                onClick={onBack}
+                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition-colors"
+              >
+                Volver a Ajustes
+              </button>
+              {config.showResubmit && (
+                <button
+                  onClick={() => setKycStatus(null)}
+                  className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-xl transition-all"
+                >
+                  Enviar Nuevamente
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // File upload component
   const FileUploadBox = ({ title, inputRef, file, preview, type, accept = "image/*,application/pdf" }) => (
@@ -345,6 +462,9 @@ const KYCVerification = ({ onBack }) => {
     </div>
   );
 
+  // Check if we should show status card instead of form
+  const shouldShowStatusCard = kycStatus?.status === 'pending' || kycStatus?.status === 'approved';
+  
   return (
     <div className="p-4 md:p-6 bg-[#232323] text-white flex flex-col">
       {/* Header with back button */}
@@ -357,15 +477,19 @@ const KYCVerification = ({ onBack }) => {
         />
       </div>
       
-      <div className="flex-grow flex flex-col items-center justify-center">
-        <div className="w-full max-w-5xl bg-[#2D2D2D] p-6 md:p-8 rounded-2xl">
-          <h2 className="text-2xl font-semibold text-center mb-6">Verificación KYC</h2>
-          
-          {/* Status Banner */}
-          <StatusBanner />
-          
-          {/* Main Container with border */}
-          <div className="border border-[#333] rounded-xl bg-gradient-to-br from-[#232323] to-[#2d2d2d] p-4 md:p-8">
+      {/* Show Status Card or Form based on KYC status */}
+      {shouldShowStatusCard ? (
+        <StatusCard />
+      ) : (
+        <div className="flex-grow flex flex-col items-center justify-center">
+          <div className="w-full max-w-5xl bg-[#2D2D2D] p-6 md:p-8 rounded-2xl">
+            <h2 className="text-2xl font-semibold text-center mb-6">Verificación KYC</h2>
+            
+            {/* Status Banner for rejected status */}
+            {kycStatus?.status === 'rejected' && <StatusBanner />}
+            
+            {/* Main Container with border */}
+            <div className="border border-[#333] rounded-xl bg-gradient-to-br from-[#232323] to-[#2d2d2d] p-4 md:p-8">
             
             <div className="space-y-8">
               
@@ -612,6 +736,7 @@ const KYCVerification = ({ onBack }) => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };
