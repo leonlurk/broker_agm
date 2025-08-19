@@ -60,7 +60,7 @@ const KYCVerification = ({ onBack }) => {
   useEffect(() => {
     const checkKYCStatus = async () => {
       if (currentUser?.uid) {
-        const status = await kycService.getKYCStatus(currentUser.uid);
+        const status = await kycService.getKYCStatus(currentUser.id || currentUser.uid);
         setKycStatus(status);
       }
     };
@@ -204,11 +204,12 @@ const KYCVerification = ({ onBack }) => {
     
     try {
       // Upload all documents
+      const userId = currentUser.id || currentUser.uid;
       const uploadPromises = [
-        kycService.uploadDocument(frontDocument, currentUser.uid, 'front'),
-        kycService.uploadDocument(backDocument, currentUser.uid, 'back'),
-        kycService.uploadDocument(selfieDocument, currentUser.uid, 'selfie'),
-        kycService.uploadDocument(addressDocument, currentUser.uid, 'address')
+        kycService.uploadDocument(frontDocument, userId, 'front'),
+        kycService.uploadDocument(backDocument, userId, 'back'),
+        kycService.uploadDocument(selfieDocument, userId, 'selfie'),
+        kycService.uploadDocument(addressDocument, userId, 'address')
       ];
       
       const uploadResults = await Promise.all(uploadPromises);
@@ -221,7 +222,7 @@ const KYCVerification = ({ onBack }) => {
       
       // Submit KYC verification
       const kycData = {
-        userId: currentUser.uid,
+        userId: userId,
         email: currentUser.email,
         residenceCountry: selectedResidenceCountry,
         documentCountry: selectedDocumentCountry,

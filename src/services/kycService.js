@@ -82,7 +82,7 @@ class KYCService {
           document_type: documentType,
           front_document_url: frontDocument,
           back_document_url: backDocument,
-          selfie_document_url: selfieDocument,
+          selfie_url: selfieDocument,  // Cambio: selfie_document_url -> selfie_url
           address_proof_url: addressDocument,
           status: 'pending',
           submitted_at: new Date().toISOString()

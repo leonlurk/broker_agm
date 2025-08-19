@@ -54,6 +54,17 @@ export const initializeStorageBuckets = async () => {
  */
 export const uploadProfilePicture = async (userId, file, fileName = null) => {
   try {
+    // Validate file
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    // Check file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error('File size exceeds 5MB limit');
+    }
+
     // Generate unique filename if not provided
     const timestamp = Date.now();
     const fileExtension = file.name.split('.').pop();
@@ -63,20 +74,36 @@ export const uploadProfilePicture = async (userId, file, fileName = null) => {
     logger.info('[Supabase Storage] Uploading profile picture', { 
       userId, 
       fileName: finalFileName,
-      fileSize: file.size 
+      fileSize: file.size,
+      fileType: file.type
     });
+
+    // Skip bucket existence check - just try to upload
+    // The bucket exists, we'll get a specific error if it doesn't
 
     // Upload the file
     const { data, error } = await supabase.storage
       .from(PROFILE_PICTURES_BUCKET)
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: true // Overwrite if exists
+        upsert: true, // Overwrite if exists
+        contentType: file.type
       });
 
     if (error) {
       logger.error('[Supabase Storage] Upload error', error);
-      throw error;
+      // Provide more specific error messages
+      if (error.message?.includes('row level security') || error.message?.includes('policy')) {
+        throw new Error('Permission denied. Please check storage policies.');
+      } else if (error.message?.includes('Invalid file')) {
+        throw new Error('Invalid file format. Please upload an image file.');
+      } else if (error.message?.includes('Bucket not found') || error.message?.includes('Object not found')) {
+        throw new Error('Storage bucket not found. Please contact support.');
+      } else if (error.statusCode === 404) {
+        throw new Error('Storage bucket not configured. Please create the profile-pictures bucket.');
+      }
+      // Return the original error with more context
+      throw new Error(`Storage error: ${error.message || 'Unknown error'}`);
     }
 
     // Get the public URL

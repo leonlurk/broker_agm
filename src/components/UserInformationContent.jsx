@@ -42,7 +42,7 @@ const SkeletonLoader = () => (
   );
 
 const UserInformationContent = ({ onBack }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, refreshUserData } = useAuth();
   const { t } = useTranslation();
   
   // Validation Schema with Zod using translations
@@ -258,6 +258,11 @@ const UserInformationContent = ({ onBack }) => {
       setFormData(updatedData);
       setInitialData(updatedData);
       setProfileImageFile(null);
+
+      // Refresh user data in AuthContext
+      if (refreshUserData) {
+        await refreshUserData();
+      }
 
       toast.success('Perfil actualizado con éxito', { id: toastId });
     } catch (error) {

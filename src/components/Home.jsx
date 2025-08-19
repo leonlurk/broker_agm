@@ -61,7 +61,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
         
         if (userData) {
           setUserProfileData({
-            photoURL: userData.photoURL || currentUser.photoURL || '/Perfil.png',
+            photoURL: userData.photourl || userData.photoURL || currentUser.photoURL || '/Perfil.png',
             nombre: userData.nombre || '',
             apellido: userData.apellido || ''
           });
@@ -69,14 +69,14 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
           console.error("Error loading user data:", error);
           // Si no hay datos en la base de datos, usar los datos del Auth
           setUserProfileData({
-            photoURL: currentUser.photoURL || '/Perfil.png',
+            photoURL: userData?.photourl || currentUser.photoURL || '/Perfil.png',
             nombre: currentUser.displayName?.split(' ')[0] || '',
             apellido: currentUser.displayName?.split(' ')[1] || ''
           });
         } else {
           // Si no hay datos en la base de datos, usar los datos del Auth
           setUserProfileData({
-            photoURL: currentUser.photoURL || '/Perfil.png',
+            photoURL: userData?.photourl || currentUser.photoURL || '/Perfil.png',
             nombre: currentUser.displayName?.split(' ')[0] || '',
             apellido: currentUser.displayName?.split(' ')[1] || ''
           });
@@ -105,7 +105,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
           
           if (userData) {
             setUserProfileData({
-              photoURL: userData.photoURL || currentUser.photoURL || '/Perfil.png',
+              photoURL: userData.photourl || userData.photoURL || currentUser.photoURL || '/Perfil.png',
               nombre: userData.nombre || '',
               apellido: userData.apellido || ''
             });
