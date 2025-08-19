@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import CryptoDepositModal from './CryptoDepositModal';
 import emailServiceProxy from '../services/emailServiceProxy';
+import { Coins, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
 
 const Wallet = () => {
   const {
@@ -93,7 +94,7 @@ const Wallet = () => {
   // Auto-seleccionar crypto cuando es la única opción
   useEffect(() => {
     if ((activeTab === 'depositar' || activeTab === 'retirar') && !selectedMethod) {
-      setSelectedMethod({ id: 'crypto', name: 'Criptomoneda', icon: '₿' });
+      setSelectedMethod({ id: 'crypto', name: 'Criptomoneda', icon: <Coins className="w-6 h-6 text-white" /> });
     }
   }, [activeTab, selectedMethod]);
 
@@ -211,6 +212,12 @@ const Wallet = () => {
 
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
       setError('Ingrese un monto válido');
+      return;
+    }
+
+    // Validar monto mínimo para depósitos
+    if (activeTab === 'depositar' && parseFloat(amount) < 100) {
+      setError('El monto mínimo para depósitos es $100 USD');
       return;
     }
 
@@ -395,20 +402,21 @@ const Wallet = () => {
   const getMethodOptions = () => {
     if (activeTab === 'depositar') {
       return [
-        { id: 'crypto', name: 'Criptomoneda', icon: '₿' }
+        { id: 'crypto', name: 'Criptomoneda', icon: <Coins className="w-6 h-6 text-white" /> }
       ];
     }
     if (activeTab === 'retirar') {
       return [
-        { id: 'crypto', name: 'Criptomoneda', icon: '₿' }
+        { id: 'crypto', name: 'Criptomoneda', icon: <Coins className="w-6 h-6 text-white" /> }
       ];
     }
     return [];
   };
 
-  // Opciones de criptomonedas - Solo USDT TRC-20
+  // Opciones de criptomonedas - USDT en ambas redes
   const getCryptoOptions = () => [
-    { id: 'USDT_TRC20', name: 'USDT (TRC-20)', network: 'Tron', min: 12, confirmations: 20 }
+    { id: 'USDT_TRC20', name: 'USDT (TRC-20)', network: 'Tron', min: 100, confirmations: 20 },
+    { id: 'USDT_ERC20', name: 'USDT (ERC-20)', network: 'Ethereum', min: 100, confirmations: 12 }
   ];
 
   // Filtrar cuentas disponibles para selección - Solo cuentas reales
@@ -470,7 +478,7 @@ const Wallet = () => {
               className="w-full p-4 text-left rounded-lg border-2 border-[#4b5563] bg-[#1e1e1e] hover:bg-[#374151] transition-colors font-medium text-[#9ca3af] hover:text-white"
             >
               <div className="flex items-center gap-3">
-                <span className="text-2xl">🔄</span>
+                <RefreshCw className="w-6 h-6 text-white" />
                 <span>
                   {transferToAccount ? `${transferToAccount.account_name} (${transferToAccount.account_number})` : 'Seleccionar cuenta destino'}
                 </span>
@@ -522,14 +530,14 @@ const Wallet = () => {
             <div className="space-y-4">
               <div className="p-4 bg-[#1e1e1e] rounded-lg border border-[#334155]">
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="text-2xl">📤</span>
+                  <ArrowUp className="w-6 h-6 text-white" />
                   <div>
                     <div className="font-medium text-white">Origen</div>
                     <div className="text-sm text-[#9ca3af]">{selectedAccount?.accountName}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">📥</span>
+                  <ArrowDown className="w-6 h-6 text-white" />
                   <div>
                     <div className="font-medium text-white">Destino</div>
                     <div className="text-sm text-[#9ca3af]">{transferToAccount.accountName}</div>
@@ -629,7 +637,7 @@ const Wallet = () => {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{method.icon}</span>
+                  <span className="flex items-center justify-center">{method.icon}</span>
                   <span>{method.name}</span>
                 </div>
               </button>
@@ -701,9 +709,15 @@ const Wallet = () => {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
+                  placeholder={activeTab === 'depositar' ? '100.00' : '0.00'}
+                  min={activeTab === 'depositar' ? '100' : '0'}
                   className="w-full px-4 py-3 bg-[#1e1e1e] border border-[#4b5563] rounded-lg text-white placeholder-[#6b7280] focus:border-[#06b6d4] focus:outline-none"
                 />
+                {activeTab === 'depositar' && (
+                  <p className="text-xs text-[#22d3ee] mt-1">
+                    Monto mínimo: $100 USD
+                  </p>
+                )}
               </div>
 
               {selectedMethod?.id === 'crypto' && activeTab === 'retirar' && (

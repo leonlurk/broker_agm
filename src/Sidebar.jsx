@@ -5,7 +5,10 @@ import {
   RiArrowRightSLine,
   RiMenuLine,
   RiCloseLine,
-  RiLogoutBoxRLine
+  RiLogoutBoxRLine,
+  RiWalletLine,
+  RiShieldLine,
+  RiUserStarLine
 } from "react-icons/ri";
 import useTranslation from "./hooks/useTranslation";
 
@@ -94,7 +97,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     const menuItems = [
         { name: "Dashboard", translationKey: "sidebar.dashboard", icon: <img src="./darhboard_alt.svg" className="w-8 h-8" /> },
         { name: "Cuentas", translationKey: "sidebar.accounts", icon: <img src="./Flag_finish_alt.svg" className="w-8 h-8" alt="Cuentas" /> },
-        { name: "Wallet", translationKey: "sidebar.wallet", icon: <img src="./wallet-line.svg" className="w-8 h-8" alt="Wallet" /> },
+        { name: "Wallet", translationKey: "sidebar.wallet", icon: <RiWalletLine className="w-8 h-8 text-white" /> },
         { 
             name: "Herramientas", 
             translationKey: "sidebar.tools",
@@ -220,10 +223,10 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                                                     icon = <img src="./Book_open.svg" alt="Noticias" />;
                                                     break;
                                                 case "Inversor":
-                                                    icon = <img src="./money-safe.svg" alt="Inversor" />;
+                                                    icon = <RiShieldLine className="text-white" />;
                                                     break;
                                                 case "Gestor":
-                                                    icon = <img src="./user-star.svg" alt="Gestor" />;
+                                                    icon = <RiUserStarLine className="text-white" />;
                                                     break;
                                                 default:
                                                     icon = null;
