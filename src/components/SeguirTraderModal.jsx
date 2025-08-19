@@ -58,19 +58,19 @@ const SeguirTraderModal = ({ isOpen, onClose, trader, selectedAccount, onConfirm
     const newErrors = {};
 
     if (!formData.capitalAsignado || formData.capitalAsignado < 100) {
-      newErrors.capitalAsignado = 'El capital mínimo es $100';
+      newErrors.capitalAsignado = t('followTrader.minCapitalError');
     }
 
     if (!formData.porcentajeRiesgo || formData.porcentajeRiesgo < 1 || formData.porcentajeRiesgo > 50) {
-      newErrors.porcentajeRiesgo = 'El riesgo debe estar entre 1% y 50%';
+      newErrors.porcentajeRiesgo = t('followTrader.riskRangeError');
     }
 
     if (!formData.limitePerdida || formData.limitePerdida < 100) {
-      newErrors.limitePerdida = 'El límite de pérdida mínimo es $100';
+      newErrors.limitePerdida = t('followTrader.minLossLimitError');
     }
 
     if (formData.tiposOperacion.length === 0) {
-      newErrors.tiposOperacion = 'Selecciona al menos un tipo de operación';
+      newErrors.tiposOperacion = t('followTrader.selectOperationTypeError');
     }
 
     // Validaciones para campos avanzados
@@ -152,7 +152,7 @@ const SeguirTraderModal = ({ isOpen, onClose, trader, selectedAccount, onConfirm
           {/* Capital Asignado */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-300">
-              Capital Asignado
+              {t('followTrader.assignedCapital')}
             </label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
@@ -176,7 +176,7 @@ const SeguirTraderModal = ({ isOpen, onClose, trader, selectedAccount, onConfirm
           {/* Porcentaje de Riesgo */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-300">
-              Porcentaje de Riesgo (%)
+              {t('followTrader.riskPercentage')}
             </label>
             <input
               type="number"

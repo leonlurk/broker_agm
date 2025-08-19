@@ -177,7 +177,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     return navigationParams?.viewMode === 'details' ? navigationParams.accountId : null;
   };
   
-  const [activeTab, setActiveTab] = useState(t('trading.all'));
+  const [activeTab, setActiveTab] = useState('Todos');
   const [selectedAccountId, setSelectedAccountId] = useState(getInitialSelectedAccountId());
   const [viewMode, setViewMode] = useState(getInitialViewMode()); 
   
@@ -2102,8 +2102,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 }`}
                 onClick={() => setActiveTab(tab)}
               >
-                {isMobile && tab === 'Cuentas Reales' ? 'Reales' : 
-                 isMobile && tab === 'Cuentas Demo' ? 'Demo' :
+                {isMobile && tab === 'Reales' ? 'Reales' : 
+                 isMobile && tab === 'Demo' ? 'Demo' :
                  isMobile && tab === 'Copy Trading' ? 'Copy' :
                  tab}
               </button>

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { X, Star, MessageSquare, Send } from 'lucide-react';
+import useTranslation from '../hooks/useTranslation';
 
 const CommentsRatingModal = ({ isOpen, onClose, trader, onSubmit }) => {
+  const { t } = useTranslation();
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -18,11 +20,11 @@ const CommentsRatingModal = ({ isOpen, onClose, trader, onSubmit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (rating === 0) {
-      alert('Por favor selecciona una puntuación');
+      alert(t('comments.pleaseSelectRating'));
       return;
     }
     if (comment.trim().length < 10) {
-      alert('El comentario debe tener al menos 10 caracteres');
+      alert(t('comments.commentTooShort'));
       return;
     }
 
@@ -42,7 +44,7 @@ const CommentsRatingModal = ({ isOpen, onClose, trader, onSubmit }) => {
       onClose();
     } catch (error) {
       console.error('Error submitting comment:', error);
-      alert('Error al enviar comentario. Intenta de nuevo.');
+      alert(t('comments.submitError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -83,8 +85,8 @@ const CommentsRatingModal = ({ isOpen, onClose, trader, onSubmit }) => {
               <MessageSquare className="text-yellow-500" size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-white">Comentar Trader</h2>
-              <p className="text-sm text-gray-400">Comparte tu experiencia con {trader?.name || 'este trader'}</p>
+              <h2 className="text-xl font-semibold text-white">{t('comments.commentTrader')}</h2>
+              <p className="text-sm text-gray-400">{t('comments.shareExperience')} {trader?.name || t('comments.thisTrader')}</p>
             </div>
           </div>
           <button
@@ -100,48 +102,48 @@ const CommentsRatingModal = ({ isOpen, onClose, trader, onSubmit }) => {
           {/* Rating Section */}
           <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-300">
-              Puntuación
+              {t('comments.rating')}
             </label>
             <div className="flex items-center gap-2">
               {[1, 2, 3, 4, 5].map((value) => renderStar(value))}
             </div>
             <div className="text-sm text-gray-400">
-              {rating === 0 && 'Selecciona una puntuación'}
-              {rating === 1 && 'Muy malo'}
-              {rating === 2 && 'Malo'}
-              {rating === 3 && 'Regular'}
-              {rating === 4 && 'Bueno'}
-              {rating === 5 && 'Excelente'}
+              {rating === 0 && t('comments.selectRating')}
+              {rating === 1 && t('comments.veryBad')}
+              {rating === 2 && t('comments.bad')}
+              {rating === 3 && t('comments.regular')}
+              {rating === 4 && t('comments.good')}
+              {rating === 5 && t('comments.excellent')}
             </div>
           </div>
 
           {/* Comment Section */}
           <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-300">
-              Comentario
+              {t('comments.comment')}
             </label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Comparte tu experiencia copiando a este trader..."
+              placeholder={t('comments.commentPlaceholder')}
               className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none resize-none"
               rows={4}
               maxLength={500}
             />
             <div className="flex justify-between text-xs text-gray-400">
-              <span>Mínimo 10 caracteres</span>
+              <span>{t('comments.minCharacters')}</span>
               <span>{comment.length}/500</span>
             </div>
           </div>
 
           {/* Guidelines */}
           <div className="bg-[#2a2a2a] p-4 rounded-lg border border-[#333]">
-            <h4 className="text-sm font-medium text-gray-300 mb-2">Pautas para comentarios</h4>
+            <h4 className="text-sm font-medium text-gray-300 mb-2">{t('comments.guidelines')}</h4>
             <ul className="text-xs text-gray-400 space-y-1">
-              <li>• Sé respetuoso y constructivo</li>
-              <li>• Comparte tu experiencia real</li>
-              <li>• Evita información personal</li>
-              <li>• Menciona estrategias o rendimiento</li>
+              <li>• {t('comments.guideline1')}</li>
+              <li>• {t('comments.guideline2')}</li>
+              <li>• {t('comments.guideline3')}</li>
+              <li>• {t('comments.guideline4')}</li>
             </ul>
           </div>
 
@@ -153,7 +155,7 @@ const CommentsRatingModal = ({ isOpen, onClose, trader, onSubmit }) => {
               className="flex-1 px-4 py-3 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
               disabled={isSubmitting}
             >
-              Cancelar
+              {t('comments.cancel')}
             </button>
             <button
               type="submit"
@@ -163,12 +165,12 @@ const CommentsRatingModal = ({ isOpen, onClose, trader, onSubmit }) => {
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  Enviando...
+                  {t('comments.sending')}
                 </>
               ) : (
                 <>
                   <Send size={16} />
-                  Enviar Comentario
+                  {t('comments.submitComment')}
                 </>
               )}
             </button>
