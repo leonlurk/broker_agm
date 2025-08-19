@@ -128,11 +128,11 @@ const UserInformationContent = ({ onBack }) => {
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const response = await axios.get('https://restcountries.com/v3.1/all?fields=name,idd');
+        const response = await axios.get('https://restcountries.com/v3.1/all?fields=name,idd,translations');
         const countryData = response.data.map(c => ({
-          name: c.name.common,
+          name: c.translations?.spa?.common || c.name.common, // Usar traducción al español si está disponible
           code: `${c.idd.root}${c.idd.suffixes ? c.idd.suffixes[0] : ''}`
-        })).sort((a, b) => a.name.localeCompare(b.name));
+        })).sort((a, b) => a.name.localeCompare(b.name, 'es')); // Ordenar con locale español
         setCountries(countryData);
         setFilteredCountries(countryData);
       } catch (error) {

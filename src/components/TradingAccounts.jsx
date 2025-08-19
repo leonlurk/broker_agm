@@ -2397,14 +2397,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       <span className="text-gray-400">Balance actual: ${(selectedAccount.balance || 0).toFixed(2)}</span>
                     </div>
                   </div>
-                  {/* Indicador de última actualización */}
-                  {lastUpdated && (
-                    <div className="flex items-center justify-end">
-                      <span className="text-xs text-gray-500">
-                        Actualizado: {lastUpdated.toLocaleTimeString()}
-                      </span>
-                    </div>
-                  )}
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
                           <span className="text-gray-400">Cuenta Activa: 30 días</span>
@@ -2685,14 +2677,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 </div>
                 <p className="text-xs sm:text-sm text-gray-400">Máximo • Actual</p>
                 </div>
-
-              {/* Días de Trading */}
-              <div className={`${isMobile ? '' : 'flex-1'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex flex-col justify-center`}>
-                <CustomTooltip content="El número total de días en los que se ha realizado al menos una operación.">
-                  <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">Días de Trading</h3>
-                </CustomTooltip>
-                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold">{realMetrics?.trading_days || 0} Días</div>
-              </div>
                 </div>
               </div>
               

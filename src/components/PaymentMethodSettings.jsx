@@ -22,8 +22,45 @@ const PaymentMethodSettings = ({ onBack }) => {
   // Estados para el dropdown de red
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
   const networkDropdownRef = useRef(null);
-
-  const paymentMethods = userData?.paymentMethods || [];
+  
+  // Estado local para métodos de pago
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Cargar métodos de pago al montar el componente
+  useEffect(() => {
+    const loadPaymentMethods = async () => {
+      if (!currentUser) return;
+      
+      setLoading(true);
+      try {
+        const userId = currentUser.id || currentUser.uid;
+        
+        // Cargar los métodos de pago directamente
+        const { getPaymentMethods } = await import('../supabase/auth');
+        const { data } = await getPaymentMethods(userId);
+        console.log('Payment methods loaded:', data);
+        setPaymentMethods(data || []);
+        
+        // También refrescar userData para mantener sincronización
+        await refreshUserData();
+      } catch (error) {
+        console.error('Error loading payment methods:', error);
+        toast.error('Error al cargar los métodos de pago');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadPaymentMethods();
+  }, [currentUser]);
+  
+  // Actualizar cuando userData cambie
+  useEffect(() => {
+    if (userData?.paymentMethods) {
+      setPaymentMethods(userData.paymentMethods);
+    }
+  }, [userData?.paymentMethods]);
   
   // Opciones de red disponibles con validación y formato mejorado
   const networkOptions = [
@@ -137,11 +174,20 @@ const PaymentMethodSettings = ({ onBack }) => {
     }
 
     const loadingToast = toast.loading('Agregando método de pago...');
+    const userId = currentUser.id || currentUser.uid;
     
-    const result = await AuthAdapter.addPaymentMethod(currentUser.id, newMethod);
+    const result = await AuthAdapter.addPaymentMethod(userId, newMethod);
     if (result.success) {
       toast.success('Método de pago agregado con éxito', { id: loadingToast });
-      await refreshUserData(); // Refresh user data to get the new list
+      
+      // Refrescar datos del usuario y actualizar lista local
+      await refreshUserData();
+      
+      // Cargar los métodos de pago actualizados
+      const { getPaymentMethods } = await import('../supabase/auth');
+      const { data } = await getPaymentMethods(userId);
+      setPaymentMethods(data || []);
+      
       // Reset form
       setAlias('');
       setCryptoAddress('');
@@ -165,10 +211,18 @@ const PaymentMethodSettings = ({ onBack }) => {
               onClick={async () => {
                 toast.dismiss(t.id);
                 const loadingToast = toast.loading('Eliminando...');
-                const result = await AuthAdapter.deletePaymentMethod(currentUser.id, method);
+                const userId = currentUser.id || currentUser.uid;
+                const result = await AuthAdapter.deletePaymentMethod(userId, method);
                 if (result.success) {
                   toast.success('Método de pago eliminado', { id: loadingToast });
+                  
+                  // Refrescar datos del usuario y actualizar lista local
                   await refreshUserData();
+                  
+                  // Cargar los métodos de pago actualizados
+                  const { getPaymentMethods } = await import('../supabase/auth');
+                  const { data } = await getPaymentMethods(userId);
+                  setPaymentMethods(data || []);
                 } else {
                   toast.error(`Error: ${result.error}`, { id: loadingToast });
                 }
@@ -210,21 +264,47 @@ const PaymentMethodSettings = ({ onBack }) => {
       {/* Lista de métodos existentes */}
       <div className="mb-8">
         <h2 className="text-xl font-bold mb-4">Tus Métodos de Pago</h2>
-        {paymentMethods.length > 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
+          </div>
+        ) : paymentMethods.length > 0 ? (
           <div className="space-y-3">
             {paymentMethods.map(method => (
-              <div key={method.id} className="p-4 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-lg flex justify-between items-center border border-[#333]">
-                <div>
-                  <p className="font-bold">{method.alias} <span className="text-xs font-normal text-gray-400">({method.type === 'crypto' ? 'Crypto' : 'Banco'})</span></p>
-                  <p className="text-sm text-gray-300">
-                    {method.type === 'crypto' 
-                      ? `${networkOptions.find(n => n.value === method.network)?.label || method.network}`
-                      : `CBU/CVU: ${method.cbu}`}
-                  </p>
-                  {method.type === 'crypto' && (
-                    <p className="text-xs text-gray-500 mt-1 font-mono truncate">
-                      {method.address}
-                    </p>
+              <div key={method.id} className="p-4 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-lg flex justify-between items-center border border-[#333] hover:border-cyan-500/50 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-bold text-white">{method.alias}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      method.type === 'crypto' 
+                        ? 'bg-yellow-500/20 text-yellow-500' 
+                        : 'bg-blue-500/20 text-blue-500'
+                    }`}>
+                      {method.type === 'crypto' ? 'Crypto' : 'Banco'}
+                    </span>
+                  </div>
+                  
+                  {method.type === 'crypto' ? (
+                    <>
+                      <p className="text-sm text-cyan-400 mb-1">
+                        {networkOptions.find(n => n.value === method.network)?.label || method.network}
+                      </p>
+                      <p className="text-xs text-gray-400 font-mono break-all">
+                        {method.address}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-300">
+                        <span className="text-gray-500">CBU/CVU:</span> <span className="font-mono">{method.cbu}</span>
+                      </p>
+                      <p className="text-sm text-gray-300">
+                        <span className="text-gray-500">Titular:</span> {method.holderName}
+                      </p>
+                      <p className="text-sm text-gray-300">
+                        <span className="text-gray-500">CUIT/CUIL:</span> {method.holderId}
+                      </p>
+                    </>
                   )}
                 </div>
                 <button onClick={() => handleDeleteMethod(method)} className="p-2 hover:bg-red-500/20 rounded-full text-red-400">

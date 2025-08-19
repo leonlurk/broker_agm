@@ -45,10 +45,10 @@ const KYCVerification = ({ onBack }) => {
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const response = await axios.get('https://restcountries.com/v3.1/all?fields=name');
+        const response = await axios.get('https://restcountries.com/v3.1/all?fields=name,translations');
         const countryData = response.data.map(c => ({
-          name: c.name.common
-        })).sort((a, b) => a.name.localeCompare(b.name));
+          name: c.translations?.spa?.common || c.name.common // Usar traducción al español si está disponible
+        })).sort((a, b) => a.name.localeCompare(b.name, 'es')); // Ordenar con locale español
         setCountries(countryData);
         setFilteredCountries(countryData);
       } catch (error) {
