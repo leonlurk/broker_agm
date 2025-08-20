@@ -23,7 +23,7 @@ const CryptoDepositModal = ({
   // Mapeo de monedas a redes
   const getCoinNetwork = (coinId) => {
     if (coinId === 'USDT_TRC20') return 'tron';
-    if (coinId === 'USDT_ETH' || coinId === 'USDC_ETH') return 'bsc';
+    if (coinId === 'USDT_ERC20' || coinId === 'USDT_ETH' || coinId === 'USDC_ETH') return 'bsc'; // ERC-20 usa la misma dirección que BSC
     return 'tron'; // default
   };
 
@@ -83,11 +83,12 @@ const CryptoDepositModal = ({
       // IMPORTANTE: Estas son las billeteras donde los clientes envían sus depósitos
       const fixedWallet = {
         tron: {
-          address: 'TEaQgjdWECF4fjzgscF6pA5v2GQvPPhBpR', // Billetera TRON de la empresa
+          address: 'TEaQgjdWECF4fjzgscF6pA5v2GQvPPhBpR', // Billetera TRON de la empresa (TRC-20)
           qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TEaQgjdWECF4fjzgscF6pA5v2GQvPPhBpR`
         },
         bsc: {
-          address: '0x38CfeC0B9199d6cA2944df012621F7C60be4b0d9', // Billetera BSC de la empresa
+          // Esta dirección se usa tanto para ERC-20 (Ethereum) como BEP-20 (BSC)
+          address: '0x38CfeC0B9199d6cA2944df012621F7C60be4b0d9', // Billetera Ethereum/BSC de la empresa
           qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=0x38CfeC0B9199d6cA2944df012621F7C60be4b0d9`
         }
       };
@@ -144,8 +145,11 @@ const CryptoDepositModal = ({
   };
 
   const getNetworkName = () => {
+    if (selectedCoin === 'USDT_TRC20') return 'TRON (TRC-20)';
+    if (selectedCoin === 'USDT_ERC20') return 'Ethereum (ERC-20) / BSC (BEP-20)';
+    // Por defecto
     const network = getCoinNetwork(selectedCoin);
-    return network === 'tron' ? 'TRON (TRC-20)' : 'Binance Smart Chain (BEP-20)';
+    return network === 'tron' ? 'TRON (TRC-20)' : 'Ethereum/BSC';
   };
 
   const getMinimumDeposit = () => {
@@ -275,6 +279,9 @@ const CryptoDepositModal = ({
               <ul className="text-xs text-yellow-300 space-y-1">
                 <li>• Envía solo {selectedCoin.split('_')[0]} a esta dirección</li>
                 <li>• Red: {getNetworkName()}</li>
+                {selectedCoin === 'USDT_ERC20' && (
+                  <li className="text-yellow-200">• Esta dirección acepta USDT tanto en Ethereum (ERC-20) como en BSC (BEP-20)</li>
+                )}
                 <li>• Monto mínimo: ${getMinimumDeposit()} USD</li>
                 <li>• Los fondos se acreditarán automáticamente</li>
               </ul>
