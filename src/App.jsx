@@ -9,14 +9,15 @@ import Dashboard from './Dashboard';
 import { useAuth } from './contexts/AuthContext';
 import { AuthAdapter } from './services/database.adapter';
 import { Toaster } from 'react-hot-toast';
-import useKYCStatusMonitor from './hooks/useKYCStatusMonitor';
+// import useKYCStatusMonitor from './hooks/useKYCStatusMonitor';
+import useKYCRealtimeMonitor from './hooks/useKYCRealtimeMonitor';
 
 function App() {
   const { currentUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
-  // Monitor KYC status changes
-  useKYCStatusMonitor();
+  // Monitor KYC status changes in real-time
+  useKYCRealtimeMonitor();
   
   // Redirect to dashboard if already authenticated
   useEffect(() => {

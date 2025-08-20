@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import CryptoDepositModal from './CryptoDepositModal';
 import emailServiceProxy from '../services/emailServiceProxy';
+import transactionService from '../services/transactionService';
+import useTransactionMonitor from '../hooks/useTransactionMonitor';
 import { Coins, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
 
 const Wallet = () => {
@@ -57,6 +59,16 @@ const Wallet = () => {
   // Estados para historial de transacciones
   const [transactions, setTransactions] = useState([]);
   const [historyFilter, setHistoryFilter] = useState('all');
+  
+  // Hook para monitoreo en tiempo real de transacciones
+  const { refresh: refreshMonitor } = useTransactionMonitor(
+    currentUser?.uid,
+    (update) => {
+      console.log('Transaction status updated:', update);
+      // Recargar transacciones cuando hay un cambio de estado
+      loadTransactions();
+    }
+  );
 
   // Función de utilidad para scroll
   const scrollToTop = () => {
@@ -130,14 +142,75 @@ const Wallet = () => {
     return 'text-white';
   };
 
-  // Cargar transacciones desde Firebase
+  // Cargar transacciones desde Supabase
   const loadTransactions = async () => {
     if (!currentUser) return;
     
     try {
-      // Aquí cargarías las transacciones reales desde Firebase
-      // Por ahora uso datos de ejemplo
-      const sampleTransactions = [
+      // Cargar transacciones reales usando el servicio
+      const result = await transactionService.getUserTransactions('all', 50);
+      
+      if (result.success) {
+        // Combinar y formatear todas las transacciones
+        const allTransactions = [];
+        
+        // Agregar depósitos
+        if (result.deposits) {
+          result.deposits.forEach(dep => {
+            allTransactions.push({
+              id: dep.id,
+              amount: dep.amount || dep.amount_usd,
+              currency: dep.currency || 'USD',
+              type: 'deposit',
+              method: dep.payment_method === 'crypto' ? 'Criptomoneda' : dep.payment_method,
+              date: new Date(dep.submitted_at),
+              status: dep.status,
+              account: dep.account_name,
+              txHash: dep.transaction_hash
+            });
+          });
+        }
+        
+        // Agregar retiros
+        if (result.withdrawals) {
+          result.withdrawals.forEach(wit => {
+            allTransactions.push({
+              id: wit.id,
+              amount: wit.amount,
+              currency: wit.currency || 'USD',
+              type: 'withdrawal',
+              method: wit.withdrawal_type === 'crypto' ? 'Criptomoneda' : 'Banco',
+              date: new Date(wit.requested_at),
+              status: wit.status,
+              account: wit.account_name,
+              txHash: wit.transaction_hash
+            });
+          });
+        }
+        
+        // Agregar transferencias
+        if (result.transfers) {
+          result.transfers.forEach(tra => {
+            allTransactions.push({
+              id: tra.id,
+              amount: tra.amount,
+              currency: tra.currency || 'USD',
+              type: 'transfer',
+              method: 'Transferencia Interna',
+              date: new Date(tra.requested_at),
+              status: tra.status,
+              account: `${tra.from_account_name} → ${tra.to_account_name}`
+            });
+          });
+        }
+        
+        // Ordenar por fecha más reciente
+        allTransactions.sort((a, b) => b.date - a.date);
+        setTransactions(allTransactions);
+        
+      } else {
+        // Si falla, usar datos de ejemplo como fallback
+        const sampleTransactions = [
         { 
           id: '1', 
           amount: 1200, 
@@ -171,9 +244,12 @@ const Wallet = () => {
           toAccount: 'Cuenta 3'
         }
       ];
-      setTransactions(sampleTransactions);
+        setTransactions(sampleTransactions);
+      }
     } catch (error) {
       console.error('Error loading transactions:', error);
+      // En caso de error, intentar con datos locales
+      setTransactions([]);
     }
   };
 
@@ -258,30 +334,45 @@ const Wallet = () => {
     setError('');
 
     try {
-      // Crear registro de transacción
-      const userId = currentUser.id;
-      const transactionData = {
-        user_id: userId,
-        account_id: selectedAccount.id,
-        account_name: selectedAccount.account_name,
-        amount: parseFloat(amount),
-        currency: 'USD',
-        type: activeTab,
-        method: activeTab === 'transferir' ? 'Transferencia Interna' : selectedMethod?.name || selectedMethod,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        ...(selectedCoin && { coin: selectedCoin }),
-        ...(walletAddress && { wallet_address: walletAddress }),
-        ...(transferToAccount && { to_account_id: transferToAccount.id, to_account_name: transferToAccount.account_name })
-      };
+      let result;
+      const amountNum = parseFloat(amount);
 
-      // Guardar en base de datos
-      await DatabaseAdapter.transactions.create(transactionData);
+      // Usar las funciones RPC según el tipo de operación
+      if (activeTab === 'retirar') {
+        // Crear solicitud de retiro
+        result = await transactionService.createWithdrawalRequest({
+          account_id: selectedAccount.id,
+          account_name: selectedAccount.account_name,
+          amount: amountNum,
+          withdrawal_type: selectedMethod?.id === 'crypto' ? 'crypto' : 'bank',
+          crypto_currency: selectedCoin,
+          wallet_address: walletAddress,
+          network: selectedCoin === 'USDT_TRC20' ? 'tron' : 'bsc'
+        });
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Error al crear solicitud de retiro');
+        }
+      } else if (activeTab === 'transferir') {
+        // Crear solicitud de transferencia interna
+        result = await transactionService.createTransferRequest({
+          from_account_id: selectedAccount.id,
+          from_account_name: selectedAccount.account_name,
+          to_account_id: transferToAccount.id,
+          to_account_name: transferToAccount.account_name,
+          amount: amountNum
+        });
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Error al crear solicitud de transferencia');
+        }
+      }
+      // Nota: Los depósitos se manejan diferente (a través del CryptoDepositModal)
 
-      // Actualizar balances localmente (en producción esto se haría en el backend)
+      // Manejar notificaciones según el tipo de operación
       if (activeTab === 'depositar') {
         const depositAmount = parseFloat(amount);
-        setSuccess(`Depósito de $${amount} USD iniciado correctamente`);
+        setSuccess(`Depósito de $${amount} USD iniciado correctamente. Le notificaremos cuando sea procesado.`);
         notifyDeposit(depositAmount, selectedAccount.account_name);
         
         // Send deposit confirmation email
@@ -296,7 +387,7 @@ const Wallet = () => {
         }
       } else if (activeTab === 'retirar') {
         const withdrawAmount = parseFloat(amount);
-        setSuccess(`Retiro de $${amount} USD iniciado correctamente`);
+        setSuccess(`Solicitud de retiro de $${amount} USD enviada. Será procesada en las próximas 24-48 horas.`);
         notifyWithdrawal(withdrawAmount, selectedAccount.account_name);
         
         // Send withdrawal confirmation email  
@@ -311,7 +402,7 @@ const Wallet = () => {
         }
       } else if (activeTab === 'transferir') {
         const transferAmount = parseFloat(amount);
-        setSuccess(`Transferencia de $${amount} USD de ${selectedAccount.account_name} a ${transferToAccount.account_name} iniciada correctamente`);
+        setSuccess(`Solicitud de transferencia de $${amount} USD enviada. Será procesada una vez aprobada.`);
         notifyTransfer(transferAmount, selectedAccount.account_name, transferToAccount.account_name);
       }
 
@@ -348,29 +439,32 @@ const Wallet = () => {
   // Manejar confirmación de depósito crypto
   const handleCryptoDepositConfirmed = async (depositData) => {
     try {
-      // Crear registro de transacción
-      const transactionData = {
-        user_id: currentUser.id,
+      // Crear solicitud de depósito usando RPC (Payroll ya confirmó el pago)
+      const result = await transactionService.createDepositRequest({
         account_id: selectedAccount.id,
         account_name: selectedAccount.account_name,
         amount: parseFloat(amount),
-        currency: 'USD',
-        type: 'depositar',
-        method: 'Criptomoneda',
-        status: 'completed',
-        created_at: new Date().toISOString(),
-        coin: selectedCoin,
+        payment_method: 'crypto',
+        crypto_currency: selectedCoin,
+        crypto_network: depositData.network,
         wallet_address: depositData.walletAddress,
-        tx_hash: depositData.txHash,
-        network: depositData.network
-      };
+        transaction_hash: depositData.txHash,
+        payroll_data: {
+          confirmed: true,
+          amount: depositData.amount,
+          network: depositData.network,
+          tx_hash: depositData.txHash,
+          confirmed_at: new Date().toISOString()
+        }
+      });
 
-      // Guardar en base de datos
-      await DatabaseAdapter.transactions.create(transactionData);
+      if (!result.success) {
+        throw new Error(result.error || 'Error al crear solicitud de depósito');
+      }
 
-      // Actualizar balance localmente
+      // Notificar al usuario
       const depositAmount = parseFloat(amount);
-      setSuccess(`Depósito de $${amount} USD completado exitosamente`);
+      setSuccess(`Depósito de $${amount} USD recibido. Será acreditado en su cuenta una vez procesado por nuestro equipo.`);
       notifyDeposit(depositAmount, selectedAccount.account_name);
 
       // Cerrar modal y resetear
