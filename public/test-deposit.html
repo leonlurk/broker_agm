@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Depósito - Alpha Global Market</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0f0f0f;
+            color: #fff;
+        }
+        .container {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid #333;
+        }
+        h1 {
+            color: #06b6d4;
+            margin-bottom: 10px;
+        }
+        .info {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #06b6d4;
+        }
+        button {
+            background: #06b6d4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0891b2;
+        }
+        button:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        .success {
+            background: #10b981;
+        }
+        .error {
+            background: #ef4444;
+        }
+        #output {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+        .warning {
+            background: #854d0e;
+            color: #fbbf24;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: white;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test de Sistema de Depósitos</h1>
+        <p style="color: #9ca3af;">Herramienta para probar el flujo de depósitos sin enviar dinero real</p>
+        
+        <div class="warning">
+            ⚠️ <strong>IMPORTANTE:</strong> Esta es una herramienta de prueba. Los depósitos creados aquí son ficticios y deben ser eliminados después de las pruebas.
+        </div>
+
+        <div class="info">
+            <h3>Configuración del Test</h3>
+            <label>Email del usuario:</label>
+            <input type="email" id="userEmail" placeholder="tu@email.com" value="">
+            
+            <label>Contraseña:</label>
+            <input type="password" id="userPassword" placeholder="Tu contraseña">
+            
+            <label>Monto (USD):</label>
+            <input type="number" id="amount" value="100" min="1">
+            
+            <label>Red:</label>
+            <select id="network">
+                <option value="USDT_TRC20">TRON (TRC-20)</option>
+                <option value="USDT_ERC20">Ethereum (ERC-20)</option>
+            </select>
+            
+            <label>ID de Cuenta MT5:</label>
+            <input type="text" id="accountId" value="TEST_MT5_001" placeholder="TEST_MT5_001">
+        </div>
+
+        <div>
+            <button onclick="testConnection()">1. Verificar Conexión</button>
+            <button onclick="login()" id="loginBtn">2. Iniciar Sesión</button>
+            <button onclick="createTestDeposit()" id="createBtn" disabled>3. Crear Depósito de Prueba</button>
+            <button onclick="checkDeposits()" id="checkBtn" disabled>4. Ver Mis Depósitos</button>
+            <button onclick="deleteLastDeposit()" id="deleteBtn" disabled>5. Eliminar Último Test</button>
+        </div>
+
+        <div id="output">Esperando acciones...</div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        
+        // Configuración de Supabase
+        const SUPABASE_URL = 'https://gjlztlpwffkphdnjuxoe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqbHp0bHB3ZmZrcGhkbmp1eG9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjQxMDQxMDMsImV4cCI6MjAzOTY4MDEwM30.3wdPPd0tStSvPCYRlSrBWIHYtVE9TLOBOw8gYkvmlTI';
+        
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.supabase = supabase;
+        
+        let lastDepositId = null;
+        
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
+            output.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        window.testConnection = async function() {
+            log('Verificando conexión con Supabase...');
+            try {
+                const { data, error } = await supabase.from('deposits').select('count').limit(1);
+                if (error && error.code !== 'PGRST116') {
+                    throw error;
+                }
+                log('Conexión exitosa con Supabase', 'success');
+                log('URL: ' + SUPABASE_URL);
+            } catch (error) {
+                log('Error de conexión: ' + error.message, 'error');
+            }
+        }
+        
+        window.login = async function() {
+            const email = document.getElementById('userEmail').value;
+            const password = document.getElementById('userPassword').value;
+            
+            if (!email || !password) {
+                log('Por favor ingresa email y contraseña', 'error');
+                return;
+            }
+            
+            log('Iniciando sesión...');
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) throw error;
+                
+                log('Sesión iniciada como: ' + data.user.email, 'success');
+                log('User ID: ' + data.user.id);
+                
+                document.getElementById('createBtn').disabled = false;
+                document.getElementById('checkBtn').disabled = false;
+                document.getElementById('loginBtn').textContent = '✅ Conectado';
+                document.getElementById('loginBtn').disabled = true;
+            } catch (error) {
+                log('Error de login: ' + error.message, 'error');
+            }
+        }
+        
+        window.createTestDeposit = async function() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            const network = document.getElementById('network').value;
+            const accountId = document.getElementById('accountId').value;
+            
+            log('Creando depósito de prueba...');
+            
+            const walletAddress = network === 'USDT_TRC20' 
+                ? 'TEaQgjdWECF4fjzgscF6pA5v2GQvPPhBpR'
+                : '0x38CfeC0B9199d6cA2944df012621F7C60be4b0d9';
+            
+            const networkName = network === 'USDT_TRC20' ? 'TRON' : 'Ethereum';
+            
+            try {
+                const { data, error } = await supabase.rpc('create_deposit_request', {
+                    p_account_id: accountId,
+                    p_account_name: 'Cuenta de Prueba',
+                    p_amount: amount,
+                    p_payment_method: 'crypto',
+                    p_crypto_currency: network,
+                    p_crypto_network: networkName,
+                    p_wallet_address: walletAddress,
+                    p_transaction_hash: 'TEST_' + Date.now(),
+                    p_payroll_data: { 
+                        test_mode: true,
+                        confirmed: true,
+                        amount: amount,
+                        network: networkName
+                    }
+                });
+                
+                if (error) throw error;
+                
+                if (data && data.success) {
+                    lastDepositId = data.deposit_id;
+                    log('DEPÓSITO CREADO EXITOSAMENTE', 'success');
+                    log('ID: ' + data.deposit_id);
+                    log('Monto: $' + amount + ' USD');
+                    log('Red: ' + networkName);
+                    log('Wallet: ' + walletAddress);
+                    log('');
+                    log('➡️ Ahora ve al CRM para ver este depósito');
+                    log('➡️ Sección: Finanzas → Depósitos');
+                    
+                    document.getElementById('deleteBtn').disabled = false;
+                } else {
+                    log('Error: ' + (data?.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                log('Error creando depósito: ' + error.message, 'error');
+            }
+        }
+        
+        window.checkDeposits = async function() {
+            log('Consultando tus depósitos...');
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                const { data, error } = await supabase
+                    .from('deposits')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                
+                if (error) throw error;
+                
+                log('Encontrados ' + data.length + ' depósitos:');
+                data.forEach((dep, i) => {
+                    log(`${i+1}. $${dep.amount} - ${dep.status} - ${new Date(dep.created_at).toLocaleString()}`);
+                    if (dep.payroll_data?.test_mode) {
+                        log('   ⚠️ MODO PRUEBA');
+                    }
+                });
+            } catch (error) {
+                log('Error consultando depósitos: ' + error.message, 'error');
+            }
+        }
+        
+        window.deleteLastDeposit = async function() {
+            if (!lastDepositId) {
+                log('No hay depósito de prueba para eliminar', 'error');
+                return;
+            }
+            
+            log('Eliminando depósito de prueba...');
+            try {
+                const { error } = await supabase
+                    .from('deposits')
+                    .delete()
+                    .eq('id', lastDepositId);
+                
+                if (error) throw error;
+                
+                log('Depósito de prueba eliminado', 'success');
+                lastDepositId = null;
+                document.getElementById('deleteBtn').disabled = true;
+            } catch (error) {
+                log('Error eliminando: ' + error.message, 'error');
+            }
+        }
+        
+        // Auto-verificar conexión al cargar
+        window.addEventListener('load', () => {
+            log('Sistema de pruebas cargado');
+            log('Sigue los pasos numerados para hacer la prueba');
+        });
+    </script>
+</body>
+</html>

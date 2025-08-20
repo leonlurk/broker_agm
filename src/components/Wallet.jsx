@@ -7,6 +7,7 @@ import CryptoDepositModal from './CryptoDepositModal';
 import emailServiceProxy from '../services/emailServiceProxy';
 import transactionService from '../services/transactionService';
 import useTransactionMonitor from '../hooks/useTransactionMonitor';
+import { supabase } from '../supabase/config';
 import { Coins, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
 
 const Wallet = () => {
@@ -94,6 +95,10 @@ const Wallet = () => {
   // Cargar transacciones iniciales
   useEffect(() => {
     loadTransactions();
+    // Hacer supabase disponible globalmente para pruebas
+    if (typeof window !== 'undefined') {
+      window.supabase = supabase;
+    }
   }, [currentUser]);
 
   // Auto-seleccionar cuenta si viene del contexto
