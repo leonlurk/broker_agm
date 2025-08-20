@@ -71,28 +71,29 @@ class KYCService {
         addressDocument
       } = kycData;
 
-      // Insert KYC submission into database
-      const { data, error } = await supabase
-        .from('kyc_verifications')
-        .insert({
-          user_id: userId,
-          email: email,
-          residence_country: residenceCountry,
-          document_country: documentCountry,
-          document_type: documentType,
-          front_document_url: frontDocument,
-          back_document_url: backDocument,
-          selfie_url: selfieDocument,  // Cambio: selfie_document_url -> selfie_url
-          address_proof_url: addressDocument,
-          status: 'pending',
-          submitted_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+      logger.info('Submitting KYC verification via RPC function');
+      
+      // Use RPC function instead of direct insert
+      // IMPORTANT: Using RPC to avoid constraint issues
+      const { data, error } = await supabase.rpc('submit_kyc_verification', {
+        p_residence_country: residenceCountry || null,
+        p_document_country: documentCountry || null,
+        p_document_type: documentType || null,
+        p_front_document_url: frontDocument || null,
+        p_back_document_url: backDocument || null,
+        p_selfie_url: selfieDocument || null,
+        p_address_proof_url: addressDocument || null
+      });
 
       if (error) {
         logger.error('Error submitting KYC:', error);
         return { success: false, error: error.message };
+      }
+
+      // Check if RPC returned success
+      if (!data || !data.success) {
+        logger.error('KYC submission failed:', data?.error || 'Unknown error');
+        return { success: false, error: data?.error || 'Failed to submit KYC verification' };
       }
 
       // Send notification email to admin
@@ -103,7 +104,7 @@ class KYCService {
       }
 
       logger.info(`KYC verification submitted for user ${userId}`);
-      return { success: true, verificationId: data.id };
+      return { success: true, verificationId: data.data?.id || data.verificationId };
     } catch (error) {
       logger.error('Error in submitKYCVerification:', error);
       return { success: false, error: error.message };

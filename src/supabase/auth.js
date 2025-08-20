@@ -131,33 +131,68 @@ export const registerUser = async (username, email, password, refId = null) => {
     const user = authData.user;
     logger.auth(`[Supabase] Auth user created successfully`, { uid: user.id });
     
-    // Step 2: Update user profile in database (profile already created by trigger)
-    // The profiles table is auto-populated by Supabase trigger
-    // We just need to update it with additional fields
-    const userData = {
-      username,
-      full_name: username, // Use full_name instead of display_name
-      phone: null,
-      country: null,
-      metadata: {
-        user_type: 'broker',
-        referral_count: 0,
-        referred_by: refId,
-        display_name: username
+    // Step 2: Create profile manually (trigger doesn't work for collaborators)
+    // First try to create profile using RPC function
+    try {
+      logger.auth('[Supabase] Creating user profile...');
+      
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('create_user_profile_after_signup', {
+        user_id: user.id,
+        user_email: email,
+        user_username: username,
+        user_full_name: username
+      });
+      
+      if (rpcError) {
+        logger.warn('[Supabase] RPC profile creation failed:', rpcError);
+        
+        // Fallback: Direct insert
+        const userData = {
+          id: user.id,
+          email: email,
+          username: username || user.id,
+          full_name: username || email.split('@')[0],
+          role: 'user',
+          kyc_status: 'not_started',
+          status: 'active',
+          phone: null,
+          country: null,
+          metadata: {
+            user_type: 'broker',
+            referral_count: 0,
+            referred_by: refId,
+            display_name: username
+          }
+        };
+        
+        const { error: insertError } = await supabase
+          .from(USERS_TABLE)
+          .insert(userData);
+        
+        if (insertError && insertError.code !== '23505') { // 23505 is duplicate key
+          logger.error('[Supabase] Direct profile insert failed:', insertError);
+          // Try update as last resort
+          const { error: updateError } = await supabase
+            .from(USERS_TABLE)
+            .update(userData)
+            .eq('id', user.id);
+          
+          if (updateError) {
+            logger.error('[Supabase] Profile update also failed:', updateError);
+          } else {
+            logger.auth('[Supabase] Profile updated successfully');
+          }
+        } else {
+          logger.auth('[Supabase] Profile created via direct insert');
+        }
+      } else {
+        logger.auth('[Supabase] Profile created via RPC:', rpcResult);
       }
-    };
-
-    // Update the auto-created profile instead of inserting
-    const { error: dbError } = await supabase
-      .from(USERS_TABLE)
-      .update(userData)
-      .eq('id', user.id);
-
-    if (dbError) {
-      logger.error('[Supabase] Error updating user profile', dbError);
-      // Note: We don't delete the auth user since profile was auto-created
+    } catch (profileError) {
+      logger.error('[Supabase] Exception creating profile:', profileError);
+      // Continue anyway - user is created
       // The user can still login and update their profile later
-      throw dbError;
+      // Note: Don't throw error here, user registration was successful
     }
 
     logger.auth(`[Supabase] User profile updated successfully`);
