@@ -62,7 +62,7 @@ const Wallet = () => {
   
   // Hook para monitoreo en tiempo real de transacciones
   const { refresh: refreshMonitor } = useTransactionMonitor(
-    currentUser?.uid,
+    currentUser?.id,
     (update) => {
       console.log('Transaction status updated:', update);
       // Recargar transacciones cuando hay un cambio de estado

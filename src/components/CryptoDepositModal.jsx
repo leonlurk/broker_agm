@@ -18,6 +18,7 @@ const CryptoDepositModal = ({
   const [depositStatus, setDepositStatus] = useState('waiting'); // waiting, detected, confirmed
   const [depositData, setDepositData] = useState(null);
   const [error, setError] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Mapeo de monedas a redes
   const getCoinNetwork = (coinId) => {
@@ -35,7 +36,7 @@ const CryptoDepositModal = ({
 
   // Polling para verificar el estado del depósito en el backend
   useEffect(() => {
-    if (!walletInfo || depositStatus !== 'waiting') return;
+    if (!walletInfo || depositStatus !== 'waiting' || !isAuthenticated) return;
 
     const checkDepositStatus = async () => {
       try {
@@ -65,26 +66,29 @@ const CryptoDepositModal = ({
     // Verificar cada 10 segundos
     const interval = setInterval(checkDepositStatus, 10000);
     
-    // Verificar inmediatamente
-    checkDepositStatus();
+    // Verificar inmediatamente solo si estamos autenticados
+    if (isAuthenticated) {
+      checkDepositStatus();
+    }
 
     return () => clearInterval(interval);
-  }, [walletInfo, depositStatus, onDepositConfirmed]);
+  }, [walletInfo, depositStatus, onDepositConfirmed, isAuthenticated]);
 
   const generateWallet = async () => {
     setLoading(true);
     setError('');
     
     try {
-      // Usar wallet fija para TRON
+      // Usar wallets fijas de la empresa para recibir depósitos
+      // IMPORTANTE: Estas son las billeteras donde los clientes envían sus depósitos
       const fixedWallet = {
         tron: {
-          address: 'TX6uUsVShHYr59Uc7htYvmEHeY47pgehP4',
-          qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TX6uUsVShHYr59Uc7htYvmEHeY47pgehP4`
+          address: 'TEaQgjdWECF4fjzgscF6pA5v2GQvPPhBpR', // Billetera TRON de la empresa
+          qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TEaQgjdWECF4fjzgscF6pA5v2GQvPPhBpR`
         },
         bsc: {
-          address: '0x4e9d9e0c1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p',
-          qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=0x4e9d9e0c1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p`
+          address: '0x38CfeC0B9199d6cA2944df012621F7C60be4b0d9', // Billetera BSC de la empresa
+          qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=0x38CfeC0B9199d6cA2944df012621F7C60be4b0d9`
         }
       };
       
@@ -102,6 +106,10 @@ const CryptoDepositModal = ({
         
         if (!authResult.success) {
           console.warn('Error de autenticación:', authResult.error);
+          setError('Error de autenticación con el servicio de pagos');
+        } else {
+          setIsAuthenticated(true);
+          console.log('Autenticación exitosa con Payroll API');
         }
       }
     } catch (error) {
