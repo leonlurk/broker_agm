@@ -1,6 +1,7 @@
 {
   "title": "Panel de Control",
   "welcome": "Bienvenido, {{name}}",
+  "totalBalance": "Balance Total",
   "sidebar": {
     "menu": "Menú",
     "main": "Principal",

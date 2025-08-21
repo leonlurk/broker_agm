@@ -13,6 +13,11 @@
     "title": "Personal Information",
     "personalInfo": "Personal Information",
     "contactInfo": "Contact Information",
+    "userInformation": "User Information",
+    "name": "Name",
+    "lastName": "Last Name",
+    "saveChanges": "Save changes",
+    "saving": "Saving",
     "fields": {
       "firstName": "First Name",
       "lastName": "Last Name",
@@ -33,6 +38,15 @@
       "cancel": "Cancel",
       "uploadPhoto": "Upload Photo",
       "removePhoto": "Remove Photo"
+    },
+    "messages": {
+      "savingChanges": "Saving changes...",
+      "uploadingImage": "Uploading image...",
+      "imageUploaded": "Image uploaded",
+      "noChanges": "No changes to save",
+      "profileUpdated": "Profile updated successfully",
+      "saveError": "Could not save changes",
+      "correctErrors": "Please correct the form errors"
     }
   },
   "security": {

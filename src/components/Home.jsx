@@ -478,7 +478,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                      <h3 className="text-xl font-bold text-white mb-1 uppercase">
                            {account.account_name}
                          </h3>
-                     <p className="text-sm text-gray-300">{t('dashboard.totalBalance')}</p>
+                     <p className="text-sm text-gray-300">{t('dashboard:totalBalance')}</p>
                      <div className="flex items-baseline gap-2 mb-4">
                        <p className="text-2xl text-white">
                          {(account.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}

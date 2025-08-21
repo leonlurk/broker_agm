@@ -694,7 +694,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // Función helper para obtener el estado de la cuenta
   const getAccountStatus = (account) => {
-    if (!account) return { status: t('trading.accounts.status.inactive'), statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
+    if (!account) return { status: t('accounts.status.inactive'), statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
     
     // Usar el status si existe, sino determinar basado en balance
     if (account.status) {
@@ -708,9 +708,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       // Normalizar el texto mostrado
       let displayStatus = account.status;
       if (isActive) {
-        displayStatus = t('trading.accounts.status.active');
+        displayStatus = t('accounts.status.active');
       } else if (isInactive) {
-        displayStatus = t('trading.accounts.status.inactive');
+        displayStatus = t('accounts.status.inactive');
       }
       
       return {
@@ -724,9 +724,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     // Fallback basado en balance
     const balance = account.balance || 0;
     if (balance > 0) {
-      return { status: t('trading.accounts.status.active'), statusColor: 'bg-green-800 bg-opacity-30 text-green-400' };
+      return { status: t('accounts.status.active'), statusColor: 'bg-green-800 bg-opacity-30 text-green-400' };
     } else {
-      return { status: t('trading.accounts.status.inactive'), statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
+      return { status: t('accounts.status.inactive'), statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
     }
   };
   

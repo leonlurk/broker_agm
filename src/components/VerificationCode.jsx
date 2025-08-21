@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const VerificationCode = ({ onContinue }) => {
+  const { t } = useTranslation('auth');
   const [code, setCode] = useState(['', '', '', '']);
 
   const handleChange = (index, value) => {
@@ -34,13 +36,13 @@ const VerificationCode = ({ onContinue }) => {
       </div>
       
       <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold text-white">Ingresa el código de verificación</h2>
+        <h2 className="text-xl font-semibold text-white">{t('verification.title')}</h2>
         <p className="text-gray-400 mt-2 text-sm">
-          Si no has recibido el código, <button 
+          {t('verification.resendCode')} <button 
             type="button" 
             onClick={handleResendCode}
             className="text-white hover:text-white bg-transparent">
-            reenviar
+            {t('verification.resend')}
           </button>
         </p>
       </div>
@@ -66,7 +68,7 @@ const VerificationCode = ({ onContinue }) => {
         className="w-full py-3 px-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium shadow-lg relative overflow-hidden group"
         >
         <span className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-        <span className="relative z-10">Continuar</span>
+        <span className="relative z-10">{t('verification.button')}</span>
         </button>
       </form>
     </div>

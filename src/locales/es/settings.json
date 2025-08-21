@@ -13,6 +13,11 @@
     "title": "Información Personal",
     "personalInfo": "Información Personal",
     "contactInfo": "Información de Contacto",
+    "userInformation": "Información de Usuario",
+    "name": "Nombre",
+    "lastName": "Apellido",
+    "saveChanges": "Guardar cambios",
+    "saving": "Guardando",
     "fields": {
       "firstName": "Nombre",
       "lastName": "Apellido",
@@ -33,6 +38,15 @@
       "cancel": "Cancelar",
       "uploadPhoto": "Subir Foto",
       "removePhoto": "Eliminar Foto"
+    },
+    "messages": {
+      "savingChanges": "Guardando cambios...",
+      "uploadingImage": "Subiendo imagen...",
+      "imageUploaded": "Imagen subida",
+      "noChanges": "No hay cambios para guardar",
+      "profileUpdated": "Perfil actualizado con éxito",
+      "saveError": "No se pudieron guardar los cambios",
+      "correctErrors": "Por favor, corrige los errores del formulario"
     }
   },
   "security": {

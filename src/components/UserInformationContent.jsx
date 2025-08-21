@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { Camera, Mail, ArrowLeft, Loader, UploadCloud, Trash2, Search, ChevronDown, Calendar } from 'lucide-react';
 import axios from 'axios';
 import { z } from 'zod';
-import useTranslation from '../hooks/useTranslation';
+import { useTranslation } from 'react-i18next';
 
 // Validation Schema with Zod - will be created inside component to use translations
 
@@ -43,16 +43,16 @@ const SkeletonLoader = () => (
 
 const UserInformationContent = ({ onBack }) => {
   const { currentUser, refreshUserData } = useAuth();
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings');
   
-  // Validation Schema with Zod using translations
+  // Validation Schema with Zod using translations - All fields optional
   const profileSchema = z.object({
-    nombre: z.string().min(2, { message: t('validation.nameMinLength') }),
-    apellido: z.string().min(2, { message: t('validation.lastNameMinLength') }),
-    pais: z.string().min(1, { message: t('validation.countryRequired') }),
-    ciudad: z.string().min(2, { message: t('validation.cityMinLength') }),
+    nombre: z.string().min(2, { message: t('validation.nameMinLength') }).or(z.literal('')),
+    apellido: z.string().min(2, { message: t('validation.lastNameMinLength') }).or(z.literal('')),
+    pais: z.string().min(1, { message: t('validation.countryRequired') }).or(z.literal('')),
+    ciudad: z.string().min(2, { message: t('validation.cityMinLength') }).or(z.literal('')),
     phonecode: z.string(),
-    phonenumber: z.string().min(6, { message: t('validation.phoneNumberTooShort') }),
+    phonenumber: z.string().min(6, { message: t('validation.phoneNumberTooShort') }).or(z.literal('')),
     photourl: z.string().refine(
       (val) => {
         if (!val) return true;
@@ -222,38 +222,73 @@ const UserInformationContent = ({ onBack }) => {
     e.preventDefault();
     setErrors({});
     
+    // Filter out fields that have values and validate only those
+    const fieldsWithValues = {};
+    Object.keys(formData).forEach(key => {
+      if (formData[key] && formData[key] !== '') {
+        fieldsWithValues[key] = formData[key];
+      }
+    });
+    
+    // Validate only fields with values
     const validationResult = profileSchema.safeParse(formData);
 
     if (!validationResult.success) {
       const fieldErrors = {};
       validationResult.error.errors.forEach(err => {
-        fieldErrors[err.path[0]] = err.message;
+        // Only show error if field has a value
+        if (formData[err.path[0]] && formData[err.path[0]] !== '') {
+          fieldErrors[err.path[0]] = err.message;
+        }
       });
-      setErrors(fieldErrors);
-      toast.error('Por favor, corrige los errores del formulario.');
-      return;
+      
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors(fieldErrors);
+        toast.error(t('profile.messages.correctErrors'));
+        return;
+      }
     }
 
     setFormSaving(true);
-    const toastId = toast.loading('Guardando cambios...');
+    const toastId = toast.loading(t('profile.messages.savingChanges'));
 
     try {
-      let updatedData = { ...formData };
+      // Only update fields that have changed
+      const changedFields = {};
+      let hasChanges = false;
+      
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== initialData[key]) {
+          changedFields[key] = formData[key];
+          hasChanges = true;
+        }
+      });
 
       if (profileImageFile) {
-        const toastIdUpload = toast.loading('Subiendo imagen...');
+        hasChanges = true;
+        const toastIdUpload = toast.loading(t('profile.messages.uploadingImage'));
         // Generar nombre único para evitar conflictos
         const fileName = `${Date.now()}_${profileImageFile.name}`;
         const userId = currentUser.id;
         const uploadResult = await StorageAdapter.uploadProfilePicture(userId, profileImageFile, fileName);
         if (!uploadResult.success) throw new Error(uploadResult.error);
-        updatedData.photourl = uploadResult.url;
-        toast.success('Imagen subida', { id: toastIdUpload });
+        changedFields.photourl = uploadResult.url;
+        toast.success(t('profile.messages.imageUploaded'), { id: toastIdUpload });
+      }
+
+      if (!hasChanges) {
+        toast.dismiss(toastId);
+        toast.info(t('profile.messages.noChanges'));
+        setFormSaving(false);
+        return;
       }
 
       const userId = currentUser.id;
-      const { error: updateError } = await DatabaseAdapter.users.update(userId, updatedData);
+      const { error: updateError } = await DatabaseAdapter.users.update(userId, changedFields);
       if (updateError) throw updateError;
+      
+      // Update local state with the changed fields
+      const updatedData = { ...formData, ...changedFields };
       
       setFormData(updatedData);
       setInitialData(updatedData);
@@ -264,10 +299,10 @@ const UserInformationContent = ({ onBack }) => {
         await refreshUserData();
       }
 
-      toast.success('Perfil actualizado con éxito', { id: toastId });
+      toast.success(t('profile.messages.profileUpdated'), { id: toastId });
     } catch (error) {
       console.error("Error saving profile:", error);
-      toast.error('No se pudieron guardar los cambios.', { id: toastId });
+      toast.error(t('profile.messages.saveError'), { id: toastId });
     } finally {
       setFormSaving(false);
     }
@@ -476,7 +511,7 @@ const UserInformationContent = ({ onBack }) => {
               }}
             >
               <span className={formData.pais ? 'text-white' : 'text-gray-400'}>
-                {formData.pais || 'Argentina'}
+                {formData.pais || t('profile.fields.country')}
               </span>
               <ChevronDown 
                 size={20} 
@@ -529,7 +564,7 @@ const UserInformationContent = ({ onBack }) => {
               name="ciudad" 
               value={formData.ciudad} 
               onChange={handleInputChange}
-              placeholder="Concepción del Uruguay"
+              placeholder={t('profile.fields.city')}
               className={`w-full border ${errors.ciudad ? 'border-red-500' : 'border-[rgba(60,60,60,1)]'} rounded-50 px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-cyan-500`}
               style={{ 
                 fontFamily: 'Poppins', 

@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { AuthAdapter } from '../services/database.adapter';
 import emailServiceProxy from '../services/emailServiceProxy';
+import { useTranslation } from 'react-i18next';
 
 const ForgotPassword = ({ onContinue, onLoginClick }) => {
+  const { t } = useTranslation('auth');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -19,14 +21,14 @@ const ForgotPassword = ({ onContinue, onLoginClick }) => {
       const { success, error } = await AuthAdapter.resetPassword(email);
       
       if (error) {
-        throw new Error(error.message || 'Error al enviar el correo de recuperación');
+        throw new Error(error.message || t('forgotPassword.errors.sendFailed'));
       }
       
       // Send password reset email through Brevo
       try {
         const resetLink = `https://alphaglobalmarket.io/reset-password?email=${encodeURIComponent(email)}`;
         await emailServiceProxy.sendPasswordResetEmail(
-          { email: email, name: username || 'Usuario' },
+          { email: email, name: username || t('common.user') },
           resetLink
         );
         console.log('[ForgotPassword] Password reset email sent via Brevo');
@@ -35,13 +37,13 @@ const ForgotPassword = ({ onContinue, onLoginClick }) => {
         // Don't block the flow if Brevo fails, Firebase already sent one
       }
       
-      setMessage('Se ha enviado un correo de recuperación a tu dirección de email');
+      setMessage(t('forgotPassword.success'));
       setTimeout(() => {
         onContinue();
       }, 3000);
     } catch (err) {
       console.error('Password reset error:', err);
-      setError(err.message || 'Error al enviar el correo de recuperación');
+      setError(err.message || t('forgotPassword.errors.general'));
     } finally {
       setLoading(false);
     }
@@ -73,7 +75,7 @@ const ForgotPassword = ({ onContinue, onLoginClick }) => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20"
-              placeholder="Usuario"
+              placeholder={t('fields.username')}
               required
             />
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,7 +89,7 @@ const ForgotPassword = ({ onContinue, onLoginClick }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20"
-              placeholder="Correo Electronico"
+              placeholder={t('fields.email')}
               required
             />
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,12 +104,12 @@ const ForgotPassword = ({ onContinue, onLoginClick }) => {
         className="w-full py-3 px-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium shadow-lg relative overflow-hidden group"
         >
         <span className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-        <span className="relative z-10">{loading ? 'Enviando...' : 'Continuar'}</span>
+        <span className="relative z-10">{loading ? t('forgotPassword.loading') : t('forgotPassword.button')}</span>
         </button>
 
         <div className="mt-4 text-center">
           <p className="text-gray-400 mt-1">
-            ¿Recordaste tu contraseña? <button type="button" onClick={onLoginClick} className="text-white font-semibold bg-transparent">Iniciar Sesión</button>
+            {t('forgotPassword.backToLogin')} <button type="button" onClick={onLoginClick} className="text-white font-semibold bg-transparent">{t('login.signIn')}</button>
           </p>
         </div>
       </form>

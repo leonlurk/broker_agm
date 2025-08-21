@@ -1,6 +1,7 @@
 {
   "title": "Dashboard",
   "welcome": "Welcome, {{name}}",
+  "totalBalance": "Total Balance",
   "sidebar": {
     "menu": "Menu",
     "main": "Main",

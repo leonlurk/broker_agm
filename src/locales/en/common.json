@@ -118,6 +118,7 @@
     "selectAccount": "Select account",
     "accountNumber": "Account number",
     "balance": "Balance",
-    "noAccountsAvailable": "No accounts available"
+    "noAccountsAvailable": "No accounts available",
+    "user": "User"
   }
 }
