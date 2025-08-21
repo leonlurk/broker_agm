@@ -10,6 +10,7 @@ import { DatabaseAdapter } from '../services/database.adapter';
 import CustomDropdown from './utils/CustomDropdown';
 import CustomTooltip from './utils/CustomTooltip';
 import { useTranslation } from 'react-i18next';
+import i18n from '../i18n/config';
 // Importar servicio optimizado
 import accountMetricsOptimized from '../services/accountMetricsOptimized';
 import { 
@@ -130,26 +131,26 @@ const allInstruments = [...forexInstruments, ...stockInstruments, ...cryptoInstr
 
 // Options for custom dropdowns - will be translated inside component
 const typeOptions = [
-  { value: 'Todos', label: 'trading.filters.all' },
-  { value: 'Compra', label: 'trading.positions.types.buy' },
-  { value: 'Venta', label: 'trading.positions.types.sell' },
+  { value: 'all', label: 'trading.filters.all' },
+  { value: 'buy', label: 'trading.positions.types.buy' },
+  { value: 'sell', label: 'trading.positions.types.sell' },
 ];
 
 const profitLossOptions = [
-  { value: 'Todos', label: 'trading.filters.all' },
-  { value: 'Ganancia', label: 'trading.filters.profit' },
-  { value: 'Pérdida', label: 'trading.filters.loss' },
+  { value: 'all', label: 'trading.filters.all' },
+  { value: 'profit', label: 'trading.filters.profit' },
+  { value: 'loss', label: 'trading.filters.loss' },
 ];
 
 const benefitChartFilterOptions = [
-  { value: 'Último mes', label: 'trading.filters.lastMonth' },
-  { value: 'Últimos 3 meses', label: 'trading.filters.lastThreeMonths' },
-  { value: 'Último año', label: 'trading.filters.lastYear' },
+  { value: 'lastMonth', label: 'trading.filters.lastMonth' },
+  { value: 'lastThreeMonths', label: 'trading.filters.lastThreeMonths' },
+  { value: 'lastYear', label: 'trading.filters.lastYear' },
 ];
 
 const rendimientoPeriodOptions = [
-  { value: 'Mensual', label: 'trading.filters.monthly' },
-  { value: 'Trimestral', label: 'trading.filters.quarterly' },
+  { value: 'monthly', label: 'trading.filters.monthly' },
+  { value: 'quarterly', label: 'trading.filters.quarterly' },
 ];
 
 const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerRef }) => {
@@ -182,7 +183,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     return navigationParams?.viewMode === 'details' ? navigationParams.accountId : null;
   };
   
-  const [activeTab, setActiveTab] = useState('Todos');
+  // Inicializar activeTab con 'Todos' traducido
+  const [activeTab, setActiveTab] = useState(() => t('accounts.types.all'));
   const [selectedAccountId, setSelectedAccountId] = useState(getInitialSelectedAccountId());
   const [viewMode, setViewMode] = useState(getInitialViewMode()); 
   
@@ -205,11 +207,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   
   // Estados para filtros del historial de operaciones
   const [historyFilters, setHistoryFilters] = useState({
-    instrument: 'Todos',
-    type: 'Todos',
+    instrument: 'all',
+    type: 'all',
     dateFrom: '',
     dateTo: '',
-    profitLoss: 'Todos'
+    profitLoss: 'all'
   });
   
   // Estados para datos reales de MT5
@@ -234,13 +236,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const instrumentDropdownRef = useRef(null);
 
   // Estados para el gráfico de beneficio total
-  const [benefitChartFilter, setBenefitChartFilter] = useState('Último mes');
-  const [benefitChartTab, setBenefitChartTab] = useState(t('trading.benefitTotal'));
+  const [benefitChartFilter, setBenefitChartFilter] = useState('lastMonth');
+  const [benefitChartTab, setBenefitChartTab] = useState('benefitTotal');
   
   // Estados para filtros del gráfico de rendimiento
   const [rendimientoFilters, setRendimientoFilters] = useState({
     year: '2025',
-    period: 'Mensual'
+    period: 'monthly'
   });
   const [barChartTooltip, setBarChartTooltip] = useState(null);
 
@@ -344,7 +346,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   };
 
   const { favorites: favoriteFilteredInstruments, nonFavorites: nonFavoriteFilteredInstruments } = getFilteredInstrumentsForDropdown();
-  const selectedInstrumentLabel = allInstruments.find(item => item.value === historyFilters.instrument)?.label || t('filters.all');
+  const selectedInstrumentLabel = historyFilters.instrument === 'all' ? t('filters.all') : allInstruments.find(item => item.value === historyFilters.instrument)?.label || t('filters.all');
   // --- End Favorite Instruments Logic ---
 
   // Función para copiar al portapapeles
@@ -446,9 +448,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const getAllAccountsFromContext = () => {
     const allAccountsList = getAllAccounts();
     return {
-      [t('trading.all')]: allAccountsList,
-      [t('accounts.live')]: getAccountsByCategory(ACC_CAT.REAL),
-      [t('accounts.demo')]: getAccountsByCategory(ACC_CAT.DEMO),
+      [t('accounts.types.all')]: allAccountsList,
+      [t('accounts.types.real')]: getAccountsByCategory(ACC_CAT.REAL),
+      [t('accounts.types.demo')]: getAccountsByCategory(ACC_CAT.DEMO),
       ['Copytrading']: getAccountsByCategory(ACC_CAT.COPYTRADING),
       ['PAMM']: getAccountsByCategory(ACC_CAT.PAMM)
     };
@@ -456,6 +458,24 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   const allAccounts = getAllAccountsFromContext();
   const accountsForCurrentTab = allAccounts[activeTab] || [];
+  
+  // Debug logging
+  console.log('[TradingAccounts] Current state:', {
+    activeTab,
+    allAccountsKeys: Object.keys(allAccounts),
+    accountsForCurrentTab: accountsForCurrentTab.length,
+    isLoading,
+    error
+  });
+  
+  // Actualizar activeTab si cambia el idioma o no hay tab activa
+  useEffect(() => {
+    const accountKeys = Object.keys(allAccounts);
+    if ((!activeTab || !accountKeys.includes(activeTab)) && accountKeys.length > 0) {
+      console.log('[TradingAccounts] Setting activeTab to:', accountKeys[0]);
+      setActiveTab(accountKeys[0]);
+    }
+  }, [activeTab, i18n.language]); // Depender del idioma para actualizar cuando cambie
 
   // Manejar navegación desde Home.jsx y actualizar la pestaña activa
   useEffect(() => {
@@ -1283,7 +1303,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     const dataSource = realHistory?.operations || historialData;
     return dataSource.filter(item => {
       // Filtro por instrumento
-      if (historyFilters.instrument !== 'Todos') {
+      if (historyFilters.instrument !== 'all') {
         // Normalizar ambos formatos (EUR/USD -> EURUSD)
         const normalizedFilter = historyFilters.instrument.replace('/', '');
         const normalizedInstrument = item.instrumento?.replace('/', '') || '';
@@ -1293,15 +1313,20 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       }
       
       // Filtro por tipo
-      if (historyFilters.type !== 'Todos' && item.tipo !== historyFilters.type) {
-        return false;
+      if (historyFilters.type !== 'all') {
+        const translatedType = historyFilters.type === 'buy' ? t('positions.types.buy') : 
+                               historyFilters.type === 'sell' ? t('positions.types.sell') : 
+                               historyFilters.type;
+        if (item.tipo !== translatedType) {
+          return false;
+        }
       }
       
       // Filtro por ganancia/pérdida
-      if (historyFilters.profitLoss === 'Ganancia' && item.ganancia <= 0) {
+      if (historyFilters.profitLoss === 'profit' && item.ganancia <= 0) {
         return false;
       }
-      if (historyFilters.profitLoss === 'Pérdida' && item.ganancia >= 0) {
+      if (historyFilters.profitLoss === 'loss' && item.ganancia >= 0) {
         return false;
       }
       
@@ -1333,9 +1358,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       
       // Tomar los últimos puntos según el filtro
       let dataPoints = realBalanceHistory;
-      if (benefitChartFilter === 'Último mes') {
+      if (benefitChartFilter === 'lastMonth') {
         dataPoints = realBalanceHistory.slice(-30); // Últimos 30 días
-      } else if (benefitChartFilter === 'Últimos 3 meses') {
+      } else if (benefitChartFilter === 'lastThreeMonths') {
         dataPoints = realBalanceHistory.slice(-90); // Últimos 90 días
       }
       
@@ -1357,11 +1382,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     let dataToProcess = realHistory?.operations || historialData;
     
     // Aplicar filtros del historial si están activos
-    if (historyFilters.instrument !== 'Todos') {
+    if (historyFilters.instrument !== 'all') {
       dataToProcess = dataToProcess.filter(item => item.instrumento === historyFilters.instrument);
     }
     
-    if (historyFilters.type !== 'Todos') {
+    if (historyFilters.type !== 'all') {
       dataToProcess = dataToProcess.filter(item => item.tipo === historyFilters.type);
     }
     
@@ -1386,15 +1411,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     // Determinar máximo de puntos según dispositivo
     maxPoints = isMobile ? 6 : 12;
     
-    if (benefitChartFilter === 'Último año') {
+    if (benefitChartFilter === 'lastYear') {
       startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
       endDate = new Date(now);
       dateFormat = isMobile ? 'quarter' : 'month'; // Trimestres en móvil, meses en desktop
-    } else if (benefitChartFilter === 'Últimos 3 meses') {
+    } else if (benefitChartFilter === 'lastThreeMonths') {
       startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
       endDate = new Date(now);
       dateFormat = isMobile ? 'month' : 'week'; // Meses en móvil, semanas en desktop
-    } else if (benefitChartFilter === 'Último mes') {
+    } else if (benefitChartFilter === 'lastMonth') {
       startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
       endDate = new Date(now);
       dateFormat = isMobile ? 'week' : 'day'; // Semanas en móvil, días en desktop
@@ -1534,11 +1559,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     let dataToProcess = historialData;
     
     // Aplicar mismos filtros que el gráfico de beneficio
-    if (historyFilters.instrument !== 'Todos') {
+    if (historyFilters.instrument !== 'all') {
       dataToProcess = dataToProcess.filter(item => item.instrumento === historyFilters.instrument);
     }
     
-    if (historyFilters.type !== 'Todos') {
+    if (historyFilters.type !== 'all') {
       dataToProcess = dataToProcess.filter(item => item.tipo === historyFilters.type);
     }
     
@@ -1560,15 +1585,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     const now = new Date();
     let startDate, endDate, dateFormat;
     
-    if (benefitChartFilter === 'Último año') {
+    if (benefitChartFilter === 'lastYear') {
       startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
       endDate = new Date(now);
       dateFormat = 'month';
-    } else if (benefitChartFilter === 'Últimos 3 meses') {
+    } else if (benefitChartFilter === 'lastThreeMonths') {
       startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
       endDate = new Date(now);
       dateFormat = 'week';
-    } else if (benefitChartFilter === 'Último mes') {
+    } else if (benefitChartFilter === 'lastMonth') {
       startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
       endDate = new Date(now);
       dateFormat = 'day';
@@ -1686,11 +1711,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     let dataToProcess = historialData;
     
     // Aplicar mismos filtros
-    if (historyFilters.instrument !== 'Todos') {
+    if (historyFilters.instrument !== 'all') {
       dataToProcess = dataToProcess.filter(item => item.instrumento === historyFilters.instrument);
     }
     
-    if (historyFilters.type !== 'Todos') {
+    if (historyFilters.type !== 'all') {
       dataToProcess = dataToProcess.filter(item => item.tipo === historyFilters.type);
     }
     
@@ -1712,15 +1737,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     const now = new Date();
     let startDate, endDate, dateFormat;
     
-    if (benefitChartFilter === 'Último año') {
+    if (benefitChartFilter === 'lastYear') {
       startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
       endDate = new Date(now);
       dateFormat = 'month';
-    } else if (benefitChartFilter === 'Últimos 3 meses') {
+    } else if (benefitChartFilter === 'lastThreeMonths') {
       startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
       endDate = new Date(now);
       dateFormat = 'week';
-    } else if (benefitChartFilter === 'Último mes') {
+    } else if (benefitChartFilter === 'lastMonth') {
       startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
       endDate = new Date(now);
       dateFormat = 'day';
@@ -1813,9 +1838,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Obtener datos según el tab seleccionado
   const getChartDataByTab = () => {
     switch (benefitChartTab) {
-      case t('trading.accounts.fields.balance'):
+      case 'balance':
         return generateBalanceChartData();
-      case t('trading.charts.drawdown'):
+      case 'drawdown':
         return generateDrawdownChartData();
       default:
         return benefitChartData;
@@ -1919,15 +1944,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     // Si no hay historial de balance, retornar array vacío con estructura
     if (!realBalanceHistory || realBalanceHistory.length === 0) {
       // Retornar estructura vacía para evitar errores en el gráfico
-      if (rendimientoFilters.period === 'Mensual') {
+      if (rendimientoFilters.period === 'monthly') {
         const months = [t('trading.months.jan'), t('trading.months.feb'), t('trading.months.mar'), t('trading.months.apr'), t('trading.months.may'), t('trading.months.jun'), t('trading.months.jul'), t('trading.months.aug'), t('trading.months.sep'), t('trading.months.oct'), t('trading.months.nov'), t('trading.months.dec')];
         return months.map(month => ({ name: month, value: 0 }));
-      } else if (rendimientoFilters.period === 'Trimestral') {
+      } else if (rendimientoFilters.period === 'quarterly') {
         return [
-          { name: '1er Trimestre', value: 0 },
-          { name: '2do Trimestre', value: 0 },
-          { name: '3er Trimestre', value: 0 },
-          { name: '4to Trimestre', value: 0 }
+          { name: t('filters.quarter1'), value: 0 },
+          { name: t('filters.quarter2'), value: 0 },
+          { name: t('filters.quarter3'), value: 0 },
+          { name: t('filters.quarter4'), value: 0 }
         ];
       } else {
         return [{ name: '2025', value: 0 }];
@@ -1945,7 +1970,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       return itemYear === selectedYear;
     });
     
-    if (rendimientoFilters.period === 'Mensual') {
+    if (rendimientoFilters.period === 'monthly') {
       const months = [t('trading.months.jan'), t('trading.months.feb'), t('trading.months.mar'), t('trading.months.apr'), t('trading.months.may'), t('trading.months.jun'), t('trading.months.jul'), t('trading.months.aug'), t('trading.months.sep'), t('trading.months.oct'), t('trading.months.nov'), t('trading.months.dec')];
       
       return months.map((monthName, index) => {
@@ -1970,12 +1995,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         return { name: monthName, value: 0 };
       });
       
-    } else if (rendimientoFilters.period === 'Trimestral') {
+    } else if (rendimientoFilters.period === 'quarterly') {
       const quarters = [
-        { name: '1er Trimestre', months: [0, 1, 2] },
-        { name: '2do Trimestre', months: [3, 4, 5] },
-        { name: '3er Trimestre', months: [6, 7, 8] },
-        { name: '4to Trimestre', months: [9, 10, 11] }
+        { name: t('filters.quarter1'), months: [0, 1, 2] },
+        { name: t('filters.quarter2'), months: [3, 4, 5] },
+        { name: t('filters.quarter3'), months: [6, 7, 8] },
+        { name: t('filters.quarter4'), months: [9, 10, 11] }
       ];
       
       return quarters.map(quarter => {
@@ -2103,7 +2128,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           
           {/* Tab Navigation */}
           <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-2'} mb-4 sm:mb-6`}>
-            {[t('filters.all'), t('accounts.types.real'), t('accounts.types.demo'), t('copyTrading.title'), t('pamm.title')].map((tab) => (
+            {Object.keys(allAccounts).map((tab) => (
               <button
                 key={tab}
                 className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
@@ -2310,7 +2335,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           
           {/* Tab Navigation */}
           <div className={`${isMobile ? 'grid grid-cols-3 gap-2' : 'flex flex-wrap gap-2'} mb-4 sm:mb-6`}>
-            {[t('filters.all'), t('accounts.types.real'), t('accounts.types.demo')].map((tab) => (
+            {Object.keys(allAccounts).filter(tab => tab !== 'Copytrading' && tab !== 'PAMM').map((tab) => (
               <button
                 key={tab}
                 className={`px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
@@ -2577,7 +2602,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             {/* Balance Card - Lado izquierdo (2 columnas - menos ancho) */}
             <div className={`${isMobile ? 'w-full' : 'lg:col-span-2'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl`}>
               <CustomTooltip content="El capital total de tu cuenta, incluyendo ganancias y pérdidas no realizadas.">
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4 cursor-help">Balance</h2>
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4 cursor-help">{t('balance')}</h2>
               </CustomTooltip>
               <div className="flex items-center mb-4 sm:mb-6">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3 text-white">
@@ -2665,7 +2690,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               {/* Drawdown */}
               <div className={`${isMobile ? '' : 'flex-1'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex flex-col justify-center`}>
                 <CustomTooltip content="La mayor caída desde un pico hasta un valle en el capital de tu cuenta. Mide el riesgo.">
-                  <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">Drawdown</h3>
+                  <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">{t('drawdown')}</h3>
                 </CustomTooltip>
                 <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
@@ -2726,7 +2751,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
               <CustomTooltip content="El tamaño de posición promedio que utilizas en tus operaciones.">
                 <div className="cursor-help">
-                <h3 className="text-gray-400 text-sm mb-1">Lotaje Promedio Por Operación</h3>
+                <h3 className="text-gray-400 text-sm mb-1">{t('lotSize')} {t('filters.all')}</h3>
                 <span className="text-xl font-bold">{(realStatistics?.average_lot_size || 0).toFixed(2)}</span>
                   </div>
               </CustomTooltip>
@@ -2829,41 +2854,41 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               {/* Tabs */}
               <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-2'}`}>
                 <button 
-                  onClick={() => setBenefitChartTab(t('trading.benefitTotal'))}
+                  onClick={() => setBenefitChartTab('benefitTotal')}
                   className={`px-3 py-2 bg-transparent rounded-full text-xs sm:text-sm font-medium transition ${
-                    benefitChartTab === t('trading.benefitTotal') 
+                    benefitChartTab === 'benefitTotal' 
                       ? 'border border-cyan-400 text-cyan-400' 
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  {isMobile ? t('trading.profit') : t('trading.benefitTotal')}
+                  {isMobile ? t('accounts.fields.profit') : t('benefitTotal')}
                 </button>
                 <button 
-                  onClick={() => setBenefitChartTab(t('trading.balance'))}
+                  onClick={() => setBenefitChartTab('balance')}
                   className={`px-3 py-2 bg-transparent rounded-full text-xs sm:text-sm font-medium transition ${
-                    benefitChartTab === t('trading.balance') 
+                    benefitChartTab === 'balance' 
                       ? 'border border-cyan-400 text-cyan-400' 
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  {t('trading.balance')}
+                  {t('balance')}
                 </button>
                 <button 
-                  onClick={() => setBenefitChartTab(t('trading.drawdown'))}
+                  onClick={() => setBenefitChartTab('drawdown')}
                   className={`px-3 py-2 bg-transparent rounded-full text-xs sm:text-sm font-medium transition ${
-                    benefitChartTab === t('trading.drawdown') 
+                    benefitChartTab === 'drawdown' 
                       ? 'border border-cyan-400 text-cyan-400' 
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  {t('trading.drawdown')}
+                  {t('drawdown')}
                 </button>
               </div>
               
               {/* Filtro Dropdown */}
               <div className="relative w-full sm:w-auto">
                 <CustomDropdown
-                  options={benefitChartFilterOptions}
+                  options={translateOptions(benefitChartFilterOptions)}
                   selectedValue={benefitChartFilter}
                   onSelect={setBenefitChartFilter}
                   dropdownClass="w-full sm:w-48"
@@ -2873,10 +2898,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
             {/* Título */}
             <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-white">
-              {isMobile ? benefitChartTab.split(' ')[0] : benefitChartTab}
-              {(historyFilters.instrument !== 'Todos' || 
-                historyFilters.type !== 'Todos' || 
-                historyFilters.profitLoss !== 'Todos' || 
+              {isMobile ? t(benefitChartTab).split(' ')[0] : t(benefitChartTab)}
+              {(historyFilters.instrument !== 'all' || 
+                historyFilters.type !== 'all' || 
+                historyFilters.profitLoss !== 'all' || 
                 historyFilters.dateFrom || 
                 historyFilters.dateTo) && (
                 <span className="ml-2 px-2 py-1 bg-cyan-600 text-white text-xs rounded-full">
@@ -2968,7 +2993,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             <div className="p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl">
               {/* Header */}
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">Instrumentos de Trading</h2>
+                <h2 className="text-2xl font-bold text-white">{t('copyTrading.tabs.instruments')}</h2>
               </div>
 
               {/* Body con Leyenda y Gráfico */}
@@ -3083,7 +3108,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 </div>
                 <div className="relative w-full sm:w-auto">
                   <CustomDropdown
-                    options={rendimientoPeriodOptions}
+                    options={translateOptions(rendimientoPeriodOptions)}
                     selectedValue={rendimientoFilters.period}
                     onSelect={(value) => updateRendimientoFilter('period', value)}
                     dropdownClass="w-full sm:w-36"
@@ -3145,7 +3170,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           return (
                             <div style={tooltipStyle}>
                               <div className={`bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-white shadow-lg whitespace-nowrap ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                                {rendimientoFilters.period === 'Mensual' ? t('trading.filters.month') : t('trading.filters.quarter')}: {label}, {typeof value === 'number' ? value.toFixed(1) : value}%
+                                {rendimientoFilters.period === 'monthly' ? t('trading.filters.month') : t('trading.filters.quarter')}: {label}, {typeof value === 'number' ? value.toFixed(1) : value}%
                               </div>
                             </div>
                           );
@@ -3172,7 +3197,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             <div className="p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl">
               {/* Header con título */}
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white">{t('trading.operationsHistory')}</h2>
+                <h2 className="text-2xl font-bold text-white">{t('operationsHistory')}</h2>
               </div>
 
               {/* Botón toggle filtros móvil */}
@@ -3182,7 +3207,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   className="w-full mb-4 py-2 px-4 bg-[#2a2a2a] border border-[#444] rounded-lg text-white flex items-center justify-center gap-2"
                 >
                   <Filter size={16} />
-                  {showMobileFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+                  {showMobileFilters ? t('hideFilters') : t('showFilters')}
                 </button>
               )}
 
@@ -3190,7 +3215,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <div className={`${isMobile && !showMobileFilters ? 'hidden' : isMobile ? 'grid grid-cols-1 gap-3 mb-4' : 'grid grid-cols-1 md:grid-cols-5 gap-4'} mb-4 sm:mb-6`}>
                 {/* Instrumento */}
                 <div ref={instrumentDropdownRef}>
-                  <label className="block text-gray-400 text-xs sm:text-sm mb-2">Instrumento</label>
+                  <label className="block text-gray-400 text-xs sm:text-sm mb-2">{t('instrument')}</label>
                   <div className="relative">
                     <button
                       onClick={() => setShowInstrumentDropdown(!showInstrumentDropdown)}
@@ -3222,7 +3247,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           </div>
                         </div>
                         
-                        <div key="todos-filter" onClick={() => { updateHistoryFilter('instrument', 'Todos'); setShowInstrumentDropdown(false); }} className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer">{t('filters.all')}</div>
+                        <div key="todos-filter" onClick={() => { updateHistoryFilter('instrument', 'all'); setShowInstrumentDropdown(false); }} className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer">{t('filters.all')}</div>
 
                         {favoriteFilteredInstruments.map(item => (
                           <div key={item.value + '-fav'} onClick={() => { updateHistoryFilter('instrument', item.value); setShowInstrumentDropdown(false); }} className={`px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer flex justify-between items-center ${historyFilters.instrument === item.value ? 'bg-[#3f3f3f]' : ''}`}>
@@ -3309,7 +3334,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           />
                           <span className="font-medium text-white">{transaction.instrumento}</span>
                           <span className={`text-xs px-2 py-1 rounded ${
-                            transaction.tipo === 'Compra' ? 'bg-green-800/30 text-green-400' : 'bg-red-800/30 text-red-400'
+                            transaction.tipo === t('positions.types.buy') ? 'bg-green-800/30 text-green-400' : 'bg-red-800/30 text-red-400'
                           }`}>
                             {transaction.tipo}
                           </span>
@@ -3325,7 +3350,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         <div>
                           <div className="mb-1"><span className="text-white">Apertura:</span> {transaction.fechaApertura}</div>
                           <div className="mb-1"><span className="text-white">Cierre:</span> {transaction.fechaCierre}</div>
-                          <div className="mb-1"><span className="text-white">Lotaje:</span> {transaction.lotaje}</div>
+                          <div className="mb-1"><span className="text-white">{t('lotSize')}:</span> {transaction.lotaje}</div>
                         </div>
                         <div>
                           <div className="mb-1"><span className="text-white">Entrada:</span> {transaction.precioApertura}</div>
@@ -3354,7 +3379,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                           </svg>
-                          Fecha De Apertura
+                          {t('dateOpen')}
                         </div>
                       </th>
                       <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">
@@ -3362,13 +3387,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                           </svg>
-                          Fecha De Cierre
+                          {t('dateClose')}
                         </div>
                       </th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Instrumento</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Tipo</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Lotaje</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Stop Loss</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('instrument')}</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('type')}</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('lotSize')}</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('stopLoss')}</th>
                       <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Take Profit</th>
                       <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Precio De Apertura</th>
                       <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Precio De Cierre</th>
@@ -3380,7 +3405,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <tbody>
                     {filteredHistorialData.map((transaction, index) => (
                       <tr key={index} className="border-b border-[#333] hover:bg-[#2a2a2a] transition-colors">
-                        {/* Fecha De Apertura */}
+                        {/* {t('dateOpen')} */}
                         <td className="py-3 px-2">
                           <div className="flex items-center gap-1 text-white text-xs">
                             <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -3393,7 +3418,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           </div>
                         </td>
 
-                        {/* Fecha De Cierre */}
+                        {/* {t('dateClose')} */}
                         <td className="py-3 px-2">
                           <div className="flex items-center gap-1 text-white text-xs">
                             <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -3406,7 +3431,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           </div>
                         </td>
 
-                        {/* Instrumento */}
+                        {/* {t('instrument')} */}
                         <td className="py-3 px-2">
                           <div className="flex items-center gap-2">
                             <img 
@@ -3425,7 +3450,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         {/* Tipo */}
                         <td className="py-3 px-2 text-white">{transaction.tipo}</td>
 
-                        {/* Lotaje */}
+                        {/* {t('lotSize')} */}
                         <td className="py-3 px-2 text-white">{transaction.lotaje}</td>
 
                         {/* Stop Loss */}
@@ -3560,7 +3585,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               {/* Campo Confirmar Contraseña */}
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
-                  Confirmar Contraseña
+                  {t('accounts.confirmPasswordPlaceholder')}
                 </label>
                 <input
                   type="password"

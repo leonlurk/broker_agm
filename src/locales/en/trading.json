@@ -4,6 +4,7 @@
     "create": "Create Account",
     "noName": "Unnamed Account",
     "types": {
+      "all": "All",
       "real": "Live Accounts",
       "demo": "Demo",
       "bonus": "Bonus",
@@ -606,7 +607,14 @@
     "profitLoss": "Profit/Loss",
     "searchInstrument": "Search instrument",
     "month": "Month",
-    "quarter": "Quarter"
+    "quarter": "Quarter",
+    "instrument": "Instrument",
+    "dateFormat": "mm/dd/yyyy",
+    "type": "Type",
+    "quarter1": "Q1",
+    "quarter2": "Q2",
+    "quarter3": "Q3",
+    "quarter4": "Q4"
   },
   "charts": {
     "start": "Start",
@@ -632,5 +640,19 @@
   },
   "navigation": {
     "back": "Back"
-  }
+  },
+  "showFilters": "Show Filters",
+  "hideFilters": "Hide Filters",
+  "benefitTotal": "Total Benefit",
+  "balance": "Balance",
+  "drawdown": "Drawdown",
+  "operationsHistory": "Operations History",
+  "dateOpen": "Open Date",
+  "dateClose": "Close Date",
+  "instrument": "Instrument",
+  "type": "Type",
+  "lotSize": "Lot Size",
+  "stopLoss": "Stop Loss",
+  "takeProfit": "Take Profit",
+  "price": "Pr"
 }

@@ -4,6 +4,7 @@
     "create": "Crear Cuenta",
     "noName": "Cuenta sin nombre",
     "types": {
+      "all": "Todos",
       "real": "Reales",
       "demo": "Demo",
       "bonus": "Bonus",
@@ -606,7 +607,14 @@
     "profitLoss": "Ganancia/Pérdida",
     "searchInstrument": "Buscar instrumento",
     "month": "Mes",
-    "quarter": "Trimestre"
+    "quarter": "Trimestre",
+    "instrument": "Instrumento",
+    "dateFormat": "dd/mm/aaaa",
+    "type": "Tipo",
+    "quarter1": "1er Trimestre",
+    "quarter2": "2do Trimestre",
+    "quarter3": "3er Trimestre",
+    "quarter4": "4to Trimestre"
   },
   "charts": {
     "start": "Inicio",
@@ -632,5 +640,19 @@
   },
   "navigation": {
     "back": "Atrás"
-  }
+  },
+  "showFilters": "Mostrar Filtros",
+  "hideFilters": "Ocultar Filtros",
+  "benefitTotal": "Beneficio Total",
+  "balance": "Balance",
+  "drawdown": "Reducción",
+  "operationsHistory": "Historial de Operaciones",
+  "dateOpen": "Fecha De Apertura",
+  "dateClose": "Fecha De Cierre",
+  "instrument": "Instrumento",
+  "type": "Tipo",
+  "lotSize": "Lotaje",
+  "stopLoss": "Stop Loss",
+  "takeProfit": "Take Profit",
+  "price": "Pr"
 }
