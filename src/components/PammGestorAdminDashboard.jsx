@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Star, Users, DollarSign, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Eye, Settings, BarChart3, Activity, Award, Calendar, Copy, MoreHorizontal, Edit, Camera, Save, X, Info, Shield, Target, Briefcase, Search, Filter, SlidersHorizontal, Pause, StopCircle, MessageCircle, UserCheck, Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell } from 'recharts';
 import CrearPAMMModal from './CrearPAMMModal';
@@ -48,6 +49,7 @@ const StatCard = ({ icon, title, value, detail }) => {
 };
 
 const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
+  const { t } = useTranslation();
   const [view, setView] = useState('dashboard'); // dashboard, investorDetail
   const [selectedInvestor, setSelectedInvestor] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
@@ -159,7 +161,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
             </button>
             <div>
               <h1 className="text-2xl font-semibold">{fund.name}</h1>
-              <p className="text-gray-400">Gestión detallada del fondo PAMM</p>
+              <p className="text-gray-400">{t('pamm.manager.fundDetail.title')}</p>
             </div>
           </div>
           <button
@@ -167,7 +169,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
             className="flex items-center gap-2 bg-[#0F7490] hover:bg-[#0A5A72] text-white py-2 px-4 rounded-lg transition-colors"
           >
             <Settings size={16} />
-            Configurar
+            {t('pamm.manager.fundDetail.configure')}
           </button>
         </div>
 
@@ -183,7 +185,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           
           <div className="bg-[#2a2a2a] p-4 rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Rendimiento Total</span>
+              <span className="text-sm text-gray-400">{t('pamm.manager.fundDetail.totalReturn')}</span>
               <TrendingUp className="text-green-500" size={16} />
             </div>
             <div className="text-xl font-bold text-green-500">{formatPercentage(fund.totalReturn)}</div>
@@ -191,7 +193,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           
           <div className="bg-[#2a2a2a] p-4 rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Inversores</span>
+              <span className="text-sm text-gray-400">{t('pamm.manager.fundDetail.investors')}</span>
               <Users className="text-blue-500" size={16} />
             </div>
             <div className="text-xl font-bold">{fund.investors}</div>
@@ -199,7 +201,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           
           <div className="bg-[#2a2a2a] p-4 rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Tasa de Éxito</span>
+              <span className="text-sm text-gray-400">{t('pamm.manager.fundDetail.successRate')}</span>
               <Award className="text-yellow-500" size={16} />
             </div>
             <div className="text-xl font-bold">{fund.winRate}%</div>
@@ -209,79 +211,79 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
         {/* Fund Details */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-[#2a2a2a] p-6 rounded-xl">
-            <h3 className="text-lg font-semibold mb-4">Información del Fondo</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('pamm.manager.fundDetail.fundInformation')}</h3>
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-400">Estrategia:</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.strategy')}</span>
                 <span className="font-medium">{fund.strategy}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Nivel de Riesgo:</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.riskLevel')}</span>
                 <span className={`font-medium ${
                   fund.riskLevel === 'Alto' ? 'text-red-400' :
                   fund.riskLevel === 'Medio' ? 'text-yellow-400' : 'text-green-400'
                 }`}>{fund.riskLevel}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Drawdown Máximo:</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.maxDrawdown')}</span>
                 <span className="font-medium text-red-400">{fund.maxDrawdown}%</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Sharpe Ratio:</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.sharpeRatio')}</span>
                 <span className="font-medium">{fund.sharpeRatio}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Total Operaciones:</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.totalTrades')}</span>
                 <span className="font-medium">{fund.totalTrades}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Fecha Creación:</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.creationDate')}</span>
                 <span className="font-medium">{new Date(fund.createdDate).toLocaleDateString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Volumen Operado:</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.tradedVolume')}</span>
                 <span className="font-medium">{formatCurrency(250000)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Operaciones Exitosas:</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.successfulTrades')}</span>
                 <span className="font-medium">142/{fund.totalTrades}</span>
               </div>
             </div>
           </div>
 
           <div className="bg-[#2a2a2a] p-6 rounded-xl">
-            <h3 className="text-lg font-semibold mb-4">Configuración de Comisiones</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('pamm.manager.fundDetail.commissionConfiguration')}</h3>
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-400">Comisión de Gestión:</span>
-                <span className="font-medium">{fund.managementFee}% anual</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.managementFee')}</span>
+                <span className="font-medium">{fund.managementFee}% {t('pamm.manager.fundDetail.annual')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Performance Fee:</span>
-                <span className="font-medium">{fund.performanceFee}% ganancias</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.performanceFee')}</span>
+                <span className="font-medium">{fund.performanceFee}% {t('pamm.manager.fundDetail.profits')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Lock-up Period:</span>
-                <span className="font-medium">{fund.lockupPeriod} días</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.lockupPeriod')}</span>
+                <span className="font-medium">{fund.lockupPeriod} {t('pamm.manager.fundDetail.days')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Inversión Mínima:</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.minInvestment')}</span>
                 <span className="font-medium">{formatCurrency(fund.minInvestment)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Inversión Máxima:</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.maxInvestment')}</span>
                 <span className="font-medium">{formatCurrency(50000)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">High Water Mark:</span>
-                <span className="font-medium text-green-400">Activo</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.highWaterMark')}</span>
+                <span className="font-medium text-green-400">{t('pamm.manager.fundDetail.active')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Frecuencia de Pago:</span>
-                <span className="font-medium">Mensual</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.paymentFrequency')}</span>
+                <span className="font-medium">{t('pamm.manager.fundDetail.monthly')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Próximo Cierre:</span>
+                <span className="text-gray-400">{t('pamm.manager.fundDetail.nextClosure')}</span>
                 <span className="font-medium">15/01/2025</span>
               </div>
             </div>
@@ -290,18 +292,18 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
 
         {/* Investors List */}
         <div className="bg-[#2a2a2a] p-6 rounded-xl">
-          <h3 className="text-lg font-semibold mb-4">Inversores del Fondo</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('pamm.manager.fundDetail.fundInvestors')}</h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="border-b border-[#333]">
                 <tr className="text-left text-gray-400 text-sm">
-                  <th className="pb-3">Inversor</th>
-                  <th className="pb-3">Inversión</th>
-                  <th className="pb-3">Ganancia</th>
-                  <th className="pb-3">Rendimiento</th>
-                  <th className="pb-3">Fecha Entrada</th>
-                  <th className="pb-3">Estado</th>
-                  <th className="pb-3">Acciones</th>
+                  <th className="pb-3">{t('pamm.manager.fundDetail.investor')}</th>
+                  <th className="pb-3">{t('pamm.manager.fundDetail.investment')}</th>
+                  <th className="pb-3">{t('pamm.manager.fundDetail.gain')}</th>
+                  <th className="pb-3">{t('pamm.manager.fundDetail.performance')}</th>
+                  <th className="pb-3">{t('pamm.manager.fundDetail.entryDate')}</th>
+                  <th className="pb-3">{t('pamm.manager.fundDetail.status')}</th>
+                  <th className="pb-3">{t('pamm.manager.fundDetail.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#333]">
@@ -336,7 +338,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
         {/* Performance Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-[#2a2a2a] p-6 rounded-xl">
-            <h3 className="text-lg font-semibold mb-4">Rendimiento Mensual</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('pamm.manager.fundDetail.monthlyPerformance')}</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data.rendimientoMensual.map((value, index) => ({
@@ -353,7 +355,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                   <YAxis stroke="#666" />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
-                    formatter={(value) => [`${value}%`, 'Rendimiento']}
+                    formatter={(value) => [`${value}%`, t('pamm.manager.fundDetail.performance')]}
                   />
                   <Area 
                     type="monotone" 
@@ -368,7 +370,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           </div>
 
           <div className="bg-[#2a2a2a] p-6 rounded-xl">
-            <h3 className="text-lg font-semibold mb-4">Distribución por Mercado</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('pamm.manager.fundDetail.marketDistribution')}</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -404,13 +406,13 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
         {/* Activity & Messages */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-[#2a2a2a] p-6 rounded-xl">
-            <h3 className="text-lg font-semibold mb-4">Actividad Reciente</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('pamm.manager.fundDetail.recentActivity')}</h3>
             <div className="space-y-3">
               {[
-                { action: 'Nueva inversión', user: 'Carlos Rodriguez', amount: '$5,000', time: 'Hace 2 horas' },
-                { action: 'Retiro parcial', user: 'Ana Martínez', amount: '$1,200', time: 'Hace 5 horas' },
-                { action: 'Comisión cobrada', user: 'Sistema', amount: '$420', time: 'Hace 1 día' },
-                { action: 'Nueva inversión', user: 'Pedro García', amount: '$3,500', time: 'Hace 2 días' }
+                { action: t('pamm.manager.fundDetail.newInvestment'), user: 'Carlos Rodriguez', amount: '$5,000', time: t('pamm.manager.fundDetail.hoursAgo', { hours: 2 }) },
+                { action: t('pamm.manager.fundDetail.partialWithdrawal'), user: 'Ana Martínez', amount: '$1,200', time: t('pamm.manager.fundDetail.hoursAgo', { hours: 5 }) },
+                { action: t('pamm.manager.fundDetail.commissionCharged'), user: t('pamm.manager.fundDetail.system'), amount: '$420', time: t('pamm.manager.fundDetail.daysAgo', { days: 1 }) },
+                { action: t('pamm.manager.fundDetail.newInvestment'), user: 'Pedro García', amount: '$3,500', time: t('pamm.manager.fundDetail.daysAgo', { days: 2 }) }
               ].map((activity, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-[#333] rounded-lg">
                   <div className="flex items-center gap-3">
@@ -430,12 +432,12 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           </div>
 
           <div className="bg-[#2a2a2a] p-6 rounded-xl">
-            <h3 className="text-lg font-semibold mb-4">Mensajes de Inversores</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('pamm.manager.fundDetail.investorMessages')}</h3>
             <div className="space-y-3">
               {[
-                { from: 'Carlos Rodriguez', message: '¿Cuándo es el próximo cierre?', time: 'Hace 1 hora', unread: true },
-                { from: 'Maria González', message: 'Excelente rendimiento este mes', time: 'Hace 3 horas', unread: false },
-                { from: 'Roberto Silva', message: 'Solicito información adicional', time: 'Hace 5 horas', unread: true }
+                { from: 'Carlos Rodriguez', message: t('pamm.manager.fundDetail.whenIsNextClosure'), time: t('pamm.manager.fundDetail.hourAgo'), unread: true },
+                { from: 'Maria González', message: t('pamm.manager.fundDetail.excellentPerformance'), time: t('pamm.manager.fundDetail.hoursAgo', { hours: 3 }), unread: false },
+                { from: 'Roberto Silva', message: t('pamm.manager.fundDetail.requestAdditionalInfo'), time: t('pamm.manager.fundDetail.hoursAgo', { hours: 5 }), unread: true }
               ].map((msg, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-[#333] rounded-lg hover:bg-[#444] cursor-pointer transition-colors">
                   <div className="flex items-center gap-3">
@@ -452,7 +454,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                 </div>
               ))}
               <button className="w-full py-2 bg-[#333] hover:bg-[#444] rounded-lg text-sm text-gray-400 transition-colors">
-                Ver todos los mensajes
+                {t('pamm.manager.fundDetail.viewAllMessages')}
               </button>
             </div>
           </div>
@@ -572,9 +574,9 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold mb-2">PAMM Gestor</h1>
+          <h1 className="text-2xl md:text-3xl font-semibold mb-2">{t('pamm.manager.dashboard')}</h1>
           <p className="text-sm md:text-base text-gray-400">
-            Gestiona tus fondos PAMM y monitorea el rendimiento
+            {t('pamm.manager.description')}
           </p>
         </div>
         <button
@@ -582,19 +584,19 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           className="flex items-center gap-2 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-5 rounded-lg hover:opacity-90 transition"
         >
           <Plus size={18} />
-          Crear Fondo
+          {t('pamm.createFund')}
         </button>
       </div>
 
       {/* Portfolio Section */}
       <div className="bg-[#2a2a2a] p-6 rounded-2xl border border-[#333]">
-        <h2 className="text-xl font-semibold mb-6">Portfolio</h2>
+        <h2 className="text-xl font-semibold mb-6">{t('pamm.manager.portfolio')}</h2>
         
         {/* Basic KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-[#333] p-4 rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">AUM Total</span>
+              <span className="text-sm text-gray-400">{t('pamm.manager.totalAUM')}</span>
               <DollarSign className="text-cyan-500" size={20} />
             </div>
             <div className="text-2xl font-bold">{formatCurrency(data.totalCapital)}</div>
@@ -602,7 +604,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           
           <div className="bg-[#333] p-4 rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Rendimiento</span>
+              <span className="text-sm text-gray-400">{t('pamm.manager.performance')}</span>
               <TrendingUp className="text-green-500" size={20} />
             </div>
             <div className="text-2xl font-bold text-green-500">{formatPercentage(data.rendimiento)}</div>
@@ -610,7 +612,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           
           <div className="bg-[#333] p-4 rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Inversores</span>
+              <span className="text-sm text-gray-400">{t('pamm.manager.fundDetail.investors')}</span>
               <Users className="text-blue-500" size={20} />
             </div>
             <div className="text-2xl font-bold">{data.numeroInversores}</div>
@@ -618,7 +620,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           
           <div className="bg-[#333] p-4 rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Comisiones</span>
+              <span className="text-sm text-gray-400">{t('pamm.manager.commissions')}</span>
               <Award className="text-yellow-500" size={20} />
             </div>
             <div className="text-2xl font-bold">{formatCurrency(data.comisionesGeneradas)}</div>
@@ -629,7 +631,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
       {/* Mis Fondos PAMM Section */}
       <div className="bg-[#2a2a2a] p-6 rounded-2xl border border-[#333]">
         <div className="mb-6">
-          <h2 className="text-xl font-semibold">Mis Fondos PAMM</h2>
+          <h2 className="text-xl font-semibold">{t('pamm.manager.myFunds')}</h2>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -655,31 +657,31 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                   <span className="font-medium">{formatCurrency(account.balance)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Rendimiento Mes:</span>
+                  <span className="text-gray-400">{t('pamm.manager.monthlyReturn')}</span>
                   <span className="font-medium text-green-500">{formatPercentage(account.monthlyReturn)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Rendimiento Total:</span>
+                  <span className="text-gray-400">{t('pamm.manager.totalReturn')}</span>
                   <span className="font-medium text-green-500">{formatPercentage(account.totalReturn)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Inversores:</span>
+                  <span className="text-gray-400">{t('pamm.manager.investorsCount')}</span>
                   <span className="font-medium">{account.investors}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Tasa de Éxito:</span>
+                  <span className="text-gray-400">{t('pamm.manager.winRate')}</span>
                   <span className="font-medium">{account.winRate}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Drawdown Máx:</span>
+                  <span className="text-gray-400">{t('pamm.manager.maxDrawdown')}</span>
                   <span className="font-medium text-red-400">{account.maxDrawdown}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Comisión:</span>
+                  <span className="text-gray-400">{t('pamm.manager.commission')}</span>
                   <span className="font-medium">{account.managementFee}% + {account.performanceFee}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Nivel Riesgo:</span>
+                  <span className="text-gray-400">{t('pamm.manager.riskLevel')}</span>
                   <span className={`font-medium ${
                     account.riskLevel === 'Alto' ? 'text-red-400' :
                     account.riskLevel === 'Medio' ? 'text-yellow-400' : 'text-green-400'
@@ -693,7 +695,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                   className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <Eye size={16} />
-                  Gestionar
+                  {t('pamm.manager.manageFund')}
                 </button>
               </div>
             </div>

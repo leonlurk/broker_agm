@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, Area
 import { getFollowers, getTraderStats } from '../services/copytradingService';
 import ConfigurarGestorModal from './ConfigurarGestorModal';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
-import useTranslation from '../hooks/useTranslation';
+import { useTranslation } from 'react-i18next';
 
 // Datos iniciales vacíos - se cargarán dinámicamente desde la API
 const initialTraderDashboardData = {
@@ -312,9 +312,9 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
 
   const getStatusLabel = (status) => {
     switch (status) {
-      case 'active': return 'Activo';
-      case 'paused': return 'Pausado';
-      case 'inactive': return 'Inactivo';
+      case 'active': return t('copyTrading.status.active');
+      case 'paused': return t('copyTrading.status.paused');
+      case 'inactive': return t('copyTrading.status.inactive');
       default: return status;
     }
   };
@@ -327,22 +327,22 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-semibold mb-2">{t('gestor.traderDashboard')}</h1>
-              <p className="text-gray-400">{t('gestor.manageAccountsAndPerformance')}</p>
+              <h1 className="text-3xl font-semibold mb-2">{t('copyTrading.manager.dashboard')}</h1>
+              <p className="text-gray-400">{t('copyTrading.manager.manageAccountsAndPerformance')}</p>
             </div>
             <button
               onClick={handleCreateCopy}
               className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-3 px-6 rounded-xl hover:opacity-90 transition-opacity font-medium flex items-center gap-2"
             >
               <Settings size={20} />
-              Crear Copy Trading 
+              {t('copyTrading.manager.createCopyTrading')} 
             </button>
           </div>
         </div>
 
         {/* Portafolio Section */}
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-6 text-cyan-400">Portafolio</h2>
+          <h2 className="text-xl font-semibold mb-6 text-cyan-400">{t('copyTrading.manager.portfolio')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Capital Propio */}
             <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
@@ -353,9 +353,9 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                 <TrendingUp size={20} className="text-blue-400" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-1">$25,340.00</h3>
-              <p className="text-sm text-gray-400">Capital Propio</p>
+              <p className="text-sm text-gray-400">{t('copyTrading.manager.ownCapital')}</p>
               <div className="mt-2 text-xs text-gray-500">
-                <span className="text-green-400">+8.5%</span> este mes
+                <span className="text-green-400">+8.5%</span> {t('copyTrading.time.thisMonth')}
               </div>
             </div>
 
@@ -368,9 +368,9 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                 <TrendingUp size={20} className="text-cyan-400" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-1">$89,500.00</h3>
-              <p className="text-sm text-gray-400">Capital de Terceros</p>
+              <p className="text-sm text-gray-400">{t('copyTrading.manager.thirdPartyCapital')}</p>
               <div className="mt-2 text-xs text-gray-500">
-                <span className="text-yellow-400">5 inversores</span> activos
+                <span className="text-yellow-400">5 {t('copyTrading.manager.investors')}</span> {t('copyTrading.status.active')}
               </div>
             </div>
 
@@ -383,9 +383,9 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                 <TrendingUp size={20} className="text-green-400" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-1">$114,840.00</h3>
-              <p className="text-sm text-gray-400">Capital Total Administrado</p>
+              <p className="text-sm text-gray-400">{t('copyTrading.manager.totalManagedCapital')}</p>
               <div className="mt-2 text-xs text-gray-500">
-                <span className="text-green-400">+12.8%</span> rendimiento total
+                <span className="text-green-400">+12.8%</span> {t('copyTrading.stats.totalReturn')}
               </div>
             </div>
           </div>
@@ -393,7 +393,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
 
         {/* Mis Cuentas Copy Trading */}
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-6 text-cyan-400">Mis Cuentas Copy Trading</h2>
+          <h2 className="text-xl font-semibold mb-6 text-cyan-400">{t('copyTrading.manager.myCopyTradingAccounts')}</h2>
           <div className="space-y-4">
 
             {/* Cuenta Copy Trading 2 */}
@@ -405,11 +405,11 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                   </div>
                   <div>
                     <h3 className="font-semibold text-white">Copy Trading Account #2</h3>
-                    <p className="text-sm text-gray-400">Creada: 02/11/2024</p>
+                    <p className="text-sm text-gray-400">{t('copyTrading.manager.created')}: 02/11/2024</p>
                     <div className="flex items-center gap-4 mt-1">
-                      <span className="text-sm text-gray-400">AUM: <span className="text-white font-medium">$89,500</span></span>
-                      <span className="text-sm text-gray-400">Inversores: <span className="text-white font-medium">5</span></span>
-                      <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">Pausada</span>
+                      <span className="text-sm text-gray-400">{t('copyTrading.stats.aum')}: <span className="text-white font-medium">$89,500</span></span>
+                      <span className="text-sm text-gray-400">{t('copyTrading.manager.investors')}: <span className="text-white font-medium">5</span></span>
+                      <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">{t('copyTrading.status.paused')}</span>
                     </div>
                   </div>
                 </div>
@@ -420,7 +420,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                     className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
                   >
                     <Eye size={16} />
-                    Gestionar
+                    {t('copyTrading.actions.manage')}
                   </button>
                 </div>
               </div>
@@ -435,11 +435,11 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                   </div>
                   <div>
                     <h3 className="font-semibold text-white">Copy Trading Account #3</h3>
-                    <p className="text-sm text-gray-400">Creada: 20/09/2024</p>
+                    <p className="text-sm text-gray-400">{t('copyTrading.manager.created')}: 20/09/2024</p>
                     <div className="flex items-center gap-4 mt-1">
                       <span className="text-sm text-gray-400">AUM: <span className="text-white font-medium">$0</span></span>
                       <span className="text-sm text-gray-400">Inversores: <span className="text-white font-medium">0</span></span>
-                      <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">Inactiva</span>
+                      <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">{t('copyTrading.status.inactive')}</span>
                     </div>
                   </div>
                 </div>
@@ -450,7 +450,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                     className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
                   >
                     <Eye size={16} />
-                    Gestionar
+                    {t('copyTrading.actions.manage')}
                   </button>
                 </div>
               </div>
@@ -487,10 +487,10 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
             onClick={handleBackToDashboard}
             className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors mb-4"
           >
-            ← Volver al Dashboard
+            ← {t('copyTrading.navigation.backToDashboard')}
           </button>
-          <h1 className="text-3xl font-semibold mb-2">{t('gestor.myInvestors')}</h1>
-          <p className="text-gray-400">{t('gestor.manageAndMonitorInvestors')}</p>
+          <h1 className="text-3xl font-semibold mb-2">{t('copyTrading.manager.myInvestors')}</h1>
+          <p className="text-gray-400">{t('copyTrading.manager.manageAndMonitorInvestors')}</p>
         </div>
 
         {/* Stats Cards */}
@@ -498,7 +498,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
             <div className="flex items-center gap-3 mb-2">
               <Users size={20} className="text-cyan-400" />
-              <span className="text-cyan-400 font-medium">Total</span>
+              <span className="text-cyan-400 font-medium">{t('copyTrading.stats.total')}</span>
             </div>
             <p className="text-2xl font-bold text-white">{allInvestors.length}</p>
           </div>
@@ -506,7 +506,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
             <div className="flex items-center gap-3 mb-2">
               <UserCheck size={20} className="text-green-400" />
-              <span className="text-green-400 font-medium">Activos</span>
+              <span className="text-green-400 font-medium">{t('copyTrading.status.active')}</span>
             </div>
             <p className="text-2xl font-bold text-white">{allInvestors.filter(i => i.status === 'active').length}</p>
           </div>
@@ -514,7 +514,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
             <div className="flex items-center gap-3 mb-2">
               <DollarSign size={20} className="text-cyan-400" />
-              <span className="text-cyan-400 font-medium">AUM</span>
+              <span className="text-cyan-400 font-medium">{t('copyTrading.stats.aum')}</span>
             </div>
             <p className="text-2xl font-bold text-white">
               {formatAUM(allInvestors.reduce((sum, inv) => sum + (inv.investedAmount || 0), 0))}
@@ -524,7 +524,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
             <div className="flex items-center gap-3 mb-2">
               <TrendingUp size={20} className="text-green-400" />
-              <span className="text-green-400 font-medium">P&L Avg</span>
+              <span className="text-green-400 font-medium">{t('copyTrading.stats.avgPnL')}</span>
             </div>
             <p className="text-2xl font-bold text-green-400">
               {formatPercentage(
@@ -543,7 +543,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
             <div className="flex-1 relative">
               <input
                 type="text"
-                placeholder="Buscar inversor..."
+                placeholder={t('copyTrading.search.searchInvestor')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-[#1C1C1C] border border-[#333] rounded-xl pl-12 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500"
@@ -557,10 +557,10 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               onChange={(e) => setStatusFilter(e.target.value)}
               className="p-3 bg-[#191919] border border-[#333] rounded-lg text-white"
             >
-              <option value="all">Todos los estados</option>
-              <option value="active">Activos</option>
-              <option value="paused">Pausados</option>
-              <option value="inactive">Inactivos</option>
+              <option value="all">{t('copyTrading.filters.allStatuses')}</option>
+              <option value="active">{t('copyTrading.status.active')}</option>
+              <option value="paused">{t('copyTrading.status.paused')}</option>
+              <option value="inactive">{t('copyTrading.status.inactive')}</option>
             </select>
             
             {/* Sort */}
@@ -569,9 +569,9 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               onChange={(e) => setSortBy(e.target.value)}
               className="p-3 bg-[#191919] border border-[#333] rounded-lg text-white"
             >
-              <option value="investment">Por inversión</option>
-              <option value="performance">Por rendimiento</option>
-              <option value="date">Por fecha</option>
+              <option value="investment">{t('copyTrading.filters.byInvestment')}</option>
+              <option value="performance">{t('copyTrading.filters.byPerformance')}</option>
+              <option value="date">{t('copyTrading.filters.byDate')}</option>
             </select>
           </div>
         </div>
@@ -582,13 +582,13 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
             <table className="w-full">
               <thead className="bg-[#1C1C1C] border-b border-[#333]">
                 <tr>
-                  <th className="text-left py-4 px-6 text-gray-400 font-medium">Inversor</th>
-                  <th className="text-left py-4 px-6 text-gray-400 font-medium">Inversión</th>
-                  <th className="text-left py-4 px-6 text-gray-400 font-medium">P&L Total</th>
-                  <th className="text-left py-4 px-6 text-gray-400 font-medium">P&L Mensual</th>
-                  <th className="text-left py-4 px-6 text-gray-400 font-medium">Estado</th>
-                  <th className="text-left py-4 px-6 text-gray-400 font-medium">Copia</th>
-                  <th className="text-left py-4 px-6 text-gray-400 font-medium">Acciones</th>
+                  <th className="text-left py-4 px-6 text-gray-400 font-medium">{t('copyTrading.manager.investor')}</th>
+                  <th className="text-left py-4 px-6 text-gray-400 font-medium">{t('copyTrading.manager.investment')}</th>
+                  <th className="text-left py-4 px-6 text-gray-400 font-medium">{t('copyTrading.stats.totalPnL')}</th>
+                  <th className="text-left py-4 px-6 text-gray-400 font-medium">{t('copyTrading.stats.monthlyPnL')}</th>
+                  <th className="text-left py-4 px-6 text-gray-400 font-medium">{t('copyTrading.manager.status')}</th>
+                  <th className="text-left py-4 px-6 text-gray-400 font-medium">{t('copyTrading.manager.copy')}</th>
+                  <th className="text-left py-4 px-6 text-gray-400 font-medium">{t('copyTrading.manager.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -603,7 +603,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                         <div>
                           <p className="font-medium text-white">{investor.name}</p>
                           <p className="text-sm text-gray-400">{investor.email}</p>
-                          <p className="text-xs text-gray-500">Desde {investor.startDate}</p>
+                          <p className="text-xs text-gray-500">{t('copyTrading.manager.since')} {investor.startDate}</p>
                         </div>
                       </div>
                     </td>
@@ -674,14 +674,14 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                               className="w-full text-left px-4 py-2 text-sm text-white hover:bg-[#333] flex items-center gap-2"
                             >
                               <Eye size={14} />
-                              Ver Detalles
+                              {t('copyTrading.actions.viewDetails')}
                             </button>
                             <button 
                               onClick={() => handleInvestorAction('message', investor)}
                               className="w-full text-left px-4 py-2 text-sm text-white hover:bg-[#333] flex items-center gap-2"
                             >
                               <MessageCircle size={14} />
-                              Enviar Mensaje
+                              {t('copyTrading.actions.sendMessage')}
                             </button>
                             {investor.status === 'active' ? (
                               <button 
@@ -689,7 +689,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                                 className="w-full text-left px-4 py-2 text-sm text-yellow-400 hover:bg-[#333] flex items-center gap-2"
                               >
                                 <Pause size={14} />
-                                Pausar Copia
+                                {t('copyTrading.actions.pauseCopy')}
                               </button>
                             ) : (
                               <button 
@@ -697,7 +697,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                                 className="w-full text-left px-4 py-2 text-sm text-green-400 hover:bg-[#333] flex items-center gap-2"
                               >
                                 <UserCheck size={14} />
-                                Activar Copia
+                                {t('copyTrading.actions.activateCopy')}
                               </button>
                             )}
                             <button 
@@ -705,7 +705,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                               className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-[#333] flex items-center gap-2 border-t border-[#333]"
                             >
                               <StopCircle size={14} />
-                              Detener Copia
+                              {t('copyTrading.actions.stopCopy')}
                             </button>
                           </div>
                         )}
@@ -720,11 +720,11 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           {filteredInvestors.length === 0 && (
             <div className="p-8 text-center text-gray-500">
               <Users size={48} className="mx-auto mb-4 text-gray-600" />
-              <p className="text-lg font-medium mb-2">No se encontraron inversores</p>
+              <p className="text-lg font-medium mb-2">{t('copyTrading.manager.noInvestorsFound')}</p>
               <p className="text-sm">
                 {searchTerm || statusFilter !== 'all' 
-                  ? 'Intenta ajustar los filtros de búsqueda' 
-                  : 'Aún no tienes inversores copiando tus operaciones'
+                  ? t('copyTrading.manager.tryAdjustingFilters') 
+                  : t('copyTrading.manager.noInvestorsYet')
                 }
               </p>
             </div>
@@ -734,7 +734,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
         {/* Results Summary */}
         {filteredInvestors.length > 0 && (
           <div className="mt-6 text-center text-gray-400">
-            Mostrando {filteredInvestors.length} de {allInvestors.length} inversores
+            {t('copyTrading.manager.showingInvestors', { filtered: filteredInvestors.length, total: allInvestors.length })}
           </div>
         )}
       </div>
@@ -751,10 +751,10 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
             onClick={handleBackToDashboard}
             className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors mb-4"
           >
-            ← Volver al Dashboard
+            ← {t('copyTrading.navigation.backToDashboard')}
           </button>
-          <h1 className="text-3xl font-semibold mb-2">Editar Perfil Trader</h1>
-          <p className="text-gray-400">Configura cómo te ven los inversores</p>
+          <h1 className="text-3xl font-semibold mb-2">{t('copyTrading.manager.editTraderProfile')}</h1>
+          <p className="text-gray-400">{t('copyTrading.manager.configureHowInvestorsSeeYou')}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -764,7 +764,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
               <h2 className="text-xl font-semibold text-cyan-400 mb-6 flex items-center gap-2">
                 <Info size={20} />
-                Información
+                {t('copyTrading.manager.information')}
               </h2>
               
               <div className="space-y-6">
@@ -779,33 +779,33 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                     </button>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-medium text-white mb-1">Foto de Perfil</h3>
-                    <p className="text-sm text-gray-400 mb-2">Imagen profesional 400x400px</p>
-                    <button className="text-cyan-400 hover:text-cyan-300 text-sm">Cambiar imagen</button>
+                    <h3 className="font-medium text-white mb-1">{t('copyTrading.manager.profilePhoto')}</h3>
+                    <p className="text-sm text-gray-400 mb-2">{t('copyTrading.manager.professionalImage400x400')}</p>
+                    <button className="text-cyan-400 hover:text-cyan-300 text-sm">{t('copyTrading.manager.changeImage')}</button>
                   </div>
                 </div>
 
                 {/* Display Name */}
                 <div>
-                  <label className="block text-white text-sm font-medium mb-2">Nombre *</label>
+                  <label className="block text-white text-sm font-medium mb-2">{t('copyTrading.manager.name')} *</label>
                   <input
                     type="text"
                     value={profileData.displayName}
                     onChange={(e) => handleProfileInputChange('displayName', e.target.value)}
                     className={`w-full bg-[#1C1C1C] border ${profileErrors.displayName ? 'border-red-500' : 'border-[#333]'} rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500`}
-                    placeholder="Ej: Maestro FX Pro"
+                    placeholder={t('copyTrading.manager.namePlaceholder')}
                   />
                   {profileErrors.displayName && <p className="text-red-500 text-xs mt-1">{profileErrors.displayName}</p>}
                 </div>
 
                 {/* Bio */}
                 <div>
-                  <label className="block text-white text-sm font-medium mb-2">Bio *</label>
+                  <label className="block text-white text-sm font-medium mb-2">{t('copyTrading.manager.bio')} *</label>
                   <textarea
                     value={profileData.bio}
                     onChange={(e) => handleProfileInputChange('bio', e.target.value)}
                     className={`w-full bg-[#1C1C1C] border ${profileErrors.bio ? 'border-red-500' : 'border-[#333]'} rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 h-24 resize-none`}
-                    placeholder="Describe tu experiencia y estrategias..."
+                    placeholder={t('copyTrading.manager.bioPlaceholder')}
                   />
                   <div className="flex justify-between items-center mt-1">
                     {profileErrors.bio && <p className="text-red-500 text-xs">{profileErrors.bio}</p>}
@@ -816,25 +816,25 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                 {/* Strategy & Risk Level */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-white text-sm font-medium mb-2">Estrategia</label>
+                    <label className="block text-white text-sm font-medium mb-2">{t('copyTrading.manager.strategy')}</label>
                     <input
                       type="text"
                       value={profileData.strategy}
                       onChange={(e) => handleProfileInputChange('strategy', e.target.value)}
                       className="w-full bg-[#1C1C1C] border border-[#333] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
-                      placeholder="Ej: Scalping EUR/USD"
+                      placeholder={t('copyTrading.manager.strategyPlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className="block text-white text-sm font-medium mb-2">Riesgo</label>
+                    <label className="block text-white text-sm font-medium mb-2">{t('copyTrading.manager.risk')}</label>
                     <select
                       value={profileData.riskLevel}
                       onChange={(e) => handleProfileInputChange('riskLevel', e.target.value)}
                       className="w-full bg-[#1C1C1C] border border-[#333] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
                     >
-                      <option value="Bajo">Bajo</option>
-                      <option value="Moderado">Moderado</option>
-                      <option value="Alto">Alto</option>
+                      <option value="Bajo">{t('copyTrading.risk.low')}</option>
+                      <option value="Moderado">{t('copyTrading.risk.moderate')}</option>
+                      <option value="Alto">{t('copyTrading.risk.high')}</option>
                     </select>
                   </div>
                 </div>
@@ -842,39 +842,39 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                 {/* Experience & Time Zone */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-white text-sm font-medium mb-2">Experiencia</label>
+                    <label className="block text-white text-sm font-medium mb-2">{t('copyTrading.manager.experience')}</label>
                     <select
                       value={profileData.tradingExperience}
                       onChange={(e) => handleProfileInputChange('tradingExperience', e.target.value)}
                       className="w-full bg-[#1C1C1C] border border-[#333] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
                     >
-                      <option value="1-2 años">1-2 años</option>
-                      <option value="3-5 años">3-5 años</option>
-                      <option value="5+ años">5+ años</option>
-                      <option value="10+ años">10+ años</option>
+                      <option value="1-2 años">{t('copyTrading.experience.oneToTwo')}</option>
+                      <option value="3-5 años">{t('copyTrading.experience.threeToFive')}</option>
+                      <option value="5+ años">{t('copyTrading.experience.fivePlus')}</option>
+                      <option value="10+ años">{t('copyTrading.experience.tenPlus')}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-white text-sm font-medium mb-2">Zona</label>
+                    <label className="block text-white text-sm font-medium mb-2">{t('copyTrading.manager.timeZone')}</label>
                     <input
                       type="text"
                       value={profileData.timeZone}
                       onChange={(e) => handleProfileInputChange('timeZone', e.target.value)}
                       className="w-full bg-[#1C1C1C] border border-[#333] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
-                      placeholder="GMT-3 (Buenos Aires)"
+                      placeholder={t('copyTrading.manager.timeZonePlaceholder')}
                     />
                   </div>
                 </div>
 
                 {/* Trading Hours */}
                 <div>
-                  <label className="block text-white text-sm font-medium mb-2">Horario</label>
+                  <label className="block text-white text-sm font-medium mb-2">{t('copyTrading.manager.tradingHours')}</label>
                   <input
                     type="text"
                     value={profileData.tradingHours}
                     onChange={(e) => handleProfileInputChange('tradingHours', e.target.value)}
                     className="w-full bg-[#1C1C1C] border border-[#333] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500"
-                    placeholder="09:00 - 17:00"
+                    placeholder={t('copyTrading.manager.tradingHoursPlaceholder')}
                   />
                 </div>
               </div>
@@ -884,14 +884,14 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
               <h2 className="text-xl font-semibold text-cyan-400 mb-6 flex items-center gap-2">
                 <Target size={20} />
-                Configuración
+                {t('copyTrading.manager.configuration')}
               </h2>
               
               <div className="space-y-6">
                 {/* Investment Range */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-white text-sm font-medium mb-2">Mínima (USD)</label>
+                    <label className="block text-white text-sm font-medium mb-2">{t('copyTrading.manager.minInvestment')} (USD)</label>
                     <input
                       type="number"
                       value={profileData.minInvestment}
@@ -902,7 +902,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                     {profileErrors.minInvestment && <p className="text-red-500 text-xs mt-1">{profileErrors.minInvestment}</p>}
                   </div>
                   <div>
-                    <label className="block text-white text-sm font-medium mb-2">Máxima (USD)</label>
+                    <label className="block text-white text-sm font-medium mb-2">{t('copyTrading.manager.maxInvestment')} (USD)</label>
                     <input
                       type="number"
                       value={profileData.maxInvestment}
@@ -915,7 +915,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
 
                 {/* Commission Rate */}
                 <div>
-                  <label className="block text-white text-sm font-medium mb-2">Comisión (%)</label>
+                  <label className="block text-white text-sm font-medium mb-2">{t('copyTrading.manager.commission')} (%)</label>
                   <div className="flex items-center gap-4">
                     <input
                       type="number"
@@ -926,10 +926,10 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                       max="50"
                       step="0.1"
                     />
-                    <span className="text-gray-400 text-sm">% de ganancia</span>
+                    <span className="text-gray-400 text-sm">{t('copyTrading.manager.profitPercentage')}</span>
                   </div>
                   {profileErrors.commissionRate && <p className="text-red-500 text-xs mt-1">{profileErrors.commissionRate}</p>}
-                  <p className="text-gray-400 text-xs mt-1">Solo cobras comisión con ganancias</p>
+                  <p className="text-gray-400 text-xs mt-1">{t('copyTrading.manager.onlyChargeCommissionOnProfits')}</p>
                 </div>
               </div>
             </div>
@@ -938,7 +938,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
               <h2 className="text-xl font-semibold text-cyan-400 mb-6 flex items-center gap-2">
                 <Briefcase size={20} />
-                Especializaciones
+                {t('copyTrading.manager.specializations')}
               </h2>
               
               <div className="space-y-4">
@@ -982,14 +982,14 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
               <h3 className="text-lg font-semibold text-cyan-400 mb-4 flex items-center gap-2">
                 <Shield size={18} />
-                Configuración de Privacidad
+                {t('copyTrading.manager.privacySettings')}
               </h3>
               
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white font-medium">Perfil Público</p>
-                    <p className="text-sm text-gray-400">Otros usuarios pueden ver tu perfil</p>
+                    <p className="text-white font-medium">{t('copyTrading.manager.publicProfile')}</p>
+                    <p className="text-sm text-gray-400">{t('copyTrading.manager.othersCanSeeProfile')}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -1004,8 +1004,8 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white font-medium">Permitir Copy Trading</p>
-                    <p className="text-sm text-gray-400">Los inversores pueden copiar tus operaciones</p>
+                    <p className="text-white font-medium">{t('copyTrading.manager.allowCopyTrading')}</p>
+                    <p className="text-sm text-gray-400">{t('copyTrading.manager.investorsCanCopyTrades')}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -1022,7 +1022,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
 
             {/* Preview Card */}
             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
-              <h3 className="text-lg font-semibold text-cyan-400 mb-4">Vista Previa</h3>
+              <h3 className="text-lg font-semibold text-cyan-400 mb-4">{t('copyTrading.manager.preview')}</h3>
               
               <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-4">
                 <div className="flex items-center gap-3 mb-3">
@@ -1039,18 +1039,18 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                 
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Nivel de Riesgo</span>
+                    <span className="text-gray-400">{t('copyTrading.stats.riskLevel')}</span>
                     <span className={`font-medium ${
                       profileData.riskLevel === 'Bajo' ? 'text-green-400' : 
                       profileData.riskLevel === 'Moderado' ? 'text-yellow-400' : 'text-red-400'
                     }`}>{profileData.riskLevel}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Inversión Min</span>
+                    <span className="text-gray-400">{t('copyTrading.manager.minInvestmentShort')}</span>
                     <span className="text-white">{formatCurrency(profileData.minInvestment)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Comisión</span>
+                    <span className="text-gray-400">{t('copyTrading.manager.commission')}</span>
                     <span className="text-white">{profileData.commissionRate}%</span>
                   </div>
                 </div>
@@ -1067,12 +1067,12 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                 {isSaving ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Guardando...
+                    {t('copyTrading.actions.saving')}
                   </>
                 ) : (
                   <>
                     <Save size={20} />
-                    Guardar Cambios
+                    {t('copyTrading.actions.saveChanges')}
                   </>
                 )}
               </button>
@@ -1081,7 +1081,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                 onClick={handleBackToDashboard}
                 className="w-full border border-[#333] text-gray-400 py-3 px-6 rounded-xl hover:text-white hover:border-gray-300 transition-colors font-medium"
               >
-                Cancelar
+                {t('copyTrading.actions.cancel')}
               </button>
             </div>
           </div>
@@ -1093,7 +1093,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
   // Fallback
   return (
     <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333]">
-      <p className="text-gray-400">Vista no encontrada</p>
+      <p className="text-gray-400">{t('copyTrading.errors.viewNotFound')}</p>
     </div>
   );
 };

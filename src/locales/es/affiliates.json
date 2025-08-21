@@ -1,0 +1,88 @@
+{
+  "dashboard": {
+    "title": "Panel de Afiliados",
+    "tabs": {
+      "panel": "Panel",
+      "references": "Referencias",
+      "payments": "Pagos"
+    },
+    "performance": {
+      "title": "Rendimiento",
+      "totalCommissionsCollected": "Comisiones Totales Cobradas",
+      "totalCommissionAmount": "Cantidad De Comisiones Totales",
+      "averageCommissions": "Comisiones Promedio"
+    },
+    "affiliateSection": {
+      "affiliateLink": "Enlace De Afiliados",
+      "generateLink": "Generando enlace...",
+      "registeredReferrals": "Referidos Registrados",
+      "conversion": "Conversion"
+    },
+    "commissionLevels": {
+      "title": "Niveles de Comisión",
+      "tier1": {
+        "name": "Tier 1",
+        "commission": "Comision Por Lote $3,00 USD",
+        "requirement": "Hasta {{count}} Afiliados"
+      },
+      "tier2": {
+        "name": "Tier 2",
+        "commission": "Comision Por Lote $3,50 USD",
+        "requirement": "Hasta {{count}} Afiliados"
+      },
+      "tier3": {
+        "name": "Tier 3",
+        "commission": "Comision Por Lote $4,00 USD",
+        "requirement": "{{count}}+ Afiliados"
+      }
+    },
+    "activeAccounts": {
+      "title": "Cuentas activas y comisiones generadas",
+      "topAffiliates": "Top {{count}} Afiliados",
+      "withdrawalHistory": "Historial De Retiro",
+      "history": "Historial",
+      "table": {
+        "user": "Usuario",
+        "accountType": "Tipo de Cuenta",
+        "balance": "Balance",
+        "equity": "Equidad",
+        "lotsTraded": "Lotes Operados",
+        "commissionsGenerated": "Comisiones Generadas",
+        "withdrawalsClaimed": "Retiros Cobrados"
+      }
+    },
+    "references": {
+      "title": "Referencias",
+      "table": {
+        "referenceId": "Identificacion de referencia",
+        "fullName": "Nombre Completo",
+        "country": "País",
+        "createdAt": "Creado en",
+        "campaignId": "Identificacion de campaña",
+        "campaignName": "Nombre de la campaña",
+        "purchaseCount": "N° de compras",
+        "totalRevenue": "Ingresos totales",
+        "commissions": "Comisiones"
+      },
+      "noDataAvailable": "No hay datos disponibles",
+      "noReferencesAvailable": "No hay referencias disponibles"
+    },
+    "payments": {
+      "title": "Pagos",
+      "table": {
+        "paymentId": "Identificacion de pago",
+        "createdAt": "Creado en",
+        "amountToPay": "Cantidad a pagar",
+        "status": "Estado"
+      },
+      "noDataAvailable": "No hay datos disponibles",
+      "noPaymentsAvailable": "No hay pagos disponibles"
+    },
+    "messages": {
+      "linkCopied": "Enlace de afiliado copiado al portapapeles",
+      "copyError": "Error al copiar el enlace.",
+      "notAuthenticated": "Usuario no autenticado.",
+      "dataLoadError": "Error al cargar los datos. Intente de nuevo más tarde."
+    }
+  }
+}

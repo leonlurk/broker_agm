@@ -1,0 +1,101 @@
+{
+  "title": "Notifications",
+  "types": {
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "auth": {
+    "loginSuccess": "Login successful",
+    "logoutSuccess": "Logged out successfully",
+    "registerSuccess": "Registration completed successfully",
+    "passwordResetSent": "Password reset link sent to your email",
+    "passwordChanged": "Password updated successfully",
+    "verificationSent": "Verification code sent",
+    "accountVerified": "Account verified successfully",
+    "sessionExpired": "Your session has expired",
+    "invalidCredentials": "Invalid credentials",
+    "accountLocked": "Account temporarily locked",
+    "tooManyAttempts": "Too many attempts. Try again later"
+  },
+  "kyc": {
+    "documentsSubmitted": "Documents submitted for verification",
+    "verificationPending": "Verification in progress",
+    "verificationApproved": "Verification approved",
+    "verificationRejected": "Verification rejected. Check comments",
+    "additionalDocsRequired": "Additional documents required",
+    "uploadSuccess": "Document uploaded successfully",
+    "uploadError": "Error uploading document"
+  },
+  "wallet": {
+    "depositSuccess": "Deposit processed successfully",
+    "depositPending": "Deposit in progress",
+    "depositFailed": "Error processing deposit",
+    "withdrawalSuccess": "Withdrawal processed successfully",
+    "withdrawalPending": "Withdrawal in progress",
+    "withdrawalFailed": "Error processing withdrawal",
+    "transferSuccess": "Transfer completed",
+    "transferFailed": "Transfer error",
+    "insufficientBalance": "Insufficient balance",
+    "limitExceeded": "Limit exceeded",
+    "paymentMethodAdded": "Payment method added",
+    "paymentMethodRemoved": "Payment method removed"
+  },
+  "trading": {
+    "accountCreated": "Trading account created",
+    "accountDeleted": "Account deleted",
+    "positionOpened": "Position opened",
+    "positionClosed": "Position closed",
+    "orderPlaced": "Order placed",
+    "orderExecuted": "Order executed",
+    "orderCancelled": "Order cancelled",
+    "marginCall": "Margin call",
+    "stopOut": "Stop out executed",
+    "profitTarget": "Profit target reached",
+    "stopLossHit": "Stop loss triggered"
+  },
+  "copytrading": {
+    "followSuccess": "Now following {{trader}}",
+    "unfollowSuccess": "Stopped following {{trader}}",
+    "copyStarted": "Trade copying started",
+    "copyStopped": "Trade copying stopped",
+    "tradesCopied": "{{count}} trades copied",
+    "performanceUpdate": "Performance update available"
+  },
+  "pamm": {
+    "investmentSuccess": "Investment made successfully",
+    "withdrawalSuccess": "Investment withdrawal processed",
+    "offerJoined": "Joined PAMM offer",
+    "offerLeft": "Left PAMM offer",
+    "rolloverComplete": "Rollover completed",
+    "profitDistributed": "Profits distributed"
+  },
+  "system": {
+    "maintenanceScheduled": "Maintenance scheduled for {{date}}",
+    "updateAvailable": "New update available",
+    "connectionLost": "Connection lost",
+    "connectionRestored": "Connection restored",
+    "dataSync": "Data synchronized",
+    "errorOccurred": "An error occurred",
+    "tryAgain": "Please try again",
+    "contactSupport": "Contact support if the problem persists"
+  },
+  "actions": {
+    "dismiss": "Dismiss",
+    "viewDetails": "View Details",
+    "undo": "Undo",
+    "retry": "Retry",
+    "close": "Close",
+    "markAsRead": "Mark as read",
+    "markAllAsRead": "Mark all as read",
+    "clearAll": "Clear all"
+  },
+  "settings": {
+    "preferencesUpdated": "Preferences updated",
+    "settingsSaved": "Settings saved",
+    "profileUpdated": "Profile updated",
+    "securityUpdated": "Security settings updated",
+    "notificationsUpdated": "Notification preferences updated"
+  }
+}

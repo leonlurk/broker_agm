@@ -11,6 +11,7 @@ import { AuthAdapter } from './services/database.adapter';
 import { Toaster } from 'react-hot-toast';
 // import useKYCStatusMonitor from './hooks/useKYCStatusMonitor';
 import useKYCRealtimeMonitor from './hooks/useKYCRealtimeMonitor';
+import './i18n/config'; // Importar configuración de i18n
 
 function App() {
   const { currentUser, isAuthenticated } = useAuth();

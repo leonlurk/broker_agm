@@ -1,0 +1,101 @@
+{
+  "pipCalculator": {
+    "title": "Pip Calculator",
+    "positionSizeTitle": "Position Size",
+    "tabs": {
+      "pipsCalculator": "Pip Calculator",
+      "positionSize": "Position Size"
+    },
+    "instrument": "Instrument",
+    "selectInstrument": "Select instrument",
+    "instrumentTypes": {
+      "forex": "Forex",
+      "stocks": "Stocks",
+      "crypto": "Crypto",
+      "metal": "Metals",
+      "index": "Indices"
+    },
+    "searchInstrument": "Search instrument",
+    "favorites": "Favorites",
+    "allInstruments": "All Instruments",
+    "noResultsFound": "No results found",
+    "addToFavorites": "Add to favorites",
+    "removeFromFavorites": "Remove from favorites",
+    "quantities": {
+      "pips": "Number of Pips",
+      "points": "Number of Points",
+      "ticks": "Number of Ticks"
+    },
+    "positionSize": "Position Size (Lots)",
+    "quickOptions": "Quick options",
+    "accountBalance": "Account Balance",
+    "riskPercentage": "Risk Percentage",
+    "pipTarget": "Pip Target",
+    "accountCurrency": "Account Currency",
+    "calculate": "Calculate",
+    "results": {
+      "pipValue": "Pip Value:",
+      "suggestedPositionSize": "Suggested Position Size:",
+      "riskAmount": "Risk Amount:",
+      "lots": "lots",
+      "ofBalance": "of balance",
+      "pip": "pip",
+      "pips": "pips",
+      "point": "point",
+      "points": "points",
+      "tick": "tick",
+      "ticks": "ticks"
+    }
+  },
+  "downloads": {
+    "title": "Downloads",
+    "platforms": {
+      "mt5": {
+        "name": "MetaTrader 5",
+        "description": "Professional trading platform with advanced technical analysis and strategy automation"
+      }
+    },
+    "operatingSystems": {
+      "windows": "Windows",
+      "mac": "Mac",
+      "android": "Android",
+      "iphone": "iPhone"
+    }
+  },
+  "news": {
+    "title": "Economic News",
+    "marketClosed": "Market Closed",
+    "showingLastFriday": "Showing last Friday's data",
+    "days": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday"
+    },
+    "filters": {
+      "impactFilter": "Impact Filter",
+      "visibilityFilter": "Visibility Filter",
+      "holidays": "Holidays",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "hidePastNews": "Hide past news",
+      "showRestrictedOnly": "Show restricted only"
+    },
+    "table": {
+      "description": "Description",
+      "instrument": "Instrument",
+      "date": "Date",
+      "actual": "Actual",
+      "forecast": "Forecast",
+      "previous": "Previous",
+      "action": "Action",
+      "expired": "Expired",
+      "restrictedEvent": "Restricted Event",
+      "addToCalendar": "Add to calendar"
+    },
+    "noEvents": "No events to show",
+    "loadingError": "Error loading news"
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "title": "Notificaciones",
+  "types": {
+    "success": "Éxito",
+    "error": "Error",
+    "warning": "Advertencia",
+    "info": "Información"
+  },
+  "auth": {
+    "loginSuccess": "Inicio de sesión exitoso",
+    "logoutSuccess": "Sesión cerrada correctamente",
+    "registerSuccess": "Registro completado exitosamente",
+    "passwordResetSent": "Enlace de restablecimiento enviado a tu correo",
+    "passwordChanged": "Contraseña actualizada correctamente",
+    "verificationSent": "Código de verificación enviado",
+    "accountVerified": "Cuenta verificada exitosamente",
+    "sessionExpired": "Tu sesión ha expirado",
+    "invalidCredentials": "Credenciales inválidas",
+    "accountLocked": "Cuenta bloqueada temporalmente",
+    "tooManyAttempts": "Demasiados intentos. Intenta más tarde"
+  },
+  "kyc": {
+    "documentsSubmitted": "Documentos enviados para verificación",
+    "verificationPending": "Verificación en proceso",
+    "verificationApproved": "Verificación aprobada",
+    "verificationRejected": "Verificación rechazada. Revisa los comentarios",
+    "additionalDocsRequired": "Se requieren documentos adicionales",
+    "uploadSuccess": "Documento subido exitosamente",
+    "uploadError": "Error al subir el documento"
+  },
+  "wallet": {
+    "depositSuccess": "Depósito procesado exitosamente",
+    "depositPending": "Depósito en proceso",
+    "depositFailed": "Error al procesar el depósito",
+    "withdrawalSuccess": "Retiro procesado exitosamente",
+    "withdrawalPending": "Retiro en proceso",
+    "withdrawalFailed": "Error al procesar el retiro",
+    "transferSuccess": "Transferencia completada",
+    "transferFailed": "Error en la transferencia",
+    "insufficientBalance": "Balance insuficiente",
+    "limitExceeded": "Límite excedido",
+    "paymentMethodAdded": "Método de pago agregado",
+    "paymentMethodRemoved": "Método de pago eliminado"
+  },
+  "trading": {
+    "accountCreated": "Cuenta de trading creada",
+    "accountDeleted": "Cuenta eliminada",
+    "positionOpened": "Posición abierta",
+    "positionClosed": "Posición cerrada",
+    "orderPlaced": "Orden colocada",
+    "orderExecuted": "Orden ejecutada",
+    "orderCancelled": "Orden cancelada",
+    "marginCall": "Llamada de margen",
+    "stopOut": "Stop out ejecutado",
+    "profitTarget": "Objetivo de ganancia alcanzado",
+    "stopLossHit": "Stop loss activado"
+  },
+  "copytrading": {
+    "followSuccess": "Ahora sigues a {{trader}}",
+    "unfollowSuccess": "Has dejado de seguir a {{trader}}",
+    "copyStarted": "Copia de operaciones iniciada",
+    "copyStopped": "Copia de operaciones detenida",
+    "tradesCopied": "{{count}} operaciones copiadas",
+    "performanceUpdate": "Actualización de rendimiento disponible"
+  },
+  "pamm": {
+    "investmentSuccess": "Inversión realizada exitosamente",
+    "withdrawalSuccess": "Retiro de inversión procesado",
+    "offerJoined": "Te has unido a la oferta PAMM",
+    "offerLeft": "Has salido de la oferta PAMM",
+    "rolloverComplete": "Renovación completada",
+    "profitDistributed": "Ganancias distribuidas"
+  },
+  "system": {
+    "maintenanceScheduled": "Mantenimiento programado para {{date}}",
+    "updateAvailable": "Nueva actualización disponible",
+    "connectionLost": "Conexión perdida",
+    "connectionRestored": "Conexión restaurada",
+    "dataSync": "Datos sincronizados",
+    "errorOccurred": "Ha ocurrido un error",
+    "tryAgain": "Por favor, intenta nuevamente",
+    "contactSupport": "Contacta al soporte si el problema persiste"
+  },
+  "actions": {
+    "dismiss": "Descartar",
+    "viewDetails": "Ver Detalles",
+    "undo": "Deshacer",
+    "retry": "Reintentar",
+    "close": "Cerrar",
+    "markAsRead": "Marcar como leída",
+    "markAllAsRead": "Marcar todas como leídas",
+    "clearAll": "Limpiar todas"
+  },
+  "settings": {
+    "preferencesUpdated": "Preferencias actualizadas",
+    "settingsSaved": "Configuración guardada",
+    "profileUpdated": "Perfil actualizado",
+    "securityUpdated": "Configuración de seguridad actualizada",
+    "notificationsUpdated": "Preferencias de notificaciones actualizadas"
+  }
+}

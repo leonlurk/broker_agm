@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { AuthAdapter } from '../services/database.adapter';
+import { useTranslation } from 'react-i18next';
 
 const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
+  const { t } = useTranslation('auth');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -17,14 +19,14 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
       const { user, error } = await AuthAdapter.loginUser(username, password);
       
       if (error) {
-        throw new Error(error.message || 'Error al iniciar sesión');
+        throw new Error(error.message || t('errors.loginFailed'));
       }
       
       console.log('Login successful:', user);
       onLoginSuccess();
     } catch (err) {
       console.error('Login component error:', err);
-      setError(err.message || 'Ocurrió un error inesperado.');
+      setError(err.message || t('errors.unexpected'));
     } finally {
       setLoading(false);
     }
@@ -50,7 +52,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20"
-              placeholder="Usuario o Email"
+              placeholder={t('fields.emailOrUsername')}
               required
             />
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,7 +66,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20"
-              placeholder="Contraseña"
+              placeholder={t('fields.password')}
               required
             />
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +85,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
               className="h-4 w-4 bg-gray-800 border-gray-700 rounded focus:ring-blue-500"
             />
             <label htmlFor="remember_me" className="ml-2 block text-gray-300">
-              Recuérdame
+              {t('login.rememberMe')}
             </label>
           </div>
           <button
@@ -91,7 +93,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
             onClick={onForgotClick}
             className="text-white hover:text-blue-500 bg-transparent whitespace-nowrap"
           >
-            ¿Olvidaste la contraseña?
+            {t('login.forgotPassword')}
           </button>
         </div>
 
@@ -101,12 +103,12 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
             className="w-full py-3 px-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium shadow-lg relative overflow-hidden group"
             >
             <span className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-            <span className="relative z-10">{loading ? 'Iniciando...' : 'Iniciar Sesión'}</span>
+            <span className="relative z-10">{loading ? t('login.loggingIn') : t('login.signIn')}</span>
         </button>
 
         <div className="mt-4 text-center">
           <p className="text-gray-400 mt-1">
-            ¿No tienes cuenta de broker? <button type="button" onClick={onRegisterClick} className="text-white font-semibold bg-transparent">Regístrate</button>
+            {t('login.noAccount')} <button type="button" onClick={onRegisterClick} className="text-white font-semibold bg-transparent">{t('login.signUp')}</button>
           </p>
         </div>
       </form>

@@ -2,19 +2,19 @@ import React, { useState, useRef, useEffect } from 'react';
 import Settings from './Settings';
 import UserInformationContent from './UserInformationContent';
 import NotificationsModal from './NotificationsModal';
-import LanguageSelector from './LanguageSelector';
 import { ChevronDown, ArrowDown, ArrowUp, SlidersHorizontal, Settings as SettingsIcon, Bell } from 'lucide-react';
 import { useAccounts, WALLET_OPERATIONS, ACCOUNT_CATEGORIES } from '../contexts/AccountsContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { DatabaseAdapter } from '../services/database.adapter';
-import useTranslation from '../hooks/useTranslation';
+import { useTranslation } from 'react-i18next';
+import LanguageSelector from './LanguageSelector';
 
 const fondoTarjetaUrl = "/fondoTarjeta.png";
 
 const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   const { currentUser } = useAuth();
-  const { t } = useTranslation();
+  const { t } = useTranslation(['dashboard', 'common', 'wallet']);
   const { 
     accounts, 
     selectedAccount, 
@@ -36,12 +36,10 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     unreadCount, 
     markAllAsRead 
   } = useNotifications();
-  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState('ES');
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMonthMenu, setShowMonthMenu] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState('Mes actual');
+  const [currentMonth, setCurrentMonth] = useState('currentMonth');
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [userProfileData, setUserProfileData] = useState({
     photoURL: '/Perfil.png',
@@ -207,14 +205,14 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   const allAccountsForSelector = getAllAccounts();
   
   // Filtrar solo cuentas reales para el tablero principal
-  const realAccountsOnly = getAccountsByCategory('Cuentas Reales');
+  const realAccountsOnly = getAccountsByCategory(t('dashboard:accountSummary.realAccounts'));
   
   // Obtener todas las cuentas y filtrarlas según el filtro seleccionado
   const getFilteredAccounts = () => {
     let filteredAccounts = [];
     
     if (accountFilter === 'real') {
-      filteredAccounts = getAccountsByCategory('Cuentas Reales');
+      filteredAccounts = getAccountsByCategory(t('dashboard:accountSummary.realAccounts'));
     } else if (accountFilter === 'demo') {
       filteredAccounts = getAccountsByCategory('Cuentas Demo');
     } else {
@@ -245,9 +243,9 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
 
         <div className="mb-3 sm:mb-0">
           <h1 className="text-xl md:text-2xl font-semibold">
-            {t('dashboard.welcome')}, {userProfileData.nombre || currentUser?.displayName?.split(' ')[0] || user?.username || 'Usuario'}
+            {t('dashboard:welcome', { name: userProfileData.nombre || currentUser?.displayName?.split(' ')[0] || user?.username || 'Usuario' })}
           </h1>
-          <p className="text-sm md:text-base text-gray-400">{new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).replace(/^\w/, (c) => c.toUpperCase())}</p>
+          <p className="text-sm md:text-base text-gray-400">{new Date().toLocaleDateString(t('common:time.locale'), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).replace(/^\w/, (c) => c.toUpperCase())}</p>
         </div>
         <div className="flex items-center space-x-3 md:space-x-4 w-full sm:w-auto justify-end">
           <button 
@@ -307,14 +305,14 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
             }}
           ></div>
           <div className="relative z-10 py-4">
-            <h2 className="text-xl md:text-3xl font-bold mb-3">{t('home.welcomeTitle')}</h2>
-            <p className="text-base md:text-lg mb-4">{t('home.welcomeSubtitle')}</p>
+            <h2 className="text-xl md:text-3xl font-bold mb-3">{t('common:home.welcomeTitle')}</h2>
+            <p className="text-base md:text-lg mb-4">{t('common:home.welcomeSubtitle')}</p>
             <button 
               className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-4 rounded-md hover:opacity-90 transition"
               style={{ outline: 'none' }}
-              onClick={() => setSelectedOption && setSelectedOption("Nueva Cuenta")}
+              onClick={() => setSelectedOption && setSelectedOption(t('common:home.newAccount'))}
             >
-              {t('home.getStarted')}
+              {t('common:home.getStarted')}
             </button>
           </div>
         </div>
@@ -331,7 +329,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                 disabled={isLoading}
               >
                 <span className="truncate">
-                  {selectedAccount ? selectedAccount.account_name : t('withdrawal.selectAccount')}
+                  {selectedAccount ? selectedAccount.account_name : t('common:general.selectAccount')}
                 </span>
                 <img src='/Filter.svg' width={23} />
               </button>
@@ -343,7 +341,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                       <div className="px-4 py-2 text-red-400">{t('common.error')}: {error}</div>
                     ) : realAccountsOnly.length > 0 ? (
                       <div className="px-2 pt-2">
-                        <div className="px-2 pb-1 text-xs text-gray-500 font-semibold uppercase">Cuentas Reales</div>
+                        <div className="px-2 pb-1 text-xs text-gray-500 font-semibold uppercase">{t('dashboard:accountSummary.realAccounts')}</div>
                         {realAccountsOnly.map(account => (
                           <button
                             key={account.id}
@@ -355,20 +353,20 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                         ))}
                       </div>
                     ) : (
-                      <div className="px-4 py-2 text-gray-500">{t('common.noAccountsAvailable')}</div>
+                      <div className="px-4 py-2 text-gray-500">{t('common:general.noAccountsAvailable')}</div>
                     )}
                   </div>
               )}
             </div>
 
             <div className="space-y-1 pt-3">
-              <h3 className="text-base text-gray-400">{t('accounts.accountNumber')}:</h3>
+              <h3 className="text-base text-gray-400">{t('common:general.accountNumber')}:</h3>
               <p className="text-lg font-medium text-white">
-                {selectedAccount?.account_number || t('common.selectAccount')}
+                {selectedAccount?.account_number || t('common:general.selectAccount')}
               </p>
             </div>
             <div className="space-y-1">
-              <h3 className="text-base text-gray-400">{t('accounts.balance')} (USD)</h3>
+              <h3 className="text-base text-gray-400">{t('common:general.balance')} (USD)</h3>
               <p className="text-3xl font-bold text-white">
                 ${(selectedAccount?.balance || 0).toFixed(2)}
               </p>
@@ -391,7 +389,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                style={{ outline: 'none' }}
                disabled={!selectedAccount}
              >
-               {t('wallet.deposit')}
+               {t('wallet:deposit.title')}
                <ArrowDown size={16} className="transform -rotate-90"/>
              </button>
              <button
@@ -404,7 +402,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                style={{ outline: 'none' }}
                disabled={!selectedAccount}
              >
-               {t('wallet.withdraw')}
+               {t('wallet:withdraw.title')}
                 <ArrowUp size={16} className="transform -rotate-90"/>
              </button>
              <button
@@ -417,7 +415,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                style={{ outline: 'none' }}
                disabled={!selectedAccount}
              >
-               {t('trading.transfer')}
+               {t('wallet:transfer.title')}
                <SlidersHorizontal size={16} className="transform rotate-90"/>
              </button>
           </div>
@@ -425,7 +423,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
       </div>
 
       <div className="mb-6 p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-3xl border border-[#333]"> 
-         <h2 className="text-2xl font-semibold text-white mb-4">{t('home.yourAccounts')}</h2>
+         <h2 className="text-2xl font-semibold text-white mb-4">{t('dashboard:sidebar.items.accounts')}</h2>
          <div className="flex flex-wrap items-center gap-3 mb-5">
              <button
                  onClick={() => setAccountFilter('all')}
@@ -435,7 +433,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                      : 'bg-transparent border-gray-600 text-gray-400 hover:border-gray-500'
                  }`}
              >
-                 Todas ({getAllAccounts().length})
+                 {t('common:buttons.all')} ({getAllAccounts().length})
              </button>
              <button
                  onClick={() => setAccountFilter('real')}
@@ -445,7 +443,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                      : 'bg-transparent border-gray-600 text-gray-400 hover:border-gray-500'
                  }`}
              >
-                 Cuentas Reales ({realAccountsOnly.length})
+                 {t('dashboard:accountSummary.realAccounts')} ({realAccountsOnly.length})
              </button>
              <button
                  onClick={() => setAccountFilter('demo')}
@@ -455,7 +453,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                      : 'bg-transparent border-gray-600 text-gray-400 hover:border-gray-500'
                  }`}
              >
-                 Cuentas Demo ({getAccountsByCategory('Cuentas Demo').length})
+                 {t('dashboard:accountSummary.demoAccounts')} ({getAccountsByCategory(t('dashboard:accountSummary.demoAccounts')).length})
              </button>
          </div>
 
@@ -489,17 +487,17 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                      </div>
                      <div className="grid grid-cols-3 gap-2 text-center mb-4">
                        <div>
-                         <p className="text-xs text-gray-300 mb-1">PNL Hoy</p>
+                         <p className="text-xs text-gray-300 mb-1">{t('dashboard:accountSummary.pnlToday')}</p>
                          <p className="text-sm font-semibold text-green-500">+0.91%</p>
                          <p className="text-xs text-gray-200">+$7.07</p>
                        </div>
                        <div>
-                         <p className="text-xs text-gray-300 mb-1">PNL 7 días</p>
+                         <p className="text-xs text-gray-300 mb-1">{t('dashboard:accountSummary.pnl7Days')}</p>
                          <p className="text-sm font-semibold text-green-500">+8.95%</p>
                          <p className="text-xs text-gray-200">+$64.39</p>
                        </div>
                        <div>
-                         <p className="text-xs text-gray-300 mb-1">PNL 30 días</p>
+                         <p className="text-xs text-gray-300 mb-1">{t('dashboard:accountSummary.pnl30Days')}</p>
                          <p className="text-sm font-semibold text-green-500">+2.91%</p>
                          <p className="text-xs text-gray-200">+$38.51</p>
                        </div>
@@ -518,13 +516,13 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                      className="w-full bg-transparent border border-sky-500 text-sky-500 py-2 rounded-full transition-colors hover:bg-sky-500 hover:text-white text-sm"
                          style={{ outline: 'none' }}
                      >
-                         {t('common.view')} {t('common.details')}
+                         {t('common:general.view')} {t('common:general.details')}
                      </button>
                  </div>
                );
              }) : (
                    <p className="text-gray-500 sm:col-span-2 lg:col-span-3 text-center py-4">
-                     {t('common.noAccountsInCategory')}
+                     {t('common:general.noAccountsInCategory')}
                    </p>
               )}
          </div>

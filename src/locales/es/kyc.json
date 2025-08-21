@@ -1,0 +1,126 @@
+{
+  "title": "Verificación KYC",
+  "subtitle": "Vamos a verificarte",
+  "status": {
+    "pending": "Verificación en Proceso",
+    "approved": "Verificación Completada",
+    "rejected": "Verificación Rechazada",
+    "notStarted": "No Iniciado",
+    "inReview": "En Revisión",
+    "additionalRequired": "Información Adicional Requerida"
+  },
+  "steps": {
+    "country": "País de Residencia",
+    "document": "Documento de Identidad",
+    "selfie": "Selfie",
+    "address": "Prueba de Dirección",
+    "review": "Revisión"
+  },
+  "country": {
+    "title": "País de Residencia",
+    "description": "Por favor, elija su país de residencia",
+    "placeholder": "Buscar país...",
+    "notFound": "No se encontraron países"
+  },
+  "document": {
+    "title": "Documento a Verificar",
+    "subtitle": "Elija su tipo de documento",
+    "issuingCountry": "País de emisión del documento",
+    "photoInstruction": "Haga una foto de su documento de identidad.",
+    "types": {
+      "id": "Documento de identidad",
+      "passport": "Pasaporte",
+      "driver": "Permiso de conducir",
+      "residence": "Permiso de residencia"
+    },
+    "upload": {
+      "front": "Subir Frente del documento",
+      "back": "Subir Dorso del documento",
+      "single": "Subir Documento"
+    },
+    "requirements": {
+      "title": "La foto debe:",
+      "clear": "Estar bien iluminada y ser clara",
+      "corners": "Todas las esquinas del documento se deben ver bien",
+      "noGlare": "Sin reflejos ni sombras",
+      "original": "Ser el documento original (no fotocopias)"
+    }
+  },
+  "selfie": {
+    "title": "Selfie con documento de identidad",
+    "description": "Tome una selfie sosteniendo su documento de identidad junto a su rostro",
+    "requirements": {
+      "visible": "Su rostro y el documento deben ser claramente visibles",
+      "lighting": "Asegúrese de que la foto esté bien iluminada",
+      "holding": "Sostenga el documento al lado de su rostro",
+      "noFilters": "No use filtros ni efectos"
+    },
+    "upload": "Subir Selfie con DNI"
+  },
+  "address": {
+    "title": "Prueba de dirección",
+    "description": "Suba un documento que compruebe su dirección de residencia",
+    "accepted": {
+      "title": "Documentos aceptados:",
+      "utility": "Factura de servicios públicos (luz, agua, gas) - no mayor a 3 meses",
+      "bank": "Estado de cuenta bancario - no mayor a 3 meses",
+      "lease": "Contrato de arrendamiento",
+      "letter": "Carta del banco con dirección"
+    },
+    "upload": "Subir Prueba de Dirección"
+  },
+  "messages": {
+    "processing": "Su verificación KYC está en proceso. Le notificaremos cuando se complete.",
+    "completed": "Su cuenta ha sido verificada exitosamente.",
+    "rejected": "Su verificación ha sido rechazada. Por favor, revise los comentarios y vuelva a enviar.",
+    "resubmit": "Por favor, vuelva a enviar los documentos con las correcciones solicitadas.",
+    "submitted": "Documentos enviados exitosamente. Le notificaremos cuando se complete la verificación."
+  },
+  "errors": {
+    "fileSize": "El archivo no debe superar los 10MB",
+    "fileType": "Solo se permiten archivos JPG, PNG o PDF",
+    "uploadFailed": "Error al subir algunos documentos",
+    "missingDocuments": "Por favor, suba todos los documentos requeridos",
+    "invalidDocument": "Documentos no válidos",
+    "expired": "El documento ha expirado",
+    "mismatch": "Los datos no coinciden",
+    "poorQuality": "La calidad de la imagen es muy baja",
+    "notVisible": "El documento no es completamente visible",
+    "loginRequired": "Debe iniciar sesión para continuar",
+    "submitError": "Error al enviar los documentos"
+  },
+  "buttons": {
+    "back": "Volver a Ajustes",
+    "next": "Siguiente",
+    "submit": "Enviar Documentos para Verificación",
+    "submitting": "Enviando...",
+    "resubmit": "Enviar Nuevamente",
+    "cancel": "Cancelar",
+    "upload": "Subir Archivo",
+    "change": "Cambiar",
+    "remove": "Eliminar"
+  },
+  "dates": {
+    "submitted": "Fecha de envío:",
+    "reviewed": "Fecha de revisión:",
+    "approved": "Fecha de aprobación:",
+    "rejected": "Fecha de rechazo:"
+  },
+  "status": {
+    "label": "Estado"
+  },
+  "statusCard": {
+    "pending": {
+      "subtitle": "Sus documentos están siendo revisados",
+      "description": "Nuestro equipo está verificando los documentos que ha enviado. Este proceso generalmente toma entre 24 a 48 horas hábiles."
+    },
+    "approved": {
+      "subtitle": "Su cuenta ha sido verificada exitosamente",
+      "description": "Felicitaciones! Su verificación KYC ha sido aprobada. Ahora tiene acceso completo a todas las funciones de la plataforma."
+    },
+    "rejected": {
+      "subtitle": "Sus documentos no pudieron ser verificados",
+      "description": "Los documentos enviados no cumplen con los requisitos. Por favor, vuelva a enviar documentos válidos."
+    }
+  }
+}

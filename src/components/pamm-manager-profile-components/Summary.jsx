@@ -14,21 +14,21 @@ const StatCard = ({ label, value, icon }) => (
 );
 
 
-const Summary = ({ data }) => {
+const Summary = ({ data, t }) => {
   const stats = [
-    { label: "Balance actual", value: data.balance, icon: <RiWalletLine /> },
-    { label: "Equidad actual", value: data.equity, icon: <RiBarChart2Line /> },
-    { label: "Ganancias totales", value: data.totalProfit, icon: <RiArrowUpSLine /> },
-    { label: "Inicio de actividad", value: data.startDate, icon: <RiCalendarLine /> },
-    { label: "Rentabilidad total", value: data.totalProfitability, icon: <RiPercentLine /> },
-    { label: "Drawdown máximo", value: data.maxDrawdown, icon: <RiArrowDownSLine /> },
-    { label: "ROI mensual prom.", value: data.avgMonthlyROI, icon: <RiTimeLine /> },
-    { label: "Inversores", value: data.investors, icon: <RiTeamLine /> },
+    { label: t('pamm.profile.currentBalance'), value: data.balance, icon: <RiWalletLine /> },
+    { label: t('pamm.profile.currentEquity'), value: data.equity, icon: <RiBarChart2Line /> },
+    { label: t('pamm.profile.totalProfits'), value: data.totalProfit, icon: <RiArrowUpSLine /> },
+    { label: t('pamm.profile.activityStart'), value: data.startDate, icon: <RiCalendarLine /> },
+    { label: t('pamm.profile.totalProfitability'), value: data.totalProfitability, icon: <RiPercentLine /> },
+    { label: t('pamm.profile.maxDrawdown'), value: data.maxDrawdown, icon: <RiArrowDownSLine /> },
+    { label: t('pamm.profile.avgMonthlyROI'), value: data.avgMonthlyROI, icon: <RiTimeLine /> },
+    { label: t('pamm.profile.investors'), value: data.investors, icon: <RiTeamLine /> },
   ];
 
   return (
     <div>
-        <h2 className="text-2xl font-semibold text-white mb-4">Resumen General</h2>
+        <h2 className="text-2xl font-semibold text-white mb-4">{t('pamm.profile.generalSummary')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {stats.map(stat => (
                 <StatCard key={stat.label} label={stat.label} value={stat.value} icon={stat.icon} />

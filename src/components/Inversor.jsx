@@ -6,7 +6,7 @@ import AccountSelectionModal from './AccountSelectionModal';
 import CommentsRatingModal from './CommentsRatingModal';
 import { useAccounts } from '../contexts/AccountsContext';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
-import useTranslation from '../hooks/useTranslation';
+import { useTranslation } from 'react-i18next';
 import { getMasterTraders, getMySubscriptions, getInvestorPortfolio } from '../services/copytradingService';
 
 // Estados iniciales vacíos para datos dinámicos
@@ -358,12 +358,11 @@ const Inversor = () => {
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
             <div className="flex-1">
-              <h1 className="text-3xl font-semibold mb-3">Tablero Copy Trading</h1>
+              <h1 className="text-3xl font-semibold mb-3">{t('copyTrading.dashboard')}</h1>
               <div className="space-y-2">
-                <p className="text-gray-300 font-medium">Copy Trading</p>
+                <p className="text-gray-300 font-medium">{t('copyTrading.title')}</p>
                 <p className="text-gray-400 max-w-2xl">
-                  Replica estrategias de traders profesionales verificados. 
-                  Diversifica tu portafolio con control total sobre tu capital.
+                  {t('copyTrading.description')}
                 </p>
               </div>
             </div>
@@ -373,7 +372,7 @@ const Inversor = () => {
                 className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-3 px-8 rounded-xl hover:opacity-90 transition-opacity text-lg font-medium flex items-center gap-2"
               >
                 <Eye size={20} />
-                {t('investor.exploreTraders')}
+                {t('copyTrading.investor.exploreTraders')}
               </button>
             </div>
           </div>
@@ -381,14 +380,14 @@ const Inversor = () => {
 
         {/* Widget 1: Resumen de Portafolio */}
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-cyan-400">Portafolio Copy Trading</h2>
+          <h2 className="text-xl font-semibold mb-4 text-cyan-400">{t('copyTrading.investor.portfolio')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center md:text-left">
-              <p className="text-gray-400 text-sm mb-1">Balance Total</p>
+              <p className="text-gray-400 text-sm mb-1">{t('copyTrading.investor.totalBalance')}</p>
               <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.total_balance || portfolioData.totalBalance || 0)}</p>
             </div>
             <div className="text-center md:text-left">
-              <p className="text-gray-400 text-sm mb-1">P&L Total</p>
+              <p className="text-gray-400 text-sm mb-1">{t('copyTrading.investor.totalPnL')}</p>
               <div className="flex items-center justify-center md:justify-start gap-2">
                 <p className={`text-2xl font-bold ${(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                   {formatCurrency(portfolioData.total_pnl || portfolioData.totalPnL || 0)}
@@ -400,7 +399,7 @@ const Inversor = () => {
               </div>
             </div>
             <div className="text-center md:text-left">
-              <p className="text-gray-400 text-sm mb-1">Capital Activo</p>
+              <p className="text-gray-400 text-sm mb-1">{t('copyTrading.investor.activeCapital')}</p>
               <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.active_capital || portfolioData.activeCapital || 0)}</p>
             </div>
           </div>
@@ -408,7 +407,7 @@ const Inversor = () => {
 
         {/* Widget 2: Mis Traders Copiados */}
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-cyan-400">Traders Copiados</h2>
+          <h2 className="text-xl font-semibold mb-4 text-cyan-400">{t('copyTrading.investor.copiedTraders')}</h2>
           <div className="space-y-4">
             {subscriptions.map((trader) => (
               <div key={trader.id} className="bg-[#1C1C1C] rounded-xl border border-[#333] p-4">
@@ -420,14 +419,14 @@ const Inversor = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-white">{trader.name}</h3>
-                      <p className="text-sm text-gray-400">Capital: {formatCurrency(trader.assignedCapital)}</p>
+                      <p className="text-sm text-gray-400">{t('copyTrading.investor.capital')}: {formatCurrency(trader.assignedCapital)}</p>
                     </div>
                   </div>
                   
                   {/* Performance */}
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-sm text-gray-400">Rendimiento</p>
+                      <p className="text-sm text-gray-400">{t('copyTrading.stats.performance')}</p>
                       <div className="flex items-center gap-2">
                         <p className={`font-semibold ${trader.personalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                           {formatCurrency(trader.personalPnL)}
@@ -445,7 +444,7 @@ const Inversor = () => {
                           ? 'bg-green-500/20 text-green-400' 
                           : 'bg-yellow-500/20 text-yellow-400'
                       }`}>
-                        {trader.status === 'active' ? 'Activo' : 'Pausado'}
+                        {trader.status === 'active' ? t('copyTrading.status.active') : t('copyTrading.status.paused')}
                       </span>
                     </div>
                     
@@ -455,7 +454,7 @@ const Inversor = () => {
                         onClick={() => handleViewTraderDetails(trader)}
                         className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
                       >
-                        Gestionar
+                        {t('copyTrading.actions.manage')}
                       </button>
                       <div className="relative">
                         <button
@@ -468,11 +467,11 @@ const Inversor = () => {
                           <div className="absolute right-0 mt-2 w-40 bg-[#2a2a2a] border border-[#333] rounded-lg shadow-lg z-10">
                             <button className="w-full text-left px-4 py-2 text-sm text-white hover:bg-[#333] rounded-t-lg flex items-center gap-2">
                               <Pause size={14} />
-                              Pausar Copia
+                              {t('copyTrading.actions.pauseCopy')}
                             </button>
                             <button className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-[#333] rounded-b-lg flex items-center gap-2">
                               <StopCircle size={14} />
-                              Detener Copia
+                              {t('copyTrading.actions.stopCopy')}
                             </button>
                           </div>
                         )}
@@ -488,7 +487,7 @@ const Inversor = () => {
         {/* Widget 3: Gráfico de Rendimiento Histórico */}
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-            <h2 className="text-xl font-semibold text-cyan-400 mb-4 sm:mb-0">Rendimiento Histórico</h2>
+            <h2 className="text-xl font-semibold text-cyan-400 mb-4 sm:mb-0">{t('copyTrading.investor.historicalPerformance')}</h2>
             <div className="flex gap-2">
               {['1M', '3M', '6M', '1A'].map((period) => (
                 <button
@@ -527,7 +526,7 @@ const Inversor = () => {
                     borderRadius: '8px',
                     color: '#ffffff'
                   }}
-                  formatter={(value) => [formatCurrency(value), 'Valor del Portafolio']}
+                  formatter={(value) => [formatCurrency(value), t('copyTrading.investor.portfolioValue')]}
                 />
                 <Area 
                   type="monotone" 
@@ -548,7 +547,7 @@ const Inversor = () => {
             onClick={handleExploreTraders}
             className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-3 px-8 rounded-xl hover:opacity-90 transition-opacity text-lg font-medium"
           >
-            {t('investor.exploreTraders')}
+            {t('copyTrading.investor.exploreTraders')}
           </button>
         </div>
 
@@ -610,10 +609,10 @@ const Inversor = () => {
             onClick={handleBackToDashboard}
             className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors mb-4"
           >
-            ← Volver al Dashboard
+            ← {t('copyTrading.navigation.backToDashboard')}
           </button>
-          <h1 className="text-3xl font-semibold mb-2">{t('investor.exploreTraders')}</h1>
-          <p className="text-gray-400">{t('investor.discoverAndCopyBestTraders')}</p>
+          <h1 className="text-3xl font-semibold mb-2">{t('copyTrading.investor.exploreTraders')}</h1>
+          <p className="text-gray-400">{t('copyTrading.investor.discoverAndCopyBestTraders')}</p>
         </div>
 
         {/* Search and Filters */}
@@ -623,7 +622,7 @@ const Inversor = () => {
             <div className="flex-1 relative">
               <input
                 type="text"
-                placeholder="Buscar trader o estrategia..."
+                placeholder={t('copyTrading.search.placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-[#1C1C1C] border border-[#333] rounded-xl pl-12 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500"
@@ -641,7 +640,7 @@ const Inversor = () => {
               }`}
             >
               <SlidersHorizontal size={20} />
-              Filtros
+              {t('copyTrading.search.filters')}
             </button>
           </div>
 
@@ -651,16 +650,16 @@ const Inversor = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Performance Range */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Rendimiento (%)</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('copyTrading.filters.performance')} (%)</label>
                   <div className="flex gap-2">
                     <input
                       type="number"
-                      placeholder="Min"
+                      placeholder={t('copyTrading.filters.min')}
                       className="flex-1 bg-[#1C1C1C] border border-[#333] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
                     />
                     <input
                       type="number"
-                      placeholder="Max"
+                      placeholder={t('copyTrading.filters.max')}
                       className="flex-1 bg-[#1C1C1C] border border-[#333] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
                     />
                   </div>
@@ -668,27 +667,27 @@ const Inversor = () => {
 
                 {/* Risk Level */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Riesgo</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('copyTrading.filters.risk')}</label>
                   <select className="w-full bg-[#1C1C1C] border border-[#333] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
-                    <option value="">Todos</option>
-                    <option value="Bajo">Bajo</option>
-                    <option value="Moderado">Moderado</option>
-                    <option value="Alto">Alto</option>
+                    <option value="">{t('copyTrading.filters.all')}</option>
+                    <option value="Bajo">{t('copyTrading.risk.low')}</option>
+                    <option value="Moderado">{t('copyTrading.risk.moderate')}</option>
+                    <option value="Alto">{t('copyTrading.risk.high')}</option>
                   </select>
                 </div>
 
                 {/* AUM Range */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">AUM</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('copyTrading.filters.aum')}</label>
                   <div className="flex gap-2">
                     <input
                       type="number"
-                      placeholder="Min"
+                      placeholder={t('copyTrading.filters.min')}
                       className="flex-1 bg-[#1C1C1C] border border-[#333] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
                     />
                     <input
                       type="number"
-                      placeholder="Max"
+                      placeholder={t('copyTrading.filters.max')}
                       className="flex-1 bg-[#1C1C1C] border border-[#333] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
                     />
                   </div>
@@ -696,43 +695,43 @@ const Inversor = () => {
 
                 {/* Min Followers */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Min. Seguidores</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('copyTrading.filters.minFollowers')}</label>
                   <input
                     type="number"
-                    placeholder="Ej: 10"
+                    placeholder="10"
                     className="w-full bg-[#1C1C1C] border border-[#333] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
                   />
                 </div>
 
                 {/* Max Drawdown */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Drawdown Máx. (%)</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('copyTrading.filters.maxDrawdown')} (%)</label>
                   <input
                     type="number"
-                    placeholder="Ej: 20"
+                    placeholder="20"
                     className="w-full bg-[#1C1C1C] border border-[#333] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
                   />
                 </div>
 
                 {/* Asset Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Activos</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('copyTrading.filters.assets')}</label>
                   <select className="w-full bg-[#1C1C1C] border border-[#333] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
-                    <option value="">Todos</option>
-                    <option value="forex">Forex</option>
-                    <option value="crypto">Criptomonedas</option>
-                    <option value="stocks">Acciones</option>
-                    <option value="commodities">Commodities</option>
+                    <option value="">{t('copyTrading.filters.all')}</option>
+                    <option value="forex">{t('copyTrading.assets.forex')}</option>
+                    <option value="crypto">{t('copyTrading.assets.crypto')}</option>
+                    <option value="stocks">{t('copyTrading.assets.stocks')}</option>
+                    <option value="commodities">{t('copyTrading.assets.commodities')}</option>
                   </select>
                 </div>
               </div>
               
               <div className="flex gap-4 mt-4">
                 <button className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors">
-                  Aplicar
+                  {t('copyTrading.actions.apply')}
                 </button>
                 <button className="px-4 py-2 bg-[#333] text-white rounded-lg hover:bg-[#444] transition-colors">
-                  Limpiar
+                  {t('copyTrading.actions.clear')}
                 </button>
               </div>
             </div>
@@ -766,26 +765,26 @@ const Inversor = () => {
               {/* Performance Metrics */}
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Rendimiento</span>
+                  <span className="text-sm text-gray-400">{t('copyTrading.stats.performance')}</span>
                   <span className={`font-semibold ${trader.monthlyPerformance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {formatPercentage(trader.monthlyPerformance)}
                   </span>
                 </div>
                 
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Riesgo</span>
+                  <span className="text-sm text-gray-400">{t('copyTrading.stats.riskLevel')}</span>
                   <span className={`font-medium ${getRiskColor(trader.riskLevel)}`}>
                     {trader.riskLevel}
                   </span>
                 </div>
                 
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">AUM</span>
+                  <span className="text-sm text-gray-400">{t('copyTrading.stats.aum')}</span>
                   <span className="font-medium text-white">{formatAUM(trader.aum)}</span>
                 </div>
                 
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Seguidores</span>
+                  <span className="text-sm text-gray-400">{t('copyTrading.stats.followers')}</span>
                   <div className="flex items-center gap-1">
                     <Users size={14} className="text-gray-400" />
                     <span className="font-medium text-white">{trader.followers}</span>
@@ -793,7 +792,7 @@ const Inversor = () => {
                 </div>
                 
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Drawdown</span>
+                  <span className="text-sm text-gray-400">{t('copyTrading.stats.drawdown')}</span>
                   <span className="font-medium text-red-400">-{trader.maxDrawdown}%</span>
                 </div>
               </div>
@@ -801,11 +800,11 @@ const Inversor = () => {
               {/* Additional Stats */}
               <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-[#1C1C1C] rounded-lg">
                 <div className="text-center">
-                  <p className="text-xs text-gray-400">Tasa de Éxito</p>
+                  <p className="text-xs text-gray-400">{t('copyTrading.stats.winRate')}</p>
                   <p className="font-semibold text-white">{trader.winRate}%</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-gray-400">Duración Avg</p>
+                  <p className="text-xs text-gray-400">{t('copyTrading.stats.avgDuration')}</p>
                   <p className="font-semibold text-white">{trader.avgHoldTime}</p>
                 </div>
               </div>
@@ -822,14 +821,14 @@ const Inversor = () => {
                   disabled={copiedTraders.has(trader.id)}
                 >
                   <Copy size={16} />
-                  {copiedTraders.has(trader.id) ? 'Copiando' : 'Copiar'}
+                  {copiedTraders.has(trader.id) ? t('copyTrading.status.copying') : t('copyTrading.copyNow')}
                 </button>
                 <button
                   onClick={() => handleViewTraderDetails(trader)}
                   className="px-4 py-2 border border-[#333] text-gray-400 rounded-lg hover:text-white hover:border-gray-300 transition-colors text-sm flex items-center justify-center gap-2"
                 >
                   <Eye size={16} />
-                  Ver Perfil
+                  {t('copyTrading.actions.viewProfile')}
                 </button>
               </div>
             </div>
@@ -838,7 +837,7 @@ const Inversor = () => {
 
         {/* Results Count */}
         <div className="mt-6 text-center text-gray-400">
-          {filteredTraders.length} traders disponibles
+          {filteredTraders.length} {t('copyTrading.trader.available')}
         </div>
 
         {/* Modal de Selección de Cuenta */}
@@ -909,7 +908,7 @@ const Inversor = () => {
             onClick={handleBackToDashboard}
             className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors mb-4"
           >
-            ← Volver al Explorador
+            ← {t('copyTrading.navigation.backToExplorer')}
           </button>
         </div>
 
@@ -938,21 +937,21 @@ const Inversor = () => {
             <div className="flex-1 w-full">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="text-center lg:text-left">
-                  <p className="text-sm text-gray-400 mb-1">Rendimiento</p>
+                  <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.performance')}</p>
                   <p className={`text-xl font-bold ${(selectedTrader.monthlyPerformance || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {formatPercentage(selectedTrader.monthlyPerformance || 0)}
                   </p>
                 </div>
                 <div className="text-center lg:text-left">
-                  <p className="text-sm text-gray-400 mb-1">Seguidores</p>
+                  <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.followers')}</p>
                   <p className="text-xl font-bold text-white">{selectedTrader.followers || 0}</p>
                 </div>
                 <div className="text-center lg:text-left">
-                  <p className="text-sm text-gray-400 mb-1">AUM</p>
+                  <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.aum')}</p>
                   <p className="text-xl font-bold text-white">{formatAUM(selectedTrader.aum || 0)}</p>
                 </div>
                 <div className="text-center lg:text-left">
-                  <p className="text-sm text-gray-400 mb-1">Drawdown</p>
+                  <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.drawdown')}</p>
                   <p className="text-xl font-bold text-red-400">-{selectedTrader.maxDrawdown || 0}%</p>
                 </div>
               </div>
@@ -969,7 +968,7 @@ const Inversor = () => {
                   disabled={copiedTraders.has(selectedTrader.id)}
                 >
                   <Copy size={20} />
-                  {copiedTraders.has(selectedTrader.id) ? 'Copiando Trader' : 'Copiar Trader'}
+                  {copiedTraders.has(selectedTrader.id) ? t('copyTrading.status.copyingTrader') : t('copyTrading.actions.copyTrader')}
                 </button>
                 <button 
                   onClick={() => handleFollowTrader(selectedTrader)}
@@ -979,7 +978,7 @@ const Inversor = () => {
                       : 'border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10'
                   }`}
                 >
-                  {followedTraders.has(selectedTrader.id) ? 'Siguiendo' : 'Seguir'}
+                  {followedTraders.has(selectedTrader.id) ? t('copyTrading.status.following') : t('copyTrading.follow')}
                 </button>
               </div>
             </div>
@@ -990,11 +989,11 @@ const Inversor = () => {
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
           <div className="flex flex-wrap gap-2 mb-6 border-b border-[#333] pb-4">
             {[
-              { id: 'performance', label: 'Rendimiento', icon: BarChart3 },
-              { id: 'drawdown', label: 'Drawdown', icon: TrendingDown },
-              { id: 'statistics', label: 'Estadísticas', icon: Activity },
-              { id: 'instruments', label: 'Instrumentos', icon: Target },
-              { id: 'comments', label: 'Comentarios', icon: MessageSquare }
+              { id: 'performance', label: t('copyTrading.tabs.performance'), icon: BarChart3 },
+              { id: 'drawdown', label: t('copyTrading.tabs.drawdown'), icon: TrendingDown },
+              { id: 'statistics', label: t('copyTrading.tabs.statistics'), icon: Activity },
+              { id: 'instruments', label: t('copyTrading.tabs.instruments'), icon: Target },
+              { id: 'comments', label: t('copyTrading.tabs.comments'), icon: MessageSquare }
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -1019,7 +1018,7 @@ const Inversor = () => {
             <div className="space-y-6">
               {/* Performance Chart */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-cyan-400">Rendimiento</h3>
+                <h3 className="text-lg font-semibold mb-4 text-cyan-400">{t('copyTrading.tabs.performance')}</h3>
                 <div className="h-64 mb-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={traderProfileData?.performance?.chartData || []}>
@@ -1042,7 +1041,7 @@ const Inversor = () => {
                           borderRadius: '8px',
                           color: '#ffffff'
                         }}
-                        formatter={(value) => [formatCurrency(value), 'Valor del Portafolio']}
+                        formatter={(value) => [formatCurrency(value), t('copyTrading.investor.portfolioValue')]}
                       />
                       <Area 
                         type="monotone" 
@@ -1059,24 +1058,24 @@ const Inversor = () => {
 
               {/* Performance Metrics by Period */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-cyan-400">Métricas</h3>
+                <h3 className="text-lg font-semibold mb-4 text-cyan-400">{t('copyTrading.metrics.title')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {Object.entries(traderProfileData?.performance?.periods || {}).map(([period, data]) => (
                     <div key={period} className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
                       <h4 className="font-semibold text-white mb-3">{period}</h4>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-400">Retorno</span>
+                          <span className="text-sm text-gray-400">{t('copyTrading.metrics.return')}</span>
                           <span className={`text-sm font-medium ${data.return >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                             {formatPercentage(data.return)}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-400">Sharpe</span>
+                          <span className="text-sm text-gray-400">{t('copyTrading.metrics.sharpe')}</span>
                           <span className="text-sm font-medium text-white">{data.sharpe}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-400">Volatilidad</span>
+                          <span className="text-sm text-gray-400">{t('copyTrading.metrics.volatility')}</span>
                           <span className="text-sm font-medium text-white">{data.volatility}%</span>
                         </div>
                       </div>
@@ -1089,29 +1088,29 @@ const Inversor = () => {
 
           {activeTab === 'statistics' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-cyan-400">Estadísticas</h3>
+              <h3 className="text-lg font-semibold text-cyan-400">{t('copyTrading.tabs.statistics')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Trading Stats */}
                 <div className="bg-[#1C1C1C] rounded-xl p-6 border border-[#333]">
                   <h4 className="font-semibold text-white mb-4 flex items-center gap-2">
                     <Activity size={18} className="text-cyan-400" />
-                    Trading
+                    {t('copyTrading.stats.trading')}
                   </h4>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Total Trades</span>
+                      <span className="text-gray-400">{t('copyTrading.stats.totalTrades')}</span>
                       <span className="text-white font-medium">{traderProfileData?.statistics?.totalTrades || 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Trades Ganadores</span>
+                      <span className="text-gray-400">{t('copyTrading.stats.winningTrades')}</span>
                       <span className="text-green-400 font-medium">{traderProfileData?.statistics?.winningTrades || 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Trades Perdedores</span>
+                      <span className="text-gray-400">{t('copyTrading.stats.losingTrades')}</span>
                       <span className="text-red-400 font-medium">{traderProfileData?.statistics?.losingTrades || 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Tasa de Éxito</span>
+                      <span className="text-gray-400">{t('copyTrading.stats.winRate')}</span>
                       <span className="text-white font-medium">{selectedTrader.winRate || 0}%</span>
                     </div>
                   </div>
@@ -1121,23 +1120,23 @@ const Inversor = () => {
                 <div className="bg-[#1C1C1C] rounded-xl p-6 border border-[#333]">
                   <h4 className="font-semibold text-white mb-4 flex items-center gap-2">
                     <DollarSign size={18} className="text-cyan-400" />
-                    P&L
+                    {t('copyTrading.stats.pnl')}
                   </h4>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Ganancia Promedio</span>
+                      <span className="text-gray-400">{t('copyTrading.stats.avgWin')}</span>
                       <span className="text-green-400 font-medium">${traderProfileData?.statistics?.avgWinAmount || 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Pérdida Promedio</span>
+                      <span className="text-gray-400">{t('copyTrading.stats.avgLoss')}</span>
                       <span className="text-red-400 font-medium">${traderProfileData?.statistics?.avgLossAmount || 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Mayor Ganancia</span>
+                      <span className="text-gray-400">{t('copyTrading.stats.largestWin')}</span>
                       <span className="text-green-400 font-medium">${traderProfileData?.statistics?.largestWin || 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Mayor Pérdida</span>
+                      <span className="text-gray-400">{t('copyTrading.stats.largestLoss')}</span>
                       <span className="text-red-400 font-medium">${traderProfileData?.statistics?.largestLoss || 0}</span>
                     </div>
                   </div>
@@ -1147,23 +1146,23 @@ const Inversor = () => {
                 <div className="bg-[#1C1C1C] rounded-xl p-6 border border-[#333]">
                   <h4 className="font-semibold text-white mb-4 flex items-center gap-2">
                     <Award size={18} className="text-cyan-400" />
-                    Riesgo
+                    {t('copyTrading.stats.risk')}
                   </h4>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Factor de Ganancia</span>
+                      <span className="text-gray-400">{t('copyTrading.stats.profitFactor')}</span>
                       <span className="text-white font-medium">{traderProfileData?.statistics?.profitFactor || 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Recovery Factor</span>
+                      <span className="text-gray-400">{t('copyTrading.stats.recoveryFactor')}</span>
                       <span className="text-white font-medium">{traderProfileData?.statistics?.recoveryFactor || 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Calmar Ratio</span>
+                      <span className="text-gray-400">{t('copyTrading.stats.calmarRatio')}</span>
                       <span className="text-white font-medium">{traderProfileData?.statistics?.calmarRatio || 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Duración Promedio</span>
+                      <span className="text-gray-400">{t('copyTrading.stats.avgDuration')}</span>
                       <span className="text-white font-medium">{traderProfileData?.statistics?.avgTradeDuration || '0h'}</span>
                     </div>
                   </div>
@@ -1174,7 +1173,7 @@ const Inversor = () => {
 
           {activeTab === 'instruments' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-cyan-400">Instrumentos de Trading</h3>
+              <h3 className="text-lg font-semibold text-cyan-400">{t('copyTrading.tabs.instruments')}</h3>
               
               <div className="flex items-center justify-between">
                 <div className="space-y-3">
@@ -1214,7 +1213,7 @@ const Inversor = () => {
 
           {activeTab === 'drawdown' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-cyan-400">Drawdown</h3>
+              <h3 className="text-lg font-semibold text-cyan-400">{t('copyTrading.tabs.drawdown')}</h3>
               
               <div className="h-64 mb-4">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1245,7 +1244,7 @@ const Inversor = () => {
                         color: '#fff'
                       }}
                       labelStyle={{ color: '#9CA3AF' }}
-                      formatter={(value) => [`${value}%`, 'Drawdown']}
+                      formatter={(value) => [`${value}%`, t('copyTrading.tabs.drawdown')]}
                     />
                     <Area 
                       type="monotone" 
@@ -1261,20 +1260,20 @@ const Inversor = () => {
               {/* Estadísticas de drawdown */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
-                  <p className="text-sm text-gray-400 mb-1">Drawdown Máximo</p>
+                  <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.maxDrawdown')}</p>
                   <p className="text-lg font-medium text-red-500">-{selectedTrader.maxDrawdown || 18.4}%</p>
                 </div>
                 <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
-                  <p className="text-sm text-gray-400 mb-1">Drawdown Actual</p>
+                  <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.currentDrawdown')}</p>
                   <p className="text-lg font-medium text-red-400">-6.3%</p>
                 </div>
                 <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
-                  <p className="text-sm text-gray-400 mb-1">Duración Máx</p>
-                  <p className="text-lg font-medium text-white">12 días</p>
+                  <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.maxDuration')}</p>
+                  <p className="text-lg font-medium text-white">12 {t('copyTrading.time.days')}</p>
                 </div>
                 <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
-                  <p className="text-sm text-gray-400 mb-1">Recuperación</p>
-                  <p className="text-lg font-medium text-yellow-500">En curso</p>
+                  <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.recovery')}</p>
+                  <p className="text-lg font-medium text-yellow-500">{t('copyTrading.status.inProgress')}</p>
                 </div>
               </div>
             </div>
@@ -1283,13 +1282,13 @@ const Inversor = () => {
           {activeTab === 'comments' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-cyan-400">Comentarios</h3>
+                <h3 className="text-lg font-semibold text-cyan-400">{t('copyTrading.tabs.comments')}</h3>
                 <button
                   onClick={() => setShowCommentsModal(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-lg transition-colors font-medium text-sm"
                 >
                   <Plus size={16} />
-                  Agregar Comentario
+                  {t('copyTrading.actions.addComment')}
                 </button>
               </div>
               <div className="space-y-4">
@@ -1371,7 +1370,7 @@ const Inversor = () => {
   // Fallback
   return (
     <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333]">
-      <p className="text-gray-400">Vista no encontrada</p>
+      <p className="text-gray-400">{t('copyTrading.errors.viewNotFound')}</p>
       
       {/* Modal de Selección de Cuenta */}
       <AccountSelectionModal

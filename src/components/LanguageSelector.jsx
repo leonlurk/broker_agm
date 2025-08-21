@@ -1,25 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
-import useTranslation from '../hooks/useTranslation';
+import { useTranslation } from 'react-i18next';
+import { Globe } from 'lucide-react';
 
 const LanguageSelector = ({ className = "" }) => {
-  const { currentLanguage, changeLanguage, t } = useTranslation();
+  const { i18n, t } = useTranslation('common');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const languages = [
     { 
       code: 'es', 
-      name: t('languages.spanish'),
+      name: 'Español',
       flag: '/IdiomaES.png' // Bandera española
     },
     { 
       code: 'en', 
-      name: t('languages.english'),
+      name: 'English',
       flag: '/IdiomaEN.png' // Bandera estadounidense para inglés
     }
   ];
 
-  const currentLang = languages.find(lang => lang.code === currentLanguage);
+  const currentLang = languages.find(lang => lang.code === i18n.language) || languages[0];
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
@@ -34,7 +35,8 @@ const LanguageSelector = ({ className = "" }) => {
   }, []);
 
   const handleLanguageChange = (languageCode) => {
-    changeLanguage(languageCode);
+    i18n.changeLanguage(languageCode);
+    localStorage.setItem('language', languageCode);
     setIsOpen(false);
   };
 
@@ -43,7 +45,7 @@ const LanguageSelector = ({ className = "" }) => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-2 bg-[#2a2a2a] hover:bg-[#333] border border-[#444] rounded-lg px-3 py-2 text-white transition-colors"
-        aria-label={t('settings.language')}
+        aria-label={t('navigation.language')}
       >
         <img 
           src={currentLang?.flag} 
@@ -71,7 +73,7 @@ const LanguageSelector = ({ className = "" }) => {
               key={language.code}
               onClick={() => handleLanguageChange(language.code)}
               className={`w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-[#3a3a3a] transition-colors ${
-                currentLanguage === language.code 
+                i18n.language === language.code 
                   ? 'bg-[#3f3f3f] text-white' 
                   : 'text-gray-300'
               }`}
@@ -85,7 +87,7 @@ const LanguageSelector = ({ className = "" }) => {
                 }}
               />
               <span className="text-sm">{language.name}</span>
-              {currentLanguage === language.code && (
+              {i18n.language === language.code && (
                 <svg className="w-4 h-4 text-cyan-500 ml-auto" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>

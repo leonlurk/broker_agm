@@ -1,0 +1,101 @@
+{
+  "pipCalculator": {
+    "title": "Calculadora de Pips",
+    "positionSizeTitle": "Tamaño de Posición",
+    "tabs": {
+      "pipsCalculator": "Calculadora de Pips",
+      "positionSize": "Tamaño de Posición"
+    },
+    "instrument": "Instrumento",
+    "selectInstrument": "Seleccionar instrumento",
+    "instrumentTypes": {
+      "forex": "Forex",
+      "stocks": "Acciones",
+      "crypto": "Cripto",
+      "metal": "Metales",
+      "index": "Índices"
+    },
+    "searchInstrument": "Buscar instrumento",
+    "favorites": "Favoritos",
+    "allInstruments": "Todos los Instrumentos",
+    "noResultsFound": "No se encontraron resultados",
+    "addToFavorites": "Agregar a favoritos",
+    "removeFromFavorites": "Quitar de favoritos",
+    "quantities": {
+      "pips": "Cantidad de Pips",
+      "points": "Cantidad de Puntos",
+      "ticks": "Cantidad de Ticks"
+    },
+    "positionSize": "Tamaño de Posición (Lotes)",
+    "quickOptions": "Opciones rápidas",
+    "accountBalance": "Balance de la Cuenta",
+    "riskPercentage": "Porcentaje de Riesgo",
+    "pipTarget": "Objetivo de Pips",
+    "accountCurrency": "Moneda de la Cuenta",
+    "calculate": "Calcular",
+    "results": {
+      "pipValue": "Valor del Pip:",
+      "suggestedPositionSize": "Tamaño de Posición Sugerido:",
+      "riskAmount": "Cantidad en Riesgo:",
+      "lots": "lotes",
+      "ofBalance": "del balance",
+      "pip": "pip",
+      "pips": "pips",
+      "point": "punto",
+      "points": "puntos",
+      "tick": "tick",
+      "ticks": "ticks"
+    }
+  },
+  "downloads": {
+    "title": "Descargas",
+    "platforms": {
+      "mt5": {
+        "name": "MetaTrader 5",
+        "description": "Plataforma de trading profesional con análisis técnico avanzado y automatización de estrategias"
+      }
+    },
+    "operatingSystems": {
+      "windows": "Windows",
+      "mac": "Mac",
+      "android": "Android",
+      "iphone": "iPhone"
+    }
+  },
+  "news": {
+    "title": "Noticias Económicas",
+    "marketClosed": "Mercado Cerrado",
+    "showingLastFriday": "Mostrando datos del último viernes",
+    "days": {
+      "monday": "Lunes",
+      "tuesday": "Martes",
+      "wednesday": "Miércoles",
+      "thursday": "Jueves",
+      "friday": "Viernes"
+    },
+    "filters": {
+      "impactFilter": "Filtro de Impacto",
+      "visibilityFilter": "Filtro de Visibilidad",
+      "holidays": "Feriados",
+      "low": "Bajo",
+      "medium": "Medio",
+      "high": "Alto",
+      "hidePastNews": "Ocultar noticias pasadas",
+      "showRestrictedOnly": "Mostrar solo restringidos"
+    },
+    "table": {
+      "description": "Descripcion",
+      "instrument": "Instrumento",
+      "date": "Fecha",
+      "actual": "Actual",
+      "forecast": "Pronostico",
+      "previous": "Previo",
+      "action": "Accion",
+      "expired": "Expirado",
+      "restrictedEvent": "Evento Restringido",
+      "addToCalendar": "Añadir al calendario"
+    },
+    "noEvents": "No hay eventos para mostrar",
+    "loadingError": "Error al cargar las noticias"
+  }
+}

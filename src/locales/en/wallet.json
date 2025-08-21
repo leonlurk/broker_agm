@@ -1,0 +1,196 @@
+{
+  "title": "Wallet",
+  "tabs": {
+    "deposit": "Deposit",
+    "withdraw": "Withdraw",
+    "transfer": "Transfer",
+    "history": "History"
+  },
+  "common": {
+    "amount": "Amount",
+    "continue": "Continue",
+    "processing": "Processing...",
+    "important": "Important",
+    "selectAccount": "Select Account",
+    "selectMethod": "Select method",
+    "methodDetails": "Method details",
+    "completeOperation": "Complete operation",
+    "availableBalance": "Available Balance",
+    "activeAccount": "Active Account",
+    "noAccounts": "You have no accounts available",
+    "createAccountFirst": "Create an account first in Trading Accounts",
+    "loading": "Loading...",
+    "reload": "Reload",
+    "close": "Close",
+    "acceptTerms": "I understand and accept the terms",
+    "steps": {
+      "step1": "Step 1",
+      "step2": "Step 2",
+      "step3": "Step 3"
+    },
+    "methods": {
+      "crypto": "Cryptocurrency",
+      "bank": "Bank",
+      "internal": "Internal Transfer",
+      "bankTransfer": "Will be processed via bank transfer",
+      "creditCard": "Will be processed via credit card",
+      "skrill": "Will be processed via Skrill"
+    },
+    "errors": {
+      "selectAccount": "Must select an account",
+      "invalidAmount": "Enter a valid amount",
+      "insufficientBalance": "Insufficient balance",
+      "selectMethod": "Must select a method",
+      "acceptTerms": "Must accept terms and conditions",
+      "processingError": "Error processing operation. Please try again.",
+      "operationError": "Operation Error"
+    }
+  },
+  "deposit": {
+    "title": "Deposit Funds",
+    "selectAccount": "Select Account",
+    "selectMethod": "Payment Method",
+    "selectCoin": "Select coin",
+    "amount": "Amount",
+    "minAmount": "Minimum amount: $100 USD",
+    "maxAmount": "Maximum amount: {{amount}}",
+    "importantNote": "Ensure funds come from a legitimate source.",
+    "success": "${{amount}} USD deposit initiated successfully. We will notify you when processed.",
+    "pending": "${{amount}} USD deposit received. It will be credited to your account once processed by our team.",
+    "depositInfo": "Deposit Information",
+    "processingTimeInfo": "Immediate - 24 hours",
+    "methods": {
+      "crypto": "Cryptocurrency",
+      "bank": "Bank Transfer",
+      "card": "Credit/Debit Card"
+    },
+    "crypto": {
+      "selectCoin": "Select Coin",
+      "network": "Network",
+      "address": "Deposit Address",
+      "scanQR": "Scan QR code",
+      "copyAddress": "Copy address",
+      "confirmations": "Required confirmations: {{count}}",
+      "fee": "Network fee: {{fee}}",
+      "warning": "Only send {{coin}} to this address",
+      "processing": "Processing deposit...",
+      "detecting": "Detecting transaction..."
+    },
+    "button": "Make Deposit",
+    "processing": "Processing...",
+    "errors": {
+      "minAmount": "Minimum amount for deposits is $100 USD",
+      "maxAmount": "Amount exceeds maximum",
+      "invalidAmount": "Invalid amount",
+      "selectAccount": "Select an account",
+      "selectMethod": "Select a payment method",
+      "processingError": "Error creating deposit request"
+    }
+  },
+  "withdraw": {
+    "title": "Withdraw Funds",
+    "selectAccount": "Select Account",
+    "availableBalance": "Available Balance",
+    "amount": "Withdrawal Amount",
+    "walletAddress": "Wallet Address",
+    "walletPlaceholder": "Enter your wallet address",
+    "processingTime": "Withdrawals may take 1-3 business days to process.",
+    "success": "Withdrawal request for ${{amount}} USD sent. It will be processed within the next 24-48 hours.",
+    "withdrawInfo": "Withdrawal Information",
+    "processingTimeInfo": "1-3 business days",
+    "destination": "Destination",
+    "withdrawTo": "Withdraw to",
+    "savedMethods": "Saved Methods",
+    "newMethod": "New Method",
+    "crypto": {
+      "wallet": "Crypto Wallet",
+      "address": "Wallet Address",
+      "network": "Network",
+      "memo": "Memo/Tag (optional)"
+    },
+    "bank": {
+      "accountName": "Account Name",
+      "accountNumber": "Account Number",
+      "bankName": "Bank Name",
+      "swift": "SWIFT Code",
+      "iban": "IBAN"
+    },
+    "fees": {
+      "title": "Fees",
+      "processing": "Processing fee",
+      "network": "Network fee",
+      "total": "Total to receive"
+    },
+    "button": "Request Withdrawal",
+    "processing": "Processing withdrawal...",
+    "errors": {
+      "insufficientBalance": "Insufficient balance",
+      "minAmount": "Amount is below minimum",
+      "maxAmount": "Amount exceeds maximum",
+      "invalidAddress": "Invalid address",
+      "dailyLimit": "Daily limit exceeded",
+      "processingError": "Error creating withdrawal request"
+    }
+  },
+  "transfer": {
+    "title": "Transfer Between Accounts",
+    "fromAccount": "From Account",
+    "toAccount": "To Account",
+    "selectDestination": "Select destination account",
+    "transferInfo": "Transfer information",
+    "completeTransfer": "Complete transfer",
+    "instant": "Internal transfers are instant and commission-free.",
+    "instantNote": "The transfer will be processed immediately and without commission.",
+    "instantProcessing": "Instant",
+    "confirmData": "I confirm that the data is correct",
+    "amount": "Amount",
+    "availableBalance": "Available Balance",
+    "button": "Make Transfer",
+    "success": "Transfer request for ${{amount}} USD sent. It will be processed once approved.",
+    "errors": {
+      "sameAccount": "Cannot transfer to same account",
+      "selectAccount": "Must select a destination account",
+      "insufficientBalance": "Insufficient balance",
+      "invalidAmount": "Invalid amount",
+      "selectAccounts": "Select both accounts",
+      "processingError": "Error creating transfer request"
+    }
+  },
+  "history": {
+    "title": "Transaction History",
+    "refresh": "Refresh",
+    "viewMore": "View more",
+    "viewDetails": "View transaction details",
+    "transactionDetails": "Transaction Details",
+    "transactionId": "Transaction ID",
+    "dateTime": "Date and Time",
+    "accountInfo": "Account Information",
+    "processingTime": "Processing time",
+    "fees": "Fee",
+    "filters": {
+      "all": "All",
+      "deposits": "Deposits",
+      "withdrawals": "Withdrawals",
+      "transfers": "Transfers"
+    },
+    "table": {
+      "date": "Date",
+      "type": "Type",
+      "amount": "Amount",
+      "method": "Method",
+      "status": "Status",
+      "account": "Account",
+      "reference": "Reference",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "empty": "No transactions to show",
+    "loading": "Loading history..."
+  }
+}

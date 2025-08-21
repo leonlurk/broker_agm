@@ -1,6 +1,6 @@
 import React from 'react';
 
-const HeroSection = ({ name, strategy, philosophy }) => {
+const HeroSection = ({ name, strategy, philosophy, t }) => {
   return (
     <div className="bg-[#232323] p-6 rounded-lg shadow-lg border border-[#333]">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
@@ -11,7 +11,7 @@ const HeroSection = ({ name, strategy, philosophy }) => {
         </div>
         <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0">
           <button className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-300">
-            Invertir Ahora
+            {t('pamm.profile.investNow')}
           </button>
         </div>
       </div>

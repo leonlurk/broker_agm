@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const Descargas = () => {
-
+  const { t } = useTranslation('tools');
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -25,17 +26,17 @@ const Descargas = () => {
   const platforms = [
   {
     id: 'mt5',
-    name: 'MetaTrader 5',
-    description: 'Plataforma de trading profesional con análisis técnico avanzado y automatización de estrategias',
+    name: t('downloads.platforms.mt5.name'),
+    description: t('downloads.platforms.mt5.description'),
     image: '/mt5.png',
     downloads: [
       { 
-        os: isMobile ? 'Android' : 'Windows',
+        os: isMobile ? t('downloads.operatingSystems.android') : t('downloads.operatingSystems.windows'),
         icon: isMobile ? '/Android.png' : '/windows.png',
         link: isMobile ? 'https://download.mql5.com/cdn/mobile/mt5/android?utm_source=www.metatrader5.com&utm_campaign=install.metaquotes' : 'https://download.mql5.com/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader5.com&utm_campaign=download'
       },
       { 
-        os: isMobile ? 'iPhone' : 'Mac',
+        os: isMobile ? t('downloads.operatingSystems.iphone') : t('downloads.operatingSystems.mac'),
         icon: isMobile ? '/apple.png' : '/apple.png',
         link: isMobile ? 'https://download.mql5.com/cdn/mobile/mt5/ios?utm_source=www.metatrader5.com&utm_campaign=install.metaquotes' : 'https://download.mql5.com/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader5.com&utm_campaign=download.mt5.macos'
       }

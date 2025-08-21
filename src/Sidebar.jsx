@@ -10,10 +10,10 @@ import {
   RiShieldLine,
   RiUserStarLine
 } from "react-icons/ri";
-import useTranslation from "./hooks/useTranslation";
+import { useTranslation } from 'react-i18next';
 
 const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
-    const { t } = useTranslation();
+    const { t } = useTranslation('dashboard');
     const [expandedOptions, setExpandedOptions] = useState({
         Herramientas: false,
         Copytrading: false,
@@ -95,27 +95,27 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
     };
 
     const menuItems = [
-        { name: "Dashboard", translationKey: "sidebar.dashboard", icon: <img src="./darhboard_alt.svg" className="w-8 h-8" /> },
-        { name: "Cuentas", translationKey: "sidebar.accounts", icon: <img src="./Flag_finish_alt.svg" className="w-8 h-8" alt="Cuentas" /> },
-        { name: "Wallet", translationKey: "sidebar.wallet", icon: <RiWalletLine className="w-8 h-8 text-white" /> },
+        { name: "Dashboard", translationKey: "sidebar.items.home", icon: <img src="./darhboard_alt.svg" className="w-8 h-8" /> },
+        { name: "Cuentas", translationKey: "sidebar.items.tradingAccounts", icon: <img src="./Flag_finish_alt.svg" className="w-8 h-8" alt="Cuentas" /> },
+        { name: "Wallet", translationKey: "sidebar.items.wallet", icon: <RiWalletLine className="w-8 h-8 text-white" /> },
         { 
             name: "Herramientas", 
             translationKey: "sidebar.tools",
             icon: <img src="./Setting_alt_line.svg" className="w-8 h-8" alt="Herramientas" />,
             subOptions: [
-                { name: "Calculadora", translationKey: "sidebar.calculator" },
-                { name: "Descargas", translationKey: "sidebar.downloads" },
-                { name: "Noticias", translationKey: "sidebar.news" }
+                { name: "Calculadora", translationKey: "sidebar.items.calculator" },
+                { name: "Descargas", translationKey: "sidebar.items.downloads" },
+                { name: "Noticias", translationKey: "sidebar.items.news" }
             ]
         },
-        { name: "Afiliados", translationKey: "sidebar.affiliates", icon: <img src="./Group_light.svg" className="w-8 h-8" alt="Afiliados" /> },
+        { name: "Afiliados", translationKey: "sidebar.items.affiliates", icon: <img src="./Group_light.svg" className="w-8 h-8" alt="Afiliados" /> },
         { 
             name: "Copytrading", 
-            translationKey: "sidebar.copytrading",
+            translationKey: "sidebar.copyTrading",
             icon: <img src="./copy-linear.svg" className="w-8 h-8" alt="Copytrading" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z'/%3E%3C/svg%3E"} />,
             subOptions: [
-                { name: "Inversor", translationKey: "sidebar.investor" },
-                { name: "Gestor", translationKey: "sidebar.manager" }
+                { name: "Inversor", translationKey: "sidebar.items.investor" },
+                { name: "Gestor", translationKey: "sidebar.items.manager" }
             ]
         },
         { 
@@ -123,8 +123,8 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
             translationKey: "sidebar.pamm",
             icon: <img src="./elements.svg" className="w-8 h-8" alt="Pamm" />,
             subOptions: [
-                { name: "Inversor", translationKey: "sidebar.investor" },
-                { name: "Gestor", translationKey: "sidebar.manager" }
+                { name: "Inversor", translationKey: "sidebar.items.pammInvestor" },
+                { name: "Gestor", translationKey: "sidebar.items.pammManager" }
             ]
         },
     ];
@@ -282,7 +282,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                         style={{ outline: 'none' }}
                     >
                         <span className={`${isMobile ? 'text-lg' : 'text-xl'} mr-1`}>+</span>
-                        <span>{t('sidebar.newAccount')}</span>
+                        <span>{t('quickActions.newAccount')}</span>
                     </button>
                     <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : 'my-4'}`}></div>
                     
@@ -292,7 +292,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                         style={{ outline: 'none' }}
                     >
                         <img src="./Sign_out_circle_light.svg" className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} alt="Logout" />
-                        <span>{t('sidebar.logout')}</span>
+                        <span>{t('common:buttons.logout')}</span>
                     </button>
                 </div>
             </div>

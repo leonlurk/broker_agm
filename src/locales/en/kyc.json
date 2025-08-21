@@ -1,0 +1,126 @@
+{
+  "title": "KYC Verification",
+  "subtitle": "Let's verify you",
+  "status": {
+    "pending": "Verification in Process",
+    "approved": "Verification Completed",
+    "rejected": "Verification Rejected",
+    "notStarted": "Not Started",
+    "inReview": "Under Review",
+    "additionalRequired": "Additional Information Required"
+  },
+  "steps": {
+    "country": "Country of Residence",
+    "document": "Identity Document",
+    "selfie": "Selfie",
+    "address": "Proof of Address",
+    "review": "Review"
+  },
+  "country": {
+    "title": "Country of Residence",
+    "description": "Please choose your country of residence",
+    "placeholder": "Search country...",
+    "notFound": "No countries found"
+  },
+  "document": {
+    "title": "Document to Verify",
+    "subtitle": "Choose your document type",
+    "issuingCountry": "Document issuing country",
+    "photoInstruction": "Take a photo of your identity document.",
+    "types": {
+      "id": "Identity Document",
+      "passport": "Passport",
+      "driver": "Driver's License",
+      "residence": "Residence Permit"
+    },
+    "upload": {
+      "front": "Upload Document Front",
+      "back": "Upload Document Back",
+      "single": "Upload Document"
+    },
+    "requirements": {
+      "title": "The photo must:",
+      "clear": "Be well lit and clear",
+      "corners": "Show all corners of the document",
+      "noGlare": "Have no glare or shadows",
+      "original": "Be the original document (no photocopies)"
+    }
+  },
+  "selfie": {
+    "title": "Selfie with Identity Document",
+    "description": "Take a selfie holding your identity document next to your face",
+    "requirements": {
+      "visible": "Your face and document must be clearly visible",
+      "lighting": "Make sure the photo is well lit",
+      "holding": "Hold the document next to your face",
+      "noFilters": "Don't use filters or effects"
+    },
+    "upload": "Upload Selfie with ID"
+  },
+  "address": {
+    "title": "Proof of Address",
+    "description": "Upload a document that proves your residential address",
+    "accepted": {
+      "title": "Accepted documents:",
+      "utility": "Utility bill (electricity, water, gas) - not older than 3 months",
+      "bank": "Bank statement - not older than 3 months",
+      "lease": "Lease agreement",
+      "letter": "Bank letter with address"
+    },
+    "upload": "Upload Proof of Address"
+  },
+  "messages": {
+    "processing": "Your KYC verification is in process. We'll notify you when it's complete.",
+    "completed": "Your account has been successfully verified.",
+    "rejected": "Your verification has been rejected. Please review the comments and resubmit.",
+    "resubmit": "Please resubmit the documents with the requested corrections.",
+    "submitted": "Documents submitted successfully. We'll notify you when verification is complete."
+  },
+  "errors": {
+    "fileSize": "File must not exceed 10MB",
+    "fileType": "Only JPG, PNG or PDF files are allowed",
+    "uploadFailed": "Failed to upload some documents",
+    "missingDocuments": "Please upload all required documents",
+    "invalidDocument": "Invalid documents",
+    "expired": "Document has expired",
+    "mismatch": "Data doesn't match",
+    "poorQuality": "Image quality is too low",
+    "notVisible": "Document is not fully visible",
+    "loginRequired": "You must be logged in to continue",
+    "submitError": "Error sending documents"
+  },
+  "buttons": {
+    "back": "Back to Settings",
+    "next": "Next",
+    "submit": "Submit Documents for Verification",
+    "submitting": "Submitting...",
+    "resubmit": "Submit Again",
+    "cancel": "Cancel",
+    "upload": "Upload File",
+    "change": "Change",
+    "remove": "Remove"
+  },
+  "dates": {
+    "submitted": "Submission date:",
+    "reviewed": "Review date:",
+    "approved": "Approval date:",
+    "rejected": "Rejection date:"
+  },
+  "status": {
+    "label": "Status"
+  },
+  "statusCard": {
+    "pending": {
+      "subtitle": "Your documents are being reviewed",
+      "description": "Our team is verifying the documents you have submitted. This process usually takes 24 to 48 business hours."
+    },
+    "approved": {
+      "subtitle": "Your account has been successfully verified",
+      "description": "Congratulations! Your KYC verification has been approved. You now have full access to all platform features."
+    },
+    "rejected": {
+      "subtitle": "Your documents could not be verified",
+      "description": "The submitted documents do not meet the requirements. Please resubmit valid documents."
+    }
+  }
+}

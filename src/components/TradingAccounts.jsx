@@ -9,7 +9,7 @@ import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { DatabaseAdapter } from '../services/database.adapter';
 import CustomDropdown from './utils/CustomDropdown';
 import CustomTooltip from './utils/CustomTooltip';
-import useTranslation from '../hooks/useTranslation';
+import { useTranslation } from 'react-i18next';
 // Importar servicio optimizado
 import accountMetricsOptimized from '../services/accountMetricsOptimized';
 import { 
@@ -128,32 +128,38 @@ const indicesInstruments = [
 const allInstruments = [...forexInstruments, ...stockInstruments, ...cryptoInstruments, ...metalInstruments, ...indicesInstruments];
 // --- End Instrument Lists ---
 
-// Options for custom dropdowns
+// Options for custom dropdowns - will be translated inside component
 const typeOptions = [
-  { value: 'Todos', label: 'Todos' },
-  { value: 'Compra', label: 'Compra' },
-  { value: 'Venta', label: 'Venta' },
+  { value: 'Todos', label: 'trading.filters.all' },
+  { value: 'Compra', label: 'trading.positions.types.buy' },
+  { value: 'Venta', label: 'trading.positions.types.sell' },
 ];
 
 const profitLossOptions = [
-  { value: 'Todos', label: 'Todos' },
-  { value: 'Ganancia', label: 'Ganancia' },
-  { value: 'Pérdida', label: 'Pérdida' },
+  { value: 'Todos', label: 'trading.filters.all' },
+  { value: 'Ganancia', label: 'trading.filters.profit' },
+  { value: 'Pérdida', label: 'trading.filters.loss' },
 ];
 
 const benefitChartFilterOptions = [
-  { value: 'Último mes', label: 'Último mes' },
-  { value: 'Últimos 3 meses', label: 'Últimos 3 meses' },
-  { value: 'Último año', label: 'Último año' },
+  { value: 'Último mes', label: 'trading.filters.lastMonth' },
+  { value: 'Últimos 3 meses', label: 'trading.filters.lastThreeMonths' },
+  { value: 'Último año', label: 'trading.filters.lastYear' },
 ];
 
 const rendimientoPeriodOptions = [
-  { value: 'Mensual', label: 'Mensual' },
-  { value: 'Trimestral', label: 'Trimestral' },
+  { value: 'Mensual', label: 'trading.filters.monthly' },
+  { value: 'Trimestral', label: 'trading.filters.quarterly' },
 ];
 
 const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerRef }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('trading');
+  
+  // Helper function to translate options for dropdowns
+  const translateOptions = (options) => options.map(option => ({
+    ...option,
+    label: option.label.includes('.') ? t(option.label) : option.label
+  }));
   const {
     accounts,
     isLoading,
@@ -338,7 +344,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   };
 
   const { favorites: favoriteFilteredInstruments, nonFavorites: nonFavoriteFilteredInstruments } = getFilteredInstrumentsForDropdown();
-  const selectedInstrumentLabel = allInstruments.find(item => item.value === historyFilters.instrument)?.label || 'Todos';
+  const selectedInstrumentLabel = allInstruments.find(item => item.value === historyFilters.instrument)?.label || t('filters.all');
   // --- End Favorite Instruments Logic ---
 
   // Función para copiar al portapapeles
@@ -354,7 +360,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       }, 2000);
     } catch (err) {
       console.error('Error al copiar:', err);
-      toast.error('Error al copiar al portapapeles');
+      toast.error(t('trading.messages.copyError'));
     }
   };
 
@@ -383,29 +389,29 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Función para guardar la contraseña investor en Firebase
   const saveInvestorPassword = async () => {
     if (!currentUser || !selectedAccountId) {
-      toast.error('Error: Usuario o cuenta no válidos');
+      toast.error(t('trading.messages.invalidUserAccount'));
       return;
     }
 
     // Verificar que la cuenta seleccionada existe
     const selectedAccount = getAllAccounts().find(acc => acc.id === selectedAccountId);
     if (!selectedAccount) {
-      toast.error('Error: Cuenta no encontrada');
+      toast.error(t('trading.messages.accountNotFound'));
       return;
     }
 
     if (!investorPassword.trim()) {
-      toast.error('Por favor, ingresa una contraseña');
+      toast.error(t('trading.messages.enterPassword'));
       return;
     }
 
     if (investorPassword !== confirmPassword) {
-      toast.error('Las contraseñas no coinciden');
+      toast.error(t('trading.messages.passwordMismatch'));
       return;
     }
 
     if (investorPassword.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
+      toast.error(t('trading.messages.passwordTooShort'));
       return;
     }
 
@@ -417,7 +423,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       const result = await updateInvestorPassword(selectedAccountId, investorPassword);
       
       if (result.success) {
-        toast.success('Contraseña investor configurada exitosamente', { id: toastId });
+        toast.success(t('trading.messages.passwordUpdated'), { id: toastId });
         closeInvestorModal();
         
         // Refrescar las cuentas para mostrar los cambios
@@ -425,12 +431,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           await refreshAccounts();
         }
       } else {
-        toast.error(result.error || 'Error al guardar la contraseña investor', { id: toastId });
+        toast.error(result.error || t('trading.messages.passwordSaveError'), { id: toastId });
       }
       
     } catch (error) {
       console.error('Error al configurar contraseña investor:', error);
-      toast.error('Error al guardar la contraseña investor', { id: toastId });
+      toast.error(t('trading.messages.passwordSaveError'), { id: toastId });
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -589,7 +595,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 fechaISO: op.close_time || op.open_time,
                 instrumento: op.symbol || 'N/A',
                 bandera: getInstrumentIcon(op.symbol || 'N/A'),
-                tipo: op.type === 'BUY' ? 'Compra' : op.type === 'SELL' ? 'Venta' : op.type,
+                tipo: op.type === 'BUY' ? t('trading.positions.types.buy') : op.type === 'SELL' ? t('trading.positions.types.sell') : op.type,
                 lotaje: (op.volume || 0).toFixed(2),
                 stopLossFormatted: op.stop_loss ? parseFloat(op.stop_loss).toFixed(5) : '0.0',
                 takeProfitFormatted: op.take_profit ? parseFloat(op.take_profit).toFixed(5) : '0.0',
@@ -636,7 +642,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         
       } catch (error) {
         console.error('Error loading MT5 metrics:', error);
-        toast.error('Error al cargar las métricas de la cuenta');
+        toast.error(t('trading.messages.metricsLoadError'));
       } finally {
         setIsLoadingMetrics(false);
         setIsRefreshing(false);
@@ -688,7 +694,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // Función helper para obtener el estado de la cuenta
   const getAccountStatus = (account) => {
-    if (!account) return { status: 'Inactivo', statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
+    if (!account) return { status: t('trading.accounts.status.inactive'), statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
     
     // Usar el status si existe, sino determinar basado en balance
     if (account.status) {
@@ -702,9 +708,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       // Normalizar el texto mostrado
       let displayStatus = account.status;
       if (isActive) {
-        displayStatus = 'Activo';
+        displayStatus = t('trading.accounts.status.active');
       } else if (isInactive) {
-        displayStatus = 'Inactivo';
+        displayStatus = t('trading.accounts.status.inactive');
       }
       
       return {
@@ -718,9 +724,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     // Fallback basado en balance
     const balance = account.balance || 0;
     if (balance > 0) {
-      return { status: 'Activo', statusColor: 'bg-green-800 bg-opacity-30 text-green-400' };
+      return { status: t('trading.accounts.status.active'), statusColor: 'bg-green-800 bg-opacity-30 text-green-400' };
     } else {
-      return { status: 'Inactivo', statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
+      return { status: t('trading.accounts.status.inactive'), statusColor: 'bg-gray-800 bg-opacity-30 text-gray-400' };
     }
   };
   
@@ -776,20 +782,20 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     })) : 
     // Si no hay datos históricos pero hay balance actual, mostrar una línea desde 0
     (currentSelectedAccount && currentSelectedAccount.balance > 0) ? [
-      { name: 'Inicio', value: 0 },
-      { name: 'Actual', value: currentSelectedAccount.balance }
+      { name: t('trading.charts.start'), value: 0 },
+      { name: t('trading.charts.current'), value: currentSelectedAccount.balance }
     ] : 
     // Si no hay datos, mostrar todo en 0
     [
-      { name: 'Ene', value: 0 },
-      { name: 'Feb', value: 0 },
-      { name: 'Mar', value: 0 },
-      { name: 'Abr', value: 0 },
-      { name: 'May', value: 0 },
-      { name: 'Jun', value: 0 },
-      { name: 'Jul', value: 0 },
-      { name: 'Ago', value: 0 },
-      { name: 'Sep', value: 0 },
+      { name: t('trading.months.jan'), value: 0 },
+      { name: t('trading.months.feb'), value: 0 },
+      { name: t('trading.months.mar'), value: 0 },
+      { name: t('trading.months.apr'), value: 0 },
+      { name: t('trading.months.may'), value: 0 },
+      { name: t('trading.months.jun'), value: 0 },
+      { name: t('trading.months.jul'), value: 0 },
+      { name: t('trading.months.aug'), value: 0 },
+      { name: t('trading.months.sep'), value: 0 },
     ];
   
   // Calcular escala para el eje Y
@@ -820,12 +826,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
     // Fallback si no hay datos
     return [
-      { name: 'Ene', value: 0 },
-      { name: 'Feb', value: 0 },
-      { name: 'Mar', value: 0 },
-      { name: 'Abr', value: 0 },
-      { name: 'May', value: 0 },
-      { name: 'Jun', value: 0 },
+      { name: t('trading.months.jan'), value: 0 },
+      { name: t('trading.months.feb'), value: 0 },
+      { name: t('trading.months.mar'), value: 0 },
+      { name: t('trading.months.apr'), value: 0 },
+      { name: t('trading.months.may'), value: 0 },
+      { name: t('trading.months.jun'), value: 0 },
     ];
   };
   
@@ -942,7 +948,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         tiempoCierre: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
         instrumento: op.symbol,
         bandera: getInstrumentIcon(op.symbol),
-        tipo: op.operation_type === 'BUY' ? 'Compra' : 'Venta',
+        tipo: op.operation_type === 'BUY' ? t('trading.positions.types.buy') : t('trading.positions.types.sell'),
         lotaje: parseFloat(op.volume).toFixed(2),
         stopLoss: op.stop_loss ? parseFloat(op.stop_loss).toFixed(5) : 'N/A',
         stopLossPct: op.stop_loss ? 
@@ -975,7 +981,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'EURUSD',
       bandera: '/EU.svg',
-      tipo: 'Compra',
+      tipo: t('trading.positions.types.buy'),
       lotaje: '1',
       stopLoss: '$95,00',
       stopLossPct: '5.0%',
@@ -1004,7 +1010,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'XAUUSD',
       bandera: '/US.svg',
-      tipo: 'Venta',
+      tipo: t('trading.positions.types.sell'),
       lotaje: '1',
       stopLoss: '$95,00',
       stopLossPct: '5.0%',
@@ -1034,7 +1040,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'GBPUSD',
       bandera: '/US.svg',
-      tipo: 'Compra',
+      tipo: t('trading.positions.types.buy'),
       lotaje: '2',
       stopLoss: '$120,00',
       stopLossPct: '4.0%',
@@ -1063,7 +1069,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'USDJPY',
       bandera: '/US.svg',
-      tipo: 'Venta',
+      tipo: t('trading.positions.types.sell'),
       lotaje: '1.5',
       stopLoss: '$140,00',
       stopLossPct: '6.0%',
@@ -1093,7 +1099,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'EURUSD',
       bandera: '/EU.svg',
-      tipo: 'Venta',
+      tipo: t('trading.positions.types.sell'),
       lotaje: '1.2',
       stopLoss: '$85,00',
       stopLossPct: '4.5%',
@@ -1122,7 +1128,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'XAUUSD',
       bandera: '/US.svg',
-      tipo: 'Compra',
+      tipo: t('trading.positions.types.buy'),
       lotaje: '0.8',
       stopLoss: '$180,00',
       stopLossPct: '7.0%',
@@ -1152,7 +1158,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'GBPUSD',
       bandera: '/US.svg',
-      tipo: 'Venta',
+      tipo: t('trading.positions.types.sell'),
       lotaje: '1.8',
       stopLoss: '$160,00',
       stopLossPct: '6.5%',
@@ -1181,7 +1187,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'USDJPY',
       bandera: '/US.svg',
-      tipo: 'Compra',
+      tipo: t('trading.positions.types.buy'),
       lotaje: '1.1',
       stopLoss: '$110,00',
       stopLossPct: '5.5%',
@@ -1211,7 +1217,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'EURUSD',
       bandera: '/EU.svg',
-      tipo: 'Compra',
+      tipo: t('trading.positions.types.buy'),
       lotaje: '1.3',
       stopLoss: '$100,00',
       stopLossPct: '5.0%',
@@ -1240,7 +1246,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'XAUUSD',
       bandera: '/US.svg',
-      tipo: 'Venta',
+      tipo: t('trading.positions.types.sell'),
       lotaje: '0.6',
       stopLoss: '$200,00',
       stopLossPct: '8.0%',
@@ -1514,13 +1520,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     if (currentSelectedAccount && currentSelectedAccount.balance > 0) {
       const now = new Date();
       return [
-        { date: 'Inicio', value: 0 },
+        { date: t('trading.charts.start'), value: 0 },
         { date: now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }), value: currentSelectedAccount.balance }
       ];
     }
     
     // Sin datos
-    return [{ date: 'Sin datos', value: 0 }];
+    return [{ date: t('trading.charts.noData'), value: 0 }];
   };
   
   // Función anterior renombrada para no perder funcionalidad
@@ -1807,9 +1813,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Obtener datos según el tab seleccionado
   const getChartDataByTab = () => {
     switch (benefitChartTab) {
-      case 'Balance':
+      case t('trading.accounts.fields.balance'):
         return generateBalanceChartData();
-      case 'Retracción':
+      case t('trading.charts.drawdown'):
         return generateDrawdownChartData();
       default:
         return benefitChartData;
@@ -1826,7 +1832,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       const colors = ['#06b6d4', '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
       
       return realInstruments.distribution.map((item, index) => ({
-        name: item.symbol || item.name || 'Unknown',
+        name: item.symbol || item.name || t('trading.charts.unknown'),
         value: item.percentage || 0,
         color: colors[index % colors.length],
         ganancia: item.profit || 0,
@@ -1843,7 +1849,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     if (dataToProcess.length === 0) {
       return [
         {
-          name: 'Sin operaciones',
+          name: t('trading.charts.noOperations'),
           value: 100,
           color: '#4a5568',
           ganancia: 0,
@@ -1873,7 +1879,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     if (totalOperaciones === 0) {
       return [
         {
-          name: 'Sin operaciones',
+          name: t('trading.charts.noOperations'),
           value: 100,
           color: '#4a5568',
           ganancia: 0,
@@ -1914,7 +1920,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     if (!realBalanceHistory || realBalanceHistory.length === 0) {
       // Retornar estructura vacía para evitar errores en el gráfico
       if (rendimientoFilters.period === 'Mensual') {
-        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const months = [t('trading.months.jan'), t('trading.months.feb'), t('trading.months.mar'), t('trading.months.apr'), t('trading.months.may'), t('trading.months.jun'), t('trading.months.jul'), t('trading.months.aug'), t('trading.months.sep'), t('trading.months.oct'), t('trading.months.nov'), t('trading.months.dec')];
         return months.map(month => ({ name: month, value: 0 }));
       } else if (rendimientoFilters.period === 'Trimestral') {
         return [
@@ -1940,7 +1946,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     });
     
     if (rendimientoFilters.period === 'Mensual') {
-      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const months = [t('trading.months.jan'), t('trading.months.feb'), t('trading.months.mar'), t('trading.months.apr'), t('trading.months.may'), t('trading.months.jun'), t('trading.months.jul'), t('trading.months.aug'), t('trading.months.sep'), t('trading.months.oct'), t('trading.months.nov'), t('trading.months.dec')];
       
       return months.map((monthName, index) => {
         // Buscar datos del mes
@@ -1995,7 +2001,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
     
     // Fallback mensual con datos reales
-    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const months = [t('trading.months.jan'), t('trading.months.feb'), t('trading.months.mar'), t('trading.months.apr'), t('trading.months.may'), t('trading.months.jun'), t('trading.months.jul'), t('trading.months.aug'), t('trading.months.sep'), t('trading.months.oct'), t('trading.months.nov'), t('trading.months.dec')];
     return months.map(month => ({ name: month, value: 0 }));
   };
 
@@ -2023,10 +2029,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Función para renderizar las credenciales MT5 en móvil como tarjetas
   const renderMobileCredentials = (selectedAccount) => {
     const credentials = [
-      { label: 'Servidor MT5', value: selectedAccount.server || 'AlphaGlobalMarket-Server', field: 'Servidor' },
-      { label: 'Contraseña Master', value: selectedAccount.master_password || selectedAccount.mt5_password || '••••••••', field: 'Contraseña Master', isPassword: true, showKey: 'master' },
-      { label: 'Número de Cuenta', value: selectedAccount.account_number, field: 'Número de Cuenta' },
-      { label: 'Contraseña Investor', value: selectedAccount.investor_password || selectedAccount.investorPassword, field: 'Contraseña Investor', isPassword: true, showKey: 'investor', canConfigure: true }
+      { label: t('trading.accounts.fields.server'), value: selectedAccount.server || 'AlphaGlobalMarket-Server', field: 'Server' },
+      { label: t('accounts.fields.masterPassword'), value: selectedAccount.master_password || selectedAccount.mt5_password || '••••••••', field: 'Contraseña Master', isPassword: true, showKey: 'master' },
+      { label: t('accounts.fields.accountNumber'), value: selectedAccount.account_number, field: 'Número de Cuenta' },
+      { label: t('accounts.fields.investorPasswordReadOnly'), value: selectedAccount.investor_password || selectedAccount.investorPassword, field: 'Contraseña Investor', isPassword: true, showKey: 'investor', canConfigure: true }
     ];
 
     return credentials.map((cred, index) => (
@@ -2051,7 +2057,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <button
                 onClick={() => togglePasswordVisibility(cred.showKey)}
                 className="p-1 hover:bg-[#2a2a2a] rounded"
-                title={showPasswords[cred.showKey] ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                title={showPasswords[cred.showKey] ? t('trading.accounts.actions.hidePassword') : t('trading.accounts.actions.showPassword')}
               >
                 {showPasswords[cred.showKey] ? (
                   <EyeOff size={12} className="text-gray-400 hover:text-white" />
@@ -2085,19 +2091,19 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       <div className="flex flex-col p-3 sm:p-4 text-white">
         {/* Header */}
         <div className="mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Tus Cuentas</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">{t('accounts.title')}</h1>
           
           {/* Create Account Button */}
           <button 
             onClick={handleCreateAccount}
             className="w-full py-3 px-4 bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white rounded-lg hover:opacity-90 transition flex items-center justify-center mb-4 sm:mb-6 text-sm sm:text-base"
           >
-            + Crear Cuenta
+            + {t('accounts.create')}
           </button>
           
           {/* Tab Navigation */}
           <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-2'} mb-4 sm:mb-6`}>
-            {[t('trading.all'), t('accounts.live'), t('accounts.demo'), 'Copytrading', 'PAMM'].map((tab) => (
+            {[t('filters.all'), t('accounts.types.real'), t('accounts.types.demo'), t('copyTrading.title'), t('pamm.title')].map((tab) => (
               <button
                 key={tab}
                 className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
@@ -2107,9 +2113,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 }`}
                 onClick={() => setActiveTab(tab)}
               >
-                {isMobile && tab === 'Reales' ? 'Reales' : 
-                 isMobile && tab === 'Demo' ? 'Demo' :
-                 isMobile && tab === 'Copy Trading' ? 'Copy' :
+                {isMobile && tab === t('accounts.types.real') ? t('accounts.types.realShort') : 
+                 isMobile && tab === t('accounts.types.demo') ? t('accounts.types.demoShort') :
+                 isMobile && tab === t('copyTrading.title') ? t('copyTrading.titleShort') :
                  tab}
               </button>
             ))}
@@ -2154,14 +2160,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   {/* Account Info */}
                   <div className={isMobile ? 'text-center' : ''}>
                       <h3 className="text-base sm:text-lg font-bold text-white mb-1">
-                        {account.account_name || 'Cuenta sin nombre'} 
+                        {account.account_name || t('trading.accounts.noName')} 
                         {isMobile && <br />}
                         <span className="text-sm sm:text-base">(ID: {account.account_number || 'N/A'})</span>
                       </h3>
                     <div className={`${isMobile ? 'space-y-1' : 'flex items-center space-x-4'} text-xs sm:text-sm text-gray-400`}>
-                        <span>Tipo: {account.account_type || 'N/A'}</span>
-                        <span>Balance: ${(account.balance || 0).toFixed(2)}</span>
-                        <span>Plataforma: {account.platform || 'MT5'}</span>
+                        <span>{t('accounts.fields.accountType')}: {account.account_type || 'N/A'}</span>
+                        <span>{t('accounts.fields.balance')}: ${(account.balance || 0).toFixed(2)}</span>
+                        <span>{t('accounts.fields.platform')}: {account.platform || 'MT5'}</span>
                     </div>
                   </div>
                 </div>
@@ -2216,7 +2222,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       const accountNumber = selectedAccount?.account_number || selectedAccount?.accountNumber;
       
       if (!selectedAccount || !accountNumber) {
-        toast.error('No se encontró la cuenta seleccionada');
+        toast.error(t('trading.messages.accountNotFound'));
         console.error('Selected account:', selectedAccount);
         return;
       }
@@ -2226,7 +2232,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {
-        toast.error('No se encontró sesión activa');
+        toast.error(t('trading.messages.noActiveSession'));
         return;
       }
       
@@ -2267,11 +2273,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           await loadAccountMetrics(currentSelectedAccount);
         }
       } else {
-        toast.error('Error al sincronizar');
+        toast.error(t('trading.messages.syncError'));
       }
     } catch (error) {
       console.error('Error syncing:', error);
-      toast.error('Error al sincronizar la cuenta');
+      toast.error(t('trading.messages.accountSyncError'));
     }
   };
 
@@ -2281,7 +2287,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       <div className="mb-3 sm:mb-4 flex items-center">
         <img 
           src="/Back.svg" 
-          alt="Back" 
+          alt={t('trading.navigation.back')} 
           onClick={handleBackToOverview}
           className="w-8 h-8 sm:w-10 sm:h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
         />
@@ -2292,19 +2298,19 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         
         {/* COLUMNA CENTRAL - Tus Cuentas */}
         <div className={`${isMobile ? 'w-full max-h-[400px]' : 'lg:col-span-5 max-h-[600px]'} bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-t border-l border-r border-cyan-500 flex flex-col overflow-hidden`}>
-          <h1 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Tus Cuentas</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">{t('accounts.title')}</h1>
           
           {/* Create Account Button */}
           <button 
             onClick={handleCreateAccount}
             className="w-full py-3 px-4 bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white rounded-lg hover:opacity-90 transition flex items-center justify-center mb-4 sm:mb-6 text-sm sm:text-base"
           >
-            + Crear Cuenta
+            + {t('accounts.create')}
           </button>
           
           {/* Tab Navigation */}
           <div className={`${isMobile ? 'grid grid-cols-3 gap-2' : 'flex flex-wrap gap-2'} mb-4 sm:mb-6`}>
-            {[t('trading.all'), t('accounts.live'), t('accounts.demo')].map((tab) => (
+            {[t('filters.all'), t('accounts.types.real'), t('accounts.types.demo')].map((tab) => (
               <button
                 key={tab}
                 className={`px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
@@ -2314,8 +2320,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 }`}
                 onClick={() => setActiveTab(tab)}
               >
-                {isMobile && tab === 'Cuentas Reales' ? 'Reales' : 
-                 isMobile && tab === 'Cuentas Demo' ? 'Demo' :
+                {isMobile && tab === t('accounts.types.real') ? t('accounts.types.realShort') : 
+                 isMobile && tab === t('accounts.types.demo') ? t('accounts.types.demoShort') :
                  tab}
               </button>
             ))}
@@ -2349,7 +2355,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 onClick={() => setSelectedAccountId(account.id)}
               >
                   <div className="font-medium text-white text-sm sm:text-base">
-                    {account.account_name || 'Cuenta sin nombre'} 
+                    {account.account_name || t('trading.accounts.noName')} 
                     {isMobile && <br />}
                     <span className="text-xs sm:text-sm">(ID: {account.account_number || 'N/A'})</span>
                   </div>
@@ -2394,7 +2400,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                      <span className="text-gray-400">Balance actual: ${(selectedAccount.balance || 0).toFixed(2)}</span>
+                      <span className="text-gray-400">{t('accounts.fields.currentBalance')}: ${(selectedAccount.balance || 0).toFixed(2)}</span>
                     </div>
                   </div>
                   <div className="flex items-center">
@@ -2403,29 +2409,29 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">Tipo de cuenta: {selectedAccount.account_type || 'N/A'}</span>
+                          <span className="text-gray-400">{t('accounts.fields.accountType')}: {selectedAccount.account_type || 'N/A'}</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">Apalancamiento: 1:{selectedAccount.leverage || '500'}</span>
+                          <span className="text-gray-400">{t('accounts.fields.leverage')}: 1:{selectedAccount.leverage || '500'}</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">Plataforma: {selectedAccount.platform || 'MetaTrader 5'}</span>
+                          <span className="text-gray-400">{t('accounts.fields.platform')}: {selectedAccount.platform || 'MetaTrader 5'}</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">Estado: {getAccountStatus(selectedAccount).status}</span>
+                          <span className="text-gray-400">{t('accounts.fields.status')}: {getAccountStatus(selectedAccount).status}</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">Creada: {selectedAccount.createdAt ? new Date(selectedAccount.createdAt?.toDate?.() || selectedAccount.createdAt).toLocaleDateString() : 'N/A'}</span>
+                          <span className="text-gray-400">{t('accounts.fields.createdAt')}: {selectedAccount.createdAt ? new Date(selectedAccount.createdAt?.toDate?.() || selectedAccount.createdAt).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </div>
 
                 <div className="p-3 sm:p-4 bg-[#1a1a1a] rounded-lg sm:rounded-xl">
                   <div className="flex justify-between items-center mb-3 sm:mb-4">
-                    <h3 className="font-medium text-white text-sm sm:text-base">Credenciales MT5</h3>
+                    <h3 className="font-medium text-white text-sm sm:text-base">{t('accounts.details.credentials')}</h3>
                           <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${getAccountStatus(selectedAccount).statusColor}`}>
                             {getAccountStatus(selectedAccount).status}
                           </span>
@@ -2433,15 +2439,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <div className={`${isMobile ? 'space-y-3' : 'grid grid-cols-2 gap-4'} text-xs sm:text-sm`}>
                     {/* Servidor MT5 */}
                     <div className="p-2 sm:p-3 bg-[#0f0f0f] rounded-lg relative group">
-                      <span className="text-gray-400 text-xs block mb-1">Servidor MT5</span>
+                      <span className="text-gray-400 text-xs block mb-1">{t('accounts.fields.serverMT5')}</span>
                       <div className="flex items-center justify-between">
                         <div className="text-white font-medium text-sm">{selectedAccount.server || 'AlphaGlobalMarket-Server'}</div>
                         <button
-                          onClick={() => copyToClipboard(selectedAccount.server || 'AlphaGlobalMarket-Server', 'Servidor')}
+                          onClick={() => copyToClipboard(selectedAccount.server || 'AlphaGlobalMarket-Server', 'Server')}
                           className={`${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity p-1 hover:bg-[#2a2a2a] rounded`}
-                          title="Copiar servidor"
+                          title={t('trading.accounts.actions.copyServer')}
                         >
-                          {copiedField === 'Servidor' ? (
+                          {copiedField === 'Server' ? (
                             <Check size={12} className="text-green-400" />
                           ) : (
                             <Copy size={12} className="text-gray-400 hover:text-white" />
@@ -2452,7 +2458,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
                     {/* Contraseña Master */}
                     <div className="p-3 bg-[#0f0f0f] rounded-lg relative group">
-                      <span className="text-gray-400 text-xs block mb-1">Contraseña Master</span>
+                      <span className="text-gray-400 text-xs block mb-1">{t('accounts.fields.masterPassword')}</span>
                       <div className="flex items-center justify-between">
                         <div className="text-white font-medium">
                           {showPasswords.master ? (selectedAccount.mt5_password || selectedAccount.master_password || '••••••••') : '••••••••'}
@@ -2461,7 +2467,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           <button
                             onClick={() => togglePasswordVisibility('master')}
                             className="p-1 hover:bg-[#2a2a2a] rounded"
-                            title={showPasswords.master ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                            title={showPasswords.master ? t('trading.accounts.actions.hidePassword') : t('trading.accounts.actions.showPassword')}
                           >
                             {showPasswords.master ? (
                               <EyeOff size={14} className="text-gray-400 hover:text-white" />
@@ -2472,7 +2478,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           <button
                             onClick={() => copyToClipboard(selectedAccount.mt5_password || selectedAccount.master_password || '', 'Contraseña Master')}
                             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
-                            title="Copiar contraseña master"
+                            title={t('trading.accounts.actions.copyMasterPassword')}
                           >
                             {copiedField === 'Contraseña Master' ? (
                               <Check size={14} className="text-green-400" />
@@ -2486,13 +2492,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
                     {/* Número de Cuenta */}
                     <div className="p-3 bg-[#0f0f0f] rounded-lg relative group">
-                      <span className="text-gray-400 text-xs block mb-1">Número de Cuenta</span>
+                      <span className="text-gray-400 text-xs block mb-1">{t('accounts.fields.accountNumber')}</span>
                       <div className="flex items-center justify-between">
                         <div className="text-white font-medium">{selectedAccount.account_number}</div>
                         <button
                           onClick={() => copyToClipboard(selectedAccount.account_number, 'Número de Cuenta')}
                           className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
-                          title="Copiar número de cuenta"
+                          title={t('trading.accounts.actions.copyAccountNumber')}
                         >
                           {copiedField === 'Número de Cuenta' ? (
                             <Check size={14} className="text-green-400" />
@@ -2505,7 +2511,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
                     {/* Contraseña Investor - Solo lectura */}
                     <div className="p-3 bg-[#0f0f0f] rounded-lg relative group">
-                      <span className="text-gray-400 text-xs block mb-1">Contraseña Investor (Solo Lectura)</span>
+                      <span className="text-gray-400 text-xs block mb-1">{t('accounts.fields.investorPasswordReadOnly')}</span>
                       <div className="flex items-center justify-between">
                         {(selectedAccount.mt5_investor_password || selectedAccount.investorPassword) ? (
                           <>
@@ -2516,7 +2522,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                               <button
                                 onClick={() => togglePasswordVisibility('investor')}
                                 className="p-1 hover:bg-[#2a2a2a] rounded"
-                                title={showPasswords.investor ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                title={showPasswords.investor ? t('trading.accounts.actions.hidePassword') : t('trading.accounts.actions.showPassword')}
                               >
                                 {showPasswords.investor ? (
                                   <EyeOff size={14} className="text-gray-400 hover:text-white" />
@@ -2527,7 +2533,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                               <button
                                 onClick={() => copyToClipboard(selectedAccount.mt5_investor_password || selectedAccount.investorPassword || '', 'Contraseña Investor')}
                                 className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
-                                title="Copiar contraseña investor"
+                                title={t('trading.accounts.actions.copyInvestorPassword')}
                               >
                                 {copiedField === 'Contraseña Investor' ? (
                                   <Check size={14} className="text-green-400" />
@@ -2622,7 +2628,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         }}
                         labelStyle={{ color: '#ffffff' }}
                         itemStyle={{ color: '#ffffff' }}
-                        formatter={(value) => [`$${value.toLocaleString()}`, 'Balance']}
+                        formatter={(value) => [`$${value.toLocaleString()}`, t('trading.accounts.fields.balance')]}
                         labelFormatter={(label) => `Mes: ${label}`}
                       />
                       <Area
@@ -2907,7 +2913,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     domain={['dataMin - 100', 'dataMax + 100']}
                     width={isMobile ? 50 : 60}
                     tickFormatter={(value) => {
-                      if (benefitChartTab === 'Retracción') {
+                      if (benefitChartTab === t('trading.charts.drawdown')) {
                         return `${typeof value === 'number' ? value.toFixed(1) : 0}%`;
                       }
                       if (typeof value === 'number' && Math.abs(value) >= 1000) {
@@ -2933,9 +2939,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     labelStyle={{ color: '#ffffff' }}
                     itemStyle={{ color: '#ffffff' }}
                     formatter={(value) => {
-                      const unit = benefitChartTab === 'Retracción' ? '%' : '$';
+                      const unit = benefitChartTab === t('trading.charts.drawdown') ? '%' : '$';
                       const numValue = typeof value === 'number' ? value : 0;
-                      const formattedValue = benefitChartTab === 'Retracción' 
+                      const formattedValue = benefitChartTab === t('trading.charts.drawdown') 
                         ? (typeof numValue === 'number' ? numValue.toFixed(2) : '0') 
                         : (typeof numValue === 'number' ? numValue.toLocaleString() : '0');
                       return [`${unit}${formattedValue}`, benefitChartTab];
@@ -2976,7 +2982,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       : (realInstruments === null ? dynamicInstrumentsData : []);
                     
                     // Si no hay datos, mostrar mensaje profesional
-                    if (dataToUse.length === 0 || (dataToUse.length === 1 && dataToUse[0].name === 'Sin operaciones')) {
+                    if (dataToUse.length === 0 || (dataToUse.length === 1 && dataToUse[0].name === t('trading.charts.noOperations'))) {
                       return (
                         <div className="flex flex-col justify-center h-full">
                           <div className="p-4 bg-[#1a1a1a] rounded-lg border border-[#333]">
@@ -3006,7 +3012,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       : (realInstruments === null ? dynamicInstrumentsData : []);
                     
                     // Si no hay datos o es "Sin operaciones", mostrar mensaje profesional
-                    if (dataToUse.length === 0 || (dataToUse.length === 1 && dataToUse[0].name === 'Sin operaciones')) {
+                    if (dataToUse.length === 0 || (dataToUse.length === 1 && dataToUse[0].name === t('trading.charts.noOperations'))) {
                       return (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
@@ -3139,7 +3145,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           return (
                             <div style={tooltipStyle}>
                               <div className={`bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-white shadow-lg whitespace-nowrap ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                                {rendimientoFilters.period === 'Mensual' ? 'Mes' : 'Trimestre'}: {label}, {typeof value === 'number' ? value.toFixed(1) : value}%
+                                {rendimientoFilters.period === 'Mensual' ? t('trading.filters.month') : t('trading.filters.quarter')}: {label}, {typeof value === 'number' ? value.toFixed(1) : value}%
                               </div>
                             </div>
                           );
@@ -3207,7 +3213,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           <div className="relative">
                             <input
                               type="text"
-                              placeholder="Buscar instrumento"
+                              placeholder={t('trading.filters.searchInstrument')}
                               value={instrumentSearchTerm}
                               onChange={(e) => setInstrumentSearchTerm(e.target.value)}
                               className="w-full bg-[#232323] border border-[#444] rounded-md px-3 py-2 pl-10 focus:outline-none focus:border-cyan-500"
@@ -3216,7 +3222,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           </div>
                         </div>
                         
-                        <div key="todos-filter" onClick={() => { updateHistoryFilter('instrument', 'Todos'); setShowInstrumentDropdown(false); }} className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer">Todos</div>
+                        <div key="todos-filter" onClick={() => { updateHistoryFilter('instrument', 'Todos'); setShowInstrumentDropdown(false); }} className="px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer">{t('filters.all')}</div>
 
                         {favoriteFilteredInstruments.map(item => (
                           <div key={item.value + '-fav'} onClick={() => { updateHistoryFilter('instrument', item.value); setShowInstrumentDropdown(false); }} className={`px-4 py-3 hover:bg-[#3a3a3a] cursor-pointer flex justify-between items-center ${historyFilters.instrument === item.value ? 'bg-[#3f3f3f]' : ''}`}>
@@ -3239,8 +3245,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 {/* Tipo */}
                 <div>
                   <CustomDropdown
-                    label="Tipo"
-                    options={typeOptions}
+                    label={t('trading.positions.fields.type')}
+                    options={translateOptions(typeOptions)}
                     selectedValue={historyFilters.type}
                     onSelect={(value) => updateHistoryFilter('type', value)}
                   />
@@ -3248,7 +3254,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 
                 {/* Desde */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Desde</label>
+                  <label className="block text-gray-400 text-sm mb-2">{t('trading.filters.from')}</label>
                   <div className="relative">
                     <input 
                       type="date" 
@@ -3261,7 +3267,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
                 {/* Hasta */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Hasta</label>
+                  <label className="block text-gray-400 text-sm mb-2">{t('trading.filters.to')}</label>
                   <div className="relative">
                     <input 
                       type="date" 
@@ -3275,8 +3281,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 {/* Ganancia/Pérdida */}
                 <div>
                   <CustomDropdown
-                    label="Ganancia/Pérdida"
-                    options={profitLossOptions}
+                    label={t('trading.filters.profitLoss')}
+                    options={translateOptions(profitLossOptions)}
                     selectedValue={historyFilters.profitLoss}
                     onSelect={(value) => updateHistoryFilter('profitLoss', value)}
                   />
@@ -3546,7 +3552,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   value={investorPassword}
                   onChange={(e) => setInvestorPassword(e.target.value)}
                   className="w-full bg-[#0f0f0f] border border-[#333] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                  placeholder="Ingresa la contraseña investor"
+                  placeholder={t('trading.accounts.passwordPlaceholder')}
                   disabled={isUpdatingPassword}
                 />
               </div>
@@ -3562,7 +3568,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full bg-[#0f0f0f] border border-[#333] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                  placeholder="Confirma la contraseña"
+                  placeholder={t('trading.accounts.confirmPasswordPlaceholder')}
                   disabled={isUpdatingPassword}
                 />
               </div>

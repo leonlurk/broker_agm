@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { DatabaseAdapter } from '../services/database.adapter';
 import WithdrawalHistoryDetails from './WithdrawalHistoryDetails';
 import Pagination from './utils/Pagination';
+import { useTranslation } from 'react-i18next';
 
 // Definir los requisitos de referidos para cada tier (para pruebas)
 const TIER_REQUIREMENTS = {
@@ -25,6 +26,7 @@ const determineTier = (referralCount) => {
 
 const AfiliadosDashboard = () => {
   const { currentUser } = useAuth();
+  const { t } = useTranslation('affiliates');
   const [activeTab, setActiveTab] = useState('panel');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -170,14 +172,14 @@ const AfiliadosDashboard = () => {
             setCurrentTier(determineTier(count));
           } else if (error) {
             console.error('Error al obtener datos del usuario:', error);
-            setError('Error al cargar los datos. Intente de nuevo más tarde.');
+            setError(t('dashboard.messages.dataLoadError'));
           } else {
             // Si el doc no existe, valores por defecto
             setReferralCount(0);
             setCurrentTier(1);
           }
         } else {
-          setError('Usuario no autenticado.'); // Manejar caso no logueado
+          setError(t('dashboard.messages.notAuthenticated')); // Manejar caso no logueado
         }
       } catch (err) {
         console.error('Error al obtener datos del usuario:', err);
@@ -199,11 +201,11 @@ const AfiliadosDashboard = () => {
     if (!text) return;
     navigator.clipboard.writeText(`${window.location.origin}/register?ref=${text}`) // Asume una ruta de registro
       .then(() => {
-        alert('Enlace de afiliado copiado al portapapeles');
+        alert(t('dashboard.messages.linkCopied'));
       })
       .catch(err => {
         console.error('Error al copiar: ', err);
-        alert('Error al copiar el enlace.');
+        alert(t('dashboard.messages.copyError'));
       });
   };
 
@@ -232,26 +234,26 @@ const AfiliadosDashboard = () => {
           onClick={() => handleShowDetails(trader)}
           className="text-xs bg-[#2d2d2d] hover:bg-[#3f3f3f] transition-colors text-white py-2 px-3 rounded-lg"
         >
-          Historial
+          {t('dashboard.activeAccounts.history')}
         </button>
       </div>
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
-          <div className="text-gray-400">Balance</div>
+          <div className="text-gray-400">{t('dashboard.activeAccounts.table.balance')}</div>
           <div className="font-semibold">{trader.balance}</div>
         </div>
         <div>
-          <div className="text-gray-400">Equidad</div>
+          <div className="text-gray-400">{t('dashboard.activeAccounts.table.equity')}</div>
           <div className="font-semibold">{trader.equidad}</div>
         </div>
         <div>
-          <div className="text-gray-400">Lotes Operados</div>
+          <div className="text-gray-400">{t('dashboard.activeAccounts.table.lotsTraded')}</div>
           <div className="font-semibold">{trader.lotesOperados}</div>
         </div>
         <div>
-          <div className="text-gray-400">Comisiones</div>
+          <div className="text-gray-400">{t('dashboard.activeAccounts.table.commissionsGenerated')}</div>
           <div className="font-semibold">{trader.comisionesGeneradas}</div>
         </div>
       </div>
@@ -259,7 +261,7 @@ const AfiliadosDashboard = () => {
       {/* Retiros */}
       <div className="pt-2 border-t border-gray-700">
         <div className="flex justify-between items-center">
-          <span className="text-gray-400 text-sm">Retiros Cobrados</span>
+          <span className="text-gray-400 text-sm">{t('dashboard.activeAccounts.table.withdrawalsClaimed')}</span>
           <span className="font-semibold">{trader.retirosCobrados}</span>
         </div>
       </div>
@@ -282,24 +284,24 @@ const AfiliadosDashboard = () => {
           <div className="space-y-6">
             {/* Rendimiento */}
             <div className="space-y-4">
-              <h2 className="text-2xl md:text-3xl font-medium">Rendimiento</h2>
+              <h2 className="text-2xl md:text-3xl font-medium">{t('dashboard.performance.title')}</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Comisiones Totales Cobradas */}
                 <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333]">
-                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">Comisiones Totales Cobradas</h3>
+                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">{t('dashboard.performance.totalCommissionsCollected')}</h3>
                   <p className="text-2xl md:text-4xl font-semibold">$0.00</p>
                 </div>
                 
                 {/* Cantidad De Comisiones Totales */}
                 <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333]">
-                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">Cantidad De Comisiones Totales</h3>
+                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">{t('dashboard.performance.totalCommissionAmount')}</h3>
                   <p className="text-2xl md:text-4xl font-semibold">0</p>
                 </div>
                 
                 {/* Comisiones Promedio */}
                 <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333]">
-                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">Comisiones Promedio</h3>
+                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">{t('dashboard.performance.averageCommissions')}</h3>
                   <p className="text-2xl md:text-4xl font-semibold">$0.00</p>
                 </div>
               </div>
@@ -309,10 +311,10 @@ const AfiliadosDashboard = () => {
             <div className="space-y-4">
               {/* Enlace De Afiliados Card - Span completo en móvil */}
               <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333] space-y-3">
-                <h3 className="text-base md:text-lg font-medium text-gray-400">Enlace De Afiliados</h3>
+                <h3 className="text-base md:text-lg font-medium text-gray-400">{t('dashboard.affiliateSection.affiliateLink')}</h3>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                   <div className="flex-grow p-3 bg-[#1a1a1a] rounded-lg border border-[#333] text-gray-300 text-sm break-all">
-                    {userId ? `${window.location.origin}/register?ref=${userId}` : 'Generando enlace...'}
+                    {userId ? `${window.location.origin}/register?ref=${userId}` : t('dashboard.affiliateSection.generateLink')}
                   </div>
                   <button
                     className="p-3 hover:bg-[#333] rounded-lg border border-[#333] disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
@@ -328,13 +330,13 @@ const AfiliadosDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Cantidad De Registro Card */}
               <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333]">
-                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">Referidos Registrados</h3>
+                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">{t('dashboard.affiliateSection.registeredReferrals')}</h3>
                   <p className="text-2xl md:text-4xl font-semibold">{referralCount}</p> 
                   </div>
                   
               {/* Conversion Card */}
               <div className="p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border border-[#333]">
-                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">Conversion</h3>
+                  <h3 className="text-base md:text-lg font-medium text-gray-400 mb-2">{t('dashboard.affiliateSection.conversion')}</h3>
                   <p className="text-2xl md:text-4xl font-semibold">N/A</p>
                 </div>
               </div>
@@ -342,15 +344,15 @@ const AfiliadosDashboard = () => {
             
         {/* Tiers Section */}
             <div className="space-y-4">
-              <h2 className="text-2xl md:text-3xl font-medium">Niveles de Comisión</h2>
+              <h2 className="text-2xl md:text-3xl font-medium">{t('dashboard.commissionLevels.title')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Tier 1 */}
           <div className={`p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border ${
             currentTier >= 1 ? 'border-cyan-500' : 'border-[#333]'
           } space-y-2`}>
-                  <h3 className="text-lg md:text-xl font-semibold mb-1">Tier 1</h3>
-                  <p className="text-gray-400 text-sm md:text-base">Comision Por Lote $3,00 USD</p>
-                  <p className="text-xs md:text-sm text-gray-500">Hasta {TIER_REQUIREMENTS[2]} Afiliados</p> 
+                  <h3 className="text-lg md:text-xl font-semibold mb-1">{t('dashboard.commissionLevels.tier1.name')}</h3>
+                  <p className="text-gray-400 text-sm md:text-base">{t('dashboard.commissionLevels.tier1.commission')}</p>
+                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.tier1.requirement', { count: TIER_REQUIREMENTS[2] })}</p> 
           </div>
 
           {/* Tier 2 */}
@@ -362,9 +364,9 @@ const AfiliadosDashboard = () => {
                 <Lock size={18} />
               </div>
             ) : null}
-                  <h3 className="text-lg md:text-xl font-semibold mb-1">Tier 2</h3>
-                  <p className="text-gray-400 text-sm md:text-base">Comision Por Lote $3,50 USD</p>
-                  <p className="text-xs md:text-sm text-gray-500">Hasta {TIER_REQUIREMENTS[3]} Afiliados</p>
+                  <h3 className="text-lg md:text-xl font-semibold mb-1">{t('dashboard.commissionLevels.tier2.name')}</h3>
+                  <p className="text-gray-400 text-sm md:text-base">{t('dashboard.commissionLevels.tier2.commission')}</p>
+                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.tier2.requirement', { count: TIER_REQUIREMENTS[3] })}</p>
           </div>
 
           {/* Tier 3 */}
@@ -376,9 +378,9 @@ const AfiliadosDashboard = () => {
                 <Lock size={18} />
               </div>
             ) : null}
-                  <h3 className="text-lg md:text-xl font-semibold mb-1">Tier 3</h3>
-                  <p className="text-gray-400 text-sm md:text-base">Comision Por Lote $4,00 USD</p>
-                  <p className="text-xs md:text-sm text-gray-500">{TIER_REQUIREMENTS[3]}+ Afiliados</p>
+                  <h3 className="text-lg md:text-xl font-semibold mb-1">{t('dashboard.commissionLevels.tier3.name')}</h3>
+                  <p className="text-gray-400 text-sm md:text-base">{t('dashboard.commissionLevels.tier3.commission')}</p>
+                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.tier3.requirement', { count: TIER_REQUIREMENTS[3] })}</p>
                 </div>
           </div>
         </div>
@@ -387,8 +389,8 @@ const AfiliadosDashboard = () => {
             <div className="space-y-4 pt-6">
               {/* Titles */}
               <div>
-                <h2 className="text-2xl md:text-3xl font-medium">Cuentas activas y comisiones generadas</h2>
-                <p className="text-gray-400 text-base md:text-lg">Top {visibleAfiliados} Afiliados</p>
+                <h2 className="text-2xl md:text-3xl font-medium">{t('dashboard.activeAccounts.title')}</h2>
+                <p className="text-gray-400 text-base md:text-lg">{t('dashboard.activeAccounts.topAffiliates', { count: visibleAfiliados })}</p>
               </div>
 
               {/* Desktop Table View */}
@@ -396,13 +398,13 @@ const AfiliadosDashboard = () => {
                 <>
               {/* Headers */}
               <div className="grid grid-cols-[minmax(150px,1.5fr)_minmax(0,3fr)_minmax(0,1.5fr)_repeat(5,minmax(0,1fr))] gap-x-4 px-4 text-sm text-gray-400 font-medium">
-                <div className="col-start-2">Usuario</div>
-                <div>Tipo de Cuenta</div>
-                <div className="text-center">Balance</div>
-                <div className="text-center">Equidad</div>
-                <div className="text-center">Lotes Operados</div>
-                <div className="text-center">Comisiones Generadas</div>
-                <div className="text-center">Retiros Cobrados</div>
+                <div className="col-start-2">{t('dashboard.activeAccounts.table.user')}</div>
+                <div>{t('dashboard.activeAccounts.table.accountType')}</div>
+                <div className="text-center">{t('dashboard.activeAccounts.table.balance')}</div>
+                <div className="text-center">{t('dashboard.activeAccounts.table.equity')}</div>
+                <div className="text-center">{t('dashboard.activeAccounts.table.lotsTraded')}</div>
+                <div className="text-center">{t('dashboard.activeAccounts.table.commissionsGenerated')}</div>
+                <div className="text-center">{t('dashboard.activeAccounts.table.withdrawalsClaimed')}</div>
               </div>
 
               {/* Rows */}
@@ -414,7 +416,7 @@ const AfiliadosDashboard = () => {
                       onClick={() => handleShowDetails(trader)}
                       className="text-sm bg-[#2d2d2d] hover:bg-[#3f3f3f] transition-colors text-white py-2 px-4 rounded-lg"
                     >
-                      Historial De Retiro
+                      {t('dashboard.activeAccounts.withdrawalHistory')}
                     </button>
                     
                     {/* Column 2: User Info */}
@@ -466,22 +468,22 @@ const AfiliadosDashboard = () => {
             {/* Mobile-friendly table */}
             {isMobile ? (
               <div className="space-y-4">
-                <p className="text-center text-gray-400 py-8">No hay referencias disponibles</p>
+                <p className="text-center text-gray-400 py-8">{t('dashboard.references.noReferencesAvailable')}</p>
               </div>
             ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead>
                   <tr className="text-left text-gray-400 border-b border-gray-700">
-                    <th className="py-4 px-3 font-medium">Identificacion de referencia</th>
-                    <th className="py-4 px-3 font-medium">Nombre Completo</th>
-                    <th className="py-4 px-3 font-medium">País</th>
-                    <th className="py-4 px-3 font-medium">Creado en</th>
-                    <th className="py-4 px-3 font-medium">Identificacion de campaña</th>
-                    <th className="py-4 px-3 font-medium">Nombre de la campaña</th>
-                    <th className="py-4 px-3 font-medium">N° de compras</th>
-                    <th className="py-4 px-3 font-medium">Ingresos totales</th>
-                    <th className="py-4 px-3 font-medium">Comisiones</th>
+                    <th className="py-4 px-3 font-medium">{t('dashboard.references.table.referenceId')}</th>
+                    <th className="py-4 px-3 font-medium">{t('dashboard.references.table.fullName')}</th>
+                    <th className="py-4 px-3 font-medium">{t('dashboard.references.table.country')}</th>
+                    <th className="py-4 px-3 font-medium">{t('dashboard.references.table.createdAt')}</th>
+                    <th className="py-4 px-3 font-medium">{t('dashboard.references.table.campaignId')}</th>
+                    <th className="py-4 px-3 font-medium">{t('dashboard.references.table.campaignName')}</th>
+                    <th className="py-4 px-3 font-medium">{t('dashboard.references.table.purchaseCount')}</th>
+                    <th className="py-4 px-3 font-medium">{t('dashboard.references.table.totalRevenue')}</th>
+                    <th className="py-4 px-3 font-medium">{t('dashboard.references.table.commissions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -494,7 +496,7 @@ const AfiliadosDashboard = () => {
                   ) : (
                     <tr>
                       <td colSpan={9} className="py-6 text-center text-gray-400">
-                        No hay datos disponibles
+                        {t('dashboard.references.noDataAvailable')}
                       </td>
                     </tr>
                   )}
@@ -510,22 +512,22 @@ const AfiliadosDashboard = () => {
             {/* Mobile-friendly table */}
             {isMobile ? (
               <div className="space-y-4">
-                <p className="text-center text-gray-400 py-8">No hay pagos disponibles</p>
+                <p className="text-center text-gray-400 py-8">{t('dashboard.payments.noPaymentsAvailable')}</p>
               </div>
             ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead>
                   <tr className="text-left text-gray-400 border-b border-gray-700">
-                    <th className="py-4 px-3 font-medium">Identificacion de pago</th>
+                    <th className="py-4 px-3 font-medium">{t('dashboard.payments.table.paymentId')}</th>
                     <th className="py-4 px-3 font-medium">
                       <div className="flex items-center">
-                        Creado en
+                        {t('dashboard.payments.table.createdAt')}
                         <ArrowUpDown size={14} className="ml-1" />
                       </div>
                     </th>
-                    <th className="py-4 px-3 font-medium">Cantidad a pagar</th>
-                    <th className="py-4 px-3 font-medium">Estado</th>
+                    <th className="py-4 px-3 font-medium">{t('dashboard.payments.table.amountToPay')}</th>
+                    <th className="py-4 px-3 font-medium">{t('dashboard.payments.table.status')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -538,7 +540,7 @@ const AfiliadosDashboard = () => {
                   ) : (
                     <tr>
                       <td colSpan={4} className="py-6 text-center text-gray-400">
-                        No hay datos disponibles
+                        {t('dashboard.references.noDataAvailable')}
                       </td>
                     </tr>
                   )}
@@ -574,7 +576,7 @@ const AfiliadosDashboard = () => {
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
             </svg>
-            <span>Panel</span>
+            <span>{t('dashboard.tabs.panel')}</span>
           </button>
           
           <button
@@ -591,7 +593,7 @@ const AfiliadosDashboard = () => {
               <path d="M22 21v-2a4 4 0 00-3-3.87" />
               <path d="M16 3.13a4 4 0 010 7.75" />
             </svg>
-            <span>Referencias</span>
+            <span>{t('dashboard.tabs.references')}</span>
           </button>
           
           <button
@@ -606,7 +608,7 @@ const AfiliadosDashboard = () => {
               <rect x="2" y="5" width="20" height="14" rx="2" />
               <path d="M2 10h20" />
             </svg>
-            <span>Pagos</span>
+            <span>{t('dashboard.tabs.payments')}</span>
           </button>
         </div>
       </div>

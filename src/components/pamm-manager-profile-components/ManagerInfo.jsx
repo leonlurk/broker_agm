@@ -13,17 +13,17 @@ const InfoRow = ({ icon, label, value }) => (
     </div>
 );
 
-const ManagerInfo = () => {
+const ManagerInfo = ({ t }) => {
   return (
     <div className="bg-[#191919] p-6 rounded-lg border border-[#333]">
-      <h2 className="text-2xl font-semibold text-white mb-4">Información del Gestor</h2>
+      <h2 className="text-2xl font-semibold text-white mb-4">{t('pamm.profile.managerInformation')}</h2>
       <div className="space-y-2">
-        <InfoRow icon={<RiUserStarLine size={20} />} label="Nombre del Gestor" value="Alex 'Momentum' Rodriguez" />
-        <InfoRow icon={<RiBriefcaseLine size={20} />} label="Experiencia" value="12 años en mercados de divisas" />
-        <InfoRow icon={<RiCpuLine size={20} />} label="Estrategia Utilizada" value="Sistema híbrido (EA + Manual)" />
-        <InfoRow icon={<RiShieldCheckLine size={20} />} label="Filosofía de Riesgo" value="Máx. 2% de riesgo por operación" />
-        <InfoRow icon={<RiMapPinLine size={20} />} label="Broker Utilizado" value="AGM Markets (Regulado)" />
-        <InfoRow icon={<RiAwardLine size={20} />} label="Certificaciones" value="CMT Nivel II" />
+        <InfoRow icon={<RiUserStarLine size={20} />} label={t('pamm.profile.managerName')} value="Alex 'Momentum' Rodriguez" />
+        <InfoRow icon={<RiBriefcaseLine size={20} />} label={t('pamm.profile.experience')} value={`12 ${t('pamm.profile.yearsInForexMarkets')}`} />
+        <InfoRow icon={<RiCpuLine size={20} />} label={t('pamm.profile.usedStrategy')} value={t('pamm.profile.hybridSystem')} />
+        <InfoRow icon={<RiShieldCheckLine size={20} />} label={t('pamm.profile.riskPhilosophy')} value={t('pamm.profile.maxRiskPerTrade')} />
+        <InfoRow icon={<RiMapPinLine size={20} />} label={t('pamm.profile.usedBroker')} value={`AGM Markets ${t('pamm.profile.regulated')}`} />
+        <InfoRow icon={<RiAwardLine size={20} />} label={t('pamm.profile.certifications')} value="CMT Nivel II" />
       </div>
     </div>
   );

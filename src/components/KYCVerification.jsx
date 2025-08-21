@@ -4,11 +4,13 @@ import axios from 'axios';
 import kycService from '../services/kycService';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContext';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 const KYCVerification = ({ onBack }) => {
   const { currentUser } = useAuth();
   const { notifyKYCSubmitted } = useNotifications();
+  const { t } = useTranslation('kyc');
   const [selectedDocType, setSelectedDocType] = useState('identity');
   const [selectedResidenceCountry, setSelectedResidenceCountry] = useState('Argentina');
   const [selectedDocumentCountry, setSelectedDocumentCountry] = useState('Argentina');
@@ -119,14 +121,14 @@ const KYCVerification = ({ onBack }) => {
     
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('El archivo no debe superar los 10MB');
+      toast.error(t('errors.fileSize'));
       return;
     }
     
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Solo se permiten archivos JPG, PNG o PDF');
+      toast.error(t('errors.fileType'));
       return;
     }
     
@@ -193,12 +195,12 @@ const KYCVerification = ({ onBack }) => {
   const handleSubmit = async () => {
     // Validate all required documents
     if (!frontDocument || !backDocument || !selfieDocument || !addressDocument) {
-      toast.error('Por favor, suba todos los documentos requeridos');
+      toast.error(t('errors.missingDocuments'));
       return;
     }
     
     if (!currentUser) {
-      toast.error('Debe iniciar sesión para continuar');
+      toast.error(t('errors.loginRequired'));
       return;
     }
     
@@ -219,7 +221,7 @@ const KYCVerification = ({ onBack }) => {
       // Check if all uploads were successful
       const allUploaded = uploadResults.every(result => result.success);
       if (!allUploaded) {
-        throw new Error('Error al subir algunos documentos');
+        throw new Error(t('errors.uploadFailed'));
       }
       
       // Submit KYC verification
@@ -238,7 +240,7 @@ const KYCVerification = ({ onBack }) => {
       const result = await kycService.submitKYCVerification(kycData);
       
       if (result.success) {
-        toast.success('Documentos enviados exitosamente. Le notificaremos cuando se complete la verificación.');
+        toast.success(t('messages.submitted'));
         
         // Send notification
         notifyKYCSubmitted();
@@ -251,11 +253,11 @@ const KYCVerification = ({ onBack }) => {
           onBack();
         }, 2000);
       } else {
-        throw new Error(result.error || 'Error al enviar la verificación');
+        throw new Error(result.error || t('errors.submitError'));
       }
     } catch (error) {
       console.error('Error submitting KYC:', error);
-      toast.error(error.message || 'Error al enviar los documentos');
+      toast.error(error.message || t('errors.submitError'));
     } finally {
       setLoading(false);
     }
@@ -271,21 +273,21 @@ const KYCVerification = ({ onBack }) => {
         border: 'border-yellow-500',
         text: 'text-yellow-500',
         icon: AlertCircle,
-        message: 'Su verificación KYC está en proceso. Le notificaremos cuando se complete.'
+        message: t('messages.processing')
       },
       approved: {
         bg: 'bg-green-500/10',
         border: 'border-green-500',
         text: 'text-green-500',
         icon: Check,
-        message: 'Su cuenta ha sido verificada exitosamente.'
+        message: t('messages.completed')
       },
       rejected: {
         bg: 'bg-red-500/10',
         border: 'border-red-500',
         text: 'text-red-500',
         icon: X,
-        message: `Verificación rechazada: ${kycStatus.details?.rejectionReason || 'Documentos no válidos'}. Por favor, vuelva a enviar.`
+        message: `${t('messages.rejected')}: ${kycStatus.details?.rejectionReason || t('errors.invalidDocument')}. ${t('messages.resubmit')}`
       }
     };
     
@@ -300,8 +302,8 @@ const KYCVerification = ({ onBack }) => {
           <Icon className={`${config.text} mt-0.5`} size={20} />
           <div className="flex-1">
             <p className={`${config.text} font-medium mb-1`}>
-              Estado: {kycStatus.status === 'pending' ? 'En proceso' : 
-                      kycStatus.status === 'approved' ? 'Aprobado' : 'Rechazado'}
+              {t('status.label')}: {kycStatus.status === 'pending' ? t('status.pending') : 
+                      kycStatus.status === 'approved' ? t('status.approved') : t('status.rejected')}
             </p>
             <p className="text-gray-300 text-sm">{config.message}</p>
           </div>
@@ -319,9 +321,9 @@ const KYCVerification = ({ onBack }) => {
         iconBg: 'bg-yellow-500/20',
         icon: AlertCircle,
         iconColor: 'text-yellow-500',
-        title: 'Verificación en Proceso',
-        subtitle: 'Sus documentos están siendo revisados',
-        description: 'Nuestro equipo está verificando los documentos que ha enviado. Este proceso generalmente toma entre 24 a 48 horas hábiles.',
+        title: t('status.pending'),
+        subtitle: t('statusCard.pending.subtitle'),
+        description: t('statusCard.pending.description'),
         showResubmit: false
       },
       approved: {
@@ -330,9 +332,9 @@ const KYCVerification = ({ onBack }) => {
         iconBg: 'bg-green-500/20',
         icon: Check,
         iconColor: 'text-green-500',
-        title: 'Verificación Completada',
-        subtitle: 'Su cuenta ha sido verificada exitosamente',
-        description: 'Felicitaciones! Su verificación KYC ha sido aprobada. Ahora tiene acceso completo a todas las funciones de la plataforma.',
+        title: t('status.approved'),
+        subtitle: t('statusCard.approved.subtitle'),
+        description: t('statusCard.approved.description'),
         showResubmit: false
       },
       rejected: {
@@ -341,9 +343,9 @@ const KYCVerification = ({ onBack }) => {
         iconBg: 'bg-red-500/20',
         icon: X,
         iconColor: 'text-red-500',
-        title: 'Verificación Rechazada',
-        subtitle: 'Sus documentos no pudieron ser verificados',
-        description: kycStatus?.details?.rejectionReason || 'Los documentos enviados no cumplen con los requisitos. Por favor, vuelva a enviar documentos válidos.',
+        title: t('status.rejected'),
+        subtitle: t('statusCard.rejected.subtitle'),
+        description: kycStatus?.details?.rejectionReason || t('statusCard.rejected.description'),
         showResubmit: true
       }
     };
@@ -374,7 +376,7 @@ const KYCVerification = ({ onBack }) => {
               <div className="bg-black/30 rounded-xl p-4 mb-6 w-full max-w-md">
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Fecha de envío:</span>
+                    <span className="text-gray-400">{t('dates.submitted')}</span>
                     <span className="text-white">
                       {new Date(kycStatus.details.submittedAt).toLocaleDateString('es-ES', {
                         day: '2-digit',
@@ -385,7 +387,7 @@ const KYCVerification = ({ onBack }) => {
                   </div>
                   {kycStatus?.details?.reviewedAt && (
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Fecha de revisión:</span>
+                      <span className="text-gray-400">{t('dates.reviewed')}</span>
                       <span className="text-white">
                         {new Date(kycStatus.details.reviewedAt).toLocaleDateString('es-ES', {
                           day: '2-digit',
@@ -405,14 +407,14 @@ const KYCVerification = ({ onBack }) => {
                 onClick={onBack}
                 className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition-colors"
               >
-                Volver a Ajustes
+                {t('buttons.back')}
               </button>
               {config.showResubmit && (
                 <button
                   onClick={() => setKycStatus(null)}
                   className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-xl transition-all"
                 >
-                  Enviar Nuevamente
+                  {t('buttons.resubmit')}
                 </button>
               )}
             </div>
@@ -483,7 +485,7 @@ const KYCVerification = ({ onBack }) => {
       ) : (
         <div className="flex-grow flex flex-col items-center justify-center">
           <div className="w-full max-w-5xl bg-[#2D2D2D] p-6 md:p-8 rounded-2xl">
-            <h2 className="text-2xl font-semibold text-center mb-6">Verificación KYC</h2>
+            <h2 className="text-2xl font-semibold text-center mb-6">{t('title')}</h2>
             
             {/* Status Banner for rejected status */}
             {kycStatus?.status === 'rejected' && <StatusBanner />}
@@ -495,8 +497,8 @@ const KYCVerification = ({ onBack }) => {
               
               {/* Sección 1: Verificación de Residencia */}
               <div>
-                <h1 className="text-3xl md:text-4xl font-semibold mb-2">Vamos a verificarte</h1>
-                <p className="text-xl mb-6">Por favor, elija su país de residencia</p>
+                <h1 className="text-3xl md:text-4xl font-semibold mb-2">{t('subtitle')}</h1>
+                <p className="text-xl mb-6">{t('country.description')}</p>
                 
                 {/* Country Dropdown for Residence */}
                 <div className="relative mb-6" ref={residenceDropdownRef}>
@@ -524,7 +526,7 @@ const KYCVerification = ({ onBack }) => {
                             type="text"
                             value={countrySearch}
                             onChange={handleCountrySearchChange}
-                            placeholder="Buscar país..."
+                            placeholder={t('country.placeholder')}
                             className="w-full bg-[#2D2D2D] border border-[#444] rounded-xl pl-10 pr-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
                             autoFocus
                           />
@@ -545,7 +547,7 @@ const KYCVerification = ({ onBack }) => {
                           ))
                         ) : (
                           <div className="px-3 py-2 text-sm text-gray-400">
-                            No se encontraron países
+                            {t('country.notFound')}
                           </div>
                         )}
                       </div>
@@ -556,8 +558,8 @@ const KYCVerification = ({ onBack }) => {
 
               {/* Sección 2: Detalles del Documento */}
               <div>
-                <h3 className="text-xl font-medium mb-2">Documento a Verificar</h3>
-                <p className="text-gray-300 mb-4">País de emisión del documento</p>
+                <h3 className="text-xl font-medium mb-2">{t('document.title')}</h3>
+                <p className="text-gray-300 mb-4">{t('document.issuingCountry')}</p>
                 
                 {/* Country Dropdown for Document */}
                 <div className="relative mb-6" ref={documentDropdownRef}>
@@ -585,7 +587,7 @@ const KYCVerification = ({ onBack }) => {
                             type="text"
                             value={countrySearch}
                             onChange={handleCountrySearchChange}
-                            placeholder="Buscar país..."
+                            placeholder={t('country.placeholder')}
                             className="w-full bg-[#2D2D2D] border border-[#444] rounded-xl pl-10 pr-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
                             autoFocus
                           />
@@ -606,7 +608,7 @@ const KYCVerification = ({ onBack }) => {
                           ))
                         ) : (
                           <div className="px-3 py-2 text-sm text-gray-400">
-                            No se encontraron países
+                            {t('country.notFound')}
                           </div>
                         )}
                       </div>
@@ -616,31 +618,31 @@ const KYCVerification = ({ onBack }) => {
           
                 {/* Document Type Selection */}
                 <div className="mb-6">
-                  <p className="text-lg font-medium mb-3">Elija su tipo de documento</p>
+                  <p className="text-lg font-medium mb-3">{t('document.subtitle')}</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div 
                       className={`p-3 border ${selectedDocType === 'identity' ? 'border-cyan-500' : 'border-[#333]'} rounded-lg text-center cursor-pointer hover:bg-[#2a2a2a] transition`}
                       onClick={() => setSelectedDocType('identity')}
                     >
-                      Documento de identidad
+                      {t('document.types.id')}
                     </div>
                     <div 
                       className={`p-3 border ${selectedDocType === 'passport' ? 'border-cyan-500' : 'border-[#333]'} rounded-lg text-center cursor-pointer hover:bg-[#2a2a2a] transition`}
                       onClick={() => setSelectedDocType('passport')}
                     >
-                      Pasaporte
+                      {t('document.types.passport')}
                     </div>
                     <div 
                       className={`p-3 border ${selectedDocType === 'driverLicense' ? 'border-cyan-500' : 'border-[#333]'} rounded-lg text-center cursor-pointer hover:bg-[#2a2a2a] transition`}
                       onClick={() => setSelectedDocType('driverLicense')}
                     >
-                      Permiso de conducir
+                      {t('document.types.driver')}
                     </div>
                     <div 
                       className={`p-3 border ${selectedDocType === 'residencePermit' ? 'border-cyan-500' : 'border-[#333]'} rounded-lg text-center cursor-pointer hover:bg-[#2a2a2a] transition`}
                       onClick={() => setSelectedDocType('residencePermit')}
                     >
-                      Permiso de residencia
+                      {t('document.types.residence')}
                     </div>
                   </div>
                 </div>
@@ -648,17 +650,17 @@ const KYCVerification = ({ onBack }) => {
           
               {/* Sección 3: Subida de Documentos */}
               <div>
-                <h3 className="text-xl font-medium mb-2">Haga una foto de su documento de identidad.</h3>
-                <p className="text-xl mb-2">La foto debe:</p>
+                <h3 className="text-xl font-medium mb-2">{t('document.photoInstruction')}</h3>
+                <p className="text-xl mb-2">{t('document.requirements.title')}</p>
                 <ul className="list-disc pl-5 mb-4 text-gray-300">
-                  <li>Estar bien iluminada y ser clara.</li>
-                  <li>Todas las esquinas del documento se deben ver bien</li>
+                  <li>{t('document.requirements.clear')}</li>
+                  <li>{t('document.requirements.corners')}</li>
                 </ul>
           
                 {/* Document Upload Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                   <FileUploadBox
-                    title="Subir Frente del documento"
+                    title={t('document.upload.front')}
                     inputRef={frontInputRef}
                     file={frontDocument}
                     preview={frontPreview}
@@ -666,7 +668,7 @@ const KYCVerification = ({ onBack }) => {
                   />
                   
                   <FileUploadBox
-                    title="Subir Dorso del documento"
+                    title={t('document.upload.back')}
                     inputRef={backInputRef}
                     file={backDocument}
                     preview={backPreview}
@@ -677,16 +679,16 @@ const KYCVerification = ({ onBack }) => {
 
               {/* Sección 4: Selfie con Documento */}
               <div>
-                <h3 className="text-xl font-medium mb-2">Selfie con documento de identidad</h3>
-                <p className="text-gray-300 mb-4">Tome una selfie sosteniendo su documento de identidad junto a su rostro</p>
+                <h3 className="text-xl font-medium mb-2">{t('selfie.title')}</h3>
+                <p className="text-gray-300 mb-4">{t('selfie.description')}</p>
                 <ul className="list-disc pl-5 mb-4 text-gray-300">
-                  <li>Su rostro y el documento deben ser claramente visibles</li>
-                  <li>Asegúrese de que la foto esté bien iluminada</li>
-                  <li>Sostenga el documento al lado de su rostro</li>
+                  <li>{t('selfie.requirements.visible')}</li>
+                  <li>{t('selfie.requirements.lighting')}</li>
+                  <li>{t('selfie.requirements.holding')}</li>
                 </ul>
                 
                 <FileUploadBox
-                  title="Subir Selfie con DNI"
+                  title={t('selfie.upload')}
                   inputRef={selfieInputRef}
                   file={selfieDocument}
                   preview={selfiePreview}
@@ -696,18 +698,18 @@ const KYCVerification = ({ onBack }) => {
 
               {/* Sección 5: Prueba de Dirección */}
               <div>
-                <h3 className="text-xl font-medium mb-2">Prueba de dirección</h3>
-                <p className="text-gray-300 mb-4">Suba un documento que compruebe su dirección de residencia</p>
-                <p className="text-gray-300 mb-2">Documentos aceptados:</p>
+                <h3 className="text-xl font-medium mb-2">{t('address.title')}</h3>
+                <p className="text-gray-300 mb-4">{t('address.description')}</p>
+                <p className="text-gray-300 mb-2">{t('address.accepted.title')}</p>
                 <ul className="list-disc pl-5 mb-4 text-gray-300">
-                  <li>Factura de servicios públicos (luz, agua, gas) - no mayor a 3 meses</li>
-                  <li>Estado de cuenta bancario - no mayor a 3 meses</li>
-                  <li>Contrato de arrendamiento</li>
-                  <li>Carta del banco con dirección</li>
+                  <li>{t('address.accepted.utility')}</li>
+                  <li>{t('address.accepted.bank')}</li>
+                  <li>{t('address.accepted.lease')}</li>
+                  <li>{t('address.accepted.letter')}</li>
                 </ul>
                 
                 <FileUploadBox
-                  title="Subir Prueba de Dirección"
+                  title={t('address.upload')}
                   inputRef={addressInputRef}
                   file={addressDocument}
                   preview={addressPreview}
@@ -726,10 +728,10 @@ const KYCVerification = ({ onBack }) => {
                       : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600'
                   } text-white`}
                 >
-                  {loading ? 'Enviando...' : 
-                   kycStatus?.status === 'pending' ? 'Verificación en Proceso' :
-                   kycStatus?.status === 'approved' ? 'Verificación Completada' :
-                   'Enviar Documentos para Verificación'}
+                  {loading ? t('buttons.submitting') : 
+                   kycStatus?.status === 'pending' ? t('status.pending') :
+                   kycStatus?.status === 'approved' ? t('status.approved') :
+                   t('buttons.submit')}
                 </button>
               </div>
             </div>

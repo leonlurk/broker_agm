@@ -1,0 +1,196 @@
+{
+  "title": "Wallet",
+  "tabs": {
+    "deposit": "Depositar",
+    "withdraw": "Retirar",
+    "transfer": "Transferir",
+    "history": "Historial"
+  },
+  "common": {
+    "amount": "Monto",
+    "continue": "Continuar",
+    "processing": "Procesando...",
+    "important": "Importante",
+    "selectAccount": "Seleccionar Cuenta",
+    "selectMethod": "Seleccionar método",
+    "methodDetails": "Detalles del método",
+    "completeOperation": "Completar operación",
+    "availableBalance": "Balance Disponible",
+    "activeAccount": "Cuenta Activa",
+    "noAccounts": "No tienes cuentas disponibles",
+    "createAccountFirst": "Crea una cuenta primero en Trading Accounts",
+    "loading": "Cargando...",
+    "reload": "Recargar",
+    "close": "Cerrar",
+    "acceptTerms": "Entiendo y acepto los términos",
+    "steps": {
+      "step1": "Paso 1",
+      "step2": "Paso 2",
+      "step3": "Paso 3"
+    },
+    "methods": {
+      "crypto": "Criptomoneda",
+      "bank": "Banco",
+      "internal": "Transferencia Interna",
+      "bankTransfer": "Se procesará mediante transferencia bancaria",
+      "creditCard": "Se procesará mediante tarjeta de crédito",
+      "skrill": "Se procesará mediante Skrill"
+    },
+    "errors": {
+      "selectAccount": "Debe seleccionar una cuenta",
+      "invalidAmount": "Ingrese un monto válido",
+      "insufficientBalance": "Saldo insuficiente",
+      "selectMethod": "Debe seleccionar un método",
+      "acceptTerms": "Debe aceptar los términos y condiciones",
+      "processingError": "Error al procesar la operación. Intente nuevamente.",
+      "operationError": "Error en Operación"
+    }
+  },
+  "deposit": {
+    "title": "Depositar Fondos",
+    "selectAccount": "Seleccionar Cuenta",
+    "selectMethod": "Método de Pago",
+    "selectCoin": "Seleccionar moneda",
+    "amount": "Monto",
+    "minAmount": "Monto mínimo: $100 USD",
+    "maxAmount": "Monto máximo: {{amount}}",
+    "importantNote": "Asegúrese de que los fondos provienen de una fuente legítima.",
+    "success": "Depósito de ${{amount}} USD iniciado correctamente. Le notificaremos cuando sea procesado.",
+    "pending": "Depósito de ${{amount}} USD recibido. Será acreditado en su cuenta una vez procesado por nuestro equipo.",
+    "depositInfo": "Información del Depósito",
+    "processingTimeInfo": "Inmediato - 24 horas",
+    "methods": {
+      "crypto": "Criptomoneda",
+      "bank": "Transferencia Bancaria",
+      "card": "Tarjeta de Crédito/Débito"
+    },
+    "crypto": {
+      "selectCoin": "Seleccionar Moneda",
+      "network": "Red",
+      "address": "Dirección de Depósito",
+      "scanQR": "Escanear código QR",
+      "copyAddress": "Copiar dirección",
+      "confirmations": "Confirmaciones requeridas: {{count}}",
+      "fee": "Comisión de red: {{fee}}",
+      "warning": "Envía solo {{coin}} a esta dirección",
+      "processing": "Procesando depósito...",
+      "detecting": "Detectando transacción..."
+    },
+    "button": "Realizar Depósito",
+    "processing": "Procesando...",
+    "errors": {
+      "minAmount": "El monto mínimo para depósitos es $100 USD",
+      "maxAmount": "El monto excede el máximo permitido",
+      "invalidAmount": "Monto inválido",
+      "selectAccount": "Selecciona una cuenta",
+      "selectMethod": "Selecciona un método de pago",
+      "processingError": "Error al crear solicitud de depósito"
+    }
+  },
+  "withdraw": {
+    "title": "Retirar Fondos",
+    "selectAccount": "Seleccionar Cuenta",
+    "availableBalance": "Balance Disponible",
+    "amount": "Monto a Retirar",
+    "walletAddress": "Dirección de Wallet",
+    "walletPlaceholder": "Ingrese la dirección de su wallet",
+    "processingTime": "Los retiros pueden tardar entre 1-3 días hábiles en procesarse.",
+    "success": "Solicitud de retiro de ${{amount}} USD enviada. Será procesada en las próximas 24-48 horas.",
+    "withdrawInfo": "Información del Retiro",
+    "processingTimeInfo": "1-3 días hábiles",
+    "destination": "Destino",
+    "withdrawTo": "Retirar a",
+    "savedMethods": "Métodos Guardados",
+    "newMethod": "Nuevo Método",
+    "crypto": {
+      "wallet": "Billetera Crypto",
+      "address": "Dirección de Billetera",
+      "network": "Red",
+      "memo": "Memo/Tag (opcional)"
+    },
+    "bank": {
+      "accountName": "Nombre del Titular",
+      "accountNumber": "Número de Cuenta",
+      "bankName": "Nombre del Banco",
+      "swift": "Código SWIFT",
+      "iban": "IBAN"
+    },
+    "fees": {
+      "title": "Comisiones",
+      "processing": "Comisión de procesamiento",
+      "network": "Comisión de red",
+      "total": "Total a recibir"
+    },
+    "button": "Solicitar Retiro",
+    "processing": "Procesando retiro...",
+    "errors": {
+      "insufficientBalance": "Balance insuficiente",
+      "minAmount": "El monto es menor al mínimo permitido",
+      "maxAmount": "El monto excede el máximo permitido",
+      "invalidAddress": "Dirección inválida",
+      "dailyLimit": "Límite diario excedido",
+      "processingError": "Error al crear solicitud de retiro"
+    }
+  },
+  "transfer": {
+    "title": "Transferir Entre Cuentas",
+    "fromAccount": "Desde Cuenta",
+    "toAccount": "A Cuenta",
+    "selectDestination": "Seleccionar cuenta destino",
+    "transferInfo": "Información de transferencia",
+    "completeTransfer": "Completar transferencia",
+    "instant": "Las transferencias internas son inmediatas y sin comisión.",
+    "instantNote": "La transferencia se procesará inmediatamente y sin comisión.",
+    "instantProcessing": "Inmediato",
+    "confirmData": "Confirmo que los datos son correctos",
+    "amount": "Monto",
+    "availableBalance": "Balance Disponible",
+    "button": "Realizar Transferencia",
+    "success": "Solicitud de transferencia de ${{amount}} USD enviada. Será procesada una vez aprobada.",
+    "errors": {
+      "sameAccount": "No puedes transferir a la misma cuenta",
+      "selectAccount": "Debe seleccionar una cuenta de destino",
+      "insufficientBalance": "Balance insuficiente",
+      "invalidAmount": "Monto inválido",
+      "selectAccounts": "Selecciona ambas cuentas",
+      "processingError": "Error al crear solicitud de transferencia"
+    }
+  },
+  "history": {
+    "title": "Historial de Transacciones",
+    "refresh": "Actualizar",
+    "viewMore": "Ver más",
+    "viewDetails": "Ver detalles de la transacción",
+    "transactionDetails": "Detalles de Transacción",
+    "transactionId": "ID de Transacción",
+    "dateTime": "Fecha y Hora",
+    "accountInfo": "Información de Cuenta",
+    "processingTime": "Tiempo de procesamiento",
+    "fees": "Comisión",
+    "filters": {
+      "all": "Todas",
+      "deposits": "Depósitos",
+      "withdrawals": "Retiros",
+      "transfers": "Transferencias"
+    },
+    "table": {
+      "date": "Fecha",
+      "type": "Tipo",
+      "amount": "Monto",
+      "method": "Método",
+      "status": "Estado",
+      "account": "Cuenta",
+      "reference": "Referencia",
+      "actions": "Acciones"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "processing": "Procesando",
+      "completed": "Completado",
+      "failed": "Rechazado",
+      "cancelled": "Cancelado"
+    },
+    "empty": "No hay transacciones para mostrar",
+    "loading": "Cargando historial..."
+  }
+}

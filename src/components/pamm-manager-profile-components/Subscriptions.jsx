@@ -11,27 +11,27 @@ const InfoRow = ({ icon, label, value }) => (
     </div>
 );
 
-const Subscriptions = () => {
+const Subscriptions = ({ t }) => {
   return (
     <div className="bg-[#191919] p-6 rounded-lg border border-[#333] space-y-8">
       {/* Distribución de Beneficios */}
       <div>
-        <h2 className="text-2xl font-semibold text-white mb-4">Distribución de Beneficios</h2>
+        <h2 className="text-2xl font-semibold text-white mb-4">{t('pamm.profile.profitDistribution')}</h2>
         <div className="space-y-2">
-            <InfoRow icon={<RiPercentLine />} label="Beneficio para inversor" value="70%" />
-            <InfoRow icon={<RiMoneyDollarCircleLine />} label="Comisión del gestor" value="30%" />
-            <InfoRow icon={<RiCalendarEventLine />} label="Frecuencia de reparto" value="Mensual" />
-            <InfoRow icon={<RiLockPasswordLine />} label="Penalización retiro" value="5% (primeros 3 meses)" />
+            <InfoRow icon={<RiPercentLine />} label={t('pamm.profile.investorProfit')} value="70%" />
+            <InfoRow icon={<RiMoneyDollarCircleLine />} label={t('pamm.profile.managerCommission')} value="30%" />
+            <InfoRow icon={<RiCalendarEventLine />} label={t('pamm.profile.distributionFrequency')} value={t('pamm.manager.fundDetail.monthly')} />
+            <InfoRow icon={<RiLockPasswordLine />} label={t('pamm.profile.withdrawalPenalty')} value={`5% ${t('pamm.profile.firstThreeMonths')}`} />
         </div>
       </div>
       
       {/* Condiciones para Invertir */}
       <div>
-        <h2 className="text-2xl font-semibold text-white mb-4">Condiciones para Invertir</h2>
+        <h2 className="text-2xl font-semibold text-white mb-4">{t('pamm.profile.investmentConditions')}</h2>
         <div className="space-y-2">
-            <InfoRow icon={<RiMoneyDollarCircleLine />} label="Monto mínimo" value="1,000 USD" />
-            <InfoRow icon={<RiTimeLine />} label="Tiempo mínimo" value="3 meses" />
-            <InfoRow icon={<RiBankLine />} label="Broker requerido" value="AGM Markets" />
+            <InfoRow icon={<RiMoneyDollarCircleLine />} label={t('pamm.profile.minimumAmount')} value="1,000 USD" />
+            <InfoRow icon={<RiTimeLine />} label={t('pamm.profile.minimumTime')} value={`3 ${t('pamm.profile.months')}`} />
+            <InfoRow icon={<RiBankLine />} label={t('pamm.profile.requiredBroker')} value="AGM Markets" />
         </div>
       </div>
 

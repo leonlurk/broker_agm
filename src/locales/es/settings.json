@@ -1,0 +1,196 @@
+{
+  "title": "Configuración",
+  "tabs": {
+    "profile": "Perfil",
+    "security": "Seguridad",
+    "notifications": "Notificaciones",
+    "trading": "Trading",
+    "api": "API",
+    "language": "Idioma",
+    "appearance": "Apariencia"
+  },
+  "profile": {
+    "title": "Información Personal",
+    "personalInfo": "Información Personal",
+    "contactInfo": "Información de Contacto",
+    "fields": {
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "email": "Correo Electrónico",
+      "phone": "Teléfono",
+      "country": "País",
+      "city": "Ciudad",
+      "address": "Dirección",
+      "postalCode": "Código Postal",
+      "dateOfBirth": "Fecha de Nacimiento",
+      "nationality": "Nacionalidad",
+      "language": "Idioma Preferido",
+      "timezone": "Zona Horaria"
+    },
+    "actions": {
+      "edit": "Editar",
+      "save": "Guardar Cambios",
+      "cancel": "Cancelar",
+      "uploadPhoto": "Subir Foto",
+      "removePhoto": "Eliminar Foto"
+    }
+  },
+  "security": {
+    "title": "Seguridad de la Cuenta",
+    "password": {
+      "title": "Cambiar Contraseña",
+      "current": "Contraseña Actual",
+      "new": "Nueva Contraseña",
+      "confirm": "Confirmar Contraseña",
+      "requirements": "La contraseña debe tener al menos 8 caracteres",
+      "change": "Cambiar Contraseña"
+    },
+    "twoFactor": {
+      "title": "Autenticación de Dos Factores",
+      "status": "Estado",
+      "enabled": "Activada",
+      "disabled": "Desactivada",
+      "enable": "Activar 2FA",
+      "disable": "Desactivar 2FA",
+      "backup": "Códigos de Respaldo",
+      "generateBackup": "Generar Códigos de Respaldo"
+    },
+    "sessions": {
+      "title": "Sesiones Activas",
+      "current": "Sesión Actual",
+      "location": "Ubicación",
+      "device": "Dispositivo",
+      "lastActive": "Última Actividad",
+      "terminate": "Cerrar Sesión",
+      "terminateAll": "Cerrar Todas las Sesiones"
+    },
+    "loginHistory": {
+      "title": "Historial de Acceso",
+      "date": "Fecha",
+      "ip": "Dirección IP",
+      "device": "Dispositivo",
+      "location": "Ubicación",
+      "status": "Estado"
+    }
+  },
+  "notifications": {
+    "title": "Preferencias de Notificaciones",
+    "channels": {
+      "email": "Correo Electrónico",
+      "sms": "SMS",
+      "push": "Notificaciones Push",
+      "inApp": "En la Aplicación"
+    },
+    "types": {
+      "trades": "Operaciones",
+      "deposits": "Depósitos",
+      "withdrawals": "Retiros",
+      "news": "Noticias y Actualizaciones",
+      "promotions": "Promociones",
+      "security": "Alertas de Seguridad",
+      "reports": "Reportes",
+      "maintenance": "Mantenimiento"
+    },
+    "frequency": {
+      "instant": "Instantánea",
+      "daily": "Diaria",
+      "weekly": "Semanal",
+      "monthly": "Mensual",
+      "never": "Nunca"
+    }
+  },
+  "trading": {
+    "title": "Configuración de Trading",
+    "defaults": {
+      "title": "Valores Predeterminados",
+      "leverage": "Apalancamiento",
+      "lotSize": "Tamaño de Lote",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "trailingStop": "Trailing Stop"
+    },
+    "risk": {
+      "title": "Gestión de Riesgo",
+      "maxLoss": "Pérdida Máxima Diaria",
+      "maxPositions": "Máximo de Posiciones Abiertas",
+      "marginCall": "Nivel de Margin Call",
+      "stopOut": "Nivel de Stop Out"
+    },
+    "autoClose": {
+      "title": "Cierre Automático",
+      "enabled": "Activado",
+      "profit": "Cerrar en Ganancia",
+      "loss": "Cerrar en Pérdida",
+      "time": "Cerrar por Tiempo"
+    }
+  },
+  "api": {
+    "title": "Acceso API",
+    "keys": {
+      "title": "Claves API",
+      "create": "Crear Nueva Clave",
+      "name": "Nombre",
+      "key": "Clave",
+      "secret": "Secreto",
+      "permissions": "Permisos",
+      "created": "Creada",
+      "lastUsed": "Último Uso",
+      "delete": "Eliminar",
+      "regenerate": "Regenerar"
+    },
+    "permissions": {
+      "read": "Lectura",
+      "trade": "Trading",
+      "withdraw": "Retiros",
+      "transfer": "Transferencias"
+    },
+    "webhooks": {
+      "title": "Webhooks",
+      "url": "URL",
+      "events": "Eventos",
+      "status": "Estado",
+      "add": "Agregar Webhook"
+    }
+  },
+  "appearance": {
+    "title": "Apariencia",
+    "theme": {
+      "title": "Tema",
+      "light": "Claro",
+      "dark": "Oscuro",
+      "auto": "Automático"
+    },
+    "layout": {
+      "title": "Diseño",
+      "compact": "Compacto",
+      "comfortable": "Cómodo",
+      "spacious": "Espacioso"
+    },
+    "charts": {
+      "title": "Gráficos",
+      "candlestick": "Velas",
+      "line": "Línea",
+      "area": "Área",
+      "bars": "Barras"
+    }
+  },
+  "language": {
+    "title": "Idioma y Región",
+    "interface": "Idioma de la Interfaz",
+    "dateFormat": "Formato de Fecha",
+    "timeFormat": "Formato de Hora",
+    "numberFormat": "Formato de Números",
+    "currency": "Moneda Predeterminada",
+    "firstDayOfWeek": "Primer Día de la Semana"
+  },
+  "messages": {
+    "saved": "Configuración guardada exitosamente",
+    "error": "Error al guardar la configuración",
+    "passwordChanged": "Contraseña cambiada exitosamente",
+    "twoFactorEnabled": "Autenticación de dos factores activada",
+    "twoFactorDisabled": "Autenticación de dos factores desactivada",
+    "sessionTerminated": "Sesión cerrada",
+    "apiKeyCreated": "Clave API creada exitosamente",
+    "apiKeyDeleted": "Clave API eliminada"
+  }
+}

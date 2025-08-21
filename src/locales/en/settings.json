@@ -1,0 +1,196 @@
+{
+  "title": "Settings",
+  "tabs": {
+    "profile": "Profile",
+    "security": "Security",
+    "notifications": "Notifications",
+    "trading": "Trading",
+    "api": "API",
+    "language": "Language",
+    "appearance": "Appearance"
+  },
+  "profile": {
+    "title": "Personal Information",
+    "personalInfo": "Personal Information",
+    "contactInfo": "Contact Information",
+    "fields": {
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "country": "Country",
+      "city": "City",
+      "address": "Address",
+      "postalCode": "Postal Code",
+      "dateOfBirth": "Date of Birth",
+      "nationality": "Nationality",
+      "language": "Preferred Language",
+      "timezone": "Time Zone"
+    },
+    "actions": {
+      "edit": "Edit",
+      "save": "Save Changes",
+      "cancel": "Cancel",
+      "uploadPhoto": "Upload Photo",
+      "removePhoto": "Remove Photo"
+    }
+  },
+  "security": {
+    "title": "Account Security",
+    "password": {
+      "title": "Change Password",
+      "current": "Current Password",
+      "new": "New Password",
+      "confirm": "Confirm Password",
+      "requirements": "Password must be at least 8 characters",
+      "change": "Change Password"
+    },
+    "twoFactor": {
+      "title": "Two-Factor Authentication",
+      "status": "Status",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "enable": "Enable 2FA",
+      "disable": "Disable 2FA",
+      "backup": "Backup Codes",
+      "generateBackup": "Generate Backup Codes"
+    },
+    "sessions": {
+      "title": "Active Sessions",
+      "current": "Current Session",
+      "location": "Location",
+      "device": "Device",
+      "lastActive": "Last Activity",
+      "terminate": "Sign Out",
+      "terminateAll": "Sign Out All Sessions"
+    },
+    "loginHistory": {
+      "title": "Login History",
+      "date": "Date",
+      "ip": "IP Address",
+      "device": "Device",
+      "location": "Location",
+      "status": "Status"
+    }
+  },
+  "notifications": {
+    "title": "Notification Preferences",
+    "channels": {
+      "email": "Email",
+      "sms": "SMS",
+      "push": "Push Notifications",
+      "inApp": "In-App"
+    },
+    "types": {
+      "trades": "Trades",
+      "deposits": "Deposits",
+      "withdrawals": "Withdrawals",
+      "news": "News & Updates",
+      "promotions": "Promotions",
+      "security": "Security Alerts",
+      "reports": "Reports",
+      "maintenance": "Maintenance"
+    },
+    "frequency": {
+      "instant": "Instant",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "never": "Never"
+    }
+  },
+  "trading": {
+    "title": "Trading Settings",
+    "defaults": {
+      "title": "Default Values",
+      "leverage": "Leverage",
+      "lotSize": "Lot Size",
+      "stopLoss": "Stop Loss",
+      "takeProfit": "Take Profit",
+      "trailingStop": "Trailing Stop"
+    },
+    "risk": {
+      "title": "Risk Management",
+      "maxLoss": "Maximum Daily Loss",
+      "maxPositions": "Maximum Open Positions",
+      "marginCall": "Margin Call Level",
+      "stopOut": "Stop Out Level"
+    },
+    "autoClose": {
+      "title": "Auto Close",
+      "enabled": "Enabled",
+      "profit": "Close in Profit",
+      "loss": "Close in Loss",
+      "time": "Close by Time"
+    }
+  },
+  "api": {
+    "title": "API Access",
+    "keys": {
+      "title": "API Keys",
+      "create": "Create New Key",
+      "name": "Name",
+      "key": "Key",
+      "secret": "Secret",
+      "permissions": "Permissions",
+      "created": "Created",
+      "lastUsed": "Last Used",
+      "delete": "Delete",
+      "regenerate": "Regenerate"
+    },
+    "permissions": {
+      "read": "Read",
+      "trade": "Trading",
+      "withdraw": "Withdrawals",
+      "transfer": "Transfers"
+    },
+    "webhooks": {
+      "title": "Webhooks",
+      "url": "URL",
+      "events": "Events",
+      "status": "Status",
+      "add": "Add Webhook"
+    }
+  },
+  "appearance": {
+    "title": "Appearance",
+    "theme": {
+      "title": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "auto": "Automatic"
+    },
+    "layout": {
+      "title": "Layout",
+      "compact": "Compact",
+      "comfortable": "Comfortable",
+      "spacious": "Spacious"
+    },
+    "charts": {
+      "title": "Charts",
+      "candlestick": "Candlestick",
+      "line": "Line",
+      "area": "Area",
+      "bars": "Bars"
+    }
+  },
+  "language": {
+    "title": "Language & Region",
+    "interface": "Interface Language",
+    "dateFormat": "Date Format",
+    "timeFormat": "Time Format",
+    "numberFormat": "Number Format",
+    "currency": "Default Currency",
+    "firstDayOfWeek": "First Day of Week"
+  },
+  "messages": {
+    "saved": "Settings saved successfully",
+    "error": "Error saving settings",
+    "passwordChanged": "Password changed successfully",
+    "twoFactorEnabled": "Two-factor authentication enabled",
+    "twoFactorDisabled": "Two-factor authentication disabled",
+    "sessionTerminated": "Session terminated",
+    "apiKeyCreated": "API key created successfully",
+    "apiKeyDeleted": "API key deleted"
+  }
+}

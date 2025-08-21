@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { AuthAdapter } from '../services/database.adapter';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import emailServiceProxy from '../services/emailServiceProxy';
 
 const Register = ({ onLoginClick }) => {
+  const { t } = useTranslation('auth');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
@@ -38,11 +40,11 @@ const Register = ({ onLoginClick }) => {
     
     if (password !== confirmPassword) {
       console.log("[Register] Password mismatch.");
-      return setError('Las contraseñas no coinciden');
+      return setError(t('register.errors.passwordMismatch'));
     }
     
     if (!acceptTerms) {
-      return setError('Debes aceptar los Términos y Condiciones para continuar');
+      return setError(t('register.errors.termsRequired'));
     }
     
     setLoading(true);
@@ -54,15 +56,15 @@ const Register = ({ onLoginClick }) => {
       if (error) {
         console.error("[Register] registerUser returned error:", error);
         // Handle specific Firebase errors if needed
-        let friendlyError = 'Error al registrar. Intente de nuevo.';
+        let friendlyError = t('register.errors.registrationFailed');
         if (error.code === 'auth/email-already-in-use') {
-          friendlyError = 'El correo electrónico ya está en uso.';
+          friendlyError = t('register.errors.emailExists');
         } else if (error.code === 'auth/weak-password') {
-          friendlyError = 'La contraseña debe tener al menos 6 caracteres.';
+          friendlyError = t('register.errors.weakPassword');
         } else if (error.code === 'auth/invalid-email') {
-          friendlyError = 'El formato del correo electrónico no es válido.';
+          friendlyError = t('register.errors.invalidEmail');
         } else if (error.code === 'USERNAME_EXISTS') {
-          friendlyError = 'El nombre de usuario ya está en uso. Por favor, elige otro.';
+          friendlyError = t('register.errors.usernameExists');
         } else if (error.message) {
           // Use the message from the error if available (like permission denied)
           friendlyError = error.message;
@@ -85,7 +87,7 @@ const Register = ({ onLoginClick }) => {
         // Don't block registration if email fails
       }
       
-      setMessage('¡Registro exitoso! Por favor verifica tu correo electrónico para activar tu cuenta.');
+      setMessage(t('register.success'));
       setUsername(''); // Clear form on success
       setEmail('');
       setPassword('');
@@ -94,7 +96,7 @@ const Register = ({ onLoginClick }) => {
       navigate('/'); // Changed from /login and removed setTimeout
     } catch (err) {
       console.error('[Register] handleSubmit caught error:', err);
-      setError(err.message || 'Ocurrió un error inesperado durante el registro.');
+      setError(err.message || t('register.errors.general'));
     } finally {
       console.log("[Register] handleSubmit finished.");
       setLoading(false);
@@ -129,7 +131,7 @@ const Register = ({ onLoginClick }) => {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 bg-opacity-20"
-                placeholder="Nombre"
+                placeholder={t('register.placeholders.firstName')}
                 required
               />
             </div>
@@ -139,7 +141,7 @@ const Register = ({ onLoginClick }) => {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 bg-opacity-20"
-                placeholder="Apellido"
+                placeholder={t('register.placeholders.lastName')}
                 required
               />
             </div>
@@ -153,7 +155,7 @@ const Register = ({ onLoginClick }) => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20"
-              placeholder="Usuario"
+              placeholder={t('register.placeholders.username')}
               required
             />
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,7 +169,7 @@ const Register = ({ onLoginClick }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 bg-opacity-20 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
-              placeholder="Correo Electronico"
+              placeholder={t('register.placeholders.email')}
               required
             />
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -184,17 +186,17 @@ const Register = ({ onLoginClick }) => {
               className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20 appearance-none"
               required
             >
-              <option value="" className="bg-gray-900">País de Residencia</option>
-              <option value="AR" className="bg-gray-900">Argentina</option>
-              <option value="BR" className="bg-gray-900">Brasil</option>
-              <option value="CL" className="bg-gray-900">Chile</option>
-              <option value="CO" className="bg-gray-900">Colombia</option>
-              <option value="MX" className="bg-gray-900">México</option>
-              <option value="PE" className="bg-gray-900">Perú</option>
-              <option value="UY" className="bg-gray-900">Uruguay</option>
-              <option value="ES" className="bg-gray-900">España</option>
-              <option value="US" className="bg-gray-900">Estados Unidos</option>
-              <option value="OTHER" className="bg-gray-900">Otro</option>
+              <option value="" className="bg-gray-900">{t('register.placeholders.countryResidence')}</option>
+              <option value="AR" className="bg-gray-900">{t('register.countries.argentina')}</option>
+              <option value="BR" className="bg-gray-900">{t('register.countries.brasil')}</option>
+              <option value="CL" className="bg-gray-900">{t('register.countries.chile')}</option>
+              <option value="CO" className="bg-gray-900">{t('register.countries.colombia')}</option>
+              <option value="MX" className="bg-gray-900">{t('register.countries.mexico')}</option>
+              <option value="PE" className="bg-gray-900">{t('register.countries.peru')}</option>
+              <option value="UY" className="bg-gray-900">{t('register.countries.uruguay')}</option>
+              <option value="ES" className="bg-gray-900">{t('register.countries.spain')}</option>
+              <option value="US" className="bg-gray-900">{t('register.countries.usa')}</option>
+              <option value="OTHER" className="bg-gray-900">{t('register.countries.other')}</option>
             </select>
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9m0 9c-5 0-9-4-9-9s4-9 9-9"></path>
@@ -229,7 +231,7 @@ const Register = ({ onLoginClick }) => {
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 bg-opacity-20"
-                placeholder="Número de Teléfono"
+                placeholder={t('register.placeholders.phoneNumber')}
                 required
               />
             </div>
@@ -241,7 +243,7 @@ const Register = ({ onLoginClick }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-full bg-gray-900 border bg-opacity-20 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
-              placeholder="Contraseña"
+              placeholder={t('register.placeholders.password')}
               required
             />
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,7 +257,7 @@ const Register = ({ onLoginClick }) => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-full bg-gray-900 border bg-opacity-20 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
-              placeholder="Confirmar Contraseña"
+              placeholder={t('register.placeholders.confirmPassword')}
               required
             />
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,7 +275,7 @@ const Register = ({ onLoginClick }) => {
             className="h-4 w-4 bg-gray-800 border-gray-700 rounded focus:ring-blue-500"
           />
           <label htmlFor="accept_terms" className="ml-2 block text-gray-300 text-sm">
-            Acepto los Términos y Condiciones y la Política de Privacidad.
+            {t('register.termsAndConditions')}
           </label>
         </div>
 
@@ -283,7 +285,7 @@ const Register = ({ onLoginClick }) => {
             className="w-full py-3 px-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium shadow-lg relative overflow-hidden group"
             >
             <span className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-            <span className="relative z-10">{loading ? 'Procesando...' : 'Continuar'}</span>
+            <span className="relative z-10">{loading ? t('register.processing') : t('register.continue')}</span>
         </button>
 
         <div className="mt-4 text-center">
@@ -292,10 +294,10 @@ const Register = ({ onLoginClick }) => {
             onClick={onLoginClick}
             className="text-gray-300 hover:text-white bg-transparent"
           >
-            Verificar Ahora
+            {t('register.verifyNow')}
           </button>
           <p className="text-gray-400 mt-1">
-            ¿Ya estás registrado? <button type="button" onClick={onLoginClick} className="text-white font-semibold bg-transparent">Login</button>
+            {t('register.alreadyRegistered')} <button type="button" onClick={onLoginClick} className="text-white font-semibold bg-transparent">{t('register.login')}</button>
           </p>
         </div>
       </form>

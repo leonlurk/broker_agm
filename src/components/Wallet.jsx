@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAccounts, WALLET_OPERATIONS } from '../contexts/AccountsContext';
 import { DatabaseAdapter } from '../services/database.adapter';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,6 +12,7 @@ import { supabase } from '../supabase/config';
 import { Coins, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
 
 const Wallet = () => {
+  const { t } = useTranslation('wallet');
   const {
     accounts,
     selectedAccount,
@@ -111,9 +113,9 @@ const Wallet = () => {
   // Auto-seleccionar crypto cuando es la única opción
   useEffect(() => {
     if ((activeTab === 'depositar' || activeTab === 'retirar') && !selectedMethod) {
-      setSelectedMethod({ id: 'crypto', name: 'Criptomoneda', icon: <Coins className="w-6 h-6 text-white" /> });
+      setSelectedMethod({ id: 'crypto', name: t('common.methods.crypto'), icon: <Coins className="w-6 h-6 text-white" /> });
     }
-  }, [activeTab, selectedMethod]);
+  }, [activeTab, selectedMethod, t]);
 
   // Cerrar dropdowns al hacer clic fuera
   useEffect(() => {
@@ -134,10 +136,10 @@ const Wallet = () => {
 
   // Determinar el título y operación actual
   const getOperationTitle = () => {
-    if (currentOperation === WALLET_OPERATIONS.DEPOSIT) return 'Depositar';
-    if (currentOperation === WALLET_OPERATIONS.WITHDRAW) return 'Retirar';
-    if (currentOperation === WALLET_OPERATIONS.TRANSFER) return 'Transferir';
-    return 'Wallet';
+    if (currentOperation === WALLET_OPERATIONS.DEPOSIT) return t('tabs.deposit');
+    if (currentOperation === WALLET_OPERATIONS.WITHDRAW) return t('tabs.withdraw');
+    if (currentOperation === WALLET_OPERATIONS.TRANSFER) return t('tabs.transfer');
+    return t('title');
   };
 
   const getOperationColor = () => {
@@ -167,7 +169,7 @@ const Wallet = () => {
               amount: dep.amount || dep.amount_usd,
               currency: dep.currency || 'USD',
               type: 'deposit',
-              method: dep.payment_method === 'crypto' ? 'Criptomoneda' : dep.payment_method,
+              method: dep.payment_method === 'crypto' ? t('common.methods.crypto') : dep.payment_method,
               date: new Date(dep.submitted_at),
               status: dep.status,
               account: dep.account_name,
@@ -184,7 +186,7 @@ const Wallet = () => {
               amount: wit.amount,
               currency: wit.currency || 'USD',
               type: 'withdrawal',
-              method: wit.withdrawal_type === 'crypto' ? 'Criptomoneda' : 'Banco',
+              method: wit.withdrawal_type === 'crypto' ? t('common.methods.crypto') : t('common.methods.bank'),
               date: new Date(wit.requested_at),
               status: wit.status,
               account: wit.account_name,
@@ -201,7 +203,7 @@ const Wallet = () => {
               amount: tra.amount,
               currency: tra.currency || 'USD',
               type: 'transfer',
-              method: 'Transferencia Interna',
+              method: t('common.methods.internal'),
               date: new Date(tra.requested_at),
               status: tra.status,
               account: `${tra.from_account_name} → ${tra.to_account_name}`
@@ -275,7 +277,7 @@ const Wallet = () => {
   // Manejar selección de cuenta para transferencia
   const handleSelectTransferAccount = (account) => {
     if (account.id === selectedAccount?.id) {
-      setError('No puedes transferir a la misma cuenta');
+      setError(t('transfer.errors.sameAccount'));
       return;
     }
     setTransferToAccount(account);
@@ -287,38 +289,38 @@ const Wallet = () => {
   // Procesar operación
   const handleProcessOperation = async () => {
     if (!selectedAccount || !currentUser) {
-      setError('Debe seleccionar una cuenta');
+      setError(t('common.errors.selectAccount'));
       return;
     }
 
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-      setError('Ingrese un monto válido');
+      setError(t('common.errors.invalidAmount'));
       return;
     }
 
     // Validar monto mínimo para depósitos
     if (activeTab === 'depositar' && parseFloat(amount) < 100) {
-      setError('El monto mínimo para depósitos es $100 USD');
+      setError(t('deposit.errors.minAmount'));
       return;
     }
 
     if ((activeTab === 'retirar' || activeTab === 'transferir') && parseFloat(amount) > selectedAccount.balance) {
-      setError('Saldo insuficiente');
+      setError(t('common.errors.insufficientBalance'));
       return;
     }
 
     if ((activeTab === 'retirar' || activeTab === 'depositar') && !selectedMethod) {
-      setError('Debe seleccionar un método');
+      setError(t('common.errors.selectMethod'));
       return;
     }
 
     if (activeTab === 'transferir' && !transferToAccount) {
-      setError('Debe seleccionar una cuenta de destino');
+      setError(t('transfer.errors.selectAccount'));
       return;
     }
 
     if (!acceptTerms) {
-      setError('Debe aceptar los términos y condiciones');
+      setError(t('common.errors.acceptTerms'));
       return;
     }
 
@@ -356,7 +358,7 @@ const Wallet = () => {
         });
         
         if (!result.success) {
-          throw new Error(result.error || 'Error al crear solicitud de retiro');
+          throw new Error(result.error || t('withdraw.errors.processingError'));
         }
       } else if (activeTab === 'transferir') {
         // Crear solicitud de transferencia interna
@@ -369,7 +371,7 @@ const Wallet = () => {
         });
         
         if (!result.success) {
-          throw new Error(result.error || 'Error al crear solicitud de transferencia');
+          throw new Error(result.error || t('transfer.errors.processingError'));
         }
       }
       // Nota: Los depósitos se manejan diferente (a través del CryptoDepositModal)
@@ -377,7 +379,7 @@ const Wallet = () => {
       // Manejar notificaciones según el tipo de operación
       if (activeTab === 'depositar') {
         const depositAmount = parseFloat(amount);
-        setSuccess(`Depósito de $${amount} USD iniciado correctamente. Le notificaremos cuando sea procesado.`);
+        setSuccess(t('deposit.success', { amount }));
         notifyDeposit(depositAmount, selectedAccount.account_name);
         
         // Send deposit confirmation email
@@ -392,7 +394,7 @@ const Wallet = () => {
         }
       } else if (activeTab === 'retirar') {
         const withdrawAmount = parseFloat(amount);
-        setSuccess(`Solicitud de retiro de $${amount} USD enviada. Será procesada en las próximas 24-48 horas.`);
+        setSuccess(t('withdraw.success', { amount }));
         notifyWithdrawal(withdrawAmount, selectedAccount.account_name);
         
         // Send withdrawal confirmation email  
@@ -407,7 +409,7 @@ const Wallet = () => {
         }
       } else if (activeTab === 'transferir') {
         const transferAmount = parseFloat(amount);
-        setSuccess(`Solicitud de transferencia de $${amount} USD enviada. Será procesada una vez aprobada.`);
+        setSuccess(t('transfer.success', { amount }));
         notifyTransfer(transferAmount, selectedAccount.account_name, transferToAccount.account_name);
       }
 
@@ -422,9 +424,9 @@ const Wallet = () => {
 
     } catch (error) {
       console.error('Error processing operation:', error);
-      const errorMessage = 'Error al procesar la operación. Intente nuevamente.';
+      const errorMessage = t('common.errors.processingError');
       setError(errorMessage);
-      notifyError('Error en Operación', errorMessage);
+      notifyError(t('common.errors.operationError'), errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -464,12 +466,12 @@ const Wallet = () => {
       });
 
       if (!result.success) {
-        throw new Error(result.error || 'Error al crear solicitud de depósito');
+        throw new Error(result.error || t('deposit.errors.processingError'));
       }
 
       // Notificar al usuario
       const depositAmount = parseFloat(amount);
-      setSuccess(`Depósito de $${amount} USD recibido. Será acreditado en su cuenta una vez procesado por nuestro equipo.`);
+      setSuccess(t('deposit.pending', { amount }));
       notifyDeposit(depositAmount, selectedAccount.account_name);
 
       // Cerrar modal y resetear
@@ -481,7 +483,7 @@ const Wallet = () => {
       await loadTransactions();
     } catch (error) {
       console.error('Error processing crypto deposit:', error);
-      notifyError('Error en Depósito', 'Error al procesar el depósito crypto');
+      notifyError(t('deposit.title'), t('deposit.errors.processingError'));
     }
   };
 
@@ -501,12 +503,12 @@ const Wallet = () => {
   const getMethodOptions = () => {
     if (activeTab === 'depositar') {
       return [
-        { id: 'crypto', name: 'Criptomoneda', icon: <Coins className="w-6 h-6 text-white" /> }
+        { id: 'crypto', name: t('common.methods.crypto'), icon: <Coins className="w-6 h-6 text-white" /> }
       ];
     }
     if (activeTab === 'retirar') {
       return [
-        { id: 'crypto', name: 'Criptomoneda', icon: <Coins className="w-6 h-6 text-white" /> }
+        { id: 'crypto', name: t('common.methods.crypto'), icon: <Coins className="w-6 h-6 text-white" /> }
       ];
     }
     return [];
@@ -568,8 +570,8 @@ const Wallet = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Paso 1: Seleccionar cuenta destino */}
         <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 1 ? 'border-[#06b6d4]' : 'border-[#334155]'}`}>
-          <h3 className="text-lg font-semibold mb-2 text-white">Paso 1</h3>
-          <p className="text-[#9ca3af] mb-6 text-sm">Seleccionar cuenta de destino</p>
+          <h3 className="text-lg font-semibold mb-2 text-white">{t('common.steps.step1')}</h3>
+          <p className="text-[#9ca3af] mb-6 text-sm">{t('transfer.selectDestination')}</p>
           
           <div className="relative" ref={transferDropdownRef}>
             <button 
@@ -579,7 +581,7 @@ const Wallet = () => {
               <div className="flex items-center gap-3">
                 <RefreshCw className="w-6 h-6 text-white" />
                 <span>
-                  {transferToAccount ? `${transferToAccount.account_name} (${transferToAccount.account_number})` : 'Seleccionar cuenta destino'}
+                  {transferToAccount ? `${transferToAccount.account_name} (${transferToAccount.account_number})` : t('transfer.selectDestination')}
                 </span>
               </div>
             </button>
@@ -615,15 +617,15 @@ const Wallet = () => {
               onClick={() => goToStep(3)}
               className="mt-4 w-full py-2 bg-[#06b6d4] hover:bg-[#0891b2] text-white rounded-lg transition-colors"
             >
-              Continuar
+              {t('common.continue')}
             </button>
           )}
         </div>
 
         {/* Paso 2: Información de transferencia */}
         <div className={`bg-[#232323] rounded-xl border-2 p-6 border-[#334155] ${transferToAccount ? '' : 'opacity-60'}`}>
-          <h3 className="text-lg font-semibold mb-2 text-white">Paso 2</h3>
-          <p className="text-[#9ca3af] mb-6 text-sm">Información de transferencia</p>
+          <h3 className="text-lg font-semibold mb-2 text-white">{t('common.steps.step2')}</h3>
+          <p className="text-[#9ca3af] mb-6 text-sm">{t('transfer.transferInfo')}</p>
           
           {transferToAccount && (
             <div className="space-y-4">
@@ -631,23 +633,23 @@ const Wallet = () => {
                 <div className="flex items-center gap-3 mb-3">
                   <ArrowUp className="w-6 h-6 text-white" />
                   <div>
-                    <div className="font-medium text-white">Origen</div>
+                    <div className="font-medium text-white">{t('transfer.fromAccount')}</div>
                     <div className="text-sm text-[#9ca3af]">{selectedAccount?.accountName}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <ArrowDown className="w-6 h-6 text-white" />
                   <div>
-                    <div className="font-medium text-white">Destino</div>
+                    <div className="font-medium text-white">{t('transfer.toAccount')}</div>
                     <div className="text-sm text-[#9ca3af]">{transferToAccount.accountName}</div>
                   </div>
                 </div>
               </div>
               
               <div className="p-4 bg-[#1e1e1e] rounded-lg border border-[#334155]">
-                <p className="text-[#22d3ee] mb-2 text-sm font-medium">Importante:</p>
+                <p className="text-[#22d3ee] mb-2 text-sm font-medium">{t('common.important')}:</p>
                 <p className="text-[#9ca3af] text-xs leading-relaxed">
-                  Las transferencias internas son inmediatas y sin comisión.
+                  {t('transfer.instant')}
                 </p>
               </div>
             </div>
@@ -656,14 +658,14 @@ const Wallet = () => {
 
         {/* Paso 3: Monto y confirmación */}
         <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 3 ? 'border-[#06b6d4]' : 'border-[#334155]'} ${currentStep < 3 ? 'opacity-60' : ''}`}>
-          <h3 className="text-lg font-semibold mb-2 text-white">Paso 3</h3>
-          <p className="text-[#9ca3af] mb-6 text-sm">Completar transferencia</p>
+          <h3 className="text-lg font-semibold mb-2 text-white">{t('common.steps.step3')}</h3>
+          <p className="text-[#9ca3af] mb-6 text-sm">{t('transfer.completeTransfer')}</p>
           
           {currentStep >= 3 && (
             <div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-[#9ca3af] mb-2">
-                  Monto (USD)
+                  {t('common.amount')} (USD)
                 </label>
                 <input
                   type="number"
@@ -675,9 +677,9 @@ const Wallet = () => {
               </div>
 
               <div className="bg-[#1e1e1e] p-4 rounded-lg mb-6 border border-[#334155]">
-                <p className="text-[#22d3ee] mb-2 text-sm font-medium">Importante:</p>
+                <p className="text-[#22d3ee] mb-2 text-sm font-medium">{t('common.important')}:</p>
                 <p className="text-[#9ca3af] text-xs leading-relaxed">
-                  La transferencia se procesará inmediatamente y sin comisión.
+                  {t('transfer.instantNote')}
                 </p>
               </div>
 
@@ -690,7 +692,7 @@ const Wallet = () => {
                   className="mr-3 w-4 h-4 text-[#06b6d4] bg-[#1e1e1e] border-[#4b5563] rounded focus:ring-[#06b6d4] focus:ring-2"
                 />
                 <label htmlFor="transferTerms" className="text-sm text-[#9ca3af] font-medium">
-                  Confirmo que los datos son correctos
+                  {t('transfer.confirmData')}
                 </label>
               </div>
               
@@ -703,7 +705,7 @@ const Wallet = () => {
                     : 'bg-[#374151] text-[#6b7280] cursor-not-allowed'
                 }`}
               >
-                {isLoading ? 'Procesando...' : 'Transferir'}
+                {isLoading ? t('common.processing') : t('tabs.transfer')}
               </button>
             </div>
           )}
@@ -721,8 +723,8 @@ const Wallet = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Paso 1: Seleccionar método */}
         <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 1 ? 'border-[#06b6d4]' : 'border-[#334155]'}`}>
-          <h3 className="text-lg font-semibold mb-2 text-white">Paso 1</h3>
-          <p className="text-[#9ca3af] mb-6 text-sm">Seleccionar método</p>
+          <h3 className="text-lg font-semibold mb-2 text-white">{t('common.steps.step1')}</h3>
+          <p className="text-[#9ca3af] mb-6 text-sm">{t('common.selectMethod')}</p>
           
           <div className="space-y-3">
             {methods.map((method) => (
@@ -746,9 +748,9 @@ const Wallet = () => {
         
         {/* Paso 2: Seleccionar moneda (solo para crypto) */}
         <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 2 ? 'border-[#06b6d4]' : 'border-[#334155]'} ${currentStep < 2 ? 'opacity-60' : ''}`}>
-          <h3 className="text-lg font-semibold mb-2 text-white">Paso 2</h3>
+          <h3 className="text-lg font-semibold mb-2 text-white">{t('common.steps.step2')}</h3>
           <p className="text-[#9ca3af] mb-6 text-sm">
-            {selectedMethod?.id === 'crypto' ? 'Seleccionar moneda' : 'Detalles del método'}
+            {selectedMethod?.id === 'crypto' ? t('deposit.selectCoin') : t('common.methodDetails')}
           </p>
           
           {currentStep >= 2 && (
@@ -777,15 +779,15 @@ const Wallet = () => {
               ) : (
                 <div className="p-4 bg-[#1e1e1e] rounded-lg border border-[#334155]">
                   <p className="text-[#9ca3af] text-sm">
-                    {selectedMethod?.id === 'bank_transfer' && 'Se procesará mediante transferencia bancaria'}
-                    {selectedMethod?.id === 'credit_card' && 'Se procesará mediante tarjeta de crédito'}
-                    {selectedMethod?.id === 'skrill' && 'Se procesará mediante Skrill'}
+                    {selectedMethod?.id === 'bank_transfer' && t('common.methods.bankTransfer')}
+                    {selectedMethod?.id === 'credit_card' && t('common.methods.creditCard')}
+                    {selectedMethod?.id === 'skrill' && t('common.methods.skrill')}
                   </p>
                   <button 
                     onClick={() => goToStep(3)}
                     className="mt-3 w-full py-2 bg-[#06b6d4] hover:bg-[#0891b2] text-white rounded-lg transition-colors"
                   >
-                    Continuar
+                    {t('common.continue')}
                   </button>
                 </div>
               )}
@@ -795,14 +797,14 @@ const Wallet = () => {
         
         {/* Paso 3: Monto y confirmación */}
         <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 3 ? 'border-[#06b6d4]' : 'border-[#334155]'} ${currentStep < 3 ? 'opacity-60' : ''}`}>
-          <h3 className="text-lg font-semibold mb-2 text-white">Paso 3</h3>
-          <p className="text-[#9ca3af] mb-6 text-sm">Completar operación</p>
+          <h3 className="text-lg font-semibold mb-2 text-white">{t('common.steps.step3')}</h3>
+          <p className="text-[#9ca3af] mb-6 text-sm">{t('common.completeOperation')}</p>
           
           {currentStep >= 3 && (
             <div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-[#9ca3af] mb-2">
-                  Monto (USD)
+                  {t('common.amount')} (USD)
                 </label>
                 <input
                   type="number"
@@ -814,7 +816,7 @@ const Wallet = () => {
                 />
                 {activeTab === 'depositar' && (
                   <p className="text-xs text-[#22d3ee] mt-1">
-                    Monto mínimo: $100 USD
+                    {t('deposit.minAmount', { amount: '$100 USD' })}
                   </p>
                 )}
               </div>
@@ -822,24 +824,24 @@ const Wallet = () => {
               {selectedMethod?.id === 'crypto' && activeTab === 'retirar' && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-[#9ca3af] mb-2">
-                    Dirección de Wallet
+                    {t('withdraw.walletAddress')}
                   </label>
                   <input
                     type="text"
                     value={walletAddress}
                     onChange={(e) => setWalletAddress(e.target.value)}
-                    placeholder="Ingrese la dirección de su wallet"
+                    placeholder={t('withdraw.walletPlaceholder')}
                     className="w-full px-4 py-3 bg-[#1e1e1e] border border-[#4b5563] rounded-lg text-white placeholder-[#6b7280] focus:border-[#06b6d4] focus:outline-none"
                   />
                 </div>
               )}
 
               <div className="bg-[#1e1e1e] p-4 rounded-lg mb-6 border border-[#334155]">
-                <p className="text-[#22d3ee] mb-2 text-sm font-medium">Importante:</p>
+                <p className="text-[#22d3ee] mb-2 text-sm font-medium">{t('common.important')}:</p>
                 <p className="text-[#9ca3af] text-xs leading-relaxed">
                   {activeTab === 'depositar' ? 
-                    'Asegúrese de que los fondos provienen de una fuente legítima.' :
-                    'Los retiros pueden tardar entre 1-3 días hábiles en procesarse.'
+                    t('deposit.importantNote') :
+                    t('withdraw.processingTime')
                   }
                 </p>
               </div>
@@ -853,7 +855,7 @@ const Wallet = () => {
                   className="mr-3 w-4 h-4 text-[#06b6d4] bg-[#1e1e1e] border-[#4b5563] rounded focus:ring-[#06b6d4] focus:ring-2"
                 />
                 <label htmlFor="terms" className="text-sm text-[#9ca3af] font-medium">
-                  Entiendo y acepto los términos
+                  {t('common.acceptTerms')}
                 </label>
               </div>
               
@@ -883,10 +885,10 @@ const Wallet = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 md:p-6 border-b border-[#333] flex-shrink-0">
           <div className="flex flex-wrap gap-2 mb-4 md:mb-0 w-full md:w-auto">
             {[
-              { key: 'all', label: 'Todas' },
-              { key: 'deposits', label: 'Depósitos' },
-              { key: 'withdrawals', label: 'Retiros' },
-              { key: 'transfers', label: 'Transferencias' }
+              { key: 'all', label: t('history.filters.all') },
+              { key: 'deposits', label: t('history.filters.deposits') },
+              { key: 'withdrawals', label: t('history.filters.withdrawals') },
+              { key: 'transfers', label: t('history.filters.transfers') }
             ].map((filter) => (
               <button
                 key={filter.key}
@@ -908,7 +910,7 @@ const Wallet = () => {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            Actualizar
+            {t('history.refresh')}
           </button>
         </div>
 
@@ -918,20 +920,20 @@ const Wallet = () => {
             <table className="w-full h-full">
               <thead className="bg-[#1a1a1a] sticky top-0">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Fecha</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Tipo</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Monto</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Método</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Estado</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Cuenta</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-400">Acción</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">{t('history.table.date')}</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">{t('history.table.type')}</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">{t('history.table.amount')}</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">{t('history.table.method')}</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">{t('history.table.status')}</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">{t('history.table.account')}</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-400">{t('history.table.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#333]">
                 {filteredTransactions.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="px-6 py-8 text-center text-gray-400">
-                      No hay transacciones para mostrar
+                      {t('history.empty')}
                     </td>
                   </tr>
                 ) : (
@@ -946,8 +948,8 @@ const Wallet = () => {
                           transaction.type === 'withdrawal' ? 'bg-red-900 text-red-200' :
                           'bg-blue-900 text-blue-200'
                         }`}>
-                          {transaction.type === 'deposit' ? 'Depósito' :
-                           transaction.type === 'withdrawal' ? 'Retiro' : 'Transferencia'}
+                          {transaction.type === 'deposit' ? t('tabs.deposit') :
+                           transaction.type === 'withdrawal' ? t('tabs.withdraw') : t('tabs.transfer')}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-white font-semibold text-sm">
@@ -961,8 +963,8 @@ const Wallet = () => {
                           transaction.status === 'completed' ? 'text-green-400' : 
                           transaction.status === 'pending' ? 'text-yellow-400' : 'text-red-400'
                         }`}>
-                          {transaction.status === 'completed' ? 'Completado' :
-                           transaction.status === 'pending' ? 'Pendiente' : 'Rechazado'}
+                          {transaction.status === 'completed' ? t('history.status.completed') :
+                           transaction.status === 'pending' ? t('history.status.pending') : t('history.status.failed')}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-gray-300 text-sm">
@@ -982,7 +984,7 @@ const Wallet = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
-                          Ver más
+                          {t('history.viewMore')}
                         </button>
                       </td>
                     </tr>
@@ -998,7 +1000,7 @@ const Wallet = () => {
           <div className="p-4 space-y-4">
             {filteredTransactions.length === 0 ? (
               <div className="text-center py-8 text-gray-400">
-                No hay transacciones para mostrar
+                {t('history.empty')}
               </div>
             ) : (
               filteredTransactions.map((transaction, index) => (
@@ -1017,28 +1019,28 @@ const Wallet = () => {
                       transaction.type === 'withdrawal' ? 'bg-red-900 text-red-200' :
                       'bg-blue-900 text-blue-200'
                     }`}>
-                      {transaction.type === 'deposit' ? 'Depósito' :
-                       transaction.type === 'withdrawal' ? 'Retiro' : 'Transferencia'}
+                      {transaction.type === 'deposit' ? t('tabs.deposit') :
+                       transaction.type === 'withdrawal' ? t('tabs.withdraw') : t('tabs.transfer')}
                     </span>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
                     <div>
-                      <div className="text-gray-400">Método</div>
+                      <div className="text-gray-400">{t('history.table.method')}</div>
                       <div className="text-white">{transaction.method}</div>
                     </div>
                     <div>
-                      <div className="text-gray-400">Estado</div>
+                      <div className="text-gray-400">{t('history.table.status')}</div>
                       <span className={`font-medium ${
                         transaction.status === 'completed' ? 'text-green-400' : 
                         transaction.status === 'pending' ? 'text-yellow-400' : 'text-red-400'
                       }`}>
-                        {transaction.status === 'completed' ? 'Completado' :
-                         transaction.status === 'pending' ? 'Pendiente' : 'Rechazado'}
+                        {transaction.status === 'completed' ? t('history.status.completed') :
+                         transaction.status === 'pending' ? t('history.status.pending') : t('history.status.failed')}
                       </span>
                     </div>
                     <div className="col-span-2">
-                      <div className="text-gray-400">Cuenta</div>
+                      <div className="text-gray-400">{t('history.table.account')}</div>
                       <div className="text-white">
                         {transaction.account}
                         {transaction.toAccount && (
@@ -1056,7 +1058,7 @@ const Wallet = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                    Ver detalles de la transacción
+                    {t('history.viewDetails')}
                   </button>
                 </div>
               ))
@@ -1086,7 +1088,7 @@ const Wallet = () => {
               />
             </div>
           )}
-          <h1 className="text-2xl font-semibold">Wallet</h1>
+          <h1 className="text-2xl font-semibold">{t('title')}</h1>
         </div>
         
         {/* Tabs y botón historial */}
@@ -1103,7 +1105,7 @@ const Wallet = () => {
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              Depositar
+              {t('tabs.deposit')}
             </button>
             <button
               onClick={() => {
@@ -1116,7 +1118,7 @@ const Wallet = () => {
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              Retirar
+              {t('tabs.withdraw')}
             </button>
             <button
               onClick={() => {
@@ -1129,7 +1131,7 @@ const Wallet = () => {
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              Transferir
+              {t('tabs.transfer')}
             </button>
           </div>
           
@@ -1141,7 +1143,7 @@ const Wallet = () => {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>Historial</span>
+            <span>{t('tabs.history')}</span>
           </button>
         </div>
       </div>
@@ -1149,7 +1151,7 @@ const Wallet = () => {
       {/* Selección de cuenta */}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-2">
-          <label className="text-sm text-gray-400">Seleccionar cuenta:</label>
+          <label className="text-sm text-gray-400">{t('common.selectAccount')}:</label>
           <button 
             onClick={loadAccounts}
             disabled={isLoading}
@@ -1158,7 +1160,7 @@ const Wallet = () => {
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {isLoading ? 'Cargando...' : 'Recargar'}
+            {isLoading ? t('common.loading') : t('common.reload')}
           </button>
         </div>
         <div className="relative" ref={dropdownRef}>
@@ -1167,7 +1169,7 @@ const Wallet = () => {
             className="flex items-center justify-between w-full max-w-md px-4 py-3 bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] hover:from-[#3a3a3a] hover:to-[#2e2e2e] rounded-xl border border-[#333] transition-all duration-200"
           >
             <span className="text-white font-medium">
-              {selectedAccount ? `${selectedAccount.account_name} (${selectedAccount.account_number})` : 'Seleccionar Cuenta'}
+              {selectedAccount ? `${selectedAccount.account_name} (${selectedAccount.account_number})` : t('common.selectAccount')}
             </span>
             <svg 
               className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${showAccountDropdown ? 'rotate-180' : ''}`} 
@@ -1210,8 +1212,8 @@ const Wallet = () => {
                   ))
                 ) : (
                   <div className="p-4 text-center text-gray-400">
-                    <p className="mb-2">No tienes cuentas disponibles</p>
-                    <p className="text-sm">Crea una cuenta primero en Trading Accounts</p>
+                    <p className="mb-2">{t('common.noAccounts')}</p>
+                    <p className="text-sm">{t('common.createAccountFirst')}</p>
                   </div>
                 )}
               </div>
@@ -1226,12 +1228,12 @@ const Wallet = () => {
           <div className="bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-2xl p-6 border-t border-l border-r border-cyan-500">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-gray-400 mb-2 text-sm font-medium">Balance Disponible</p>
+                <p className="text-gray-400 mb-2 text-sm font-medium">{t('common.availableBalance')}</p>
                 <h2 className="text-3xl font-bold text-white">${(selectedAccount.balance || 0).toLocaleString()}</h2>
                 <p className="text-xs text-gray-400 mt-2">{selectedAccount.accountType} • {selectedAccount.accountNumber}</p>
               </div>
               <div className="text-right">
-                <div className="text-sm text-gray-400 mb-2">Cuenta Activa</div>
+                <div className="text-sm text-gray-400 mb-2">{t('common.activeAccount')}</div>
                 <div className="text-lg font-semibold text-white">{selectedAccount.accountName}</div>
               </div>
             </div>
@@ -1274,7 +1276,7 @@ const Wallet = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4">
           <div className="bg-[#232323] rounded-xl max-w-6xl w-full max-h-[80vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between p-4 md:p-6 border-b border-[#333] flex-shrink-0">
-              <h3 className="text-lg md:text-xl font-semibold">Historial de Transacciones</h3>
+              <h3 className="text-lg md:text-xl font-semibold">{t('history.title')}</h3>
               <button
                 onClick={() => setShowHistorialModal(false)}
                 className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-[#333] transition-colors"
@@ -1296,7 +1298,7 @@ const Wallet = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-2 md:p-4">
           <div className="bg-[#232323] rounded-xl max-w-2xl w-full">
             <div className="flex items-center justify-between p-4 md:p-6 border-b border-[#333]">
-              <h3 className="text-lg md:text-xl font-semibold">Detalles de Transacción</h3>
+              <h3 className="text-lg md:text-xl font-semibold">{t('history.transactionDetails')}</h3>
               <button
                 onClick={() => {
                   setShowTransactionDetail(false);
@@ -1322,50 +1324,50 @@ const Wallet = () => {
                     selectedTransaction.type === 'withdrawal' ? 'bg-red-900 text-red-200' :
                     'bg-blue-900 text-blue-200'
                   }`}>
-                    {selectedTransaction.type === 'deposit' ? 'Depósito' :
-                     selectedTransaction.type === 'withdrawal' ? 'Retiro' : 'Transferencia'}
+                    {selectedTransaction.type === 'deposit' ? t('tabs.deposit') :
+                     selectedTransaction.type === 'withdrawal' ? t('tabs.withdraw') : t('tabs.transfer')}
                   </span>
                 </div>
 
                 {/* Información general */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-[#1a1a1a] rounded-lg p-4">
-                    <div className="text-gray-400 text-sm mb-1">ID de Transacción</div>
+                    <div className="text-gray-400 text-sm mb-1">{t('history.transactionId')}</div>
                     <div className="text-white font-mono">{selectedTransaction.id}</div>
                   </div>
                   <div className="bg-[#1a1a1a] rounded-lg p-4">
-                    <div className="text-gray-400 text-sm mb-1">Fecha y Hora</div>
+                    <div className="text-gray-400 text-sm mb-1">{t('history.dateTime')}</div>
                     <div className="text-white">
                       {selectedTransaction.date.toLocaleDateString()} - {selectedTransaction.date.toLocaleTimeString()}
                     </div>
                   </div>
                   <div className="bg-[#1a1a1a] rounded-lg p-4">
-                    <div className="text-gray-400 text-sm mb-1">Método</div>
+                    <div className="text-gray-400 text-sm mb-1">{t('history.table.method')}</div>
                     <div className="text-white">{selectedTransaction.method}</div>
                   </div>
                   <div className="bg-[#1a1a1a] rounded-lg p-4">
-                    <div className="text-gray-400 text-sm mb-1">Estado</div>
+                    <div className="text-gray-400 text-sm mb-1">{t('history.table.status')}</div>
                     <span className={`font-medium ${
                       selectedTransaction.status === 'completed' ? 'text-green-400' : 
                       selectedTransaction.status === 'pending' ? 'text-yellow-400' : 'text-red-400'
                     }`}>
-                      {selectedTransaction.status === 'completed' ? 'Completado' :
-                       selectedTransaction.status === 'pending' ? 'Pendiente' : 'Rechazado'}
+                      {selectedTransaction.status === 'completed' ? t('history.status.completed') :
+                       selectedTransaction.status === 'pending' ? t('history.status.pending') : t('history.status.failed')}
                     </span>
                   </div>
                 </div>
 
                 {/* Información de cuentas */}
                 <div className="bg-[#1a1a1a] rounded-lg p-4">
-                  <div className="text-gray-400 text-sm mb-2">Información de Cuenta</div>
+                  <div className="text-gray-400 text-sm mb-2">{t('history.accountInfo')}</div>
                   <div className="text-white">
                     <div className="mb-1">
-                      <span className="text-gray-400">Cuenta: </span>
+                      <span className="text-gray-400">{t('history.table.account')}: </span>
                       {selectedTransaction.account}
                     </div>
                     {selectedTransaction.toAccount && (
                       <div>
-                        <span className="text-gray-400">Cuenta destino: </span>
+                        <span className="text-gray-400">{t('transfer.toAccount')}: </span>
                         {selectedTransaction.toAccount}
                       </div>
                     )}
@@ -1375,14 +1377,14 @@ const Wallet = () => {
                 {/* Información adicional según el tipo */}
                 {selectedTransaction.type === 'deposit' && (
                   <div className="bg-[#1a1a1a] rounded-lg p-4">
-                    <div className="text-gray-400 text-sm mb-2">Información del Depósito</div>
+                    <div className="text-gray-400 text-sm mb-2">{t('deposit.depositInfo')}</div>
                     <div className="space-y-2 text-sm">
                       <div className="text-white">
-                        <span className="text-gray-400">Tiempo de procesamiento: </span>
-                        Inmediato - 24 horas
+                        <span className="text-gray-400">{t('history.processingTime')}: </span>
+                        {t('deposit.processingTimeInfo')}
                       </div>
                       <div className="text-white">
-                        <span className="text-gray-400">Comisión: </span>
+                        <span className="text-gray-400">{t('history.fees')}: </span>
                         $0.00 USD
                       </div>
                     </div>
@@ -1391,14 +1393,14 @@ const Wallet = () => {
 
                 {selectedTransaction.type === 'withdrawal' && (
                   <div className="bg-[#1a1a1a] rounded-lg p-4">
-                    <div className="text-gray-400 text-sm mb-2">Información del Retiro</div>
+                    <div className="text-gray-400 text-sm mb-2">{t('withdraw.withdrawInfo')}</div>
                     <div className="space-y-2 text-sm">
                       <div className="text-white">
-                        <span className="text-gray-400">Tiempo de procesamiento: </span>
-                        1-3 días hábiles
+                        <span className="text-gray-400">{t('history.processingTime')}: </span>
+                        {t('withdraw.processingTimeInfo')}
                       </div>
                       <div className="text-white">
-                        <span className="text-gray-400">Comisión: </span>
+                        <span className="text-gray-400">{t('history.fees')}: </span>
                         $2.50 USD
                       </div>
                     </div>
@@ -1407,14 +1409,14 @@ const Wallet = () => {
 
                 {selectedTransaction.type === 'transfer' && (
                   <div className="bg-[#1a1a1a] rounded-lg p-4">
-                    <div className="text-gray-400 text-sm mb-2">Información de Transferencia</div>
+                    <div className="text-gray-400 text-sm mb-2">{t('transfer.transferInfo')}</div>
                     <div className="space-y-2 text-sm">
                       <div className="text-white">
-                        <span className="text-gray-400">Tiempo de procesamiento: </span>
-                        Inmediato
+                        <span className="text-gray-400">{t('history.processingTime')}: </span>
+                        {t('transfer.instantProcessing')}
                       </div>
                       <div className="text-white">
-                        <span className="text-gray-400">Comisión: </span>
+                        <span className="text-gray-400">{t('history.fees')}: </span>
                         $0.00 USD
                       </div>
                     </div>
@@ -1430,7 +1432,7 @@ const Wallet = () => {
                     }}
                     className="w-full px-4 py-3 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
                   >
-                    Cerrar
+                    {t('common.close')}
                   </button>
                 </div>
               </div>

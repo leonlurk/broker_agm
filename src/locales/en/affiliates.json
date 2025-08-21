@@ -1,0 +1,88 @@
+{
+  "dashboard": {
+    "title": "Affiliate Dashboard",
+    "tabs": {
+      "panel": "Panel",
+      "references": "References",
+      "payments": "Payments"
+    },
+    "performance": {
+      "title": "Performance",
+      "totalCommissionsCollected": "Total Commissions Collected",
+      "totalCommissionAmount": "Total Commission Amount",
+      "averageCommissions": "Average Commissions"
+    },
+    "affiliateSection": {
+      "affiliateLink": "Affiliate Link",
+      "generateLink": "Generating link...",
+      "registeredReferrals": "Registered Referrals",
+      "conversion": "Conversion"
+    },
+    "commissionLevels": {
+      "title": "Commission Levels",
+      "tier1": {
+        "name": "Tier 1",
+        "commission": "Commission Per Lot $3.00 USD",
+        "requirement": "Up to {{count}} Affiliates"
+      },
+      "tier2": {
+        "name": "Tier 2",
+        "commission": "Commission Per Lot $3.50 USD",
+        "requirement": "Up to {{count}} Affiliates"
+      },
+      "tier3": {
+        "name": "Tier 3",
+        "commission": "Commission Per Lot $4.00 USD",
+        "requirement": "{{count}}+ Affiliates"
+      }
+    },
+    "activeAccounts": {
+      "title": "Active accounts and generated commissions",
+      "topAffiliates": "Top {{count}} Affiliates",
+      "withdrawalHistory": "Withdrawal History",
+      "history": "History",
+      "table": {
+        "user": "User",
+        "accountType": "Account Type",
+        "balance": "Balance",
+        "equity": "Equity",
+        "lotsTraded": "Lots Traded",
+        "commissionsGenerated": "Commissions Generated",
+        "withdrawalsClaimed": "Withdrawals Claimed"
+      }
+    },
+    "references": {
+      "title": "References",
+      "table": {
+        "referenceId": "Reference ID",
+        "fullName": "Full Name",
+        "country": "Country",
+        "createdAt": "Created At",
+        "campaignId": "Campaign ID",
+        "campaignName": "Campaign Name",
+        "purchaseCount": "Number of Purchases",
+        "totalRevenue": "Total Revenue",
+        "commissions": "Commissions"
+      },
+      "noDataAvailable": "No data available",
+      "noReferencesAvailable": "No references available"
+    },
+    "payments": {
+      "title": "Payments",
+      "table": {
+        "paymentId": "Payment ID",
+        "createdAt": "Created At",
+        "amountToPay": "Amount to Pay",
+        "status": "Status"
+      },
+      "noDataAvailable": "No data available",
+      "noPaymentsAvailable": "No payments available"
+    },
+    "messages": {
+      "linkCopied": "Affiliate link copied to clipboard",
+      "copyError": "Error copying the link.",
+      "notAuthenticated": "User not authenticated.",
+      "dataLoadError": "Error loading data. Please try again later."
+    }
+  }
+}

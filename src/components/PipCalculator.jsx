@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Star, Search as SearchIcon, ChevronDown } from 'lucide-react';
 import { DatabaseAdapter } from '../services/database.adapter';
+import { useTranslation } from 'react-i18next';
 
 // Expanded and refined list of Forex currency pairs
 const forexInstruments = [
@@ -133,6 +134,7 @@ const positionSizeQuickOptions = [
 // Componente principal
 const PipCalculator = () => {
   const { currentUser } = useAuth();
+  const { t } = useTranslation('tools');
 
   const [activeTab, setActiveTab] = useState('pips');
   const [instrumentType, setInstrumentType] = useState('forex'); // State to filter dropdown content
@@ -640,7 +642,7 @@ const PipCalculator = () => {
           }`}
           style={{ outline: 'none' }}
         >
-          Calculadora de Pips
+          {t('pipCalculator.tabs.pipsCalculator')}
         </button>
         <button
           onClick={() => setActiveTab('position')}
@@ -651,7 +653,7 @@ const PipCalculator = () => {
           }`}
           style={{ outline: 'none' }}
         >
-          Tamaño de Posición
+          {t('pipCalculator.tabs.positionSize')}
         </button>
       </div>
 
@@ -659,7 +661,7 @@ const PipCalculator = () => {
       <div className="flex-1 border border-[#333] rounded-3xl p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] flex flex-col overflow-y-auto custom-scrollbar">
         {/* Instrumento - Responsivo */}
         <div className="mb-6">
-          <h2 className="text-base md:text-lg mb-3 font-medium">Instrumento</h2>
+          <h2 className="text-base md:text-lg mb-3 font-medium">{t('pipCalculator.instrument')}</h2>
           <div className="relative w-full" ref={instrumentDropdownRef}>
             <div className="flex items-center bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-xl hover:border-cyan-400 transition-all duration-200 shadow-sm">
               <input
@@ -668,7 +670,7 @@ const PipCalculator = () => {
                 onClick={() => setShowInstrumentDropdown(!showInstrumentDropdown)}
                 readOnly
                 className="w-full bg-transparent px-4 py-3 md:py-4 appearance-none cursor-pointer focus:outline-none text-base font-medium"
-                placeholder="Seleccionar instrumento"
+                placeholder={t('pipCalculator.selectInstrument')}
               />
               <div
                 className="p-3 md:p-4 cursor-pointer"
@@ -694,7 +696,7 @@ const PipCalculator = () => {
                       }`}
                       style={{ outline: 'none' }}
                     >
-                      Forex
+                      {t('pipCalculator.instrumentTypes.forex')}
                     </button>
                     <button
                       onClick={() => setInstrumentType('stocks')}
@@ -705,7 +707,7 @@ const PipCalculator = () => {
                       }`}
                       style={{ outline: 'none' }}
                     >
-                      Acciones
+                      {t('pipCalculator.instrumentTypes.stocks')}
                     </button>
                     <button
                       onClick={() => setInstrumentType('crypto')}
@@ -716,7 +718,7 @@ const PipCalculator = () => {
                       }`}
                       style={{ outline: 'none' }}
                     >
-                      Cripto
+                      {t('pipCalculator.instrumentTypes.crypto')}
                     </button>
                     <button
                       onClick={() => setInstrumentType('metal')}
@@ -727,7 +729,7 @@ const PipCalculator = () => {
                       }`}
                       style={{ outline: 'none' }}
                     >
-                      Metales
+                      {t('pipCalculator.instrumentTypes.metal')}
                     </button>
                     <button
                       onClick={() => setInstrumentType('index')}
@@ -738,13 +740,13 @@ const PipCalculator = () => {
                       }`}
                       style={{ outline: 'none' }}
                     >
-                      Índices
+                      {t('pipCalculator.instrumentTypes.index')}
                     </button>
                   </div>
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="Buscar instrumento"
+                      placeholder={t('pipCalculator.searchInstrument')}
                       value={instrumentSearchTerm}
                       onChange={(e) => setInstrumentSearchTerm(e.target.value)}
                       className="w-full bg-[#232323] border border-[#444] rounded-md px-3 py-2 pl-10 focus:outline-none focus:border-cyan-500"
@@ -755,7 +757,7 @@ const PipCalculator = () => {
 
                 {favoriteFilteredInstruments.length > 0 && (
                   <>
-                    <div className="px-4 py-2 text-xs text-gray-400 font-semibold sticky top-[88px] bg-[#2d2d2d] z-10">Favoritos</div>
+                    <div className="px-4 py-2 text-xs text-gray-400 font-semibold sticky top-[88px] bg-[#2d2d2d] z-10">{t('pipCalculator.favorites')}</div>
                     {favoriteFilteredInstruments.map(item => (
                       <div
                         key={item.value + '-fav'}
@@ -773,7 +775,7 @@ const PipCalculator = () => {
                             toggleFavorite(item.value);
                           }}
                           className="p-1 rounded-full hover:bg-[#4f4f4f] focus:outline-none"
-                          title={favoriteInstruments.includes(item.value) ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                          title={favoriteInstruments.includes(item.value) ? t('pipCalculator.removeFromFavorites') : t('pipCalculator.addToFavorites')}
                         >
                           <Star
                             className={`w-4 h-4 ${favoriteInstruments.includes(item.value) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500'}`}
@@ -787,7 +789,7 @@ const PipCalculator = () => {
                   <>
                     {favoriteFilteredInstruments.length > 0 && nonFavoriteFilteredInstruments.length > 0 && (
                       <div className="px-4 py-2 text-xs text-gray-400 font-semibold sticky top-[88px] bg-[#2d2d2d] z-10">
-                        Todos los Instrumentos
+                        {t('pipCalculator.allInstruments')}
                       </div>
                     )}
                     {nonFavoriteFilteredInstruments.map(item => (
@@ -807,7 +809,7 @@ const PipCalculator = () => {
                             toggleFavorite(item.value);
                           }}
                           className="p-1 rounded-full hover:bg-[#4f4f4f] focus:outline-none"
-                          title={favoriteInstruments.includes(item.value) ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                          title={favoriteInstruments.includes(item.value) ? t('pipCalculator.removeFromFavorites') : t('pipCalculator.addToFavorites')}
                         >
                           <Star
                             className={`w-4 h-4 ${favoriteInstruments.includes(item.value) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500'}`}
@@ -819,7 +821,7 @@ const PipCalculator = () => {
                 )}
                 {favoriteFilteredInstruments.length === 0 && nonFavoriteFilteredInstruments.length === 0 && (
                   <div className="px-4 py-3 text-gray-400 text-sm">
-                    No se encontraron resultados
+                    {t('pipCalculator.noResultsFound')}
                   </div>
                 )}
               </div>
@@ -831,11 +833,11 @@ const PipCalculator = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-3">
               <h2 className="text-base md:text-lg font-medium">
-                {instrumentType === 'forex' && 'Cantidad de Pips'}
-                {instrumentType === 'stocks' && 'Cantidad de Puntos'}
-                {instrumentType === 'crypto' && 'Cantidad de Ticks'}
-                {instrumentType === 'metal' && 'Cantidad de Puntos'}
-                {instrumentType === 'index' && 'Cantidad de Puntos'}
+                {instrumentType === 'forex' && t('pipCalculator.quantities.pips')}
+                {instrumentType === 'stocks' && t('pipCalculator.quantities.points')}
+                {instrumentType === 'crypto' && t('pipCalculator.quantities.ticks')}
+                {instrumentType === 'metal' && t('pipCalculator.quantities.points')}
+                {instrumentType === 'index' && t('pipCalculator.quantities.points')}
               </h2>
               <div className="relative">
                 <button
@@ -862,12 +864,12 @@ const PipCalculator = () => {
             </div>
             <div className="space-y-3" ref={positionSizeDropdownRef}>
               <div className="flex items-center justify-between">
-                <h2 className="text-base md:text-lg font-medium">Tamaño de Posición (Lotes)</h2>
+                <h2 className="text-base md:text-lg font-medium">{t('pipCalculator.positionSize')}</h2>
                 <button
                   onClick={() => setShowPositionSizeDropdown(!showPositionSizeDropdown)}
                   className="px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded-full text-white transition-colors focus:outline-none"
                 >
-                  Opciones rápidas
+                  {t('pipCalculator.quickOptions')}
                 </button>
               </div>
               <div className="relative">
@@ -918,7 +920,7 @@ const PipCalculator = () => {
           <div className="flex flex-col space-y-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h2 className="text-base md:text-lg mb-2">Balance de la Cuenta</h2>
+                <h2 className="text-base md:text-lg mb-2">{t('pipCalculator.accountBalance')}</h2>
                 <div className="relative flex items-center">
                   <input
                     type="text"
@@ -931,7 +933,7 @@ const PipCalculator = () => {
                 </div>
               </div>
               <div>
-                <h2 className="text-base md:text-lg mb-2">Porcentaje de Riesgo</h2>
+                <h2 className="text-base md:text-lg mb-2">{t('pipCalculator.riskPercentage')}</h2>
                 <div className="relative flex items-center">
                   <input
                     type="text"
@@ -944,7 +946,7 @@ const PipCalculator = () => {
                 </div>
               </div>
               <div>
-                <h2 className="text-base md:text-lg mb-2">Objetivo de Pips</h2>
+                <h2 className="text-base md:text-lg mb-2">{t('pipCalculator.pipTarget')}</h2>
                 <div className="relative flex items-center">
                   <input
                     type="text"
@@ -961,7 +963,7 @@ const PipCalculator = () => {
         )}
 
         <div className="mb-6">
-          <h2 className="text-base md:text-lg mb-2">Moneda de la Cuenta</h2>
+          <h2 className="text-base md:text-lg mb-2">{t('pipCalculator.accountCurrency')}</h2>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
             {pipsCurrencies.map((currency) => (
               <button
@@ -983,19 +985,18 @@ const PipCalculator = () => {
 
         {calculatedResult && (
           <div className="my-6 p-4 border border-cyan-700 rounded-lg bg-gradient-to-br from-[#152e35] to-[#1a3746]">
-            <h2 className="text-lg md:text-xl mb-3 text-cyan-300">Valor del Pip:</h2>
+            <h2 className="text-lg md:text-xl mb-3 text-cyan-300">{t('pipCalculator.results.pipValue')}</h2>
             {activeTab === 'pips' ? (
               <p className="text-xl font-bold">
-                {parseFloat(pipValue).toFixed(2)} {calculatedResult.displayUnit}
-                {pipValue !== 1 && (calculatedResult.displayUnit === 'pip' ? 's' : 's')} = {calculatedResult.pipsValue} {calculatedResult.currency}
+                {parseFloat(pipValue).toFixed(2)} {calculatedResult.displayUnit === 'pip' ? (pipValue === 1 ? t('pipCalculator.results.pip') : t('pipCalculator.results.pips')) : calculatedResult.displayUnit === 'point' ? (pipValue === 1 ? t('pipCalculator.results.point') : t('pipCalculator.results.points')) : (pipValue === 1 ? t('pipCalculator.results.tick') : t('pipCalculator.results.ticks'))} = {calculatedResult.pipsValue} {calculatedResult.currency}
               </p>
             ) : (
               <div>
                 <p className="text-lg md:text-xl mb-2">
-                  Tamaño de Posición Sugerido: <span className="font-bold">{calculatedResult.suggestedSize} lotes</span>
+                  {t('pipCalculator.results.suggestedPositionSize')} <span className="font-bold">{calculatedResult.suggestedSize} {t('pipCalculator.results.lots')}</span>
                 </p>
                 <p className="text-base md:text-lg text-cyan-200">
-                  Cantidad en Riesgo: {calculatedResult.riskAmount} {calculatedResult.currency} ({riskPercentage}% del balance)
+                  {t('pipCalculator.results.riskAmount')}: {calculatedResult.riskAmount} {calculatedResult.currency} ({riskPercentage}% {t('pipCalculator.results.ofBalance')})
                 </p>
               </div>
             )}
@@ -1006,7 +1007,7 @@ const PipCalculator = () => {
           onClick={handleCalculate}
           className="focus:outline-none mt-6 w-full sm:w-1/2 md:w-1/6 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-3 rounded-xl hover:opacity-90 transition"
         >
-          Calcular
+          {t('pipCalculator.calculate')}
         </button>
       </div>
     </div>
