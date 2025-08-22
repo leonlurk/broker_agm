@@ -87,7 +87,8 @@
     "poorQuality": "La calidad de la imagen es muy baja",
     "notVisible": "El documento no es completamente visible",
     "loginRequired": "Debe iniciar sesión para continuar",
-    "submitError": "Error al enviar los documentos"
+    "submitError": "Error al enviar los documentos",
+    "alreadySubmitted": "Ya has enviado tu documentación. Por favor espera la revisión."
   },
   "buttons": {
     "back": "Volver a Ajustes",
@@ -107,7 +108,10 @@
     "rejected": "Fecha de rechazo:"
   },
   "status": {
-    "label": "Estado"
+    "label": "Estado",
+    "pending": "Verificación en proceso",
+    "approved": "Verificación aprobada",
+    "rejected": "Verificación rechazada"
   },
   "statusCard": {
     "pending": {

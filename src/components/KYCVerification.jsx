@@ -60,11 +60,14 @@ const KYCVerification = ({ onBack }) => {
     fetchCountries();
   }, []);
 
-  // Check KYC status on mount
+  // Check KYC status on mount and when user changes
   useEffect(() => {
     const checkKYCStatus = async () => {
-      if (currentUser?.uid) {
-        const status = await kycService.getKYCStatus(currentUser.id || currentUser.uid);
+      if (currentUser?.uid || currentUser?.id) {
+        const userId = currentUser.id || currentUser.uid;
+        console.log('Checking KYC status for user:', userId);
+        const status = await kycService.getKYCStatus(userId);
+        console.log('KYC status retrieved:', status);
         setKycStatus(status);
       }
     };
@@ -193,6 +196,12 @@ const KYCVerification = ({ onBack }) => {
   };
 
   const handleSubmit = async () => {
+    // Prevent multiple submissions
+    if (kycStatus?.status === 'pending' || kycStatus?.status === 'approved') {
+      toast.error(t('errors.alreadySubmitted'));
+      return;
+    }
+
     // Validate all required documents
     if (!frontDocument || !backDocument || !selfieDocument || !addressDocument) {
       toast.error(t('errors.missingDocuments'));
@@ -245,13 +254,22 @@ const KYCVerification = ({ onBack }) => {
         // Send notification
         notifyKYCSubmitted();
         
-        // Update status
-        setKycStatus({ status: 'pending' });
+        // Reload KYC status from database to ensure persistence
+        const updatedStatus = await kycService.getKYCStatus(userId);
+        setKycStatus(updatedStatus);
         
-        // Clear form after 2 seconds
-        setTimeout(() => {
-          onBack();
-        }, 2000);
+        // If for some reason the status is not updated in DB, set it locally
+        if (!updatedStatus || updatedStatus.status === 'not_submitted') {
+          setKycStatus({ 
+            status: 'pending',
+            details: {
+              submittedAt: new Date().toISOString()
+            }
+          });
+        }
+        
+        // DO NOT go back - user should see the pending status
+        // The status card will be shown automatically
       } else {
         throw new Error(result.error || t('errors.submitError'));
       }
@@ -465,6 +483,7 @@ const KYCVerification = ({ onBack }) => {
   );
 
   // Check if we should show status card instead of form
+  // Show status card for pending and approved states (prevent resubmission)
   const shouldShowStatusCard = kycStatus?.status === 'pending' || kycStatus?.status === 'approved';
   
   return (

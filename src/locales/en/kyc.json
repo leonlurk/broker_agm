@@ -87,7 +87,8 @@
     "poorQuality": "Image quality is too low",
     "notVisible": "Document is not fully visible",
     "loginRequired": "You must be logged in to continue",
-    "submitError": "Error sending documents"
+    "submitError": "Error sending documents",
+    "alreadySubmitted": "You have already submitted your documentation. Please wait for review."
   },
   "buttons": {
     "back": "Back to Settings",
@@ -107,7 +108,10 @@
     "rejected": "Rejection date:"
   },
   "status": {
-    "label": "Status"
+    "label": "Status",
+    "pending": "Verification in process",
+    "approved": "Verification approved", 
+    "rejected": "Verification rejected"
   },
   "statusCard": {
     "pending": {
