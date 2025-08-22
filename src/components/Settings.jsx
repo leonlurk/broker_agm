@@ -18,6 +18,7 @@ const Settings = ({ onBack }) => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [kycStatus, setKycStatus] = useState(null);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   
   // Estados para el cambio de contraseña
   const [passwordResetStep, setPasswordResetStep] = useState('initial'); // 'initial', 'code-sent', 'verified'
@@ -53,6 +54,19 @@ const Settings = ({ onBack }) => {
       setExpandedSection(null);
     } else {
       setExpandedSection(section);
+    }
+  };
+
+  const handleToggle2FA = () => {
+    const newState = !twoFactorEnabled;
+    setTwoFactorEnabled(newState);
+    
+    if (newState) {
+      toast.success(t('notifications.twoFactorEnabled'));
+      // TODO: Implementar lógica para habilitar 2FA
+    } else {
+      toast.success(t('notifications.twoFactorDisabled'));
+      // TODO: Implementar lógica para deshabilitar 2FA
     }
   };
   
@@ -343,7 +357,7 @@ const Settings = ({ onBack }) => {
             <div className="px-4 pb-4 border-t border-[#333] bg-gradient-to-br from-[#232323] to-[#2d2d2d] pt-4">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span>Notificaciones Push</span>
+                  <span>{t('notifications.pushNotifications')}</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" defaultChecked />
                     <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-cyan-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all duration-300"></div>
@@ -351,6 +365,22 @@ const Settings = ({ onBack }) => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Two-Factor Authentication */}
+        <div className="border border-[#333] rounded-3xl bg-gradient-to-br from-[#232323] to-[#202020]">
+          <div className="p-4 flex rounded-3xl bg-gradient-to-br from-[#232323] to-[#2d2d2d] justify-between items-center">
+            <h2 className="text-lg md:text-xl">{t('notifications.twoFactorAuth')}</h2>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer" 
+                checked={twoFactorEnabled}
+                onChange={handleToggle2FA}
+              />
+              <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-cyan-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all duration-300"></div>
+            </label>
           </div>
         </div>
 

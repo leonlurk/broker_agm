@@ -89,6 +89,11 @@
   },
   "notifications": {
     "title": "Preferencias de Notificaciones",
+    "pushNotifications": "Notificaciones Push",
+    "twoFactorAuth": "Autenticación de Dos Factores (2FA)",
+    "twoFactorDescription": "Añade una capa extra de seguridad a tu cuenta",
+    "twoFactorEnabled": "2FA activado correctamente",
+    "twoFactorDisabled": "2FA desactivado correctamente",
     "channels": {
       "email": "Correo Electrónico",
       "sms": "SMS",
