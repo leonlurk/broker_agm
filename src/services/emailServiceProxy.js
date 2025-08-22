@@ -177,6 +177,20 @@ class EmailServiceProxy {
       }
     });
   }
+
+  /**
+   * Send MT5 account created email
+   */
+  async sendMT5AccountCreatedEmail(userData, accountData, credentials) {
+    return await this.sendEmailThroughBackend('mt5-account-created', {
+      to: {
+        email: userData.email,
+        name: userData.name
+      },
+      accountData: accountData,
+      credentials: credentials
+    });
+  }
 }
 
 // Export singleton instance

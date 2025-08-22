@@ -71,20 +71,31 @@ export default function TradingChallengeUI() {
         if (result.mt5Credentials) {
           setMt5Credentials(result.mt5Credentials);
           
-          // Send MT5 credentials email
+          // Send MT5 credentials email using the new endpoint
           try {
-            await emailServiceProxy.sendAccountCredentials(
-              { email: currentUser.email, name: currentUser.displayName || 'Usuario' },
+            await emailServiceProxy.sendMT5AccountCreatedEmail(
+              { 
+                email: currentUser.email, 
+                name: currentUser.displayName || currentUser.username || 'Usuario' 
+              },
               {
-                login: result.mt5Credentials.login,
+                accountType: accountType,
+                accountName: accountName.trim(),
+                accountNumber: result.mt5Credentials.login?.toString() || result.accountNumber,
+                leverage: leverage,
+                balance: accountType === 'DEMO' ? (parseFloat(initialBalance) || 10000) : 0,
+                currency: 'USD',
+                server: result.mt5Credentials.server || 'AGM-Server'
+              },
+              {
+                login: result.mt5Credentials.login?.toString() || result.accountNumber,
                 password: result.mt5Credentials.password,
-                server: result.mt5Credentials.server || 'AlphaGlobalMarket-Demo',
-                accountType: accountType
+                investorPassword: result.mt5Credentials.investor_password || result.mt5Credentials.investorPassword
               }
             );
-            console.log('[TradingChallenge] MT5 credentials email sent');
+            console.log('[TradingChallenge] MT5 account creation email sent successfully');
           } catch (emailError) {
-            console.error('[TradingChallenge] Error sending credentials email:', emailError);
+            console.error('[TradingChallenge] Error sending MT5 account creation email:', emailError);
           }
         }
         

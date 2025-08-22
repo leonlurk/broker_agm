@@ -8,10 +8,8 @@ import { logger } from '../utils/logger';
 import { getSession } from '../supabase/config';
 
 // Create axios instance with base configuration
-// In development, use the Vite proxy to avoid CORS and SSL issues
-const baseURL = import.meta.env.DEV 
-  ? '' // Use Vite proxy in development
-  : (import.meta.env.VITE_BROKER_API_URL || 'https://apekapital.com:444');
+// Use the API URL for MT5 operations (port 444)
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444';
 
 const mt5Api = axios.create({
   baseURL: baseURL,

@@ -124,15 +124,7 @@ const Dashboard = ({ onLogout }) => {
       case "Pagos":
           return <OperationsHistory />;
       case "Nueva Cuenta":
-          console.log('[Dashboard] Rendering BrokerAccountCreation component');
-          return <BrokerAccountCreation
-            onAccountCreated={(account) => {
-              console.log('Real broker account created:', account);
-              // Redirect to accounts view after creation
-              setSelectedOption('Cuentas');
-            }}
-            onCancel={() => setSelectedOption('Dashboard')}
-          />;
+          return <TradingChallenge />;
       case "Calculadora":
           return <PipCalculator />;
       case "Competicion":

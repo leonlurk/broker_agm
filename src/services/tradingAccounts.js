@@ -2,6 +2,7 @@ import { DatabaseAdapter } from './database.adapter';
 import { logger } from '../utils/logger';
 import { createMT5Account } from './mt5Api';
 import { getCurrentUser, supabase } from '../supabase/config';
+import emailServiceProxy from './emailServiceProxy';
 
 // Collection name for trading accounts
 const TRADING_ACCOUNTS_COLLECTION = "trading_accounts";
@@ -108,6 +109,47 @@ export const createTradingAccount = async (userId, accountData) => {
       mt5Login: mt5Result.data.login,
       accountType: accountData.accountType 
     });
+
+    // Send email notification with MT5 credentials
+    try {
+      const currentUser = await getCurrentUser();
+      if (currentUser?.email && mt5Result.data.password) {
+        logger.info('Sending MT5 account creation email', { 
+          email: currentUser.email, 
+          accountType: accountData.accountType 
+        });
+        
+        const emailResult = await emailServiceProxy.sendMT5AccountCreatedEmail(
+          {
+            email: currentUser.email,
+            name: currentUser.displayName || currentUser.username || 'Usuario'
+          },
+          {
+            accountType: accountData.accountType,
+            accountName: accountData.accountName,
+            accountNumber: mt5Result.data.login?.toString() || accountNumber,
+            leverage: `1:${accountData.leverage}`,
+            balance: accountData.accountType === 'DEMO' ? 10000 : 0,
+            currency: 'USD',
+            server: mt5Result.data.server || 'AGM-Server'
+          },
+          {
+            login: mt5Result.data.login?.toString() || accountNumber,
+            password: mt5Result.data.password,
+            investorPassword: mt5Result.data.investor_password || mt5Result.data.investorPassword
+          }
+        );
+        
+        if (emailResult.success) {
+          logger.info('MT5 account creation email sent successfully');
+        } else {
+          logger.error('Failed to send MT5 account creation email', emailResult.error);
+        }
+      }
+    } catch (emailError) {
+      // Don't fail the account creation if email fails
+      logger.error('Error sending MT5 account creation email (non-critical)', emailError);
+    }
 
     // Force sync of the new account to get real balance from MT5
     // This ensures the balance shown is the actual MT5 balance
