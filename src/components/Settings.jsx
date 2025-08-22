@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, X, Check, AlertCircle, Clock, Mail, Loader } from 'lucide-react';
+import { ChevronDown, ChevronRight, X, Check, AlertCircle, Clock } from 'lucide-react';
 import KYCVerification from './KYCVerification';
 import { useAuth } from '../contexts/AuthContext';
 import PaymentMethodSettings from './PaymentMethodSettings';
@@ -7,6 +7,8 @@ import kycService from '../services/kycService';
 import { useTranslation } from 'react-i18next';
 import emailServiceProxy from '../services/emailServiceProxy';
 import toast from 'react-hot-toast';
+import { AuthAdapter } from '../services/database.adapter';
+import PasswordChangeModal from './PasswordChangeModal';
 
 const Settings = ({ onBack }) => {
   const { t } = useTranslation('settings');
@@ -16,6 +18,17 @@ const Settings = ({ onBack }) => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [kycStatus, setKycStatus] = useState(null);
+  
+  // Estados para el cambio de contraseña
+  const [passwordResetStep, setPasswordResetStep] = useState('initial'); // 'initial', 'code-sent', 'verified'
+  const [verificationCode, setVerificationCode] = useState('');
+  const [storedCode, setStoredCode] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const { currentUser } = useAuth();
   
@@ -45,6 +58,11 @@ const Settings = ({ onBack }) => {
   
   const handleChangePassword = () => {
     setShowPasswordModal(true);
+    setPasswordResetStep('initial');
+    setVerificationCode('');
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
   };
 
   const handleSendPasswordResetEmail = async () => {
@@ -59,7 +77,8 @@ const Settings = ({ onBack }) => {
       // Generar un código de 6 dígitos
       const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // Guardar el código en localStorage con timestamp (válido por 1 hora)
+      // Guardar el código en el estado y localStorage
+      setStoredCode(resetCode);
       localStorage.setItem('passwordResetCode', JSON.stringify({
         code: resetCode,
         email: currentUser.email,
@@ -75,7 +94,7 @@ const Settings = ({ onBack }) => {
 
       if (result.success) {
         toast.success('Email enviado correctamente. Revisa tu bandeja de entrada.', { id: toastId });
-        setShowPasswordModal(false);
+        setPasswordResetStep('code-sent');
       } else {
         toast.error('Error al enviar el email. Intenta nuevamente.', { id: toastId });
       }
@@ -85,23 +104,91 @@ const Settings = ({ onBack }) => {
     }
   };
 
+  const handleVerifyCode = () => {
+    if (verificationCode === storedCode) {
+      toast.success('Código verificado correctamente');
+      setPasswordResetStep('verified');
+    } else {
+      toast.error('Código incorrecto. Verifica e intenta nuevamente.');
+    }
+  };
+
+  const validatePassword = (password) => {
+    const requirements = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*]/.test(password)
+    };
+    return requirements;
+  };
+
+  const handlePasswordChange = async () => {
+    // Validaciones
+    if (!oldPassword) {
+      toast.error('Debes ingresar tu contraseña actual');
+      return;
+    }
+
+    const requirements = validatePassword(newPassword);
+    const allRequirementsMet = Object.values(requirements).every(req => req);
+    
+    if (!allRequirementsMet) {
+      toast.error('La nueva contraseña no cumple con todos los requisitos');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('Las contraseñas no coinciden');
+      return;
+    }
+
+    if (oldPassword === newPassword) {
+      toast.error('La nueva contraseña debe ser diferente a la actual');
+      return;
+    }
+
+    const toastId = toast.loading('Actualizando contraseña...');
+
+    try {
+      // Primero verificar la contraseña actual
+      const verifyResult = await AuthAdapter.verifyPassword(currentUser.email, oldPassword);
+      
+      if (!verifyResult.success) {
+        toast.error('La contraseña actual es incorrecta', { id: toastId });
+        return;
+      }
+
+      // Actualizar la contraseña
+      const result = await AuthAdapter.updatePassword(currentUser.email, newPassword);
+
+      if (result.success) {
+        toast.success('Contraseña actualizada correctamente', { id: toastId });
+        setShowPasswordModal(false);
+        // Limpiar todos los campos
+        setPasswordResetStep('initial');
+        setVerificationCode('');
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        localStorage.removeItem('passwordResetCode');
+      } else {
+        toast.error(result.error || 'Error al actualizar la contraseña', { id: toastId });
+      }
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast.error('Error al actualizar la contraseña', { id: toastId });
+    }
+  };
+
   const handleUpdateEmail = () => {
     setShowEmailModal(true);
   };
 
-  // Modal Component
-  const Modal = ({ isOpen, onClose, title, message, showEmailButton = false, onEmailSend }) => {
-    const [sending, setSending] = useState(false);
-    
+  // Modal Component para otros usos
+  const Modal = ({ isOpen, onClose, title, message }) => {
     if (!isOpen) return null;
-
-    const handleEmailClick = async () => {
-      setSending(true);
-      if (onEmailSend) {
-        await onEmailSend();
-      }
-      setSending(false);
-    };
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -122,38 +209,17 @@ const Settings = ({ onBack }) => {
             <p className="text-gray-300 text-sm leading-relaxed mb-4">
               {message}
             </p>
-            {!showEmailButton && (
-              <div className="bg-[#1a1a1a] border border-[#333] rounded-lg p-3">
-                <p className="text-xs text-gray-400 mb-1">{t('modal.supportEmail')}</p>
-                <p className="text-cyan-400 font-medium">support@alphaglobalmarket.io</p>
-              </div>
-            )}
+            <div className="bg-[#1a1a1a] border border-[#333] rounded-lg p-3">
+              <p className="text-xs text-gray-400 mb-1">{t('modal.supportEmail')}</p>
+              <p className="text-cyan-400 font-medium">support@alphaglobalmarket.io</p>
+            </div>
           </div>
           
           {/* Actions */}
-          <div className="flex flex-col gap-3">
-            {showEmailButton && (
-              <button
-                onClick={handleEmailClick}
-                disabled={sending}
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {sending ? (
-                  <>
-                    <Loader className="animate-spin" size={20} />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Mail size={20} />
-                    Enviar Email de Restablecimiento
-                  </>
-                )}
-              </button>
-            )}
+          <div className="flex justify-center">
             <button
               onClick={onClose}
-              className="w-full bg-gradient-to-r from-[#0891b2] to-[#0c4a6e] text-white py-2.5 px-6 rounded-lg hover:opacity-90 transition-opacity"
+              className="bg-gradient-to-r from-[#0891b2] to-[#0c4a6e] text-white py-2.5 px-6 rounded-lg hover:opacity-90 transition-opacity"
             >
               {t('modal.close')}
             </button>
@@ -302,13 +368,35 @@ const Settings = ({ onBack }) => {
       </div>
 
       {/* Modales */}
-      <Modal
+      <PasswordChangeModal
         isOpen={showPasswordModal}
-        onClose={() => setShowPasswordModal(false)}
-        title={t('modal.changePasswordTitle')}
-        message="Te enviaremos un email con un enlace seguro para restablecer tu contraseña. El enlace será válido por 1 hora."
-        showEmailButton={true}
-        onEmailSend={handleSendPasswordResetEmail}
+        onClose={() => {
+          setShowPasswordModal(false);
+          setPasswordResetStep('initial');
+          setVerificationCode('');
+          setOldPassword('');
+          setNewPassword('');
+          setConfirmPassword('');
+        }}
+        passwordResetStep={passwordResetStep}
+        verificationCode={verificationCode}
+        setVerificationCode={setVerificationCode}
+        oldPassword={oldPassword}
+        setOldPassword={setOldPassword}
+        newPassword={newPassword}
+        setNewPassword={setNewPassword}
+        confirmPassword={confirmPassword}
+        setConfirmPassword={setConfirmPassword}
+        showOldPassword={showOldPassword}
+        setShowOldPassword={setShowOldPassword}
+        showNewPassword={showNewPassword}
+        setShowNewPassword={setShowNewPassword}
+        showConfirmPassword={showConfirmPassword}
+        setShowConfirmPassword={setShowConfirmPassword}
+        handleSendPasswordResetEmail={handleSendPasswordResetEmail}
+        handleVerifyCode={handleVerifyCode}
+        handlePasswordChange={handlePasswordChange}
+        validatePassword={validatePassword}
       />
 
       <Modal
