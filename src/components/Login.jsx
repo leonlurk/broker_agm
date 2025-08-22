@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { AuthAdapter } from '../services/database.adapter';
 import { useTranslation } from 'react-i18next';
+import twoFactorService from '../services/twoFactorService';
+import { Shield } from 'lucide-react';
 
 const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const { t } = useTranslation('auth');
@@ -9,6 +11,9 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [show2FA, setShow2FA] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [tempUser, setTempUser] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,12 +27,60 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
         throw new Error(error.message || t('errors.loginFailed'));
       }
       
-      console.log('Login successful:', user);
-      onLoginSuccess();
+      // Check if user has 2FA enabled
+      const userId = user.id || user.uid;
+      const twoFAStatus = await twoFactorService.get2FAStatus(userId);
+      
+      if (twoFAStatus.enabled) {
+        // Show 2FA verification
+        setTempUser(user);
+        setShow2FA(true);
+        setLoading(false);
+      } else {
+        // No 2FA, proceed with login
+        console.log('Login successful:', user);
+        onLoginSuccess();
+      }
     } catch (err) {
       console.error('Login component error:', err);
       setError(err.message || t('errors.unexpected'));
-    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify2FA = async () => {
+    if (twoFactorCode.length !== 6) {
+      setError(t('twoFactor.errors.invalidCode'));
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+
+    try {
+      const userId = tempUser.id || tempUser.uid;
+      const twoFAStatus = await twoFactorService.get2FAStatus(userId);
+      
+      // Verify the code
+      const isValid = await twoFactorService.verifyToken(twoFactorCode, twoFAStatus.secret, userId);
+      
+      if (!isValid) {
+        // Try backup code
+        const backupValid = await twoFactorService.verifyBackupCode(userId, twoFactorCode);
+        
+        if (!backupValid) {
+          setError(t('twoFactor.errors.incorrectCode'));
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // 2FA verified, proceed with login
+      console.log('Login successful with 2FA:', tempUser);
+      onLoginSuccess();
+    } catch (err) {
+      console.error('2FA verification error:', err);
+      setError(t('twoFactor.errors.verifyFailed'));
       setLoading(false);
     }
   };
@@ -44,6 +97,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
         </div>
       )}
       
+      {!show2FA ? (
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-3">
           <div className="relative">
@@ -112,6 +166,49 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
           </p>
         </div>
       </form>
+      ) : (
+        <div className="space-y-5">
+          <div className="text-center mb-6">
+            <Shield className="w-12 h-12 text-cyan-500 mx-auto mb-3" />
+            <h3 className="text-xl font-semibold text-white mb-2">{t('twoFactor.title')}</h3>
+            <p className="text-gray-400 text-sm">{t('twoFactor.enterCode')}</p>
+          </div>
+          
+          <div className="flex justify-center">
+            <input
+              type="text"
+              value={twoFactorCode}
+              onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              className="text-center text-2xl font-mono w-40 px-4 py-3 bg-gray-900 bg-opacity-20 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              maxLength="6"
+              autoFocus
+            />
+          </div>
+          
+          <button
+            onClick={handleVerify2FA}
+            disabled={loading || twoFactorCode.length !== 6}
+            className="w-full py-3 px-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium shadow-lg relative overflow-hidden group disabled:opacity-50"
+          >
+            <span className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+            <span className="relative z-10">
+              {loading ? t('twoFactor.verifying') : t('twoFactor.verify')}
+            </span>
+          </button>
+          
+          <button
+            onClick={() => {
+              setShow2FA(false);
+              setTwoFactorCode('');
+              setError('');
+            }}
+            className="w-full py-2 text-gray-400 hover:text-white transition-colors"
+          >
+            {t('twoFactor.back')}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

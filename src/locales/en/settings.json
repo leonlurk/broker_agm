@@ -224,6 +224,34 @@
     "privacySettings": "Privacy",
     "dataPrivacy": "Data Privacy"
   },
+  "twoFactor": {
+    "title": "Set Up Two-Factor Authentication",
+    "scanQR": "Scan this QR code with your authentication app (Google Authenticator, Authy, etc.)",
+    "manualEntry": "Or enter this code manually:",
+    "enterCode": "Enter the 6-digit code from your authentication app",
+    "codeHelp": "The code changes every 30 seconds. Make sure to enter it quickly.",
+    "next": "Next",
+    "back": "Back",
+    "verify": "Verify",
+    "verifying": "Verifying...",
+    "enabledSuccess": "2FA Successfully Enabled!",
+    "backupCodesInfo": "Save these backup codes in a safe place. Each code can only be used once.",
+    "backupCodes": "Backup Codes",
+    "backupCodesWarning": "⚠️ These codes won't be shown again. Save them now.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "backupCodesCopied": "Backup codes copied to clipboard",
+    "complete": "Complete",
+    "confirmDisable": "Are you sure you want to disable two-factor authentication? This will reduce your account security.",
+    "errors": {
+      "generateFailed": "Failed to generate QR code",
+      "invalidCode": "Code must be 6 digits",
+      "incorrectCode": "Incorrect code. Please check and try again.",
+      "enableFailed": "Failed to enable 2FA",
+      "verifyFailed": "Failed to verify code",
+      "disableFailed": "Failed to disable 2FA"
+    }
+  },
   "modal": {
     "changePasswordTitle": "Password Change",
     "changePasswordMessage": "To change your password, please send us an email with your request. We will respond with the necessary instructions to complete the process securely.",

@@ -9,6 +9,8 @@ import emailServiceProxy from '../services/emailServiceProxy';
 import toast from 'react-hot-toast';
 import { AuthAdapter } from '../services/database.adapter';
 import PasswordChangeModal from './PasswordChangeModal';
+import TwoFactorModal from './TwoFactorModal';
+import twoFactorService from '../services/twoFactorService';
 
 const Settings = ({ onBack }) => {
   const { t } = useTranslation('settings');
@@ -19,6 +21,7 @@ const Settings = ({ onBack }) => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [kycStatus, setKycStatus] = useState(null);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
   
   // Estados para el cambio de contraseña
   const [passwordResetStep, setPasswordResetStep] = useState('initial'); // 'initial', 'code-sent', 'verified'
@@ -33,19 +36,26 @@ const Settings = ({ onBack }) => {
   
   const { currentUser } = useAuth();
   
-  // Check KYC status
+  // Check KYC and 2FA status
   useEffect(() => {
-    const checkKYCStatus = async () => {
-      if (currentUser?.uid) {
-        const status = await kycService.getKYCStatus(currentUser.id || currentUser.uid);
-        setKycStatus(status);
+    const checkStatus = async () => {
+      if (currentUser?.uid || currentUser?.id) {
+        const userId = currentUser.id || currentUser.uid;
+        
+        // Check KYC status
+        const kycResult = await kycService.getKYCStatus(userId);
+        setKycStatus(kycResult);
+        
+        // Check 2FA status
+        const twoFAStatus = await twoFactorService.get2FAStatus(userId);
+        setTwoFactorEnabled(twoFAStatus.enabled);
       }
     };
-    checkKYCStatus();
+    checkStatus();
     
     // Recheck when returning from KYC page
     if (!showKYC) {
-      checkKYCStatus();
+      checkStatus();
     }
   }, [currentUser, showKYC]);
 
@@ -57,17 +67,29 @@ const Settings = ({ onBack }) => {
     }
   };
 
-  const handleToggle2FA = () => {
-    const newState = !twoFactorEnabled;
-    setTwoFactorEnabled(newState);
-    
-    if (newState) {
-      toast.success(t('notifications.twoFactorEnabled'));
-      // TODO: Implementar lógica para habilitar 2FA
+  const handleToggle2FA = async () => {
+    if (!twoFactorEnabled) {
+      // Show modal to enable 2FA
+      setShow2FAModal(true);
     } else {
-      toast.success(t('notifications.twoFactorDisabled'));
-      // TODO: Implementar lógica para deshabilitar 2FA
+      // Disable 2FA with confirmation
+      if (window.confirm(t('twoFactor.confirmDisable'))) {
+        const userId = currentUser.id || currentUser.uid;
+        const result = await twoFactorService.disable2FA(userId);
+        
+        if (result.success) {
+          setTwoFactorEnabled(false);
+          toast.success(t('notifications.twoFactorDisabled'));
+        } else {
+          toast.error(t('twoFactor.errors.disableFailed'));
+        }
+      }
     }
+  };
+
+  const handle2FASuccess = () => {
+    setTwoFactorEnabled(true);
+    setShow2FAModal(false);
   };
   
   const handleChangePassword = () => {
@@ -434,6 +456,13 @@ const Settings = ({ onBack }) => {
         onClose={() => setShowEmailModal(false)}
         title={t('modal.updateEmailTitle')}
         message={t('modal.updateEmailMessage')}
+      />
+
+      {/* 2FA Modal */}
+      <TwoFactorModal
+        isOpen={show2FAModal}
+        onClose={() => setShow2FAModal(false)}
+        onSuccess={handle2FASuccess}
       />
     </div>
   );
