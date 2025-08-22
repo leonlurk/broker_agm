@@ -57,7 +57,7 @@ const PasswordChangeModal = ({
           {passwordResetStep === 'initial' && (
             <>
               <p className="text-gray-300 text-sm leading-relaxed">
-                Para cambiar tu contraseña de forma segura, te enviaremos un código de verificación a tu email registrado.
+                {t('modal.securePasswordChangeDescription')}
               </p>
               <button
                 onClick={handleEmailClick}
@@ -67,12 +67,12 @@ const PasswordChangeModal = ({
                 {sending ? (
                   <>
                     <Loader className="animate-spin" size={20} />
-                    Enviando...
+                    {t('modal.sendingVerificationCode')}
                   </>
                 ) : (
                   <>
                     <Mail size={20} />
-                    Enviar Código de Verificación
+                    {t('modal.sendVerificationCode')}
                   </>
                 )}
               </button>
@@ -82,13 +82,13 @@ const PasswordChangeModal = ({
           {passwordResetStep === 'code-sent' && (
             <>
               <p className="text-gray-300 text-sm leading-relaxed">
-                Hemos enviado un código de 6 dígitos a tu email. Ingrésalo a continuación:
+                {t('modal.verificationCodeSent')}
               </p>
               <input
                 type="text"
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="123456"
+                placeholder={t('modal.verificationCodePlaceholder')}
                 className="w-full px-4 py-3 rounded-xl bg-[#1a1a1a] border border-[#333] text-white text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 maxLength="6"
               />
@@ -97,25 +97,25 @@ const PasswordChangeModal = ({
                 disabled={verificationCode.length !== 6}
                 className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                Verificar Código
+                {t('modal.verifyCode')}
               </button>
               <button
                 onClick={handleEmailClick}
                 className="w-full text-gray-400 hover:text-cyan-400 transition-colors text-sm"
               >
-                Reenviar código
+                {t('modal.resendCode')}
               </button>
             </>
           )}
 
           {passwordResetStep === 'verified' && (
             <>
-              <p className="text-green-400 text-sm mb-4">✓ Código verificado correctamente</p>
+              <p className="text-green-400 text-sm mb-4">{t('modal.codeVerifiedSuccessfully')}</p>
               
               {/* Contraseña Actual */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Contraseña Actual
+                  {t('modal.currentPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -123,7 +123,7 @@ const PasswordChangeModal = ({
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl bg-[#1a1a1a] border border-[#333] text-white pr-12 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    placeholder="Ingresa tu contraseña actual"
+                    placeholder={t('modal.currentPasswordPlaceholder')}
                   />
                   <button
                     type="button"
@@ -138,7 +138,7 @@ const PasswordChangeModal = ({
               {/* Nueva Contraseña */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Nueva Contraseña
+                  {t('modal.newPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -146,7 +146,7 @@ const PasswordChangeModal = ({
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl bg-[#1a1a1a] border border-[#333] text-white pr-12 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    placeholder="Ingresa tu nueva contraseña"
+                    placeholder={t('modal.newPasswordPlaceholder')}
                   />
                   <button
                     type="button"
@@ -161,23 +161,23 @@ const PasswordChangeModal = ({
                 <div className="mt-2 space-y-1">
                   <p className={`text-xs flex items-center gap-1 ${requirements.length ? 'text-green-400' : 'text-gray-400'}`}>
                     {requirements.length ? <Check size={14} /> : <X size={14} />}
-                    Mínimo 8 caracteres
+                    {t('modal.passwordRequirements.minLength')}
                   </p>
                   <p className={`text-xs flex items-center gap-1 ${requirements.uppercase ? 'text-green-400' : 'text-gray-400'}`}>
                     {requirements.uppercase ? <Check size={14} /> : <X size={14} />}
-                    Una mayúscula
+                    {t('modal.passwordRequirements.uppercase')}
                   </p>
                   <p className={`text-xs flex items-center gap-1 ${requirements.lowercase ? 'text-green-400' : 'text-gray-400'}`}>
                     {requirements.lowercase ? <Check size={14} /> : <X size={14} />}
-                    Una minúscula
+                    {t('modal.passwordRequirements.lowercase')}
                   </p>
                   <p className={`text-xs flex items-center gap-1 ${requirements.number ? 'text-green-400' : 'text-gray-400'}`}>
                     {requirements.number ? <Check size={14} /> : <X size={14} />}
-                    Un número
+                    {t('modal.passwordRequirements.number')}
                   </p>
                   <p className={`text-xs flex items-center gap-1 ${requirements.special ? 'text-green-400' : 'text-gray-400'}`}>
                     {requirements.special ? <Check size={14} /> : <X size={14} />}
-                    Un carácter especial (!@#$%^&*)
+                    {t('modal.passwordRequirements.special')}
                   </p>
                 </div>
               </div>
@@ -185,7 +185,7 @@ const PasswordChangeModal = ({
               {/* Confirmar Contraseña */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Confirmar Nueva Contraseña
+                  {t('modal.confirmNewPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -195,7 +195,7 @@ const PasswordChangeModal = ({
                     className={`w-full px-4 py-3 rounded-xl bg-[#1a1a1a] border ${
                       confirmPassword && confirmPassword !== newPassword ? 'border-red-500' : 'border-[#333]'
                     } text-white pr-12 focus:outline-none focus:ring-2 focus:ring-cyan-500`}
-                    placeholder="Confirma tu nueva contraseña"
+                    placeholder={t('modal.confirmNewPasswordPlaceholder')}
                   />
                   <button
                     type="button"
@@ -206,7 +206,7 @@ const PasswordChangeModal = ({
                   </button>
                 </div>
                 {confirmPassword && confirmPassword !== newPassword && (
-                  <p className="mt-1 text-sm text-red-400">Las contraseñas no coinciden</p>
+                  <p className="mt-1 text-sm text-red-400">{t('modal.passwordMismatch')}</p>
                 )}
               </div>
 
@@ -216,7 +216,7 @@ const PasswordChangeModal = ({
                 className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Lock size={20} />
-                Actualizar Contraseña
+                {t('modal.updatePassword')}
               </button>
             </>
           )}

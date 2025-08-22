@@ -41,6 +41,22 @@
       "status": "Status",
       "activeAccount": "Active Account"
     },
+    "actions": {
+      "deposit": "Deposit",
+      "withdraw": "Withdraw",
+      "transfer": "Transfer",
+      "changePassword": "Change Password",
+      "downloadPlatform": "Download Platform",
+      "viewDetails": "View Details",
+      "backToAccounts": "Back to Accounts",
+      "close": "Close Account",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "copyServer": "Copy server",
+      "copyMasterPassword": "Copy master password",
+      "copyAccountNumber": "Copy account number",
+      "copyInvestorPassword": "Copy investor password"
+    },
     "status": {
       "active": "Active",
       "inactive": "Inactive",

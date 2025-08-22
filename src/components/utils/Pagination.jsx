@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Pagination = ({ 
   currentPage, 
@@ -9,6 +10,7 @@ const Pagination = ({
   totalItems,
   className = ""
 }) => {
+  const { t } = useTranslation('common');
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
@@ -73,7 +75,7 @@ const Pagination = ({
     <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 ${className}`}>
       {/* Información de items */}
       <div className="text-sm text-gray-400">
-        Mostrando {startItem} a {endItem} de {totalItems} resultados
+        {t('pagination.showing', { start: startItem, end: endItem, total: totalItems })}
       </div>
       
       {/* Controles de paginación */}
@@ -89,7 +91,7 @@ const Pagination = ({
           }`}
         >
           <ChevronLeft className="w-4 h-4 mr-1" />
-          Anterior
+          {t('pagination.previous')}
         </button>
         
         {/* Números de página */}
@@ -124,7 +126,7 @@ const Pagination = ({
               : 'text-gray-300 hover:text-white hover:bg-[#333]'
           }`}
         >
-          Siguiente
+          {t('pagination.next')}
           <ChevronRight className="w-4 h-4 ml-1" />
         </button>
       </div>

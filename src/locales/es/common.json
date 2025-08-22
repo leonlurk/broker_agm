@@ -120,5 +120,10 @@
     "balance": "Balance",
     "noAccountsAvailable": "No hay cuentas disponibles",
     "user": "Usuario"
+  },
+  "pagination": {
+    "showing": "Mostrando {{start}} a {{end}} de {{total}} resultados",
+    "previous": "Anterior",
+    "next": "Siguiente"
   }
 }

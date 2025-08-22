@@ -120,5 +120,10 @@
     "balance": "Balance",
     "noAccountsAvailable": "No accounts available",
     "user": "User"
+  },
+  "pagination": {
+    "showing": "Showing {{start}} to {{end}} of {{total}} results",
+    "previous": "Previous",
+    "next": "Next"
   }
 }

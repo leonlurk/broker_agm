@@ -2,27 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, Copy, ArrowUpDown, Lock, Menu, Loader } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { DatabaseAdapter } from '../services/database.adapter';
+import affiliatesService from '../services/affiliatesService';
 import WithdrawalHistoryDetails from './WithdrawalHistoryDetails';
 import Pagination from './utils/Pagination';
 import { useTranslation } from 'react-i18next';
 
-// Definir los requisitos de referidos para cada tier (para pruebas)
-const TIER_REQUIREMENTS = {
-  1: 0,
-  2: 100, // Necesita 100 referidos para Tier 2
-  3: 200  // Necesita 200 referidos para Tier 3
-};
-
-// Función para determinar el tier basado en el número de referidos
-const determineTier = (referralCount) => {
-  if (referralCount >= TIER_REQUIREMENTS[3]) {
-    return 3;
-  }
-  if (referralCount >= TIER_REQUIREMENTS[2]) {
-    return 2;
-  }
-  return 1;
-};
+// Component now uses affiliatesService for all data
 
 const AfiliadosDashboard = () => {
   const { currentUser } = useAuth();
@@ -32,114 +17,26 @@ const AfiliadosDashboard = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [userId, setUserId] = useState('');
   const [referralCount, setReferralCount] = useState(0);
+  const [totalCommissions, setTotalCommissions] = useState(0);
   const [currentTier, setCurrentTier] = useState(1);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [selectedTrader, setSelectedTrader] = useState(null);
   const [visibleAfiliados] = useState(3);
   const [isMobile, setIsMobile] = useState(false);
   
-  // Estados para paginación
+  // Estados para paginación y datos dinámicos
   const [currentPageCuentas, setCurrentPageCuentas] = useState(1);
+  const [activeAccounts, setActiveAccounts] = useState([]);
+  const [totalActiveAccounts, setTotalActiveAccounts] = useState(0);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [totalPayments, setTotalPayments] = useState(0);
   const itemsPerPage = 10;
   
-  // Mock data for the new "Cuentas Activas" table
-  const topAfiliadosData = [
-    {
-      id: 1,
-      nombre: 'Nombre trader',
-      tipoCuenta: 'Market Direct',
-      balance: 100,
-      equidad: 105,
-      lotesOperados: 10,
-      comisionesGeneradas: 10,
-      retirosCobrados: 3,
-    },
-    {
-      id: 2,
-      nombre: 'Nombre trader',
-      tipoCuenta: 'Institucional',
-      balance: 100,
-      equidad: 105,
-      lotesOperados: 10,
-      comisionesGeneradas: 10,
-      retirosCobrados: 3,
-    },
-    {
-      id: 3,
-      nombre: 'Trader Alfa',
-      tipoCuenta: 'ECN',
-      balance: 1500,
-      equidad: 1550,
-      lotesOperados: 50,
-      comisionesGeneradas: 50,
-      retirosCobrados: 8,
-    },
-    {
-      id: 4,
-      nombre: 'Trader Beta',
-      tipoCuenta: 'Market Direct',
-      balance: 800,
-      equidad: 825,
-      lotesOperados: 30,
-      comisionesGeneradas: 30,
-      retirosCobrados: 4,
-    },
-    {
-      id: 5,
-      nombre: 'Trader Gamma',
-      tipoCuenta: 'Institucional',
-      balance: 2200,
-      equidad: 2250,
-      lotesOperados: 75,
-      comisionesGeneradas: 75,
-      retirosCobrados: 12,
-    },
-    {
-      id: 6,
-      nombre: 'Trader Delta',
-      tipoCuenta: 'ECN',
-      balance: 3000,
-      equidad: 3100,
-      lotesOperados: 90,
-      comisionesGeneradas: 90,
-      retirosCobrados: 15,
-    },
-  ];
-
-  // Generar más datos para demostrar paginación
-  const generateMoreData = (baseData, count) => {
-    const newData = [...baseData];
-    for (let i = baseData.length; i < count; i++) {
-      newData.push({
-        id: i + 1,
-        nombre: `Trader ${String.fromCharCode(65 + (i % 26))}${Math.floor(i / 26) + 1}`,
-        tipoCuenta: ['Market Direct', 'Premium', 'VIP', 'Institucional', 'ECN'][i % 5],
-        balance: Math.floor(Math.random() * 5000) + 500,
-        equidad: Math.floor(Math.random() * 5000) + 500,
-        lotesOperados: Math.floor(Math.random() * 100) + 5,
-        comisionesGeneradas: Math.floor(Math.random() * 100) + 5,
-        retirosCobrados: Math.floor(Math.random() * 20) + 1,
-      });
-    }
-    return newData;
-  };
-
-  // Expandir datos para tener suficientes elementos para paginar
-  const expandedAfiliadosData = generateMoreData(topAfiliadosData, 25);
-
+  // All data now comes from affiliatesService - no more mock data
   const referenciasData = [];
-  const pagosData = [];
-
-  // Calcular datos paginados
-  const getPaginatedData = (data, currentPage, itemsPerPage) => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return data.slice(startIndex, endIndex);
-  };
-
-  const paginatedCuentasActivas = getPaginatedData(expandedAfiliadosData, currentPageCuentas, itemsPerPage);
+  const pagosData = paymentHistory;
   
-  const totalPagesCuentas = Math.ceil(expandedAfiliadosData.length / itemsPerPage);
+  const totalPagesCuentas = Math.ceil(totalActiveAccounts / itemsPerPage);
 
   // Detectar si es dispositivo móvil
   useEffect(() => {
@@ -155,34 +52,25 @@ const AfiliadosDashboard = () => {
     };
   }, []);
   
-  // Cargar datos del usuario (wallet, referidos, etc.) desde la base de datos
+  // Load user data and affiliate statistics
   useEffect(() => {
     const fetchUserData = async () => {
       setIsLoadingData(true);
       try {
         if (currentUser) {
-          setUserId(currentUser.id); // Guardar User ID para el link
+          setUserId(currentUser.id);
           
-          const { data: userData, error } = await DatabaseAdapter.users.getById(currentUser.id);
-
-          if (userData) {
-            // Cargar Conteo de Referidos y Determinar Tier
-            const count = userData.referralCount || 0; // Asumir 0 si no existe
-            setReferralCount(count);
-            setCurrentTier(determineTier(count));
-          } else if (error) {
-            console.error('Error al obtener datos del usuario:', error);
-            setError(t('dashboard.messages.dataLoadError'));
-          } else {
-            // Si el doc no existe, valores por defecto
-            setReferralCount(0);
-            setCurrentTier(1);
-          }
+          // Get referral stats
+          const stats = await affiliatesService.getReferralStats(currentUser.id);
+          setReferralCount(stats.referralCount);
+          setTotalCommissions(stats.totalCommissions);
+          setCurrentTier(stats.tier);
+          
         } else {
-          setError(t('dashboard.messages.notAuthenticated')); // Manejar caso no logueado
+          setError(t('dashboard.messages.notAuthenticated'));
         }
       } catch (err) {
-        console.error('Error al obtener datos del usuario:', err);
+        console.error('Error loading user data:', err);
         setError('Error al cargar los datos. Intente de nuevo más tarde.');
       } finally {
         setIsLoadingData(false);
@@ -190,7 +78,49 @@ const AfiliadosDashboard = () => {
     };
 
     fetchUserData();
-  }, [currentUser]);
+  }, [currentUser, t]);
+  
+  // Load active accounts data
+  useEffect(() => {
+    const fetchActiveAccounts = async () => {
+      if (currentUser && activeTab === 'cuentas-activas') {
+        try {
+          const { accounts, totalCount } = await affiliatesService.getActiveAccounts(
+            currentUser.id, 
+            currentPageCuentas, 
+            itemsPerPage
+          );
+          setActiveAccounts(accounts);
+          setTotalActiveAccounts(totalCount);
+        } catch (err) {
+          console.error('Error loading active accounts:', err);
+        }
+      }
+    };
+
+    fetchActiveAccounts();
+  }, [currentUser, activeTab, currentPageCuentas, itemsPerPage]);
+  
+  // Load payment history
+  useEffect(() => {
+    const fetchPaymentHistory = async () => {
+      if (currentUser && activeTab === 'pagos') {
+        try {
+          const { payments, totalCount } = await affiliatesService.getPaymentHistory(
+            currentUser.id, 
+            currentPageCuentas, 
+            itemsPerPage
+          );
+          setPaymentHistory(payments);
+          setTotalPayments(totalCount);
+        } catch (err) {
+          console.error('Error loading payment history:', err);
+        }
+      }
+    };
+
+    fetchPaymentHistory();
+  }, [currentUser, activeTab, currentPageCuentas, itemsPerPage]);
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
@@ -199,7 +129,8 @@ const AfiliadosDashboard = () => {
   
   const copyToClipboard = (text) => {
     if (!text) return;
-    navigator.clipboard.writeText(`${window.location.origin}/register?ref=${text}`) // Asume una ruta de registro
+    const referralLink = affiliatesService.generateReferralLink(text);
+    navigator.clipboard.writeText(referralLink)
       .then(() => {
         alert(t('dashboard.messages.linkCopied'));
       })
@@ -352,7 +283,7 @@ const AfiliadosDashboard = () => {
           } space-y-2`}>
                   <h3 className="text-lg md:text-xl font-semibold mb-1">{t('dashboard.commissionLevels.tier1.name')}</h3>
                   <p className="text-gray-400 text-sm md:text-base">{t('dashboard.commissionLevels.tier1.commission')}</p>
-                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.tier1.requirement', { count: TIER_REQUIREMENTS[2] })}</p> 
+                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.tier1.requirement', { count: 100 })}</p> 
           </div>
 
           {/* Tier 2 */}
@@ -366,7 +297,7 @@ const AfiliadosDashboard = () => {
             ) : null}
                   <h3 className="text-lg md:text-xl font-semibold mb-1">{t('dashboard.commissionLevels.tier2.name')}</h3>
                   <p className="text-gray-400 text-sm md:text-base">{t('dashboard.commissionLevels.tier2.commission')}</p>
-                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.tier2.requirement', { count: TIER_REQUIREMENTS[3] })}</p>
+                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.tier2.requirement', { count: 200 })}</p>
           </div>
 
           {/* Tier 3 */}
@@ -380,7 +311,7 @@ const AfiliadosDashboard = () => {
             ) : null}
                   <h3 className="text-lg md:text-xl font-semibold mb-1">{t('dashboard.commissionLevels.tier3.name')}</h3>
                   <p className="text-gray-400 text-sm md:text-base">{t('dashboard.commissionLevels.tier3.commission')}</p>
-                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.tier3.requirement', { count: TIER_REQUIREMENTS[3] })}</p>
+                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.tier3.requirement', { count: 200 })}</p>
                 </div>
           </div>
         </div>
@@ -409,7 +340,7 @@ const AfiliadosDashboard = () => {
 
               {/* Rows */}
               <div className="space-y-3">
-                {paginatedCuentasActivas.map((trader) => (
+                {activeAccounts.map((trader) => (
                   <div key={trader.id} className="grid grid-cols-[minmax(150px,1.5fr)_minmax(0,3fr)_minmax(0,1.5fr)_repeat(5,minmax(0,1fr))] items-center gap-x-4 p-4 rounded-xl bg-[#202020]">
                     {/* Column 1: Button */}
                     <button 
@@ -444,7 +375,7 @@ const AfiliadosDashboard = () => {
               {/* Mobile Card View */}
               {isMobile && (
                 <div className="space-y-3">
-                  {paginatedCuentasActivas.map(trader => renderMobileAfiliadosCard(trader))}
+                  {activeAccounts.map(trader => renderMobileAfiliadosCard(trader))}
                 </div>
               )}
 
@@ -455,7 +386,7 @@ const AfiliadosDashboard = () => {
                   totalPages={totalPagesCuentas}
                   onPageChange={setCurrentPageCuentas}
                   itemsPerPage={itemsPerPage}
-                  totalItems={expandedAfiliadosData.length}
+                  totalItems={totalActiveAccounts}
                   className="justify-center"
                 />
               </div>

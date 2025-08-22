@@ -2208,7 +2208,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     onClick={() => handleViewDetails(account.id)}
                     className="px-3 sm:px-4 py-2 bg-[#2d2d2d] text-white rounded-lg hover:bg-[#3d3d3d] transition border border-[#444] text-xs sm:text-sm w-full sm:w-auto"
                   >
-                    Ver Detalles
+                    {t('accounts.actions.viewDetails')}
                   </button>
                 </div>
               </div>
@@ -2233,7 +2233,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             onClick={handleBackToOverview}
             className="mt-4 px-4 py-2 bg-[#2d2d2d] text-white rounded-lg hover:bg-[#3d3d3d] transition"
           >
-            Volver a cuentas
+            {t('accounts.actions.backToAccounts')}
           </button>
         </div>
       </div>
