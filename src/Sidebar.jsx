@@ -109,7 +109,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
             ]
         },
         { name: "Afiliados", translationKey: "sidebar.items.affiliates", icon: <img src="./Group_light.svg" className="w-8 h-8" alt="Afiliados" /> },
-        { 
+        /* { 
             name: "Copytrading", 
             translationKey: "sidebar.copyTrading",
             icon: <img src="./copy-linear.svg" className="w-8 h-8" alt="Copytrading" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z'/%3E%3C/svg%3E"} />,
@@ -126,7 +126,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                 { name: "Inversor", translationKey: "sidebar.items.pammInvestor" },
                 { name: "Gestor", translationKey: "sidebar.items.pammManager" }
             ]
-        },
+        }, */
     ];
 
     return (
@@ -173,15 +173,15 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                 
                 <div className={`h-px w-full bg-[#333] ${isMobile ? 'mb-4' : 'mb-6'}`}></div>
                 
-                {/* Scrollable menu section */}
-                <div className="flex-1 overflow-y-auto transition-all duration-500 ease-in-out" style={{ scrollbarWidth: 'thin', scrollbarColor: '#555 #333' }}>
-                    <nav className={`space-y-2 ${isMobile ? 'px-2' : 'px-4'}`}>
+                {/* Scrollable menu section with dynamic spacing */}
+                <div className="flex-1 overflow-y-auto transition-all duration-500 ease-in-out flex flex-col" style={{ scrollbarWidth: 'thin', scrollbarColor: '#555 #333' }}>
+                    <nav className={`flex flex-col h-full ${isMobile ? 'px-2' : 'px-4'} ${menuItems.length <= 6 ? 'justify-evenly' : 'gap-2'}`}>
                         {menuItems.map((item) => (
-                            <div key={item.name}>
+                            <div key={item.name} className={`${menuItems.length <= 6 ? 'flex flex-col justify-center' : ''} ${!item.subOptions && menuItems.length <= 6 ? 'my-auto' : ''}`}>
                                 <button
                                     onClick={() => handleNavigation(item.name)}
-                                    className={`flex items-center justify-between w-full rounded-xl bg-transparent border font-regular
-                                        ${isMobile ? 'py-2.5 px-4 text-base' : 'py-4 px-6 text-lg'}
+                                    className={`flex items-center justify-between w-full rounded-xl bg-transparent border font-regular transition-all
+                                        ${isMobile ? 'py-3 px-4 text-base' : `${menuItems.length <= 6 ? 'py-5 px-6' : 'py-4 px-6'} text-lg`}
                                         ${selectedOption === item.name || 
                                           (item.name === "Herramientas" && item.subOptions && item.subOptions.includes(selectedOption)) ||
                                           (item.name !== "Herramientas" && item.subOptions && item.subOptions.some(sub => selectedOption === `${item.name} ${sub}`))
