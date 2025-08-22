@@ -38,7 +38,8 @@
       "investorPasswordReadOnly": "Investor Password (Read Only)",
       "currentBalance": "Current Balance",
       "createdAt": "Created",
-      "status": "Status"
+      "status": "Status",
+      "activeAccount": "Active Account"
     },
     "status": {
       "active": "Active",
@@ -64,6 +65,7 @@
     },
     "details": {
       "title": "Account Details",
+      "subtitle": "Complete information of the selected account",
       "credentials": "MT5 Credentials"
     },
     "messages": {
@@ -76,7 +78,7 @@
       "stopOut": "Stop Out activated",
       "copyError": "Error copying to clipboard",
       "invalidUserAccount": "Error: Invalid user or account",
-      "accountNotFound": "Error: Account not found",
+      "accountNotFound": "Account not found",
       "enterPassword": "Please enter a password",
       "passwordMismatch": "Passwords do not match",
       "passwordTooShort": "Password must be at least 6 characters",
@@ -85,7 +87,13 @@
       "metricsLoadError": "Error loading account metrics",
       "noActiveSession": "No active session found",
       "syncError": "Synchronization error",
-      "accountSyncError": "Error synchronizing account"
+      "accountSyncError": "Error synchronizing account",
+      "notConfigured": "Not configured",
+      "selectAccount": "Select an account",
+      "chooseAccount": "Choose an account from the list to see its details",
+      "yourAccounts": "Your Accounts",
+      "loadingAccounts": "Loading accounts...",
+      "noAccountsInCategory": "You don't have accounts in this category"
     },
     "passwordPlaceholder": "Enter investor password",
     "confirmPasswordPlaceholder": "Confirm password"
@@ -614,7 +622,8 @@
     "quarter1": "Q1",
     "quarter2": "Q2",
     "quarter3": "Q3",
-    "quarter4": "Q4"
+    "quarter4": "Q4",
+    "filtered": "Filtered"
   },
   "charts": {
     "start": "Start",
@@ -622,7 +631,39 @@
     "noData": "No data",
     "noOperations": "No operations",
     "unknown": "Unknown",
-    "drawdown": "Drawdown"
+    "drawdown": "Drawdown",
+    "month": "Month",
+    "date": "Date"
+  },
+  "tooltips": {
+    "balance": "The total capital in your account, including unrealized gains and losses.",
+    "profitLoss": "The net profit or loss from your closed trades in the selected period.",
+    "drawdown": "The largest drop from a peak to a valley in your account capital. Measures risk.",
+    "averageLoss": "The average amount you lose on each losing trade.",
+    "averageWin": "The average amount you win on each winning trade.",
+    "averageLotSize": "The average position size you use in your trades.",
+    "averageDuration": "The average time you keep your positions open.",
+    "riskReward": "Compares potential gain with potential loss. A 1:3 ratio means you risk 1 to gain 3.",
+    "winRate": "The percentage of winning trades over the total number of trades made.",
+    "totalDeposits": "The total sum of all funds you have deposited into this account.",
+    "totalWithdrawals": "The total sum of all funds you have withdrawn from this account.",
+    "pnl": "The total net profit or loss of the account since its creation."
+  },
+  "metrics": {
+    "profitLoss": "Profit/Loss",
+    "historicalTotal": "Historical Total",
+    "current": "Current",
+    "maxCurrent": "Maximum • Current",
+    "average": "Average",
+    "averageLoss": "Average Loss Per Trade",
+    "averageWin": "Average Win Per Trade",
+    "averageLotSize": "Average Lot Size Per Trade",
+    "averageDuration": "Average Duration Per Trade",
+    "riskReward": "Risk Reward Ratio",
+    "winRate": "Win Rate",
+    "totalDeposits": "Total Deposits",
+    "totalWithdrawals": "Total Withdrawals",
+    "pnl": "PNL"
   },
   "months": {
     "jan": "Jan",
@@ -654,5 +695,55 @@
   "lotSize": "Lot Size",
   "stopLoss": "Stop Loss",
   "takeProfit": "Take Profit",
-  "price": "Pr"
+  "openPrice": "Open Price",
+  "closePrice": "Close Price", 
+  "pips": "Pips",
+  "positionId": "Position ID",
+  "result": "Result", 
+  "entry": "Entry",
+  "exit": "Exit",
+  "price": "Pr",
+  "tradingAccountsUI": {
+    "charts": {
+      "benefitTotal": "Total Benefit",
+      "balance": "Balance",
+      "drawdown": "Drawdown"
+    },
+    "metrics": {
+      "averageLossPerTrade": "Average Loss Per Trade",
+      "averageWinPerTrade": "Average Win Per Trade",
+      "averageLotSizePerTrade": "Average Lot Size Per Trade", 
+      "averageDurationPerTrade": "Average Duration Per Trade",
+      "riskRewardRatio": "Risk Reward Ratio",
+      "winRatio": "Win Ratio",
+      "totalDeposits": "Total Deposits",
+      "totalWithdrawals": "Total Withdrawals",
+      "pnl": "PNL"
+    },
+    "filters": {
+      "all": "All",
+      "profit": "Profit",
+      "loss": "Loss", 
+      "total": "Total"
+    },
+    "general": {
+      "days": "days",
+      "maximum": "Maximum",
+      "current": "Current",
+      "average": "Average",
+      "historical": "Historical"
+    },
+    "instruments": {
+      "title": "Instruments",
+      "tradingInstruments": "Trading Instruments",
+      "status": "Status",
+      "noTradingActivity": "No trading activity",
+      "willAppearWhenTrading": "Instruments will appear when you make trades"
+    },
+    "general": {
+      "performance": "Performance",
+      "accountNotFoundSelected": "Selected account not found",
+      "noAccountsInThisCategory": "No accounts in this category"
+    }
+  }
 }

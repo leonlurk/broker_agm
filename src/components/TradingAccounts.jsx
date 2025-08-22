@@ -131,26 +131,26 @@ const allInstruments = [...forexInstruments, ...stockInstruments, ...cryptoInstr
 
 // Options for custom dropdowns - will be translated inside component
 const typeOptions = [
-  { value: 'all', label: 'trading.filters.all' },
-  { value: 'buy', label: 'trading.positions.types.buy' },
-  { value: 'sell', label: 'trading.positions.types.sell' },
+  { value: 'all', label: 'filters.all' },
+  { value: 'buy', label: 'positions.types.buy' },
+  { value: 'sell', label: 'positions.types.sell' },
 ];
 
 const profitLossOptions = [
-  { value: 'all', label: 'trading.filters.all' },
-  { value: 'profit', label: 'trading.filters.profit' },
-  { value: 'loss', label: 'trading.filters.loss' },
+  { value: 'all', label: 'filters.all' },
+  { value: 'profit', label: 'filters.profit' },
+  { value: 'loss', label: 'filters.loss' },
 ];
 
 const benefitChartFilterOptions = [
-  { value: 'lastMonth', label: 'trading.filters.lastMonth' },
-  { value: 'lastThreeMonths', label: 'trading.filters.lastThreeMonths' },
-  { value: 'lastYear', label: 'trading.filters.lastYear' },
+  { value: 'lastMonth', label: 'filters.lastMonth' },
+  { value: 'lastThreeMonths', label: 'filters.lastThreeMonths' },
+  { value: 'lastYear', label: 'filters.lastYear' },
 ];
 
 const rendimientoPeriodOptions = [
-  { value: 'monthly', label: 'trading.filters.monthly' },
-  { value: 'quarterly', label: 'trading.filters.quarterly' },
+  { value: 'monthly', label: 'filters.monthly' },
+  { value: 'quarterly', label: 'filters.quarterly' },
 ];
 
 const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerRef }) => {
@@ -807,15 +807,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     ] : 
     // Si no hay datos, mostrar todo en 0
     [
-      { name: t('trading.months.jan'), value: 0 },
-      { name: t('trading.months.feb'), value: 0 },
-      { name: t('trading.months.mar'), value: 0 },
-      { name: t('trading.months.apr'), value: 0 },
-      { name: t('trading.months.may'), value: 0 },
-      { name: t('trading.months.jun'), value: 0 },
-      { name: t('trading.months.jul'), value: 0 },
-      { name: t('trading.months.aug'), value: 0 },
-      { name: t('trading.months.sep'), value: 0 },
+      { name: t('months.jan'), value: 0 },
+      { name: t('months.feb'), value: 0 },
+      { name: t('months.mar'), value: 0 },
+      { name: t('months.apr'), value: 0 },
+      { name: t('months.may'), value: 0 },
+      { name: t('months.jun'), value: 0 },
+      { name: t('months.jul'), value: 0 },
+      { name: t('months.aug'), value: 0 },
+      { name: t('months.sep'), value: 0 },
     ];
   
   // Calcular escala para el eje Y
@@ -846,12 +846,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
     // Fallback si no hay datos
     return [
-      { name: t('trading.months.jan'), value: 0 },
-      { name: t('trading.months.feb'), value: 0 },
-      { name: t('trading.months.mar'), value: 0 },
-      { name: t('trading.months.apr'), value: 0 },
-      { name: t('trading.months.may'), value: 0 },
-      { name: t('trading.months.jun'), value: 0 },
+      { name: t('months.jan'), value: 0 },
+      { name: t('months.feb'), value: 0 },
+      { name: t('months.mar'), value: 0 },
+      { name: t('months.apr'), value: 0 },
+      { name: t('months.may'), value: 0 },
+      { name: t('months.jun'), value: 0 },
     ];
   };
   
@@ -1945,7 +1945,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     if (!realBalanceHistory || realBalanceHistory.length === 0) {
       // Retornar estructura vacía para evitar errores en el gráfico
       if (rendimientoFilters.period === 'monthly') {
-        const months = [t('trading.months.jan'), t('trading.months.feb'), t('trading.months.mar'), t('trading.months.apr'), t('trading.months.may'), t('trading.months.jun'), t('trading.months.jul'), t('trading.months.aug'), t('trading.months.sep'), t('trading.months.oct'), t('trading.months.nov'), t('trading.months.dec')];
+        const months = [t('months.jan'), t('months.feb'), t('months.mar'), t('months.apr'), t('months.may'), t('months.jun'), t('months.jul'), t('months.aug'), t('months.sep'), t('months.oct'), t('months.nov'), t('months.dec')];
         return months.map(month => ({ name: month, value: 0 }));
       } else if (rendimientoFilters.period === 'quarterly') {
         return [
@@ -1971,7 +1971,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     });
     
     if (rendimientoFilters.period === 'monthly') {
-      const months = [t('trading.months.jan'), t('trading.months.feb'), t('trading.months.mar'), t('trading.months.apr'), t('trading.months.may'), t('trading.months.jun'), t('trading.months.jul'), t('trading.months.aug'), t('trading.months.sep'), t('trading.months.oct'), t('trading.months.nov'), t('trading.months.dec')];
+      const months = [t('months.jan'), t('months.feb'), t('months.mar'), t('months.apr'), t('months.may'), t('months.jun'), t('months.jul'), t('months.aug'), t('months.sep'), t('months.oct'), t('months.nov'), t('months.dec')];
       
       return months.map((monthName, index) => {
         // Buscar datos del mes
@@ -2026,7 +2026,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
     
     // Fallback mensual con datos reales
-    const months = [t('trading.months.jan'), t('trading.months.feb'), t('trading.months.mar'), t('trading.months.apr'), t('trading.months.may'), t('trading.months.jun'), t('trading.months.jul'), t('trading.months.aug'), t('trading.months.sep'), t('trading.months.oct'), t('trading.months.nov'), t('trading.months.dec')];
+    const months = [t('months.jan'), t('months.feb'), t('months.mar'), t('months.apr'), t('months.may'), t('months.jun'), t('months.jul'), t('months.aug'), t('months.sep'), t('months.oct'), t('months.nov'), t('months.dec')];
     return months.map(month => ({ name: month, value: 0 }));
   };
 
@@ -2149,12 +2149,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
         {/* Accounts List */}
         <div className="space-y-3 sm:space-y-4">
-          <h2 className="text-base sm:text-lg font-medium mb-3 sm:mb-4">Tus Cuentas</h2>
+          <h2 className="text-base sm:text-lg font-medium mb-3 sm:mb-4">{t('accounts.messages.yourAccounts')}</h2>
           
           {isLoading ? (
             <div className="text-center text-gray-400 py-6 sm:py-8">
               <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-cyan-500 mx-auto mb-2"></div>
-              <p className="text-sm sm:text-base">Cargando cuentas...</p>
+              <p className="text-sm sm:text-base">{t('accounts.messages.loadingAccounts')}</p>
             </div>
           ) : error ? (
             <div className="text-center text-red-400 py-6 sm:py-8">
@@ -2162,7 +2162,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             </div>
           ) : accountsForCurrentTab.length === 0 ? (
             <div className="text-center text-gray-400 py-6 sm:py-8">
-              <p className="text-sm sm:text-base">No tienes cuentas en esta categoría</p>
+              <p className="text-sm sm:text-base">{t('accounts.messages.noAccountsInCategory')}</p>
             </div>
           ) : (
             accountsForCurrentTab.map((account) => {
@@ -2228,7 +2228,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     return (
       <div className="flex flex-col p-3 sm:p-4 text-white">
         <div className="text-center text-gray-400 py-8">
-          <p>No se encontró la cuenta seleccionada</p>
+          <p>{t('tradingAccountsUI.general.accountNotFoundSelected')}</p>
           <button 
             onClick={handleBackToOverview}
             className="mt-4 px-4 py-2 bg-[#2d2d2d] text-white rounded-lg hover:bg-[#3d3d3d] transition"
@@ -2358,7 +2358,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               {isLoading ? (
                 <div className="text-center text-gray-400 py-3 sm:py-4">
                   <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-cyan-500 mx-auto mb-2"></div>
-                  <p className="text-xs sm:text-sm">Cargando cuentas...</p>
+                  <p className="text-xs sm:text-sm">{t('accounts.messages.loadingAccounts')}</p>
                 </div>
               ) : error ? (
                 <div className="text-center text-red-400 py-3 sm:py-4">
@@ -2366,7 +2366,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 </div>
               ) : accountsForCurrentTab.length === 0 ? (
                 <div className="text-center text-gray-400 py-3 sm:py-4">
-                  <p className="text-xs sm:text-sm">No hay cuentas en esta categoría</p>
+                  <p className="text-xs sm:text-sm">{t('tradingAccountsUI.general.noAccountsInThisCategory')}</p>
                 </div>
               ) : (
                 accountsForCurrentTab.map((account) => (
@@ -2405,7 +2405,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   if (!selectedAccount) {
                     return (
                       <div className="text-center text-gray-400 py-8">
-                        <p>Cuenta no encontrada</p>
+                        <p>{t('trading.accounts.messages.accountNotFound')}</p>
                       </div>
                     );
                   }
@@ -2413,8 +2413,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   return (
                     <>
                 <div className="mb-3 sm:mb-4">
-                  <h2 className="text-lg sm:text-xl font-semibold mb-2">Detalles de la Cuenta</h2>
-                  <p className="text-gray-400 text-xs sm:text-sm">Información completa de la cuenta seleccionada</p>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-2">{t('trading.accounts.details.title')}</h2>
+                  <p className="text-gray-400 text-xs sm:text-sm">{t('trading.accounts.details.subtitle')}</p>
                 </div>
                 
                 <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm mb-4 sm:mb-6">
@@ -2430,7 +2430,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">Cuenta Activa: 30 días</span>
+                          <span className="text-gray-400">{t('trading.accounts.fields.activeAccount')}: 30 {t('trading.time.days')}</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
@@ -2570,7 +2570,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           </>
                         ) : (
                           <div className="text-gray-500 font-medium">
-                            No configurada
+                            {t('trading.accounts.messages.notConfigured')}
                           </div>
                         )}
                       </div>
@@ -2585,8 +2585,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           ) : (
             <div className="bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#333] flex items-center justify-center h-48 sm:h-64">
               <div className="text-center text-gray-400">
-                <h3 className="text-base sm:text-lg mb-2">Selecciona una cuenta</h3>
-                <p className="text-sm">Elige una cuenta de la lista para ver sus detalles</p>
+                <h3 className="text-base sm:text-lg mb-2">{t('trading.accounts.messages.selectAccount')}</h3>
+                <p className="text-sm">{t('trading.accounts.messages.chooseAccount')}</p>
               </div>
             </div>
           )}
@@ -2601,7 +2601,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             
             {/* Balance Card - Lado izquierdo (2 columnas - menos ancho) */}
             <div className={`${isMobile ? 'w-full' : 'lg:col-span-2'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl`}>
-              <CustomTooltip content="El capital total de tu cuenta, incluyendo ganancias y pérdidas no realizadas.">
+              <CustomTooltip content={t('tooltips.balance')}>
                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4 cursor-help">{t('balance')}</h2>
               </CustomTooltip>
               <div className="flex items-center mb-4 sm:mb-6">
@@ -2654,7 +2654,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         labelStyle={{ color: '#ffffff' }}
                         itemStyle={{ color: '#ffffff' }}
                         formatter={(value) => [`$${value.toLocaleString()}`, t('trading.accounts.fields.balance')]}
-                        labelFormatter={(label) => `Mes: ${label}`}
+                        labelFormatter={(label) => `${t('trading.charts.month')}: ${label}`}
                       />
                       <Area
                       type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={2}
@@ -2669,8 +2669,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             <div className={`${isMobile ? 'w-full grid grid-cols-1 gap-3' : 'lg:col-span-2 flex flex-col justify-between'} space-y-3 sm:space-y-4`}>
               {/* Profit/Loss */}
               <div className={`${isMobile ? '' : 'flex-1'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex flex-col justify-center`}>
-                <CustomTooltip content="La ganancia o pérdida neta de tus operaciones cerradas en el período seleccionado.">
-                  <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">Profit/Loss</h3>
+                <CustomTooltip content={t('tooltips.profitLoss')}>
+                  <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">{t('metrics.profitLoss')}</h3>
                 </CustomTooltip>
                   <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
@@ -2684,12 +2684,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     {(realMetrics?.profit_loss || 0) >= 0 ? '+' : ''}{(realMetrics?.profit_loss_percentage || 0).toFixed(1)}%
                   </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-400">Total histórico</p>
+                  <p className="text-xs sm:text-sm text-gray-400">{t('metrics.historicalTotal')}</p>
                 </div>
 
               {/* Drawdown */}
               <div className={`${isMobile ? '' : 'flex-1'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex flex-col justify-center`}>
-                <CustomTooltip content="La mayor caída desde un pico hasta un valle en el capital de tu cuenta. Mide el riesgo.">
+                <CustomTooltip content={t('tooltips.drawdown')}>
                   <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">{t('drawdown')}</h3>
                 </CustomTooltip>
                 <div className="flex items-center mb-1">
@@ -2703,10 +2703,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       ? 'bg-yellow-800 bg-opacity-30 text-yellow-400'
                       : 'bg-red-800 bg-opacity-30 text-red-400'
                   }`}>
-                    Actual: {(realMetrics?.current_drawdown || 0).toFixed(2)}%
+                    {t('metrics.current')}: {(realMetrics?.current_drawdown || 0).toFixed(2)}%
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-gray-400">Máximo • Actual</p>
+                <p className="text-xs sm:text-sm text-gray-400">{t('metrics.maxCurrent')}</p>
                 </div>
                 </div>
               </div>
@@ -2715,14 +2715,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           
           {/* Grid de métricas KPIs con iconos del public */}
           <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
-            {/* 1. Pérdida Promedio Por Operación */}
+            {/* 1. {t('tradingAccountsUI.metrics.averageLossPerTrade')} */}
             <div className={`p-3 sm:p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl ${isMobile ? 'flex items-center justify-between' : 'flex justify-between items-center'}`}>
-              <CustomTooltip content="El monto promedio que pierdes en cada operación perdedora.">
+              <CustomTooltip content={t('tooltips.averageLoss')}>
                 <div className="cursor-help">
-                <h3 className="text-gray-400 text-xs sm:text-sm mb-1">Pérdida Promedio Por Operación</h3>
+                <h3 className="text-gray-400 text-xs sm:text-sm mb-1">{t('metrics.averageLoss')}</h3>
                 <div className="flex items-center">
                   <span className="text-lg sm:text-xl font-bold text-red-400">${(realStatistics?.average_loss || 0).toFixed(2)}</span>
-                  <span className="bg-red-800 bg-opacity-30 text-red-400 px-1 py-0.5 rounded text-xs ml-2">Promedio</span>
+                  <span className="bg-red-800 bg-opacity-30 text-red-400 px-1 py-0.5 rounded text-xs ml-2">{t('metrics.average')}</span>
                 </div>
               </div>
               </CustomTooltip>
@@ -2731,14 +2731,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   </div>
                   </div>
 
-            {/* 2. Ganancia Promedio Por Operación */}
+            {/* 2. {t('tradingAccountsUI.metrics.averageWinPerTrade')} */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <CustomTooltip content="El monto promedio que ganas en cada operación ganadora.">
+              <CustomTooltip content={t('tooltips.averageWin')}>
                 <div className="cursor-help">
-                <h3 className="text-gray-400 text-sm mb-1">Ganancia Promedio Por Operación</h3>
+                <h3 className="text-gray-400 text-sm mb-1">{t('metrics.averageWin')}</h3>
                 <div className="flex items-center">
                   <span className="text-xl font-bold">${(realStatistics?.average_win || 0).toFixed(2)}</span>
-                  <span className="bg-green-800 bg-opacity-30 text-green-400 px-1 py-0.5 rounded text-xs ml-2">Promedio</span>
+                  <span className="bg-green-800 bg-opacity-30 text-green-400 px-1 py-0.5 rounded text-xs ml-2">{t('metrics.average')}</span>
                 </div>
               </div>
               </CustomTooltip>
@@ -2747,11 +2747,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 </div>
               </div>
               
-            {/* 3. Lotaje Promedio Por Operación */}
+            {/* 3. {t('tradingAccountsUI.metrics.averageLotSizePerTrade')} */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <CustomTooltip content="El tamaño de posición promedio que utilizas en tus operaciones.">
+              <CustomTooltip content={t('tooltips.averageLotSize')}>
                 <div className="cursor-help">
-                <h3 className="text-gray-400 text-sm mb-1">{t('lotSize')} {t('filters.all')}</h3>
+                <h3 className="text-gray-400 text-sm mb-1">{t('metrics.averageLotSize')}</h3>
                 <span className="text-xl font-bold">{(realStatistics?.average_lot_size || 0).toFixed(2)}</span>
                   </div>
               </CustomTooltip>
@@ -2760,11 +2760,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   </div>
                 </div>
 
-            {/* 4. Duración Promedio Por Operación */}
+            {/* 4. {t('tradingAccountsUI.metrics.averageDurationPerTrade')} */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <CustomTooltip content="El tiempo promedio que mantienes abiertas tus posiciones.">
+              <CustomTooltip content={t('tooltips.averageDuration')}>
                 <div className="cursor-help">
-                <h3 className="text-gray-400 text-sm mb-1">Duración Promedio Por Operación</h3>
+                <h3 className="text-gray-400 text-sm mb-1">{t('metrics.averageDuration')}</h3>
                 <span className="text-xl font-bold">{realStatistics?.average_trade_duration || '00:00:00'}</span>
                   </div>
               </CustomTooltip>
@@ -2773,11 +2773,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   </div>
             </div>
 
-            {/* 5. Relación Riesgo Beneficio */}
+            {/* 5. {t('tradingAccountsUI.metrics.riskRewardRatio')} */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <CustomTooltip content="Compara la ganancia potencial con la pérdida potencial. Un ratio de 1:3 significa que arriesgas 1 para ganar 3.">
+              <CustomTooltip content={t('tooltips.riskReward')}>
                 <div className="cursor-help">
-                <h3 className="text-gray-400 text-sm mb-1">Relación Riesgo Beneficio</h3>
+                <h3 className="text-gray-400 text-sm mb-1">{t('metrics.riskReward')}</h3>
                 <span className="text-xl font-bold">
                   {realStatistics?.risk_reward_ratio 
                     ? `1:${parseFloat(realStatistics.risk_reward_ratio).toFixed(2)}` 
@@ -2790,11 +2790,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 </div>
               </div>
               
-            {/* 6. Ratio De Ganancia */}
+            {/* 6. {t('tradingAccountsUI.metrics.winRatio')} */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <CustomTooltip content="El porcentaje de operaciones ganadoras sobre el total de operaciones realizadas.">
+              <CustomTooltip content={t('tooltips.winRate')}>
                 <div className="cursor-help">
-                <h3 className="text-gray-400 text-sm mb-1">Ratio De Ganancia</h3>
+                <h3 className="text-gray-400 text-sm mb-1">{t('metrics.winRate')}</h3>
                 <span className="text-xl font-bold">{(realStatistics?.win_rate || 0).toFixed(1)}%</span>
               </div>
               </CustomTooltip>
@@ -2803,11 +2803,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               </div>
             </div>
 
-            {/* 7. Depósitos Totales */}
+            {/* 7. {t('tradingAccountsUI.metrics.totalDeposits')} */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <CustomTooltip content="La suma total de todos los fondos que has depositado en esta cuenta.">
+              <CustomTooltip content={t('tooltips.totalDeposits')}>
                 <div className="cursor-help">
-                <h3 className="text-gray-400 text-sm mb-1">Depósitos Totales</h3>
+                <h3 className="text-gray-400 text-sm mb-1">{t('metrics.totalDeposits')}</h3>
                 <span className="text-xl font-bold">${(realStatistics?.total_deposits || 0).toFixed(2)}</span>
               </div>
               </CustomTooltip>
@@ -2816,11 +2816,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               </div>
             </div>
 
-            {/* 8. Retiros Totales */}
+            {/* 8. {t('tradingAccountsUI.metrics.totalWithdrawals')} */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <CustomTooltip content="La suma total de todos los fondos que has retirado de esta cuenta.">
+              <CustomTooltip content={t('tooltips.totalWithdrawals')}>
                 <div className="cursor-help">
-                <h3 className="text-gray-400 text-sm mb-1">Retiros Totales</h3>
+                <h3 className="text-gray-400 text-sm mb-1">{t('metrics.totalWithdrawals')}</h3>
                 <span className="text-xl font-bold">${(realStatistics?.total_withdrawals || 0).toFixed(2)}</span>
               </div>
               </CustomTooltip>
@@ -2829,11 +2829,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         </div>
       </div>
       
-            {/* 9. PNL */}
+            {/* 9. {t('tradingAccountsUI.metrics.pnl')} */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
-              <CustomTooltip content="La ganancia o pérdida neta total de la cuenta desde su creación.">
+              <CustomTooltip content={t('tooltips.pnl')}>
                 <div className="cursor-help">
-                <h3 className="text-gray-400 text-sm mb-1">PNL</h3>
+                <h3 className="text-gray-400 text-sm mb-1">{t('metrics.pnl')}</h3>
                 <span className="text-xl font-bold">${(realStatistics?.net_pnl || 0).toFixed(2)} = {(realStatistics?.net_pnl_percentage || 0).toFixed(1)}%</span>
               </div>
               </CustomTooltip>
@@ -2861,7 +2861,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  {isMobile ? t('accounts.fields.profit') : t('benefitTotal')}
+                  {isMobile ? t('accounts.fields.profit') : t('tradingAccountsUI.charts.benefitTotal')}
                 </button>
                 <button 
                   onClick={() => setBenefitChartTab('balance')}
@@ -2871,7 +2871,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  {t('balance')}
+                  {t('tradingAccountsUI.charts.balance')}
                 </button>
                 <button 
                   onClick={() => setBenefitChartTab('drawdown')}
@@ -2881,7 +2881,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  {t('drawdown')}
+                  {t('tradingAccountsUI.charts.drawdown')}
                 </button>
               </div>
               
@@ -2905,7 +2905,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 historyFilters.dateFrom || 
                 historyFilters.dateTo) && (
                 <span className="ml-2 px-2 py-1 bg-cyan-600 text-white text-xs rounded-full">
-                  Filtrado
+                  {t('filters.filtered')}
                 </span>
               )}
             </h2>
@@ -2971,7 +2971,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         : (typeof numValue === 'number' ? numValue.toLocaleString() : '0');
                       return [`${unit}${formattedValue}`, benefitChartTab];
                     }}
-                    labelFormatter={(label) => `Fecha: ${label}`}
+                    labelFormatter={(label) => `${t('trading.charts.date')}: ${label}`}
                   />
                   <Line 
                     type="monotone" 
@@ -2989,7 +2989,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           {/* ===== CAPTURA 6: INSTRUMENTOS ===== */}
           
           <div className="space-y-6">
-            {/* Instrumentos de Trading */}
+            {/* {t('tradingAccountsUI.instruments.tradingInstruments')} */}
             <div className="p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl">
               {/* Header */}
               <div className="flex justify-between items-center mb-6">
@@ -3011,9 +3011,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       return (
                         <div className="flex flex-col justify-center h-full">
                           <div className="p-4 bg-[#1a1a1a] rounded-lg border border-[#333]">
-                            <div className="text-gray-500 text-sm mb-2">Estado</div>
-                            <div className="text-gray-400 font-medium">Sin actividad de trading</div>
-                            <div className="text-gray-600 text-xs mt-2">Los instrumentos aparecerán cuando realice operaciones</div>
+                            <div className="text-gray-500 text-sm mb-2">{t('tradingAccountsUI.instruments.status')}</div>
+                            <div className="text-gray-400 font-medium">{t('tradingAccountsUI.instruments.noTradingActivity')}</div>
+                            <div className="text-gray-600 text-xs mt-2">{t('tradingAccountsUI.instruments.willAppearWhenTrading')}</div>
                           </div>
                         </div>
                       );
@@ -3044,8 +3044,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                             <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-[#333] flex items-center justify-center">
                               <div className="text-gray-600 text-3xl font-light">—</div>
                             </div>
-                            <div className="text-gray-400 text-sm uppercase tracking-wider">Sin operaciones</div>
-                            <div className="text-gray-600 text-xs mt-1">No hay datos disponibles</div>
+                            <div className="text-gray-400 text-sm uppercase tracking-wider">{t('charts.noOperations')}</div>
+                            <div className="text-gray-600 text-xs mt-1">{t('charts.noData')}</div>
                           </div>
                         </div>
                       );
@@ -3097,7 +3097,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               {/* Header - RESPONSIVE */}
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                  <h2 className="text-xl sm:text-2xl font-bold text-white">Rendimiento</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">{t('tradingAccountsUI.general.performance')}</h2>
                   <div className="flex gap-2">
                     <button 
                       className="px-3 py-1 bg-transparent border rounded-full text-xs sm:text-sm font-medium border-cyan-400 text-cyan-400"
@@ -3170,7 +3170,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           return (
                             <div style={tooltipStyle}>
                               <div className={`bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-white shadow-lg whitespace-nowrap ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                                {rendimientoFilters.period === 'monthly' ? t('trading.filters.month') : t('trading.filters.quarter')}: {label}, {typeof value === 'number' ? value.toFixed(1) : value}%
+                                {rendimientoFilters.period === 'monthly' ? t('filters.month') : t('filters.quarter')}: {label}, {typeof value === 'number' ? value.toFixed(1) : value}%
                               </div>
                             </div>
                           );
@@ -3238,7 +3238,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           <div className="relative">
                             <input
                               type="text"
-                              placeholder={t('trading.filters.searchInstrument')}
+                              placeholder={t('filters.searchInstrument')}
                               value={instrumentSearchTerm}
                               onChange={(e) => setInstrumentSearchTerm(e.target.value)}
                               className="w-full bg-[#232323] border border-[#444] rounded-md px-3 py-2 pl-10 focus:outline-none focus:border-cyan-500"
@@ -3279,7 +3279,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 
                 {/* Desde */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">{t('trading.filters.from')}</label>
+                  <label className="block text-gray-400 text-sm mb-2">{t('filters.from')}</label>
                   <div className="relative">
                     <input 
                       type="date" 
@@ -3292,7 +3292,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
                 {/* Hasta */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">{t('trading.filters.to')}</label>
+                  <label className="block text-gray-400 text-sm mb-2">{t('filters.to')}</label>
                   <div className="relative">
                     <input 
                       type="date" 
@@ -3306,7 +3306,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 {/* Ganancia/Pérdida */}
                 <div>
                   <CustomDropdown
-                    label={t('trading.filters.profitLoss')}
+                    label={t('filters.profitLoss')}
                     options={translateOptions(profitLossOptions)}
                     selectedValue={historyFilters.profitLoss}
                     onSelect={(value) => updateHistoryFilter('profitLoss', value)}
@@ -3353,9 +3353,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           <div className="mb-1"><span className="text-white">{t('lotSize')}:</span> {transaction.lotaje}</div>
                         </div>
                         <div>
-                          <div className="mb-1"><span className="text-white">Entrada:</span> {transaction.precioApertura}</div>
-                          <div className="mb-1"><span className="text-white">Salida:</span> {transaction.precioCierre}</div>
-                          <div className="mb-1"><span className="text-white">Pips:</span> {transaction.pips}</div>
+                          <div className="mb-1"><span className="text-white">{t('entry')}:</span> {transaction.precioApertura}</div>
+                          <div className="mb-1"><span className="text-white">{t('exit')}:</span> {transaction.precioCierre}</div>
+                          <div className="mb-1"><span className="text-white">{t('pips')}:</span> {transaction.pips}</div>
                         </div>
                       </div>
 
@@ -3394,12 +3394,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('type')}</th>
                       <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('lotSize')}</th>
                       <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('stopLoss')}</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Take Profit</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Precio De Apertura</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Precio De Cierre</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Pips</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">ID De Posición</th>
-                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">Resultado</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('takeProfit')}</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('openPrice')}</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('closePrice')}</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('pips')}</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('positionId')}</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('result')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -3508,7 +3508,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 
               {/* Total para ambas vistas */}
               <div className="mt-4 sm:mt-6 pt-4 border-t border-[#333] flex justify-between items-center">
-                <span className="text-lg sm:text-xl font-bold text-white">Total</span>
+                <span className="text-lg sm:text-xl font-bold text-white">{t('tradingAccountsUI.filters.total')}</span>
                 <div className="text-lg sm:text-xl font-bold" style={{ color: 'white' }}>
                     ${filteredHistorialData.reduce((sum, item) => {
                       const value = typeof item.ganancia === 'number' ? item.ganancia : parseFloat(item.ganancia) || 0;

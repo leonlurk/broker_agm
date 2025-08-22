@@ -38,8 +38,7 @@
       "investorPasswordReadOnly": "Contraseña Investor (Solo Lectura)",
       "currentBalance": "Balance actual",
       "createdAt": "Creada",
-      "status": "Estado",
-      "activeAccount": "Cuenta Activa"
+      "status": "Estado"
     },
     "status": {
       "active": "Activa",
@@ -65,7 +64,6 @@
     },
     "details": {
       "title": "Detalles de la Cuenta",
-      "subtitle": "Información completa de la cuenta seleccionada",
       "credentials": "Credenciales MT5"
     },
     "messages": {
@@ -87,13 +85,7 @@
       "metricsLoadError": "Error al cargar las métricas de la cuenta",
       "noActiveSession": "No se encontró sesión activa",
       "syncError": "Error al sincronizar",
-      "accountSyncError": "Error al sincronizar la cuenta",
-      "notConfigured": "No configurada",
-      "selectAccount": "Selecciona una cuenta",
-      "chooseAccount": "Elige una cuenta de la lista para ver sus detalles",
-      "yourAccounts": "Tus Cuentas",
-      "loadingAccounts": "Cargando cuentas...",
-      "noAccountsInCategory": "No tienes cuentas en esta categoría"
+      "accountSyncError": "Error al sincronizar la cuenta"
     },
     "passwordPlaceholder": "Ingresa la contraseña investor",
     "confirmPasswordPlaceholder": "Confirma la contraseña"
@@ -622,8 +614,7 @@
     "quarter1": "1er Trimestre",
     "quarter2": "2do Trimestre",
     "quarter3": "3er Trimestre",
-    "quarter4": "4to Trimestre",
-    "filtered": "Filtrado"
+    "quarter4": "4to Trimestre"
   },
   "charts": {
     "start": "Inicio",
@@ -631,39 +622,7 @@
     "noData": "Sin datos",
     "noOperations": "Sin operaciones",
     "unknown": "Desconocido",
-    "drawdown": "Drawdown",
-    "month": "Mes",
-    "date": "Fecha"
-  },
-  "tooltips": {
-    "balance": "El capital total de tu cuenta, incluyendo ganancias y pérdidas no realizadas.",
-    "profitLoss": "La ganancia o pérdida neta de tus operaciones cerradas en el período seleccionado.",
-    "drawdown": "La mayor caída desde un pico hasta un valle en el capital de tu cuenta. Mide el riesgo.",
-    "averageLoss": "El monto promedio que pierdes en cada operación perdedora.",
-    "averageWin": "El monto promedio que ganas en cada operación ganadora.",
-    "averageLotSize": "El tamaño de posición promedio que utilizas en tus operaciones.",
-    "averageDuration": "El tiempo promedio que mantienes abiertas tus posiciones.",
-    "riskReward": "Compara la ganancia potencial con la pérdida potencial. Un ratio de 1:3 significa que arriesgas 1 para ganar 3.",
-    "winRate": "El porcentaje de operaciones ganadoras sobre el total de operaciones realizadas.",
-    "totalDeposits": "La suma total de todos los fondos que has depositado en esta cuenta.",
-    "totalWithdrawals": "La suma total de todos los fondos que has retirado de esta cuenta.",
-    "pnl": "La ganancia o pérdida neta total de la cuenta desde su creación."
-  },
-  "metrics": {
-    "profitLoss": "Profit/Loss",
-    "historicalTotal": "Total histórico",
-    "current": "Actual",
-    "maxCurrent": "Máximo • Actual",
-    "average": "Promedio",
-    "averageLoss": "Pérdida Promedio Por Operación",
-    "averageWin": "Ganancia Promedio Por Operación",
-    "averageLotSize": "Lotaje Promedio Por Operación",
-    "averageDuration": "Duración Promedio Por Operación",
-    "riskReward": "Relación Riesgo Beneficio",
-    "winRate": "Ratio De Ganancia",
-    "totalDeposits": "Depósitos Totales",
-    "totalWithdrawals": "Retiros Totales",
-    "pnl": "PNL"
+    "drawdown": "Retracción"
   },
   "months": {
     "jan": "Ene",
@@ -686,7 +645,7 @@
   "hideFilters": "Ocultar Filtros",
   "benefitTotal": "Beneficio Total",
   "balance": "Balance",
-  "drawdown": "Drawdown",
+  "drawdown": "Reducción",
   "operationsHistory": "Historial de Operaciones",
   "dateOpen": "Fecha De Apertura",
   "dateClose": "Fecha De Cierre",
@@ -695,55 +654,5 @@
   "lotSize": "Lotaje",
   "stopLoss": "Stop Loss",
   "takeProfit": "Take Profit",
-  "openPrice": "Precio De Apertura", 
-  "closePrice": "Precio De Cierre",
-  "pips": "Pips",
-  "positionId": "ID De Posición",
-  "result": "Resultado",
-  "entry": "Entrada",
-  "exit": "Salida",
-  "price": "Pr",
-  "tradingAccountsUI": {
-    "charts": {
-      "benefitTotal": "Beneficio Total",
-      "balance": "Balance", 
-      "drawdown": "Drawdown"
-    },
-    "metrics": {
-      "averageLossPerTrade": "Pérdida Promedio Por Operación",
-      "averageWinPerTrade": "Ganancia Promedio Por Operación", 
-      "averageLotSizePerTrade": "Lotaje Promedio Por Operación",
-      "averageDurationPerTrade": "Duración Promedio Por Operación",
-      "riskRewardRatio": "Relación Riesgo Beneficio",
-      "winRatio": "Ratio De Ganancia",
-      "totalDeposits": "Depósitos Totales",
-      "totalWithdrawals": "Retiros Totales",
-      "pnl": "PNL"
-    },
-    "filters": {
-      "all": "Todos",
-      "profit": "Ganancia", 
-      "loss": "Pérdida",
-      "total": "Total"
-    },
-    "general": {
-      "days": "días",
-      "maximum": "Máximo",
-      "current": "Actual",
-      "average": "Promedio",
-      "historical": "Histórico"
-    },
-    "instruments": {
-      "title": "Instrumentos",
-      "tradingInstruments": "Instrumentos de Trading",
-      "status": "Estado",
-      "noTradingActivity": "Sin actividad de trading",
-      "willAppearWhenTrading": "Los instrumentos aparecerán cuando realice operaciones"
-    },
-    "general": {
-      "performance": "Rendimiento",
-      "accountNotFoundSelected": "No se encontró la cuenta seleccionada",
-      "noAccountsInThisCategory": "No hay cuentas en esta categoría"
-    }
-  }
+  "price": "Pr"
 }
