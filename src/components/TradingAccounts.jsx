@@ -2413,8 +2413,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   return (
                     <>
                 <div className="mb-3 sm:mb-4">
-                  <h2 className="text-lg sm:text-xl font-semibold mb-2">{t('trading.accounts.details.title')}</h2>
-                  <p className="text-gray-400 text-xs sm:text-sm">{t('trading.accounts.details.subtitle')}</p>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-2">{t('accounts.details.title')}</h2>
+                  <p className="text-gray-400 text-xs sm:text-sm">{t('accounts.details.subtitle')}</p>
                 </div>
                 
                 <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm mb-4 sm:mb-6">
@@ -3270,7 +3270,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 {/* Tipo */}
                 <div>
                   <CustomDropdown
-                    label={t('trading.positions.fields.type')}
+                    label={t('positions.fields.type')}
                     options={translateOptions(typeOptions)}
                     selectedValue={historyFilters.type}
                     onSelect={(value) => updateHistoryFilter('type', value)}

@@ -1,12 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(rg:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
-    "ask": [],
     "additionalDirectories": [
       "C:\\mnt\\c\\Users\\Administrator\\Desktop\\broker"
-    ]
+    ],
+    "ask": []
   }
 }
