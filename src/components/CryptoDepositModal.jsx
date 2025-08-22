@@ -153,8 +153,8 @@ const CryptoDepositModal = ({
   };
 
   const getMinimumDeposit = () => {
-    if (selectedCoin === 'USDT_TRC20') return 12;
-    return 25;
+    // Mínimo de $100 USD para todos los depósitos
+    return 100;
   };
 
   if (!isOpen) return null;
