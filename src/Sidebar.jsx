@@ -175,13 +175,13 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                 
                 {/* Scrollable menu section with dynamic spacing */}
                 <div className="flex-1 overflow-y-auto transition-all duration-500 ease-in-out flex flex-col" style={{ scrollbarWidth: 'thin', scrollbarColor: '#555 #333' }}>
-                    <nav className={`flex flex-col h-full ${isMobile ? 'px-2' : 'px-4'} ${menuItems.length <= 6 ? 'justify-evenly' : 'gap-2'}`}>
+                    <nav className={`flex flex-col h-full ${isMobile ? 'px-2' : 'px-4'} justify-center gap-4`}>
                         {menuItems.map((item) => (
-                            <div key={item.name} className={`${menuItems.length <= 6 ? 'flex flex-col justify-center' : ''} ${!item.subOptions && menuItems.length <= 6 ? 'my-auto' : ''}`}>
+                            <div key={item.name} className="flex flex-col">
                                 <button
                                     onClick={() => handleNavigation(item.name)}
                                     className={`flex items-center justify-between w-full rounded-xl bg-transparent border font-regular transition-all
-                                        ${isMobile ? 'py-3 px-4 text-base' : `${menuItems.length <= 6 ? 'py-5 px-6' : 'py-4 px-6'} text-lg`}
+                                        ${isMobile ? 'py-3 px-4 text-base' : 'py-4 px-6 text-lg'}
                                         ${selectedOption === item.name || 
                                           (item.name === "Herramientas" && item.subOptions && item.subOptions.includes(selectedOption)) ||
                                           (item.name !== "Herramientas" && item.subOptions && item.subOptions.some(sub => selectedOption === `${item.name} ${sub}`))
