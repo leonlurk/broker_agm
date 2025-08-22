@@ -89,6 +89,8 @@
   },
   "withdraw": {
     "title": "Withdraw Funds",
+    "enterAmount": "Enter the amount you want to withdraw from your account",
+    "paymentMethod": "Configured payment method",
     "selectAccount": "Select Account",
     "availableBalance": "Available Balance",
     "amount": "Withdrawal Amount",

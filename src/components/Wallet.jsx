@@ -24,7 +24,7 @@ const Wallet = () => {
     getAllAccounts
   } = useAccounts();
   
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   
   const { 
     notifyDeposit, 
@@ -309,7 +309,8 @@ const Wallet = () => {
       return;
     }
 
-    if ((activeTab === 'retirar' || activeTab === 'depositar') && !selectedMethod) {
+    // Solo validar método de pago para depósitos (los retiros usan el método pre-configurado)
+    if (activeTab === 'depositar' && !selectedMethod) {
       setError(t('common.errors.selectMethod'));
       return;
     }
@@ -346,16 +347,37 @@ const Wallet = () => {
 
       // Usar las funciones RPC según el tipo de operación
       if (activeTab === 'retirar') {
-        // Crear solicitud de retiro
-        result = await transactionService.createWithdrawalRequest({
+        // Obtener el método de pago pre-configurado del usuario
+        const userPaymentMethod = userData?.paymentMethods?.[0]; // Usar el primer método configurado
+        
+        // Crear solicitud de retiro con los datos del método de pago configurado
+        const withdrawalData = {
           account_id: selectedAccount.id,
           account_name: selectedAccount.account_name,
           amount: amountNum,
-          withdrawal_type: selectedMethod?.id === 'crypto' ? 'crypto' : 'bank',
-          crypto_currency: selectedCoin,
-          wallet_address: walletAddress,
-          network: selectedCoin === 'USDT_TRC20' ? 'tron' : 'bsc'
-        });
+          withdrawal_type: userPaymentMethod?.type === 'crypto' ? 'crypto' : 'bank',
+          // Incluir datos del usuario
+          user_email: currentUser?.email,
+          user_name: currentUser?.displayName || userData?.nombre || 'Usuario'
+        };
+
+        // Si el método es crypto, incluir los datos de la wallet
+        if (userPaymentMethod?.type === 'crypto') {
+          withdrawalData.crypto_currency = userPaymentMethod.currency || 'USDT';
+          withdrawalData.wallet_address = userPaymentMethod.address;
+          withdrawalData.network = userPaymentMethod.network || 'tron';
+        } else if (userPaymentMethod?.type === 'bank') {
+          // Si es banco, incluir los datos bancarios
+          withdrawalData.bank_name = userPaymentMethod.bankName;
+          withdrawalData.bank_account = userPaymentMethod.accountNumber;
+          withdrawalData.bank_details = {
+            accountHolder: userPaymentMethod.accountHolder,
+            swift: userPaymentMethod.swift,
+            iban: userPaymentMethod.iban
+          };
+        }
+
+        result = await transactionService.createWithdrawalRequest(withdrawalData);
         
         if (!result.success) {
           throw new Error(result.error || t('withdraw.errors.processingError'));
@@ -719,6 +741,91 @@ const Wallet = () => {
     const methods = getMethodOptions();
     const cryptoOptions = getCryptoOptions();
 
+    // Si es un retiro, simplificar el flujo - solo mostrar el monto
+    if (activeTab === 'retirar') {
+      return (
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-[#232323] rounded-xl border-2 border-[#06b6d4] p-6">
+            <h3 className="text-lg font-semibold mb-2 text-white">{t('withdraw.title')}</h3>
+            <p className="text-[#9ca3af] mb-6 text-sm">{t('withdraw.enterAmount')}</p>
+            
+            <div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-[#9ca3af] mb-2">
+                  {t('common.amount')} (USD)
+                </label>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  min="0"
+                  className="w-full px-4 py-3 bg-[#1e1e1e] border border-[#4b5563] rounded-lg text-white placeholder-[#6b7280] focus:border-[#06b6d4] focus:outline-none"
+                />
+                {selectedAccount && (
+                  <p className="text-xs text-[#9ca3af] mt-2">
+                    {t('common.availableBalance')}: ${(selectedAccount.balance || 0).toLocaleString()} USD
+                  </p>
+                )}
+              </div>
+
+              {/* Mostrar información del método de pago configurado */}
+              {userData?.paymentMethods && userData.paymentMethods.length > 0 && (
+                <div className="bg-[#1e1e1e] p-4 rounded-lg mb-4 border border-[#334155]">
+                  <p className="text-[#22d3ee] mb-2 text-sm font-medium">{t('withdraw.paymentMethod')}:</p>
+                  <div className="space-y-2">
+                    {userData.paymentMethods.map((method, index) => (
+                      <div key={index} className="text-[#9ca3af] text-xs">
+                        <span className="font-medium">{method.alias || method.type}</span>
+                        {method.type === 'crypto' && method.address && (
+                          <span className="ml-2 text-[#6b7280]">
+                            ({method.address.substring(0, 6)}...{method.address.substring(method.address.length - 4)})
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-[#1e1e1e] p-4 rounded-lg mb-6 border border-[#334155]">
+                <p className="text-[#22d3ee] mb-2 text-sm font-medium">{t('common.important')}:</p>
+                <p className="text-[#9ca3af] text-xs leading-relaxed">
+                  {t('withdraw.processingTime')}
+                </p>
+              </div>
+              
+              <div className="flex items-center mb-6">
+                <input 
+                  type="checkbox" 
+                  id="terms" 
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  className="mr-3 w-4 h-4 text-[#06b6d4] bg-[#1e1e1e] border-[#4b5563] rounded focus:ring-[#06b6d4] focus:ring-2"
+                />
+                <label htmlFor="terms" className="text-sm text-[#9ca3af] font-medium">
+                  {t('common.acceptTerms')}
+                </label>
+              </div>
+              
+              <button 
+                onClick={handleProcessOperation}
+                disabled={!acceptTerms || !amount || isLoading}
+                className={`w-full py-3 rounded-lg text-center font-semibold transition-all ${
+                  acceptTerms && amount && !isLoading
+                    ? 'bg-gradient-to-r from-[#06b6d4] to-[#0891b2] hover:from-[#0891b2] hover:to-[#0e7490] text-white' 
+                    : 'bg-[#374151] text-[#6b7280] cursor-not-allowed'
+                }`}
+              >
+                {isLoading ? t('common.processing') : t('tabs.withdraw')}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Para depósitos, mantener el flujo original con los pasos
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Paso 1: Seleccionar método */}
@@ -810,39 +917,19 @@ const Wallet = () => {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder={activeTab === 'depositar' ? '100.00' : '0.00'}
-                  min={activeTab === 'depositar' ? '100' : '0'}
+                  placeholder="100.00"
+                  min="100"
                   className="w-full px-4 py-3 bg-[#1e1e1e] border border-[#4b5563] rounded-lg text-white placeholder-[#6b7280] focus:border-[#06b6d4] focus:outline-none"
                 />
-                {activeTab === 'depositar' && (
-                  <p className="text-xs text-[#22d3ee] mt-1">
-                    {t('deposit.minAmount', { amount: '$100 USD' })}
-                  </p>
-                )}
+                <p className="text-xs text-[#22d3ee] mt-1">
+                  {t('deposit.minAmount', { amount: '$100 USD' })}
+                </p>
               </div>
-
-              {selectedMethod?.id === 'crypto' && activeTab === 'retirar' && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-[#9ca3af] mb-2">
-                    {t('withdraw.walletAddress')}
-                  </label>
-                  <input
-                    type="text"
-                    value={walletAddress}
-                    onChange={(e) => setWalletAddress(e.target.value)}
-                    placeholder={t('withdraw.walletPlaceholder')}
-                    className="w-full px-4 py-3 bg-[#1e1e1e] border border-[#4b5563] rounded-lg text-white placeholder-[#6b7280] focus:border-[#06b6d4] focus:outline-none"
-                  />
-                </div>
-              )}
 
               <div className="bg-[#1e1e1e] p-4 rounded-lg mb-6 border border-[#334155]">
                 <p className="text-[#22d3ee] mb-2 text-sm font-medium">{t('common.important')}:</p>
                 <p className="text-[#9ca3af] text-xs leading-relaxed">
-                  {activeTab === 'depositar' ? 
-                    t('deposit.importantNote') :
-                    t('withdraw.processingTime')
-                  }
+                  {t('deposit.importantNote')}
                 </p>
               </div>
               
@@ -868,7 +955,7 @@ const Wallet = () => {
                     : 'bg-[#374151] text-[#6b7280] cursor-not-allowed'
                 }`}
               >
-                {isLoading ? 'Procesando...' : getOperationTitle()}
+                {isLoading ? t('common.processing') : t('tabs.deposit')}
               </button>
             </div>
           )}
@@ -1230,7 +1317,7 @@ const Wallet = () => {
               <div>
                 <p className="text-gray-400 mb-2 text-sm font-medium">{t('common.availableBalance')}</p>
                 <h2 className="text-3xl font-bold text-white">${(selectedAccount.balance || 0).toLocaleString()}</h2>
-                <p className="text-xs text-gray-400 mt-2">{selectedAccount.accountType} • {selectedAccount.accountNumber}</p>
+                <p className="text-xs text-gray-400 mt-2">{selectedAccount.accountType} {selectedAccount.accountNumber}</p>
               </div>
               <div className="text-right">
                 <div className="text-sm text-gray-400 mb-2">{t('common.activeAccount')}</div>

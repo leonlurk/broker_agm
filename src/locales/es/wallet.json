@@ -89,6 +89,8 @@
   },
   "withdraw": {
     "title": "Retirar Fondos",
+    "enterAmount": "Ingrese el monto que desea retirar de su cuenta",
+    "paymentMethod": "Método de pago configurado",
     "selectAccount": "Seleccionar Cuenta",
     "availableBalance": "Balance Disponible",
     "amount": "Monto a Retirar",
