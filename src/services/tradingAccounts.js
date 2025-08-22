@@ -129,9 +129,10 @@ export const createTradingAccount = async (userId, accountData) => {
             accountName: accountData.accountName,
             accountNumber: mt5Result.data.login?.toString() || accountNumber,
             leverage: `1:${accountData.leverage}`,
-            balance: accountData.accountType === 'DEMO' ? 10000 : 0,
+            balance: mt5Result.data.balance || (accountData.accountType === 'DEMO' ? 10000 : 0),
             currency: 'USD',
-            server: mt5Result.data.server || 'AGM-Server'
+            server: mt5Result.data.server || 'AGM-Server',
+            groupType: accountData.accountTypeSelection || 'Institucional'
           },
           {
             login: mt5Result.data.login?.toString() || accountNumber,

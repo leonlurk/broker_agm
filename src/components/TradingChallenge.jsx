@@ -83,9 +83,10 @@ export default function TradingChallengeUI() {
                 accountName: accountName.trim(),
                 accountNumber: result.mt5Credentials.login?.toString() || result.accountNumber,
                 leverage: leverage,
-                balance: accountType === 'DEMO' ? (parseFloat(initialBalance) || 10000) : 0,
+                balance: accountType === 'DEMO' ? (initialBalance ? parseFloat(initialBalance) : 10000) : 0,
                 currency: 'USD',
-                server: result.mt5Credentials.server || 'AGM-Server'
+                server: result.mt5Credentials.server || 'AGM-Server',
+                groupType: accountTypeSelection
               },
               {
                 login: result.mt5Credentials.login?.toString() || result.accountNumber,
