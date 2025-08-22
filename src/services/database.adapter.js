@@ -134,6 +134,41 @@ export const AuthAdapter = {
       return supabaseAuth.verifyCode(code);
     }
     return firebaseAuth.verifyCode(code);
+  },
+
+  // Update password
+  updatePassword: async (email, newPassword) => {
+    if (DATABASE_PROVIDER === 'supabase') {
+      try {
+        const { data, error } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+        
+        if (error) {
+          return { success: false, error: error.message };
+        }
+        
+        return { success: true, user: data.user };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    } else {
+      // Firebase implementation
+      const { getAuth, updatePassword: firebaseUpdatePassword } = await import('firebase/auth');
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        
+        if (!user) {
+          return { success: false, error: 'No hay usuario autenticado' };
+        }
+        
+        await firebaseUpdatePassword(user, newPassword);
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    }
   }
 };
 

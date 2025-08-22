@@ -206,5 +206,33 @@
     "sessionTerminated": "Session terminated",
     "apiKeyCreated": "API key created successfully",
     "apiKeyDeleted": "API key deleted"
+  },
+  "mainSettings": {
+    "title": "Settings",
+    "accountConfig": "Account Configuration",
+    "kycVerification": "KYC Verification",
+    "paymentMethods": "Payment Methods",
+    "changePassword": "Change Password",
+    "updateEmail": "Update Email",
+    "securityConfig": "Security Configuration",
+    "twoFactorAuth": "2-Factor Authentication",
+    "privacySettings": "Privacy",
+    "dataPrivacy": "Data Privacy"
+  },
+  "modal": {
+    "changePasswordTitle": "Password Change",
+    "changePasswordMessage": "To change your password, please send us an email with your request. We will respond with the necessary instructions to complete the process securely.",
+    "updateEmailTitle": "Email Update",
+    "updateEmailMessage": "To update your email address, send us a message with your request. We will guide you through the necessary verification process.",
+    "supportEmail": "Support email:",
+    "close": "Close"
+  },
+  "validation": {
+    "nameMinLength": "Name must be at least 2 characters",
+    "lastNameMinLength": "Last name must be at least 2 characters",
+    "countryRequired": "Country is required",
+    "cityMinLength": "City must be at least 2 characters",
+    "phoneNumberTooShort": "Phone number is too short",
+    "invalidImageFormat": "Invalid image format"
   }
 }

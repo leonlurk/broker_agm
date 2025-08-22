@@ -89,7 +89,29 @@
     "close": "Cerrar",
     "markAsRead": "Marcar como leída",
     "markAllAsRead": "Marcar todas como leídas",
-    "clearAll": "Limpiar todas"
+    "clearAll": "Limpiar todas",
+    "deleteAll": "Eliminar todas",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar"
+  },
+  "modal": {
+    "title": "Notificaciones",
+    "empty": "No tienes notificaciones",
+    "emptyDescription": "Las notificaciones aparecerán aquí cuando realices acciones",
+    "read": "Leídas",
+    "clear": "Limpiar",
+    "deleteNotification": "Eliminar Notificación",
+    "clearAllTitle": "Limpiar Todas",
+    "deleteConfirmSingle": "¿Estás seguro de que quieres eliminar esta notificación? Esta acción no se puede deshacer.",
+    "deleteConfirmAll": "¿Estás seguro de que quieres eliminar todas las notificaciones ({{count}})? Esta acción no se puede deshacer.",
+    "noNotifications": "No hay notificaciones"
+  },
+  "time": {
+    "minutesAgo": "hace {{count}} min",
+    "hoursAgo": "hace {{count}} h",
+    "daysAgo": "hace {{count}} día",
+    "daysAgoPlural": "hace {{count}} días"
   },
   "settings": {
     "preferencesUpdated": "Preferencias actualizadas",

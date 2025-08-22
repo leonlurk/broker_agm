@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, X, Check, AlertCircle, Clock } from 'lucide-react';
+import { ChevronDown, ChevronRight, X, Check, AlertCircle, Clock, Mail, Loader } from 'lucide-react';
 import KYCVerification from './KYCVerification';
 import { useAuth } from '../contexts/AuthContext';
 import PaymentMethodSettings from './PaymentMethodSettings';
 import kycService from '../services/kycService';
+import { useTranslation } from 'react-i18next';
+import emailServiceProxy from '../services/emailServiceProxy';
+import toast from 'react-hot-toast';
 
 const Settings = ({ onBack }) => {
+  const { t } = useTranslation('settings');
   const [expandedSection, setExpandedSection] = useState(null);
   const [showKYC, setShowKYC] = useState(false);
   const [showPaymentSettings, setShowPaymentSettings] = useState(false);
@@ -43,13 +47,61 @@ const Settings = ({ onBack }) => {
     setShowPasswordModal(true);
   };
 
+  const handleSendPasswordResetEmail = async () => {
+    if (!currentUser?.email) {
+      toast.error('No se pudo obtener tu email');
+      return;
+    }
+
+    const toastId = toast.loading('Enviando email de restablecimiento...');
+    
+    try {
+      // Generar un código de 6 dígitos
+      const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Guardar el código en localStorage con timestamp (válido por 1 hora)
+      localStorage.setItem('passwordResetCode', JSON.stringify({
+        code: resetCode,
+        email: currentUser.email,
+        timestamp: Date.now(),
+        expiresIn: 3600000 // 1 hora
+      }));
+
+      // Enviar el email a través del backend
+      const result = await emailServiceProxy.sendPasswordResetEmail(
+        { email: currentUser.email, name: currentUser.displayName || currentUser.username || 'Usuario' },
+        resetCode
+      );
+
+      if (result.success) {
+        toast.success('Email enviado correctamente. Revisa tu bandeja de entrada.', { id: toastId });
+        setShowPasswordModal(false);
+      } else {
+        toast.error('Error al enviar el email. Intenta nuevamente.', { id: toastId });
+      }
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      toast.error('Error al enviar el email. Intenta nuevamente.', { id: toastId });
+    }
+  };
+
   const handleUpdateEmail = () => {
     setShowEmailModal(true);
   };
 
   // Modal Component
-  const Modal = ({ isOpen, onClose, title, message }) => {
+  const Modal = ({ isOpen, onClose, title, message, showEmailButton = false, onEmailSend }) => {
+    const [sending, setSending] = useState(false);
+    
     if (!isOpen) return null;
+
+    const handleEmailClick = async () => {
+      setSending(true);
+      if (onEmailSend) {
+        await onEmailSend();
+      }
+      setSending(false);
+    };
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -70,19 +122,40 @@ const Settings = ({ onBack }) => {
             <p className="text-gray-300 text-sm leading-relaxed mb-4">
               {message}
             </p>
-            <div className="bg-[#1a1a1a] border border-[#333] rounded-lg p-3">
-              <p className="text-xs text-gray-400 mb-1">Correo de soporte:</p>
-              <p className="text-cyan-400 font-medium">support@alphaglobalmarket.io</p>
-            </div>
+            {!showEmailButton && (
+              <div className="bg-[#1a1a1a] border border-[#333] rounded-lg p-3">
+                <p className="text-xs text-gray-400 mb-1">{t('modal.supportEmail')}</p>
+                <p className="text-cyan-400 font-medium">support@alphaglobalmarket.io</p>
+              </div>
+            )}
           </div>
           
           {/* Actions */}
-          <div className="flex justify-center">
+          <div className="flex flex-col gap-3">
+            {showEmailButton && (
+              <button
+                onClick={handleEmailClick}
+                disabled={sending}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 px-6 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {sending ? (
+                  <>
+                    <Loader className="animate-spin" size={20} />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Mail size={20} />
+                    Enviar Email de Restablecimiento
+                  </>
+                )}
+              </button>
+            )}
             <button
               onClick={onClose}
-              className="bg-gradient-to-r from-[#0891b2] to-[#0c4a6e] text-white py-2.5 px-6 rounded-lg hover:opacity-90 transition-opacity"
+              className="w-full bg-gradient-to-r from-[#0891b2] to-[#0c4a6e] text-white py-2.5 px-6 rounded-lg hover:opacity-90 transition-opacity"
             >
-              Cerrar
+              {t('modal.close')}
             </button>
           </div>
         </div>
@@ -111,7 +184,7 @@ const Settings = ({ onBack }) => {
       </div>
       
       <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-semibold">Ajustes</h1>
+        <h1 className="text-2xl md:text-3xl font-semibold">{t('mainSettings.title')}</h1>
       </div>
       
       {/* Main Settings Container with border */}
@@ -124,7 +197,7 @@ const Settings = ({ onBack }) => {
             className="p-4 flex justify-between items-center cursor-pointer"
             onClick={() => toggleSection('account')}
           >
-            <h2 className="text-lg md:text-xl">Configuracion de Cuenta</h2>
+            <h2 className="text-lg md:text-xl">{t('mainSettings.accountConfig')}</h2>
             <div className={`transition-transform duration-500 ease-in-out ${expandedSection === 'account' ? 'rotate-180' : ''}`}>
               <ChevronDown className="h-6 w-6 text-gray-400" />
             </div>
@@ -139,7 +212,7 @@ const Settings = ({ onBack }) => {
                 <div className="p-3 rounded-full bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] cursor-pointer" onClick={() => setShowKYC(true)}>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      <span>Verificacion KYC</span>
+                      <span>{t('mainSettings.kycVerification')}</span>
                       {/* KYC Status Indicator */}
                       {kycStatus && (
                         <span className={`
@@ -167,7 +240,7 @@ const Settings = ({ onBack }) => {
                   onClick={handleChangePassword}
                 >
                   <div className="flex justify-between items-center">
-                    <span>Cambiar Contraseña</span>
+                    <span>{t('mainSettings.changePassword')}</span>
                     <ChevronRight className="h-5 w-5 text-gray-400" />
                   </div>
                 </div>
@@ -176,7 +249,7 @@ const Settings = ({ onBack }) => {
                   onClick={handleUpdateEmail}
                 >
                   <div className="flex justify-between items-center">
-                    <span>Actualizar Correo Electronico</span>
+                    <span>{t('mainSettings.updateEmail')}</span>
                     <ChevronRight className="h-5 w-5 text-gray-400" />
                   </div>
                 </div>
@@ -191,7 +264,7 @@ const Settings = ({ onBack }) => {
             className="p-4 flex rounded-3xl bg-gradient-to-br from-[#232323] to-[#2d2d2d] justify-between items-center cursor-pointer"
             onClick={() => toggleSection('notifications')}
           >
-            <h2 className="text-lg md:text-xl">Notificaciones</h2>
+            <h2 className="text-lg md:text-xl">{t('notifications.title')}</h2>
             <div className={`transition-transform duration-500 ease-in-out ${expandedSection === 'notifications' ? 'rotate-180' : ''}`}>
               <ChevronDown className="h-6 w-6 text-gray-400" />
             </div>
@@ -221,7 +294,7 @@ const Settings = ({ onBack }) => {
             className="p-4 flex  rounded-3xl justify-between items-center cursor-pointer bg-gradient-to-br from-[#232323] to-[#2d2d2d]"
             onClick={() => setShowPaymentSettings(true)}
           >
-            <h2 className="text-lg md:text-xl">Método de pago</h2>
+            <h2 className="text-lg md:text-xl">{t('mainSettings.paymentMethods')}</h2>
             <ChevronRight className="h-6 w-6 text-gray-400" />
           </div>
         </div>
@@ -232,15 +305,17 @@ const Settings = ({ onBack }) => {
       <Modal
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
-        title="Cambiar Contraseña"
-        message="Para cambiar tu contraseña, por favor contacta a nuestro equipo de soporte. Ellos te ayudarán de manera segura con este proceso."
+        title={t('modal.changePasswordTitle')}
+        message="Te enviaremos un email con un enlace seguro para restablecer tu contraseña. El enlace será válido por 1 hora."
+        showEmailButton={true}
+        onEmailSend={handleSendPasswordResetEmail}
       />
 
       <Modal
         isOpen={showEmailModal}
         onClose={() => setShowEmailModal(false)}
-        title="Actualizar Correo Electrónico"
-        message="Para actualizar tu correo electrónico, por favor contacta a nuestro equipo de soporte. Ellos verificarán tu identidad y procesarán el cambio de manera segura."
+        title={t('modal.updateEmailTitle')}
+        message={t('modal.updateEmailMessage')}
       />
     </div>
   );

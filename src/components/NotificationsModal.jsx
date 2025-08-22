@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { X, Trash2, Check, AlertTriangle } from 'lucide-react';
 import { useNotifications } from '../contexts/NotificationsContext';
+import { useTranslation } from 'react-i18next';
 
 const NotificationsModal = ({ onClose }) => {
+  const { t } = useTranslation('notifications');
   const { 
     notifications, 
     unreadCount, 
@@ -53,12 +55,12 @@ const NotificationsModal = ({ onClose }) => {
     
     if (diffInHours < 1) {
       const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-      return `hace ${diffInMinutes} min`;
+      return t('time.minutesAgo', { count: diffInMinutes });
     } else if (diffInHours < 24) {
-      return `hace ${Math.floor(diffInHours)} h`;
+      return t('time.hoursAgo', { count: Math.floor(diffInHours) });
     } else {
       const diffInDays = Math.floor(diffInHours / 24);
-      return `hace ${diffInDays} día${diffInDays > 1 ? 's' : ''}`;
+      return diffInDays > 1 ? t('time.daysAgoPlural', { count: diffInDays }) : t('time.daysAgo', { count: diffInDays });
     }
   };
 
@@ -74,7 +76,7 @@ const NotificationsModal = ({ onClose }) => {
       <div className="bg-[#232323] border border-[#333] rounded-3xl w-full max-w-xl max-h-[80vh] overflow-hidden z-10">
         <div className="p-4 flex justify-between items-center border-b border-[#333]">
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl text-white font-medium">Notificaciones</h2>
+            <h2 className="text-2xl text-white font-medium">{t('modal.title')}</h2>
             {unreadCount > 0 && (
               <span className="bg-cyan-500 text-black text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px]">
                 {unreadCount}
@@ -88,20 +90,20 @@ const NotificationsModal = ({ onClose }) => {
                   <button
                     onClick={markAllAsRead}
                     className="text-cyan-400 hover:text-cyan-300 transition-colors focus:outline-none text-sm flex items-center gap-1"
-                    title="Marcar todas como leídas"
+                    title={t('actions.markAllAsRead')}
                   >
                     <Check size={16} />
-                    Leídas
+                    {t('modal.read')}
                   </button>
                 )}
                 <button
                   onClick={handleClearAll}
                   disabled={notifications.length === 0}
                   className="text-red-400 hover:text-red-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors focus:outline-none text-sm flex items-center gap-1"
-                  title={notifications.length === 0 ? "No hay notificaciones" : "Eliminar todas"}
+                  title={notifications.length === 0 ? t('modal.noNotifications') : t('actions.deleteAll')}
                 >
                   <Trash2 size={16} />
-                  Limpiar ({notifications.length})
+                  {t('modal.clear')} ({notifications.length})
                 </button>
               </>
             )}
@@ -123,8 +125,8 @@ const NotificationsModal = ({ onClose }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
               </div>
-              <p className="text-gray-400 text-center">No tienes notificaciones</p>
-              <p className="text-gray-500 text-center text-sm mt-1">Las notificaciones aparecerán aquí cuando realices acciones</p>
+              <p className="text-gray-400 text-center">{t('modal.empty')}</p>
+              <p className="text-gray-500 text-center text-sm mt-1">{t('modal.emptyDescription')}</p>
             </div>
           ) : (
             // Lista de notificaciones
@@ -165,7 +167,7 @@ const NotificationsModal = ({ onClose }) => {
                           <button
                             onClick={() => handleMarkAsRead(notification.id)}
                             className="text-cyan-400 hover:text-cyan-300 transition-colors focus:outline-none"
-                            title="Marcar como leída"
+                            title={t('actions.markAsRead')}
                           >
                             <Check size={16} />
                           </button>
@@ -173,7 +175,7 @@ const NotificationsModal = ({ onClose }) => {
                         <button
                           onClick={() => handleDeleteNotification(notification.id)}
                           className="text-red-400 hover:text-red-300 transition-colors focus:outline-none"
-                          title="Eliminar notificación"
+                          title={t('actions.delete')}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -197,14 +199,14 @@ const NotificationsModal = ({ onClose }) => {
                 <AlertTriangle className="w-6 h-6 text-red-400" />
               </div>
               <h3 className="text-xl font-semibold text-white">
-                {deletingNotificationId ? 'Eliminar Notificación' : 'Limpiar Todas'}
+                {deletingNotificationId ? t('modal.deleteNotification') : t('modal.clearAllTitle')}
               </h3>
             </div>
             
             <p className="text-gray-300 mb-6">
               {deletingNotificationId 
-                ? '¿Estás seguro de que quieres eliminar esta notificación? Esta acción no se puede deshacer.'
-                : `¿Estás seguro de que quieres eliminar todas las notificaciones (${notifications.length})? Esta acción no se puede deshacer.`
+                ? t('modal.deleteConfirmSingle')
+                : t('modal.deleteConfirmAll', { count: notifications.length })
               }
             </p>
             
@@ -213,14 +215,14 @@ const NotificationsModal = ({ onClose }) => {
                 onClick={cancelDelete}
                 className="px-4 py-2 bg-[#333] text-white rounded-xl hover:bg-[#404040] transition-colors focus:outline-none"
               >
-                Cancelar
+                {t('actions.cancel')}
               </button>
               <button
                 onClick={confirmDelete}
                 className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors focus:outline-none flex items-center gap-2"
               >
                 <Trash2 size={16} />
-                {deletingNotificationId ? 'Eliminar' : 'Limpiar Todo'}
+                {deletingNotificationId ? t('actions.delete') : t('actions.clearAll')}
               </button>
             </div>
           </div>

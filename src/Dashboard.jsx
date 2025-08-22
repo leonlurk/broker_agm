@@ -21,6 +21,7 @@ import Inversor from "./components/Inversor";
 import Gestor from "./components/Gestor";
 import PammDashboard from "./components/PammDashboard";
 import PammGestorAdminDashboard from "./components/PammGestorAdminDashboard";
+import BrokerAccountCreation from "./components/BrokerAccountCreation";
 
 const Dashboard = ({ onLogout }) => {
   const { currentUser, userData } = useAuth();
@@ -123,7 +124,15 @@ const Dashboard = ({ onLogout }) => {
       case "Pagos":
           return <OperationsHistory />;
       case "Nueva Cuenta":
-          return <TradingChallenge />;
+          console.log('[Dashboard] Rendering BrokerAccountCreation component');
+          return <BrokerAccountCreation
+            onAccountCreated={(account) => {
+              console.log('Real broker account created:', account);
+              // Redirect to accounts view after creation
+              setSelectedOption('Cuentas');
+            }}
+            onCancel={() => setSelectedOption('Dashboard')}
+          />;
       case "Calculadora":
           return <PipCalculator />;
       case "Competicion":

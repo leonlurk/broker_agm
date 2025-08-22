@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
-import { AuthAdapter } from '../services/database.adapter';
+import { useState, useEffect, useRef } from 'react';
+import { AuthAdapter, DatabaseAdapter } from '../services/database.adapter';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import emailServiceProxy from '../services/emailServiceProxy';
+import { ChevronDown, Search } from 'lucide-react';
+import axios from 'axios';
 
 const Register = ({ onLoginClick }) => {
   const { t } = useTranslation('auth');
@@ -13,6 +15,11 @@ const Register = ({ onLoginClick }) => {
   const [country, setCountry] = useState('');
   const [countryCode, setCountryCode] = useState('+54');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [countries, setCountries] = useState([]);
+  const [countrySearch, setCountrySearch] = useState('');
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const [filteredCountries, setFilteredCountries] = useState([]);
+  const countryDropdownRef = useRef(null);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -31,6 +38,64 @@ const Register = ({ onLoginClick }) => {
       console.log("[Register] Referral ID detected:", ref);
     }
   }, [location.search]);
+
+  // Fetch countries from API
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await axios.get('https://restcountries.com/v3.1/all?fields=name,idd,translations');
+        const countryData = response.data.map(c => ({
+          name: c.translations?.spa?.common || c.name.common,
+          code: `${c.idd.root}${c.idd.suffixes ? c.idd.suffixes[0] : ''}`
+        })).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+        setCountries(countryData);
+        setFilteredCountries(countryData);
+      } catch (error) {
+        console.error("Error fetching countries:", error);
+        // Fallback to a basic list if API fails
+        const fallbackCountries = [
+          { name: 'Argentina', code: '+54' },
+          { name: 'Brasil', code: '+55' },
+          { name: 'Chile', code: '+56' },
+          { name: 'Colombia', code: '+57' },
+          { name: 'México', code: '+52' },
+          { name: 'Perú', code: '+51' },
+          { name: 'Uruguay', code: '+598' },
+          { name: 'España', code: '+34' },
+          { name: 'Estados Unidos', code: '+1' }
+        ];
+        setCountries(fallbackCountries);
+        setFilteredCountries(fallbackCountries);
+      }
+    };
+    fetchCountries();
+  }, []);
+
+  // Filter countries based on search
+  useEffect(() => {
+    if (!countrySearch) {
+      setFilteredCountries(countries);
+    } else {
+      const filtered = countries.filter(country =>
+        country.name.toLowerCase().includes(countrySearch.toLowerCase())
+      );
+      setFilteredCountries(filtered);
+    }
+  }, [countrySearch, countries]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target)) {
+        setIsCountryDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -74,6 +139,27 @@ const Register = ({ onLoginClick }) => {
       
       // Success
       console.log('[Register] Registration successful, user object:', user);
+      
+      // Save additional user data to database
+      if (user && user.id) {
+        try {
+          const additionalData = {
+            nombre: firstName,
+            apellido: lastName,
+            pais: country,
+            phonecode: countryCode,
+            phonenumber: phoneNumber,
+            username: username,
+            email: email
+          };
+          
+          await DatabaseAdapter.users.update(user.id, additionalData);
+          console.log('[Register] Additional user data saved successfully');
+        } catch (dbError) {
+          console.error('[Register] Error saving additional user data:', dbError);
+          // Don't block registration if this fails
+        }
+      }
       
       // Send welcome email
       try {
@@ -178,52 +264,78 @@ const Register = ({ onLoginClick }) => {
             </div>
           </div>
 
-          {/* País de Residencia */}
-          <div className="relative">
-            <select
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20 appearance-none"
+          {/* País de Residencia - Nuevo estilo dropdown */}
+          <div className="relative" ref={countryDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+              className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20 text-left flex items-center justify-between"
               required
             >
-              <option value="" className="bg-gray-900">{t('register.placeholders.countryResidence')}</option>
-              <option value="AR" className="bg-gray-900">{t('register.countries.argentina')}</option>
-              <option value="BR" className="bg-gray-900">{t('register.countries.brasil')}</option>
-              <option value="CL" className="bg-gray-900">{t('register.countries.chile')}</option>
-              <option value="CO" className="bg-gray-900">{t('register.countries.colombia')}</option>
-              <option value="MX" className="bg-gray-900">{t('register.countries.mexico')}</option>
-              <option value="PE" className="bg-gray-900">{t('register.countries.peru')}</option>
-              <option value="UY" className="bg-gray-900">{t('register.countries.uruguay')}</option>
-              <option value="ES" className="bg-gray-900">{t('register.countries.spain')}</option>
-              <option value="US" className="bg-gray-900">{t('register.countries.usa')}</option>
-              <option value="OTHER" className="bg-gray-900">{t('register.countries.other')}</option>
-            </select>
-            <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className={country ? 'text-white' : 'text-gray-400'}>
+                {country || t('register.placeholders.countryResidence')}
+              </span>
+              <ChevronDown 
+                size={20} 
+                className={`text-gray-400 transition-transform ${isCountryDropdownOpen ? 'rotate-180' : ''}`} 
+              />
+            </button>
+            <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9m0 9c-5 0-9-4-9-9s4-9 9-9"></path>
             </svg>
-            <svg className="absolute top-3.5 right-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
+            
+            {isCountryDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#404040] border border-[#333] rounded-xl shadow-lg z-50 max-h-60 overflow-hidden">
+                <div className="p-3 border-b border-[#333]">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Buscar país..."
+                      value={countrySearch}
+                      onChange={(e) => setCountrySearch(e.target.value)}
+                      className="w-full bg-[#2D2D2D] border border-[#444] rounded-xl pl-10 pr-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
+                      autoFocus
+                    />
+                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  </div>
+                </div>
+                <div className="max-h-40 overflow-y-auto">
+                  {filteredCountries.length > 0 ? (
+                    filteredCountries.map((countryItem) => (
+                      <button
+                        key={countryItem.name}
+                        type="button"
+                        onClick={() => {
+                          setCountry(countryItem.name);
+                          setCountryCode(countryItem.code);
+                          setCountrySearch('');
+                          setIsCountryDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-white hover:bg-[#2D2D2D] transition-colors"
+                      >
+                        {countryItem.name}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-gray-400">
+                      No se encontraron países
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Número de Teléfono */}
           <div className="flex gap-1.5">
             <div className="relative">
-              <select
+              <input
+                type="text"
                 value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
-                className="px-3 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 bg-opacity-20 appearance-none min-w-[80px]"
-              >
-                <option value="+54" className="bg-gray-900">🇦🇷 +54</option>
-                <option value="+55" className="bg-gray-900">🇧🇷 +55</option>
-                <option value="+56" className="bg-gray-900">🇨🇱 +56</option>
-                <option value="+57" className="bg-gray-900">🇨🇴 +57</option>
-                <option value="+52" className="bg-gray-900">🇲🇽 +52</option>
-                <option value="+51" className="bg-gray-900">🇵🇪 +51</option>
-                <option value="+598" className="bg-gray-900">🇺🇾 +598</option>
-                <option value="+34" className="bg-gray-900">🇪🇸 +34</option>
-                <option value="+1" className="bg-gray-900">🇺🇸 +1</option>
-              </select>
+                readOnly
+                className="px-3 py-3 rounded-full bg-gray-900 border border-gray-700 text-white bg-opacity-20 min-w-[80px] text-center"
+                placeholder="+00"
+              />
             </div>
             <div className="flex-1">
               <input

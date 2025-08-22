@@ -4,6 +4,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
+import PasswordReset from './components/PasswordReset';
 import VerificationCode from './components/VerificationCode';
 import Dashboard from './Dashboard';
 import { useAuth } from './contexts/AuthContext';
@@ -100,6 +101,15 @@ function App() {
                 onContinue={() => navigate('/login')} 
                 onLoginClick={() => navigate('/login')} 
               />
+            </AuthPageWrapper>
+          } 
+        />
+
+        <Route 
+          path="/password-reset" 
+          element={
+            <AuthPageWrapper>
+              <PasswordReset />
             </AuthPageWrapper>
           } 
         />

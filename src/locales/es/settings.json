@@ -206,5 +206,33 @@
     "sessionTerminated": "Sesión cerrada",
     "apiKeyCreated": "Clave API creada exitosamente",
     "apiKeyDeleted": "Clave API eliminada"
+  },
+  "mainSettings": {
+    "title": "Ajustes",
+    "accountConfig": "Configuración de Cuenta",
+    "kycVerification": "Verificación KYC",
+    "paymentMethods": "Métodos de Pago",
+    "changePassword": "Cambiar Contraseña",
+    "updateEmail": "Actualizar Correo",
+    "securityConfig": "Configuración de Seguridad",
+    "twoFactorAuth": "Autenticación de 2 Factores",
+    "privacySettings": "Privacidad",
+    "dataPrivacy": "Privacidad de Datos"
+  },
+  "modal": {
+    "changePasswordTitle": "Cambio de Contraseña",
+    "changePasswordMessage": "Para cambiar tu contraseña, envíanos un correo electrónico con tu solicitud. Te responderemos con las instrucciones necesarias para completar el proceso de forma segura.",
+    "updateEmailTitle": "Actualización de Correo Electrónico",
+    "updateEmailMessage": "Para actualizar tu correo electrónico, envíanos un mensaje con tu solicitud. Te guiaremos a través del proceso de verificación necesario.",
+    "supportEmail": "Correo de soporte:",
+    "close": "Cerrar"
+  },
+  "validation": {
+    "nameMinLength": "El nombre debe tener al menos 2 caracteres",
+    "lastNameMinLength": "El apellido debe tener al menos 2 caracteres",
+    "countryRequired": "El país es requerido",
+    "cityMinLength": "La ciudad debe tener al menos 2 caracteres",
+    "phoneNumberTooShort": "El número de teléfono es muy corto",
+    "invalidImageFormat": "Formato de imagen inválido"
   }
 }

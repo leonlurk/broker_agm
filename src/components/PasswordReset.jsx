@@ -1,0 +1,280 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff, Lock, Check, X } from 'lucide-react';
+import { AuthAdapter } from '../services/database.adapter';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+
+const PasswordReset = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [validCode, setValidCode] = useState(false);
+  const [codeError, setCodeError] = useState('');
+
+  useEffect(() => {
+    // Obtener código de la URL si existe
+    const urlCode = searchParams.get('code');
+    if (urlCode) {
+      setCode(urlCode);
+      validateCode(urlCode);
+    }
+  }, [searchParams]);
+
+  const validateCode = (inputCode) => {
+    try {
+      const storedData = localStorage.getItem('passwordResetCode');
+      if (!storedData) {
+        setCodeError('No hay solicitud de restablecimiento activa');
+        setValidCode(false);
+        return false;
+      }
+
+      const { code: storedCode, timestamp, expiresIn } = JSON.parse(storedData);
+      
+      // Verificar si el código ha expirado
+      if (Date.now() - timestamp > expiresIn) {
+        setCodeError('El código ha expirado. Solicita uno nuevo.');
+        setValidCode(false);
+        localStorage.removeItem('passwordResetCode');
+        return false;
+      }
+
+      // Verificar si el código coincide
+      if (inputCode !== storedCode) {
+        setCodeError('Código incorrecto');
+        setValidCode(false);
+        return false;
+      }
+
+      setCodeError('');
+      setValidCode(true);
+      return true;
+    } catch (error) {
+      setCodeError('Error al validar el código');
+      setValidCode(false);
+      return false;
+    }
+  };
+
+  const handleCodeChange = (e) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setCode(value);
+    if (value.length === 6) {
+      validateCode(value);
+    }
+  };
+
+  const validatePassword = (password) => {
+    const requirements = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*]/.test(password)
+    };
+    return requirements;
+  };
+
+  const requirements = validatePassword(newPassword);
+  const allRequirementsMet = Object.values(requirements).every(req => req);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validCode) {
+      toast.error('Por favor, ingresa un código válido');
+      return;
+    }
+
+    if (!allRequirementsMet) {
+      toast.error('La contraseña no cumple con todos los requisitos');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('Las contraseñas no coinciden');
+      return;
+    }
+
+    setLoading(true);
+    const toastId = toast.loading('Actualizando contraseña...');
+
+    try {
+      const storedData = JSON.parse(localStorage.getItem('passwordResetCode'));
+      const result = await AuthAdapter.updatePassword(storedData.email, newPassword);
+
+      if (result.success) {
+        toast.success('Contraseña actualizada correctamente', { id: toastId });
+        localStorage.removeItem('passwordResetCode');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } else {
+        toast.error(result.error || 'Error al actualizar la contraseña', { id: toastId });
+      }
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast.error('Error al actualizar la contraseña', { id: toastId });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] via-[#2d2d2d] to-[#1a1a1a] flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-[#232323] border border-[#333] rounded-3xl p-8 shadow-2xl">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Restablecer Contraseña</h1>
+            <p className="text-gray-400">Ingresa el código que recibiste por email</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Código de verificación */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Código de Verificación
+              </label>
+              <input
+                type="text"
+                value={code}
+                onChange={handleCodeChange}
+                placeholder="123456"
+                className={`w-full px-4 py-3 rounded-xl bg-[#1a1a1a] border ${
+                  codeError ? 'border-red-500' : validCode ? 'border-green-500' : 'border-[#333]'
+                } text-white text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-cyan-500`}
+                maxLength="6"
+                required
+              />
+              {codeError && (
+                <p className="mt-2 text-sm text-red-400">{codeError}</p>
+              )}
+              {validCode && (
+                <p className="mt-2 text-sm text-green-400 flex items-center gap-1">
+                  <Check size={16} /> Código válido
+                </p>
+              )}
+            </div>
+
+            {/* Nueva contraseña */}
+            {validCode && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Nueva Contraseña
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-[#1a1a1a] border border-[#333] text-white pr-12 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+
+                  {/* Requisitos de contraseña */}
+                  <div className="mt-3 space-y-1">
+                    <p className={`text-xs flex items-center gap-1 ${requirements.length ? 'text-green-400' : 'text-gray-400'}`}>
+                      {requirements.length ? <Check size={14} /> : <X size={14} />}
+                      Mínimo 8 caracteres
+                    </p>
+                    <p className={`text-xs flex items-center gap-1 ${requirements.uppercase ? 'text-green-400' : 'text-gray-400'}`}>
+                      {requirements.uppercase ? <Check size={14} /> : <X size={14} />}
+                      Una mayúscula
+                    </p>
+                    <p className={`text-xs flex items-center gap-1 ${requirements.lowercase ? 'text-green-400' : 'text-gray-400'}`}>
+                      {requirements.lowercase ? <Check size={14} /> : <X size={14} />}
+                      Una minúscula
+                    </p>
+                    <p className={`text-xs flex items-center gap-1 ${requirements.number ? 'text-green-400' : 'text-gray-400'}`}>
+                      {requirements.number ? <Check size={14} /> : <X size={14} />}
+                      Un número
+                    </p>
+                    <p className={`text-xs flex items-center gap-1 ${requirements.special ? 'text-green-400' : 'text-gray-400'}`}>
+                      {requirements.special ? <Check size={14} /> : <X size={14} />}
+                      Un carácter especial (!@#$%^&*)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Confirmar contraseña */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Confirmar Contraseña
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className={`w-full px-4 py-3 rounded-xl bg-[#1a1a1a] border ${
+                        confirmPassword && confirmPassword !== newPassword ? 'border-red-500' : 'border-[#333]'
+                      } text-white pr-12 focus:outline-none focus:ring-2 focus:ring-cyan-500`}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                  {confirmPassword && confirmPassword !== newPassword && (
+                    <p className="mt-2 text-sm text-red-400">Las contraseñas no coinciden</p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Botón de envío */}
+            <button
+              type="submit"
+              disabled={loading || !validCode || !allRequirementsMet || newPassword !== confirmPassword}
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                  Actualizando...
+                </>
+              ) : (
+                <>
+                  <Lock size={20} />
+                  Actualizar Contraseña
+                </>
+              )}
+            </button>
+
+            {/* Enlaces adicionales */}
+            <div className="text-center space-y-2">
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="text-gray-400 hover:text-cyan-400 transition-colors text-sm"
+              >
+                Volver al inicio de sesión
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PasswordReset;

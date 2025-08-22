@@ -12,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import ScrollManager from './ScrollManager';
 import TradingAccounts from './TradingAccounts';
 import PammDashboard from './PammDashboard';
+import BrokerAccountCreation from './BrokerAccountCreation';
 
 const Dashboard = ({ onLogout }) => {
   const { currentUser, userData } = useAuth();
@@ -29,6 +30,8 @@ const Dashboard = ({ onLogout }) => {
 
   const renderContent = () => {
     console.log("[Dashboard] renderContent checking selectedOption:", selectedOption); // Log before switch
+    console.log("[Dashboard] Is Nueva Cuenta?", selectedOption === 'Nueva Cuenta');
+    
     if (showSettings) {
       return <Settings onBack={() => setShowSettings(false)} />;
     }
@@ -75,6 +78,16 @@ const Dashboard = ({ onLogout }) => {
        case 'Desafio':
          // return <Desafio />; 
          return <div className="p-6 text-white">Nuevo Desafío Component</div>; // Placeholder
+       case 'Nueva Cuenta':
+         console.log('[Dashboard] Rendering BrokerAccountCreation component');
+         return <BrokerAccountCreation
+           onAccountCreated={(account) => {
+             console.log('Account created:', account);
+             // Redirect to accounts view after creation
+             setSelectedOption('Cuentas');
+           }}
+           onCancel={() => setSelectedOption('Dashboard')}
+         />;
        default:
         return <Home user={userData} setSelectedOption={setSelectedOption} onSettingsClick={() => setShowSettings(true)} />;
     }
