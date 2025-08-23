@@ -3,17 +3,26 @@
  * Handles all transactional emails from the frontend
  */
 
-// API key should be stored in environment variables, not in code
+// API configuration from environment variables
 const BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY || '';
 const BREVO_API_URL = 'https://api.brevo.com/v3';
+const SENDER_EMAIL = import.meta.env.VITE_SENDER_EMAIL || 'noreply@alphaglobalmarket.io';
+const SENDER_NAME = import.meta.env.VITE_SENDER_NAME || 'Alpha Global Market';
 
 class EmailService {
   constructor() {
     this.apiKey = BREVO_API_KEY;
     this.apiUrl = BREVO_API_URL;
-    this.senderEmail = 'noreply@alphaglobalmarket.io';
-    this.senderName = 'Alpha Global Market';
+    this.senderEmail = SENDER_EMAIL;
+    this.senderName = SENDER_NAME;
     this.supportEmail = 'support@alphaglobalmarket.io';
+    
+    // Log configuration status (without exposing the key)
+    if (!this.apiKey) {
+      console.warn('[EmailService] BREVO API key not configured. Email sending will fail.');
+    } else {
+      console.log('[EmailService] Initialized with sender:', this.senderEmail);
+    }
   }
 
   /**
@@ -63,6 +72,26 @@ class EmailService {
       }],
       subject: 'Bienvenido a Alpha Global Market – Tu cuenta ha sido creada correctamente',
       htmlContent: this.getWelcomeEmailTemplate(userData)
+    };
+
+    return await this.sendEmail(emailData);
+  }
+
+  /**
+   * Send 2FA verification code via email
+   */
+  async send2FACode(userData, verificationCode) {
+    const emailData = {
+      sender: {
+        name: this.senderName,
+        email: this.senderEmail
+      },
+      to: [{
+        email: userData.email,
+        name: userData.name || 'Usuario'
+      }],
+      subject: 'Código de Verificación - Alpha Global Market',
+      htmlContent: this.get2FAEmailTemplate(userData, verificationCode)
     };
 
     return await this.sendEmail(emailData);
@@ -296,6 +325,31 @@ class EmailService {
     </div>
 </body>
 </html>`;
+  }
+
+  get2FAEmailTemplate(userData, verificationCode) {
+    const content = `
+      <h2>Código de Verificación de Dos Factores</h2>
+      <p>Has solicitado un código de verificación para acceder a tu cuenta en Alpha Global Market.</p>
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; margin: 30px 0;">
+        <p style="color: white; margin: 0; font-size: 14px;">Tu código de verificación es:</p>
+        <h1 style="color: white; font-size: 48px; letter-spacing: 10px; margin: 15px 0; font-family: monospace;">${verificationCode}</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 12px;">Este código expira en 10 minutos</p>
+      </div>
+      <div class="security-notice">
+        <p><strong>Nota de Seguridad:</strong></p>
+        <ul style="text-align: left;">
+          <li>Este código es único y personal</li>
+          <li>Nunca compartas este código con nadie</li>
+          <li>Nuestro equipo nunca te pedirá este código</li>
+          <li>Si no solicitaste este código, ignora este mensaje</li>
+        </ul>
+      </div>
+      <p style="color: #71717a; font-size: 13px; margin-top: 20px;">
+        Si no reconoces esta actividad, por favor contacta inmediatamente con nuestro equipo de soporte en ${this.supportEmail}
+      </p>
+    `;
+    return this.getBaseTemplate(content, userData.name || 'Usuario');
   }
 
   getWelcomeEmailTemplate(userData) {

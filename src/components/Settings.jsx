@@ -10,6 +10,8 @@ import toast from 'react-hot-toast';
 import { AuthAdapter } from '../services/database.adapter';
 import PasswordChangeModal from './PasswordChangeModal';
 import TwoFactorModal from './TwoFactorModal';
+import TwoFactorMethodModal from './TwoFactorMethodModal';
+import TwoFactorEmailModal from './TwoFactorEmailModal';
 import twoFactorService from '../services/twoFactorService';
 
 const Settings = ({ onBack }) => {
@@ -22,6 +24,9 @@ const Settings = ({ onBack }) => {
   const [kycStatus, setKycStatus] = useState(null);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
+  const [show2FAMethodModal, setShow2FAMethodModal] = useState(false);
+  const [show2FAEmailModal, setShow2FAEmailModal] = useState(false);
+  const [twoFactorMethod, setTwoFactorMethod] = useState(null);
   
   // Estados para el cambio de contraseña
   const [passwordResetStep, setPasswordResetStep] = useState('initial'); // 'initial', 'code-sent', 'verified'
@@ -49,6 +54,12 @@ const Settings = ({ onBack }) => {
         // Check 2FA status
         const twoFAStatus = await twoFactorService.get2FAStatus(userId);
         setTwoFactorEnabled(twoFAStatus.enabled);
+        
+        // Get 2FA method if enabled
+        if (twoFAStatus.enabled) {
+          const methodResult = await twoFactorService.get2FAMethod(userId);
+          setTwoFactorMethod(methodResult.method);
+        }
       }
     };
     checkStatus();
@@ -69,8 +80,8 @@ const Settings = ({ onBack }) => {
 
   const handleToggle2FA = async () => {
     if (!twoFactorEnabled) {
-      // Show modal to enable 2FA
-      setShow2FAModal(true);
+      // Show method selection modal to enable 2FA
+      setShow2FAMethodModal(true);
     } else {
       // Disable 2FA with confirmation
       if (window.confirm(t('twoFactor.confirmDisable'))) {
@@ -79,6 +90,7 @@ const Settings = ({ onBack }) => {
         
         if (result.success) {
           setTwoFactorEnabled(false);
+          setTwoFactorMethod(null);
           toast.success(t('notifications.twoFactorDisabled'));
         } else {
           toast.error(t('twoFactor.errors.disableFailed'));
@@ -87,9 +99,26 @@ const Settings = ({ onBack }) => {
     }
   };
 
+  const handleSelectMethod = (method) => {
+    setShow2FAMethodModal(false);
+    if (method === 'email') {
+      setShow2FAEmailModal(true);
+    } else {
+      setShow2FAModal(true);
+    }
+  };
+
   const handle2FASuccess = () => {
     setTwoFactorEnabled(true);
     setShow2FAModal(false);
+    setShow2FAEmailModal(false);
+    // Refresh 2FA method
+    const checkMethod = async () => {
+      const userId = currentUser.id || currentUser.uid;
+      const methodResult = await twoFactorService.get2FAMethod(userId);
+      setTwoFactorMethod(methodResult.method);
+    };
+    checkMethod();
   };
   
   const handleChangePassword = () => {
@@ -458,11 +487,24 @@ const Settings = ({ onBack }) => {
         message={t('modal.updateEmailMessage')}
       />
 
-      {/* 2FA Modal */}
+      {/* 2FA Modals */}
+      <TwoFactorMethodModal
+        isOpen={show2FAMethodModal}
+        onClose={() => setShow2FAMethodModal(false)}
+        onSelectMethod={handleSelectMethod}
+      />
+      
       <TwoFactorModal
         isOpen={show2FAModal}
         onClose={() => setShow2FAModal(false)}
         onSuccess={handle2FASuccess}
+      />
+      
+      <TwoFactorEmailModal
+        isOpen={show2FAEmailModal}
+        onClose={() => setShow2FAEmailModal(false)}
+        onSuccess={handle2FASuccess}
+        isSetup={true}
       />
     </div>
   );

@@ -260,12 +260,14 @@
     "scanQR": "Escanea este código QR con tu aplicación de autenticación (Google Authenticator, Authy, etc.)",
     "manualEntry": "O ingresa este código manualmente:",
     "enterCode": "Ingresa el código de 6 dígitos de tu aplicación de autenticación",
+    "enterSixDigitCode": "Ingresa el código de 6 dígitos",
     "codeHelp": "El código cambia cada 30 segundos. Asegúrate de ingresarlo rápidamente.",
     "next": "Siguiente",
     "back": "Atrás",
     "verify": "Verificar",
     "verifying": "Verificando...",
     "enabledSuccess": "¡2FA Activado Exitosamente!",
+    "emailEnabledSuccess": "¡2FA por Email Activado Exitosamente!",
     "backupCodesInfo": "Guarda estos códigos de respaldo en un lugar seguro. Cada código puede usarse solo una vez.",
     "backupCodes": "Códigos de Respaldo",
     "backupCodesWarning": "⚠️ Estos códigos no se mostrarán nuevamente. Guárdalos ahora.",
@@ -274,13 +276,40 @@
     "backupCodesCopied": "Códigos de respaldo copiados al portapapeles",
     "complete": "Completar",
     "confirmDisable": "¿Estás seguro de que quieres desactivar la autenticación de dos factores? Esto reducirá la seguridad de tu cuenta.",
+    "selectMethod": "Seleccionar Método de 2FA",
+    "selectMethodDescription": "Elige cómo deseas proteger tu cuenta con autenticación de dos factores.",
+    "emailMethod": {
+      "title": "Verificación por Email",
+      "description": "Recibe un código de verificación en tu correo electrónico cada vez que inicies sesión."
+    },
+    "authenticatorMethod": {
+      "title": "Aplicación Autenticadora",
+      "description": "Usa Google Authenticator, Authy u otra aplicación para generar códigos de verificación."
+    },
+    "simple": "Simple",
+    "noAppRequired": "Sin app",
+    "moreSecure": "Más seguro",
+    "offline": "Sin conexión",
+    "setupEmailTitle": "Configurar 2FA por Email",
+    "verifyEmailTitle": "Verificación por Email",
+    "emailSetupInfo": "Verificación por correo electrónico",
+    "emailSetupDescription": "Recibirás un código de 6 dígitos en tu email cada vez que necesites verificar tu identidad.",
+    "emailToReceiveCode": "Email donde recibirás el código:",
+    "sendVerificationCode": "Enviar Código de Verificación",
+    "sendingCode": "Enviando código...",
+    "codeSentTo": "Código enviado a:",
+    "resendCode": "Reenviar código",
+    "resendIn": "Reenviar en {{seconds}}s",
+    "securityNote": "Nota de seguridad",
+    "emailSecurityInfo": "Nunca compartas este código con nadie. Es válido por 10 minutos.",
     "errors": {
       "generateFailed": "Error al generar el código QR",
       "invalidCode": "El código debe tener 6 dígitos",
       "incorrectCode": "Código incorrecto. Verifica e intenta nuevamente.",
       "enableFailed": "Error al activar 2FA",
       "verifyFailed": "Error al verificar el código",
-      "disableFailed": "Error al desactivar 2FA"
+      "disableFailed": "Error al desactivar 2FA",
+      "sendFailed": "Error al enviar el código de verificación"
     }
   },
   "paymentMethods": {

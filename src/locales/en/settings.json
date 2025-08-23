@@ -229,12 +229,14 @@
     "scanQR": "Scan this QR code with your authentication app (Google Authenticator, Authy, etc.)",
     "manualEntry": "Or enter this code manually:",
     "enterCode": "Enter the 6-digit code from your authentication app",
+    "enterSixDigitCode": "Enter the 6-digit code",
     "codeHelp": "The code changes every 30 seconds. Make sure to enter it quickly.",
     "next": "Next",
     "back": "Back",
     "verify": "Verify",
     "verifying": "Verifying...",
     "enabledSuccess": "2FA Successfully Enabled!",
+    "emailEnabledSuccess": "Email 2FA Successfully Enabled!",
     "backupCodesInfo": "Save these backup codes in a safe place. Each code can only be used once.",
     "backupCodes": "Backup Codes",
     "backupCodesWarning": "⚠️ These codes won't be shown again. Save them now.",
@@ -243,13 +245,40 @@
     "backupCodesCopied": "Backup codes copied to clipboard",
     "complete": "Complete",
     "confirmDisable": "Are you sure you want to disable two-factor authentication? This will reduce your account security.",
+    "selectMethod": "Select 2FA Method",
+    "selectMethodDescription": "Choose how you want to protect your account with two-factor authentication.",
+    "emailMethod": {
+      "title": "Email Verification",
+      "description": "Receive a verification code in your email every time you sign in."
+    },
+    "authenticatorMethod": {
+      "title": "Authenticator App",
+      "description": "Use Google Authenticator, Authy or another app to generate verification codes."
+    },
+    "simple": "Simple",
+    "noAppRequired": "No app",
+    "moreSecure": "More secure",
+    "offline": "Offline",
+    "setupEmailTitle": "Set Up Email 2FA",
+    "verifyEmailTitle": "Email Verification",
+    "emailSetupInfo": "Email verification",
+    "emailSetupDescription": "You will receive a 6-digit code in your email whenever you need to verify your identity.",
+    "emailToReceiveCode": "Email where you'll receive the code:",
+    "sendVerificationCode": "Send Verification Code",
+    "sendingCode": "Sending code...",
+    "codeSentTo": "Code sent to:",
+    "resendCode": "Resend code",
+    "resendIn": "Resend in {{seconds}}s",
+    "securityNote": "Security note",
+    "emailSecurityInfo": "Never share this code with anyone. It's valid for 10 minutes.",
     "errors": {
       "generateFailed": "Failed to generate QR code",
       "invalidCode": "Code must be 6 digits",
       "incorrectCode": "Incorrect code. Please check and try again.",
       "enableFailed": "Failed to enable 2FA",
       "verifyFailed": "Failed to verify code",
-      "disableFailed": "Failed to disable 2FA"
+      "disableFailed": "Failed to disable 2FA",
+      "sendFailed": "Failed to send verification code"
     }
   },
   "modal": {

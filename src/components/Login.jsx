@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AuthAdapter } from '../services/database.adapter';
 import { useTranslation } from 'react-i18next';
 import twoFactorService from '../services/twoFactorService';
+import TwoFactorEmailModal from './TwoFactorEmailModal';
 import { Shield } from 'lucide-react';
 
 const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
@@ -14,6 +15,8 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const [show2FA, setShow2FA] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [tempUser, setTempUser] = useState(null);
+  const [twoFactorMethod, setTwoFactorMethod] = useState(null);
+  const [showEmail2FA, setShowEmail2FA] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,9 +35,18 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
       const twoFAStatus = await twoFactorService.get2FAStatus(userId);
       
       if (twoFAStatus.enabled) {
-        // Show 2FA verification
+        // Get 2FA method
+        const methodResult = await twoFactorService.get2FAMethod(userId);
+        setTwoFactorMethod(methodResult.method);
         setTempUser(user);
-        setShow2FA(true);
+        
+        if (methodResult.method === 'email') {
+          // Show email 2FA modal
+          setShowEmail2FA(true);
+        } else {
+          // Show authenticator 2FA
+          setShow2FA(true);
+        }
         setLoading(false);
       } else {
         // No 2FA, proceed with login
@@ -208,6 +220,25 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
             {t('twoFactor.back')}
           </button>
         </div>
+      )}
+
+      {/* Email 2FA Modal */}
+      {showEmail2FA && tempUser && (
+        <TwoFactorEmailModal
+          isOpen={showEmail2FA}
+          onClose={() => {
+            setShowEmail2FA(false);
+            setError('');
+          }}
+          onSuccess={() => {
+            setShowEmail2FA(false);
+            console.log('Login successful with email 2FA:', tempUser);
+            onLoginSuccess();
+          }}
+          isSetup={false}
+          currentUser={tempUser}
+          userData={{ email: tempUser.email, nombre: tempUser.display_name }}
+        />
       )}
     </div>
   );
