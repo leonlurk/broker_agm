@@ -8,6 +8,7 @@ import PasswordReset from './components/PasswordReset';
 import VerificationCode from './components/VerificationCode';
 import Dashboard from './Dashboard';
 import { useAuth } from './contexts/AuthContext';
+import { ChatProvider } from './contexts/ChatContext';
 import { AuthAdapter } from './services/database.adapter';
 import { Toaster } from 'react-hot-toast';
 // import useKYCStatusMonitor from './hooks/useKYCStatusMonitor';
@@ -48,7 +49,7 @@ function App() {
   );
 
   return (
-    <>
+    <ChatProvider>
       <Routes>
         <Route 
           path="/login" 
@@ -159,7 +160,7 @@ function App() {
           },
         }}
       />
-    </>
+    </ChatProvider>
   );
 }
 

@@ -8,6 +8,7 @@ import CertificateComponent from './components/CertificateComponent';
 import LeaderboardModal from './components/LeaderboardModal';
 import ScrollManager from './components/utils/ScrollManager';
 import { scrollToTopManual } from './hooks/useScrollToTop';
+import FloatingChatButton from './components/FloatingChatButton';
 
 import OperationsHistory from './components/OperationsHistory';
 import Descargas from './components/Descargas';
@@ -220,6 +221,9 @@ const Dashboard = ({ onLogout }) => {
         isOpen={isLeaderboardOpen} 
         onClose={handleCloseLeaderboard} 
       />
+
+      {/* Floating Chat Button */}
+      <FloatingChatButton />
     </div>
   );
 };
