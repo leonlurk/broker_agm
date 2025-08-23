@@ -160,7 +160,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                 {/* Logo section - fixed */}
                 <div className={`flex justify-center px-4 ${isMobile ? 'pt-6 pb-4' : 'pt-8 pb-6'}`}>
                     <img 
-                        src="/logo.png" 
+                        src="/Capa_x0020_1.svg" 
                         alt="AGM Logo" 
                         className={`${isMobile ? 'w-20' : 'w-24'} h-auto transition-all duration-300`}
                         onError={(e) => {

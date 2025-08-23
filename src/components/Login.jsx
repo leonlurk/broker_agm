@@ -100,7 +100,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   return (
     <div className="w-[330px] h-[700px] sm:w-full md:w-[490px] p-5 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">
       <div className="flex justify-center mb-6">
-        <img src="/logo.png" alt="Broker Logo" className="h-16" />
+        <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-16" />
       </div>
       
       {error && (
