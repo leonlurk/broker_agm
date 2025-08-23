@@ -1,12 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(git clone:*)",
+      "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\agm\\flofy-crm/**)",
+      "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\agm\\flofy-crm/**)",
+      "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\agm\\flofy-crm/**)",
+      "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\agm\\flofy-crm/**)",
+      "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\agm\\flofy-crm/**)"
     ],
     "deny": [],
     "ask": [],
     "additionalDirectories": [
-      "C:\\mnt\\c\\Users\\Administrator\\Desktop\\broker"
+      "C:\\mnt\\c\\Users\\Administrator\\Desktop\\broker",
+      "C:\\c\\Users\\LURK\\Desktop\\PROYECTOS"
     ]
   }
 }
