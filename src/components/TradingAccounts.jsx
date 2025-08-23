@@ -183,8 +183,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     return navigationParams?.viewMode === 'details' ? navigationParams.accountId : null;
   };
   
-  // Inicializar activeTab con 'Todos' traducido
-  const [activeTab, setActiveTab] = useState(() => t('accounts.types.all'));
+  // Usar la misma lógica que Home - estado simple para filtro
+  const [activeTab, setActiveTab] = useState('all');
   const [selectedAccountId, setSelectedAccountId] = useState(getInitialSelectedAccountId());
   const [viewMode, setViewMode] = useState(getInitialViewMode()); 
   
@@ -444,38 +444,44 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
   };
 
-  // Obtener cuentas dinámicamente del contexto
-  const getAllAccountsFromContext = () => {
-    const allAccountsList = getAllAccounts();
-    return {
-      [t('accounts.types.all')]: allAccountsList,
-      [t('accounts.types.real')]: getAccountsByCategory(ACC_CAT.REAL),
-      [t('accounts.types.demo')]: getAccountsByCategory(ACC_CAT.DEMO),
-      ['Copytrading']: getAccountsByCategory(ACC_CAT.COPYTRADING),
-      ['PAMM']: getAccountsByCategory(ACC_CAT.PAMM)
-    };
+  // Replicar la lógica exacta de Home para filtros
+  const realAccountsOnly = getAccountsByCategory(t('dashboard:accountSummary.realAccounts'));
+  const demoAccountsOnly = getAccountsByCategory('Cuentas Demo');
+  
+  const getFilteredAccounts = () => {
+    let filteredAccounts = [];
+    
+    if (activeTab === 'real') {
+      filteredAccounts = realAccountsOnly;
+    } else if (activeTab === 'demo') {
+      filteredAccounts = demoAccountsOnly;
+    } else if (activeTab === 'copytrading') {
+      filteredAccounts = getAccountsByCategory(ACC_CAT.COPYTRADING);
+    } else if (activeTab === 'pamm') {
+      filteredAccounts = getAccountsByCategory(ACC_CAT.PAMM);
+    } else {
+      // 'all' - obtener todas las cuentas
+      filteredAccounts = getAllAccounts();
+    }
+    
+    // Debug logs
+    console.log('[TradingAccounts] activeTab:', activeTab);
+    console.log('[TradingAccounts] filteredAccounts:', filteredAccounts.length);
+    console.log('[TradingAccounts] realAccountsOnly:', realAccountsOnly.length);
+    console.log('[TradingAccounts] demoAccountsOnly:', demoAccountsOnly.length);
+    
+    return filteredAccounts;
   };
 
-  const allAccounts = getAllAccountsFromContext();
-  const accountsForCurrentTab = allAccounts[activeTab] || [];
+  const accountsForCurrentTab = getFilteredAccounts();
   
   // Debug logging
   console.log('[TradingAccounts] Current state:', {
     activeTab,
-    allAccountsKeys: Object.keys(allAccounts),
     accountsForCurrentTab: accountsForCurrentTab.length,
     isLoading,
     error
   });
-  
-  // Actualizar activeTab si cambia el idioma o no hay tab activa
-  useEffect(() => {
-    const accountKeys = Object.keys(allAccounts);
-    if ((!activeTab || !accountKeys.includes(activeTab)) && accountKeys.length > 0) {
-      console.log('[TradingAccounts] Setting activeTab to:', accountKeys[0]);
-      setActiveTab(accountKeys[0]);
-    }
-  }, [activeTab, i18n.language]); // Depender del idioma para actualizar cuando cambie
 
   // Manejar navegación desde Home.jsx y actualizar la pestaña activa
   useEffect(() => {
@@ -484,12 +490,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       
       const targetAccount = getAllAccounts().find(acc => acc.id === navigationParams.accountId);
       if (targetAccount) {
-        // Determinar en qué categoría está la cuenta
-        for (const [category, accountsList] of Object.entries(allAccounts)) {
-          if (accountsList.some(acc => acc.id === navigationParams.accountId)) {
-            setActiveTab(category);
-            break;
-          }
+        // Determinar en qué categoría está la cuenta basándose en account_type
+        if (realAccountsOnly.some(acc => acc.id === navigationParams.accountId)) {
+          setActiveTab('real');
+        } else if (demoAccountsOnly.some(acc => acc.id === navigationParams.accountId)) {
+          setActiveTab('demo');
+        } else {
+          setActiveTab('all');
         }
       }
       
@@ -2126,24 +2133,58 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             + {t('accounts.create')}
           </button>
           
-          {/* Tab Navigation */}
+          {/* Tab Navigation - Replicando lógica de Home */}
           <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-2'} mb-4 sm:mb-6`}>
-            {Object.keys(allAccounts).map((tab) => (
-              <button
-                key={tab}
-                className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
-                  activeTab === tab
-                    ? 'bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white border border-cyan-500'
-                    : 'bg-[#2d2d2d] text-gray-300 border border-[#333] hover:border-gray-500'
-                }`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {isMobile && tab === t('accounts.types.real') ? t('accounts.types.realShort') : 
-                 isMobile && tab === t('accounts.types.demo') ? t('accounts.types.demoShort') :
-                 isMobile && tab === t('copyTrading.title') ? t('copyTrading.titleShort') :
-                 tab}
-              </button>
-            ))}
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
+                activeTab === 'all'
+                  ? 'bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white border border-cyan-500'
+                  : 'bg-[#2d2d2d] text-gray-300 border border-[#333] hover:border-gray-500'
+              }`}
+            >
+              {t('accounts.types.all')} ({getAllAccounts().length})
+            </button>
+            <button
+              onClick={() => setActiveTab('real')}
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
+                activeTab === 'real'
+                  ? 'bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white border border-cyan-500'
+                  : 'bg-[#2d2d2d] text-gray-300 border border-[#333] hover:border-gray-500'
+              }`}
+            >
+              {isMobile ? t('accounts.types.realShort') : t('accounts.types.real')} ({realAccountsOnly.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('demo')}
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
+                activeTab === 'demo'
+                  ? 'bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white border border-cyan-500'
+                  : 'bg-[#2d2d2d] text-gray-300 border border-[#333] hover:border-gray-500'
+              }`}
+            >
+              {isMobile ? t('accounts.types.demoShort') : t('accounts.types.demo')} ({demoAccountsOnly.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('copytrading')}
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
+                activeTab === 'copytrading'
+                  ? 'bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white border border-cyan-500'
+                  : 'bg-[#2d2d2d] text-gray-300 border border-[#333] hover:border-gray-500'
+              }`}
+            >
+              {isMobile ? t('copyTrading.titleShort') : 'Copytrading'} ({getAccountsByCategory(ACC_CAT.COPYTRADING).length})
+            </button>
+            <button
+              onClick={() => setActiveTab('pamm')}
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
+                activeTab === 'pamm'
+                  ? 'bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white border border-cyan-500'
+                  : 'bg-[#2d2d2d] text-gray-300 border border-[#333] hover:border-gray-500'
+              }`}
+            >
+              PAMM ({getAccountsByCategory(ACC_CAT.PAMM).length})
+            </button>
           </div>
         </div>
 
@@ -2333,23 +2374,38 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             + {t('accounts.create')}
           </button>
           
-          {/* Tab Navigation */}
+          {/* Tab Navigation - Solo All, Real, Demo en móvil */}
           <div className={`${isMobile ? 'grid grid-cols-3 gap-2' : 'flex flex-wrap gap-2'} mb-4 sm:mb-6`}>
-            {Object.keys(allAccounts).filter(tab => tab !== 'Copytrading' && tab !== 'PAMM').map((tab) => (
-              <button
-                key={tab}
-                className={`px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
-                  activeTab === tab
-                    ? 'bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white border border-cyan-500'
-                    : 'bg-[#2d2d2d] text-gray-300 border border-[#333] hover:border-gray-500'
-                }`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {isMobile && tab === t('accounts.types.real') ? t('accounts.types.realShort') : 
-                 isMobile && tab === t('accounts.types.demo') ? t('accounts.types.demoShort') :
-                 tab}
-              </button>
-            ))}
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
+                activeTab === 'all'
+                  ? 'bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white border border-cyan-500'
+                  : 'bg-[#2d2d2d] text-gray-300 border border-[#333] hover:border-gray-500'
+              }`}
+            >
+              {t('accounts.types.all')} ({getAllAccounts().length})
+            </button>
+            <button
+              onClick={() => setActiveTab('real')}
+              className={`px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
+                activeTab === 'real'
+                  ? 'bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white border border-cyan-500'
+                  : 'bg-[#2d2d2d] text-gray-300 border border-[#333] hover:border-gray-500'
+              }`}
+            >
+              {isMobile ? t('accounts.types.realShort') : t('accounts.types.real')} ({realAccountsOnly.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('demo')}
+              className={`px-2 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
+                activeTab === 'demo'
+                  ? 'bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white border border-cyan-500'
+                  : 'bg-[#2d2d2d] text-gray-300 border border-[#333] hover:border-gray-500'
+              }`}
+            >
+              {isMobile ? t('accounts.types.demoShort') : t('accounts.types.demo')} ({demoAccountsOnly.length})
+            </button>
           </div>
           
           {/* Account List - ocupa el espacio restante con scroll */}

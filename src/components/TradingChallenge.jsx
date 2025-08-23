@@ -5,8 +5,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useAccounts } from '../contexts/AccountsContext';
 import emailServiceProxy from '../services/emailServiceProxy';
+import { useTranslation } from 'react-i18next';
 
 export default function TradingChallengeUI() {
+  const { t } = useTranslation('trading');
   const { currentUser } = useAuth();
   const { notifyAccountCreated } = useNotifications();
   const { loadAccounts } = useAccounts();
@@ -37,17 +39,17 @@ export default function TradingChallengeUI() {
     
     // Validation
     if (!accountName.trim()) {
-      setError('El nombre de la cuenta es requerido');
+      setError(t('accounts.creation.validation.accountNameRequired'));
       return;
     }
     
     if (!leverage) {
-      setError('Debe seleccionar un apalancamiento');
+      setError(t('accounts.creation.validation.leverageRequired'));
       return;
     }
     
     if (!currentUser) {
-      setError('Debe estar autenticado para crear una cuenta');
+      setError(t('accounts.creation.validation.authRequired'));
       return;
     }
 
@@ -65,7 +67,7 @@ export default function TradingChallengeUI() {
       const result = await createTradingAccount(currentUser.id, accountData);
 
       if (result.success) {
-        setSuccess(`¡Cuenta creada exitosamente! Número de cuenta: ${result.accountNumber}`);
+        setSuccess(t('accounts.creation.success', { accountNumber: result.accountNumber }));
         
         // Store MT5 credentials if available
         if (result.mt5Credentials) {
@@ -113,11 +115,11 @@ export default function TradingChallengeUI() {
         setAccountType('Real');
         setAccountTypeSelection('Institucional');
     } else {
-        setError(result.error || 'Error al crear la cuenta');
+        setError(result.error || t('accounts.creation.validation.createError'));
       }
     } catch (error) {
       console.error('Error creating account:', error);
-      setError('Error inesperado al crear la cuenta');
+      setError(t('accounts.creation.validation.unexpectedError'));
     } finally {
       setIsLoading(false);
     }
@@ -132,7 +134,7 @@ export default function TradingChallengeUI() {
             <div className="mb-6 md:mb-10">
               {/* Title */}
               <div className="mb-6 md:mb-8">
-                <h2 className="text-xl md:text-2xl font-medium">Crear Cuenta</h2>
+                <h2 className="text-xl md:text-2xl font-medium">{t('accounts.creation.title')}</h2>
               </div>
               
               {/* Success/Error Messages */}
@@ -143,27 +145,27 @@ export default function TradingChallengeUI() {
                   {/* MT5 Credentials Display */}
                   {mt5Credentials && (
                     <div className="mt-4 p-3 bg-black/30 rounded-lg">
-                      <p className="text-cyan-400 font-semibold mb-2">Credenciales MT5:</p>
+                      <p className="text-cyan-400 font-semibold mb-2">{t('accounts.creation.mt5Credentials')}</p>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Login:</span>
+                          <span className="text-gray-400">{t('accounts.creation.loginLabel')}</span>
                           <span className="text-white font-mono">{mt5Credentials.login}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Contraseña:</span>
+                          <span className="text-gray-400">{t('accounts.creation.passwordLabel')}</span>
                           <span className="text-white font-mono">{mt5Credentials.password}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Contraseña Investor:</span>
+                          <span className="text-gray-400">{t('accounts.creation.investorPasswordLabel')}</span>
                           <span className="text-white font-mono">{mt5Credentials.investor_password}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Servidor:</span>
+                          <span className="text-gray-400">{t('accounts.creation.serverLabel')}</span>
                           <span className="text-white">{mt5Credentials.server || 'AlphaGlobalMarket-Server'}</span>
                         </div>
                       </div>
                       <p className="text-yellow-400 text-xs mt-3">
-                        ⚠️ Guarde estas credenciales de forma segura. No podrán ser recuperadas posteriormente.
+                        {t('accounts.creation.credentialsWarning')}
                       </p>
                     </div>
                   )}
@@ -206,12 +208,12 @@ export default function TradingChallengeUI() {
               
               {/* Account Name Input */}
               <div className="mb-6 md:mb-8">
-                <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">Nombre De La Cuenta</h3>
+                <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">{t('accounts.fields.accountNameLabel')}</h3>
                 <input
                   type="text"
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
-                  placeholder="Nombre"
+                  placeholder={t('accounts.fields.namePlaceholder')}
                   disabled={isLoading}
                   className="w-full bg-transparent border border-gray-700 rounded-lg px-4 py-3 text-base md:text-lg focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-50"
                 />
@@ -219,7 +221,7 @@ export default function TradingChallengeUI() {
               
               {/* Account Type Selection */}
               <div className="mb-6 md:mb-8">
-                <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">Tipo De Cuenta</h3>
+                <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">{t('accounts.fields.accountTypeLabel')}</h3>
                 <div className="flex space-x-3 md:space-x-4">
                   <button 
                     className={`px-6 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-base font-regular border focus:outline-none transition-colors ${
@@ -230,7 +232,7 @@ export default function TradingChallengeUI() {
                     onClick={() => setAccountTypeSelection('Institucional')}
                     disabled={isLoading}
                   >
-                    Institucional
+                    {t('accounts.fields.institutional')}
                   </button>
                   <button 
                     className={`px-6 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-base font-regular border focus:outline-none transition-colors ${
@@ -241,7 +243,7 @@ export default function TradingChallengeUI() {
                     onClick={() => setAccountTypeSelection('Market Direct')}
                     disabled={isLoading}
                   >
-                    Market Direct
+                    {t('accounts.fields.marketDirect')}
                   </button>
                 </div>
                   </div>
@@ -249,7 +251,7 @@ export default function TradingChallengeUI() {
               {/* Initial Balance Input - Solo para cuentas DEMO */}
               {accountType === 'DEMO' && (
                 <div className="mb-6 md:mb-8">
-                  <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">Balance Inicial (USD)</h3>
+                  <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">{t('accounts.fields.initialBalance')}</h3>
                   <input
                     type="number"
                     value={initialBalance}
@@ -261,14 +263,14 @@ export default function TradingChallengeUI() {
                     className="w-full bg-transparent border border-gray-700 rounded-lg px-4 py-3 text-base md:text-lg focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-50"
                   />
                   <p className="text-gray-400 text-sm mt-2">
-                    Monto inicial para la cuenta demo. Las cuentas demo pueden practicar con fondos virtuales.
+                    {t('accounts.creation.initialBalanceDescription')}
                   </p>
                 </div>
               )}
               
               {/* Leverage Selection */}
               <div className="mb-8 md:mb-10">
-                <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">Apalancamiento</h3>
+                <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">{t('accounts.fields.leverageLabel')}</h3>
                 <div className="relative">
                   <button
                     onClick={() => !isLoading && setShowLeverageDropdown(!showLeverageDropdown)}
@@ -276,7 +278,7 @@ export default function TradingChallengeUI() {
                     className="w-full md:w-auto min-w-[200px] flex items-center justify-between border border-gray-700 rounded-lg px-4 py-3 text-base md:text-lg focus:outline-none focus:border-cyan-500 transition-colors bg-gradient-to-br from-[#232323] to-[#2d2d2d] disabled:opacity-50"
                   >
                     <span className={leverage ? 'text-white' : 'text-gray-400'}>
-                      {leverage || 'Seleccionar'}
+                      {leverage || t('accounts.fields.leverageSelect')}
                     </span>
                     <ChevronDown size={20} className="text-gray-400" />
                   </button>
@@ -307,10 +309,10 @@ export default function TradingChallengeUI() {
                   {isLoading ? (
                     <div className="flex items-center justify-center">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Creando Cuenta...
+                      {t('accounts.creation.creating')}
                 </div>
                   ) : (
-                    '+ Crear Cuenta'
+                    t('accounts.creation.createButton')
                   )}
                 </button>
               </div>

@@ -39,7 +39,35 @@
       "currentBalance": "Balance actual",
       "createdAt": "Creada",
       "status": "Estado",
-      "activeAccount": "Cuenta Activa"
+      "activeAccount": "Cuenta Activa",
+      "accountNameLabel": "Nombre De La Cuenta",
+      "accountTypeLabel": "Tipo De Cuenta", 
+      "leverageLabel": "Apalancamiento",
+      "initialBalance": "Balance Inicial (USD)",
+      "namePlaceholder": "Nombre",
+      "leverageSelect": "Seleccionar",
+      "institutional": "Institucional",
+      "marketDirect": "Market Direct"
+    },
+    "creation": {
+      "title": "Crear Cuenta",
+      "creating": "Creando Cuenta...",
+      "createButton": "+ Crear Cuenta",
+      "success": "¡Cuenta creada exitosamente! Número de cuenta: {{accountNumber}}",
+      "mt5Credentials": "Credenciales MT5:",
+      "loginLabel": "Login:",
+      "passwordLabel": "Contraseña:",
+      "investorPasswordLabel": "Contraseña Investor:",
+      "serverLabel": "Servidor:",
+      "credentialsWarning": "⚠️ Guarde estas credenciales de forma segura. No podrán ser recuperadas posteriormente.",
+      "initialBalanceDescription": "Monto inicial para la cuenta demo. Las cuentas demo pueden practicar con fondos virtuales.",
+      "validation": {
+        "accountNameRequired": "El nombre de la cuenta es requerido",
+        "leverageRequired": "Debe seleccionar un apalancamiento",
+        "authRequired": "Debe estar autenticado para crear una cuenta",
+        "createError": "Error al crear la cuenta",
+        "unexpectedError": "Error inesperado al crear la cuenta"
+      }
     },
     "status": {
       "active": "Activa",
