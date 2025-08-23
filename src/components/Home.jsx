@@ -453,7 +453,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                      : 'bg-transparent border-gray-600 text-gray-400 hover:border-gray-500'
                  }`}
              >
-                 {t('dashboard:accountSummary.demoAccounts')} ({getAccountsByCategory(t('dashboard:accountSummary.demoAccounts')).length})
+                 {t('dashboard:accountSummary.demoAccounts')} ({getAccountsByCategory('Cuentas Demo').length})
              </button>
          </div>
 

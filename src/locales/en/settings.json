@@ -224,6 +224,12 @@
     "privacySettings": "Privacy",
     "dataPrivacy": "Data Privacy"
   },
+  "kycStatus": {
+    "notSubmitted": "Not Submitted",
+    "pending": "In Review",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
   "twoFactor": {
     "title": "Set Up Two-Factor Authentication",
     "scanQR": "Scan this QR code with your authentication app (Google Authenticator, Authy, etc.)",

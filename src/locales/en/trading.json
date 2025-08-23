@@ -2,6 +2,7 @@
   "accounts": {
     "title": "Trading Accounts",
     "create": "Create Account",
+    "createTitle": "Create Account",
     "noName": "Unnamed Account",
     "types": {
       "all": "All",
@@ -39,7 +40,35 @@
       "currentBalance": "Current Balance",
       "createdAt": "Created",
       "status": "Status",
-      "activeAccount": "Active Account"
+      "activeAccount": "Active Account",
+      "accountNameLabel": "Account Name",
+      "accountTypeLabel": "Account Type", 
+      "leverageLabel": "Leverage",
+      "initialBalance": "Initial Balance (USD)",
+      "namePlaceholder": "Name",
+      "leverageSelect": "Select",
+      "institutional": "Institutional",
+      "marketDirect": "Market Direct"
+    },
+    "creation": {
+      "title": "Create Account",
+      "creating": "Creating Account...",
+      "createButton": "+ Create Account",
+      "success": "Account created successfully! Account number: {{accountNumber}}",
+      "mt5Credentials": "MT5 Credentials:",
+      "loginLabel": "Login:",
+      "passwordLabel": "Password:",
+      "investorPasswordLabel": "Investor Password:",
+      "serverLabel": "Server:",
+      "credentialsWarning": "⚠️ Store these credentials securely. They cannot be recovered later.",
+      "initialBalanceDescription": "Initial amount for demo account. Demo accounts can practice with virtual funds.",
+      "validation": {
+        "accountNameRequired": "Account name is required",
+        "leverageRequired": "You must select leverage",
+        "authRequired": "You must be authenticated to create an account",
+        "createError": "Error creating account",
+        "unexpectedError": "Unexpected error creating account"
+      }
     },
     "actions": {
       "deposit": "Deposit",

@@ -356,10 +356,10 @@ const Settings = ({ onBack }) => {
                           {kycStatus.status === 'pending' && <Clock size={12} />}
                           {kycStatus.status === 'approved' && <Check size={12} />}
                           {kycStatus.status === 'rejected' && <AlertCircle size={12} />}
-                          {kycStatus.status === 'pending' ? 'En Proceso' :
-                           kycStatus.status === 'approved' ? 'Aprobado' :
-                           kycStatus.status === 'rejected' ? 'Rechazado' :
-                           'No Enviado'}
+                          {kycStatus.status === 'pending' ? t('kycStatus.pending') :
+                           kycStatus.status === 'approved' ? t('kycStatus.approved') :
+                           kycStatus.status === 'rejected' ? t('kycStatus.rejected') :
+                           t('kycStatus.notSubmitted')}
                         </span>
                       )}
                     </div>

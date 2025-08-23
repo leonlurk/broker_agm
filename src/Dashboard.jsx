@@ -124,6 +124,7 @@ const Dashboard = ({ onLogout }) => {
       case "Pagos":
           return <OperationsHistory />;
       case "Nueva Cuenta":
+      case "New Account":
           return <TradingChallenge />;
       case "Calculadora":
           return <PipCalculator />;

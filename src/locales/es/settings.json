@@ -224,6 +224,12 @@
     "privacySettings": "Privacidad",
     "dataPrivacy": "Privacidad de Datos"
   },
+  "kycStatus": {
+    "notSubmitted": "No Enviado",
+    "pending": "En Revisión",
+    "approved": "Aprobado",
+    "rejected": "Rechazado"
+  },
   "modal": {
     "changePasswordTitle": "Cambio de Contraseña",
     "changePasswordMessage": "Para cambiar tu contraseña, envíanos un correo electrónico con tu solicitud. Te responderemos con las instrucciones necesarias para completar el proceso de forma segura.",

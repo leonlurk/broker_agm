@@ -64,6 +64,13 @@ export const AccountsProvider = ({ children }) => {
       console.log('Debug AccountsContext - getUserTradingAccounts result:', result);
       
       if (result.success) {
+        // Debug: Ver qué account_type tienen las cuentas
+        console.log('Debug AccountsContext - Raw accounts with types:', result.accounts.map(acc => ({
+          name: acc.account_name,
+          type: acc.account_type,
+          type_selection: acc.account_type_selection
+        })));
+        
         // Organizar cuentas por categoría
         const organizedAccounts = {
           [ACCOUNT_CATEGORIES.REAL]: result.accounts.filter(acc => acc.account_type === 'Real'),
