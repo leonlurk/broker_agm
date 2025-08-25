@@ -87,7 +87,7 @@
     "withdrawalHistory": "Withdrawal History"
   },
   "calculator": {
-    "title": "Pip Calculator",
+    "title": "Calculator",
     "instrument": "Instrument",
     "lotSize": "Lot Size",
     "pipValue": "Pip Value",

@@ -87,7 +87,7 @@
     "withdrawalHistory": "Historial de Retiros"
   },
   "calculator": {
-    "title": "Calculadora de Pips",
+    "title": "Calculadora",
     "instrument": "Instrumento",
     "lotSize": "Tamaño del Lote",
     "pipValue": "Valor del Pip",

@@ -70,50 +70,37 @@ const FloatingChatButton = () => {
         )}
 
         {/* Main FAB */}
-        <button
-          onClick={toggleChat}
-          className={`
-            group relative w-14 h-14 rounded-full shadow-lg transition-all duration-300 ease-out
-            ${isOpen 
-              ? 'bg-red-500 hover:bg-red-600 rotate-45' 
-              : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:scale-110'
-            }
-            ${hasNewMessage ? 'animate-pulse' : ''}
-          `}
-        >
-          {/* FAB Icon */}
-          <div className="absolute inset-0 flex items-center justify-center text-white">
-            {isOpen ? (
-              <X size={24} className="transition-transform duration-200" />
-            ) : (
+        {!isOpen && (
+          <button
+            onClick={toggleChat}
+            className={`
+              group relative w-14 h-14 rounded-full shadow-lg transition-all duration-300 ease-out
+              bg-gradient-to-r from-cyan-500 to-blue-600 hover:scale-110
+              ${hasNewMessage ? 'animate-pulse' : ''}
+            `}
+          >
+            {/* FAB Icon */}
+            <div className="absolute inset-0 flex items-center justify-center text-white">
               <MessageCircle size={24} className="transition-transform duration-200 group-hover:scale-110" />
-            )}
-          </div>
-
-          {/* Unread Badge */}
-          {unreadCount > 0 && !isOpen && (
-            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-bounce">
-              {unreadCount > 9 ? '9+' : unreadCount}
             </div>
-          )}
 
-          {/* Ripple Effect */}
-          <div className={`
-            absolute inset-0 rounded-full transition-all duration-300
-            ${isOpen 
-              ? 'bg-red-400/20 scale-0' 
-              : 'bg-cyan-400/20 scale-100 animate-ping'
-            }
-          `} />
+            {/* Unread Badge */}
+            {unreadCount > 0 && (
+              <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-bounce">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </div>
+            )}
 
-          {/* Hover Tooltip */}
-          {!isOpen && (
+            {/* Ripple Effect */}
+            <div className="absolute inset-0 rounded-full transition-all duration-300 bg-cyan-400/20 scale-100 animate-ping" />
+
+            {/* Hover Tooltip */}
             <div className="absolute right-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
               {currentUser ? 'Abrir chat de soporte' : 'Iniciar conversación'}
               <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-gray-900" />
             </div>
-          )}
-        </button>
+          </button>
+        )}
 
         {/* Connection Status Indicator */}
         <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white ${

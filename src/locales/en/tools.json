@@ -1,9 +1,9 @@
 {
   "pipCalculator": {
-    "title": "Pip Calculator",
+    "title": "Calculator",
     "positionSizeTitle": "Position Size",
     "tabs": {
-      "pipsCalculator": "Pip Calculator",
+      "pipsCalculator": "Calculator",
       "positionSize": "Position Size"
     },
     "instrument": "Instrument",

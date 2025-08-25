@@ -5,7 +5,8 @@
       "Bash(git clone:*)",
       "Bash(rg:*)",
       "Bash(grep:*)",
-      "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\agm\\flofy-crm/**)"
+      "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\agm\\flofy-crm/**)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "additionalDirectories": [

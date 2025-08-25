@@ -141,7 +141,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   };
 
   return (
-    <div className="w-80 h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
+    <div className="w-80 h-128 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-4 text-white">
         <div className="flex items-center justify-between">
