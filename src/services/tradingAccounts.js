@@ -14,6 +14,68 @@ const generateAccountNumber = () => {
   return `${timestamp}${random}`;
 };
 
+// Clean inactive demo accounts (older than 30 days without operations)
+export const cleanInactiveDemoAccounts = async (userId) => {
+  logger.info('Cleaning inactive demo accounts', { userId });
+  
+  try {
+    const { data: existingAccounts } = await DatabaseAdapter.tradingAccounts.getByUserId(userId);
+    if (!existingAccounts || existingAccounts.length === 0) {
+      return { success: true, deletedCount: 0 };
+    }
+
+    const demoAccounts = existingAccounts.filter(acc => acc.account_type === 'DEMO' || acc.account_type === 'demo');
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const inactiveAccounts = [];
+    
+    for (const account of demoAccounts) {
+      // Check if account is older than 30 days AND has no recent activity
+      const accountCreated = new Date(account.created_at || account.createdAt);
+      const lastActivity = new Date(account.last_activity || account.updated_at || account.created_at || account.createdAt);
+      
+      // If both creation date and last activity are older than 30 days
+      if (lastActivity < thirtyDaysAgo && accountCreated < thirtyDaysAgo) {
+        inactiveAccounts.push(account);
+      }
+    }
+    
+    // Delete inactive demo accounts from frontend (Supabase)
+    let deletedCount = 0;
+    for (const account of inactiveAccounts) {
+      try {
+        const deleteResult = await DatabaseAdapter.tradingAccounts.delete(account.id);
+        if (deleteResult.success) {
+          deletedCount++;
+          logger.info('Deleted inactive demo account', { 
+            accountId: account.id, 
+            accountName: account.account_name,
+            lastActivity: account.last_activity || account.updated_at 
+          });
+        }
+      } catch (error) {
+        logger.error('Error deleting inactive demo account', { accountId: account.id, error });
+      }
+    }
+    
+    return { 
+      success: true, 
+      deletedCount,
+      inactiveAccounts: inactiveAccounts.length,
+      message: deletedCount > 0 ? `Se eliminaron ${deletedCount} cuentas demo inactivas` : 'No hay cuentas demo inactivas para eliminar'
+    };
+    
+  } catch (error) {
+    logger.error('Error cleaning inactive demo accounts', error);
+    return { 
+      success: false, 
+      error: error.message,
+      deletedCount: 0
+    };
+  }
+};
+
 // Create a new trading account
 export const createTradingAccount = async (userId, accountData) => {
   logger.info('Creating new trading account', { userId, accountType: accountData.accountType });
@@ -30,6 +92,36 @@ export const createTradingAccount = async (userId, accountData) => {
     
     if (accountExists) {
       throw new Error('Ya existe una cuenta con este nombre');
+    }
+
+    // Check account limits (3 demo + 3 real per user)
+    if (existingAccounts && existingAccounts.length > 0) {
+      const demoAccounts = existingAccounts.filter(acc => acc.account_type === 'DEMO' || acc.account_type === 'demo');
+      const realAccounts = existingAccounts.filter(acc => acc.account_type === 'Real' || acc.account_type === 'real');
+      
+      if (accountData.accountType === 'demo' || accountData.accountType === 'DEMO') {
+        if (demoAccounts.length >= 3) {
+          // Try to clean inactive demo accounts first
+          const cleanupResult = await cleanInactiveDemoAccounts(userId);
+          
+          if (cleanupResult.success && cleanupResult.deletedCount > 0) {
+            logger.info(`Cleaned ${cleanupResult.deletedCount} inactive demo accounts for user ${userId}`);
+            // Re-fetch accounts after cleanup
+            const { data: updatedAccounts } = await DatabaseAdapter.tradingAccounts.getByUserId(userId);
+            const updatedDemoAccounts = updatedAccounts?.filter(acc => acc.account_type === 'DEMO' || acc.account_type === 'demo') || [];
+            
+            if (updatedDemoAccounts.length >= 3) {
+              throw new Error('Has alcanzado el límite máximo de 3 cuentas demo. No puedes crear más cuentas demo.');
+            }
+          } else {
+            throw new Error('Has alcanzado el límite máximo de 3 cuentas demo. No puedes crear más cuentas demo.');
+          }
+        }
+      } else if (accountData.accountType === 'real' || accountData.accountType === 'Real') {
+        if (realAccounts.length >= 3) {
+          throw new Error('Has alcanzado el límite máximo de 3 cuentas reales. No puedes crear más cuentas reales.');
+        }
+      }
     }
 
     // Get current user email for MT5 account

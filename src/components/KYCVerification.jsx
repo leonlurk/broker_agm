@@ -12,8 +12,8 @@ const KYCVerification = ({ onBack }) => {
   const { notifyKYCSubmitted } = useNotifications();
   const { t } = useTranslation('kyc');
   const [selectedDocType, setSelectedDocType] = useState('identity');
-  const [selectedResidenceCountry, setSelectedResidenceCountry] = useState('Argentina');
-  const [selectedDocumentCountry, setSelectedDocumentCountry] = useState('Argentina');
+  const [selectedResidenceCountry, setSelectedResidenceCountry] = useState('');
+  const [selectedDocumentCountry, setSelectedDocumentCountry] = useState('');
   const [countries, setCountries] = useState([]);
   const [countrySearch, setCountrySearch] = useState('');
   const [isResidenceDropdownOpen, setIsResidenceDropdownOpen] = useState(false);
@@ -48,9 +48,16 @@ const KYCVerification = ({ onBack }) => {
     const fetchCountries = async () => {
       try {
         const response = await axios.get('https://restcountries.com/v3.1/all?fields=name,translations');
-        const countryData = response.data.map(c => ({
-          name: c.translations?.spa?.common || c.name.common // Usar traducción al español si está disponible
-        })).sort((a, b) => a.name.localeCompare(b.name, 'es')); // Ordenar con locale español
+        const countryData = response.data
+          .map(c => ({
+            name: c.translations?.spa?.common || c.name.common // Usar traducción al español si está disponible
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+          .map((country, index) => ({
+            ...country,
+            id: index // Use index as unique ID to avoid any issues
+          }));
+        
         setCountries(countryData);
         setFilteredCountries(countryData);
       } catch (error) {
@@ -98,18 +105,21 @@ const KYCVerification = ({ onBack }) => {
         setCountrySearch('');
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // Change from 'mousedown' to 'click' to avoid interference with button clicks
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  const handleResidenceCountrySelect = (countryName) => {
-    setSelectedResidenceCountry(countryName);
+  const handleResidenceCountrySelect = (country) => {
+    console.log('Selected residence country:', country.name, 'ID:', country.id);
+    setSelectedResidenceCountry(country.name);
     setIsResidenceDropdownOpen(false);
     setCountrySearch('');
   };
 
-  const handleDocumentCountrySelect = (countryName) => {
-    setSelectedDocumentCountry(countryName);
+  const handleDocumentCountrySelect = (country) => {
+    console.log('Selected document country:', country.name, 'ID:', country.id);
+    setSelectedDocumentCountry(country.name);
     setIsDocumentDropdownOpen(false);
     setCountrySearch('');
   };
@@ -530,7 +540,9 @@ const KYCVerification = ({ onBack }) => {
                     }}
                     className="w-full bg-[#2D2D2D] border border-[#444] rounded-xl px-4 py-3 text-left flex justify-between items-center hover:bg-[#333] transition-colors"
                   >
-                    <span className="text-white">{selectedResidenceCountry}</span>
+                    <span className={selectedResidenceCountry ? "text-white" : "text-gray-400"}>
+                      {selectedResidenceCountry || t('country.selectCountry')}
+                    </span>
                     <ChevronDown 
                       size={20} 
                       className={`text-gray-400 transition-transform ${isResidenceDropdownOpen ? 'rotate-180' : ''}`}
@@ -556,9 +568,9 @@ const KYCVerification = ({ onBack }) => {
                         {filteredCountries.length > 0 ? (
                           filteredCountries.map((country) => (
                             <button
-                              key={country.name}
+                              key={country.id}
                               type="button"
-                              onClick={() => handleResidenceCountrySelect(country.name)}
+                              onClick={() => handleResidenceCountrySelect(country)}
                               className="w-full text-left px-3 py-2 text-sm text-white hover:bg-[#2D2D2D] transition-colors"
                             >
                               {country.name}
@@ -591,7 +603,9 @@ const KYCVerification = ({ onBack }) => {
                     }}
                     className="w-full bg-[#2D2D2D] border border-[#444] rounded-xl px-4 py-3 text-left flex justify-between items-center hover:bg-[#333] transition-colors"
                   >
-                    <span className="text-white">{selectedDocumentCountry}</span>
+                    <span className={selectedDocumentCountry ? "text-white" : "text-gray-400"}>
+                      {selectedDocumentCountry || t('country.selectCountry')}
+                    </span>
                     <ChevronDown 
                       size={20} 
                       className={`text-gray-400 transition-transform ${isDocumentDropdownOpen ? 'rotate-180' : ''}`}
@@ -617,9 +631,9 @@ const KYCVerification = ({ onBack }) => {
                         {filteredCountries.length > 0 ? (
                           filteredCountries.map((country) => (
                             <button
-                              key={country.name}
+                              key={country.id}
                               type="button"
-                              onClick={() => handleDocumentCountrySelect(country.name)}
+                              onClick={() => handleDocumentCountrySelect(country)}
                               className="w-full text-left px-3 py-2 text-sm text-white hover:bg-[#2D2D2D] transition-colors"
                             >
                               {country.name}

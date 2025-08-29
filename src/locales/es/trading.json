@@ -38,6 +38,13 @@
       "investorPasswordReadOnly": "Contraseña Investor (Solo Lectura)",
       "currentBalance": "Balance actual",
       "createdAt": "Creada",
+      "lastUpdated": "Actualizado:",
+      "refresh": "Actualizar",
+      "dataWillUpdate": "Los datos se actualizarán en aproximadamente 5 minutos",
+      "refreshing": "Actualizando...",
+      "dataRefreshed": "Datos actualizados",
+      "demoAccountLimit": "Has alcanzado el límite máximo de 3 cuentas demo. Elimina una cuenta demo inactiva para crear una nueva.",
+      "realAccountLimit": "Has alcanzado el límite máximo de 3 cuentas reales. No puedes crear más cuentas reales.",
       "status": "Estado",
       "activeAccount": "Cuenta Activa",
       "accountNameLabel": "Nombre De La Cuenta",
@@ -59,7 +66,7 @@
       "passwordLabel": "Contraseña:",
       "investorPasswordLabel": "Contraseña Investor:",
       "serverLabel": "Servidor:",
-      "credentialsWarning": "⚠️ Guarde estas credenciales de forma segura. No podrán ser recuperadas posteriormente.",
+      "credentialsWarning": "⚠️ Estas credenciales también están disponibles en la sección 'Detalles' de su cuenta.",
       "initialBalanceDescription": "Monto inicial para la cuenta demo. Las cuentas demo pueden practicar con fondos virtuales.",
       "validation": {
         "accountNameRequired": "El nombre de la cuenta es requerido",
@@ -67,7 +74,12 @@
         "authRequired": "Debe estar autenticado para crear una cuenta",
         "createError": "Error al crear la cuenta",
         "unexpectedError": "Error inesperado al crear la cuenta"
-      }
+      },
+      "verificationRequired": "Verificación Requerida",
+      "verificationMessage": "Para crear cuentas de trading, primero debes verificar tu correo electrónico. Este paso es necesario para proteger tu cuenta y cumplir con las regulaciones.",
+      "verifyAccount": "Verificar mi cuenta",
+      "verificationEmailSent": "Email de verificación enviado. Por favor revisa tu correo.",
+      "verificationEmailError": "Error al enviar el email de verificación. Intenta nuevamente."
     },
     "status": {
       "active": "Activa",

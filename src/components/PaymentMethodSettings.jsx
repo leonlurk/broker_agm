@@ -8,18 +8,14 @@ import { useTranslation } from 'react-i18next';
 const PaymentMethodSettings = ({ onBack }) => {
   const { t } = useTranslation('settings');
   const { currentUser, userData, refreshUserData } = useAuth();
-  const [methodType, setMethodType] = useState('crypto');
+  // Solo crypto ahora, no necesitamos methodType
+  const methodType = 'crypto';
   const [alias, setAlias] = useState('');
   
   // Crypto fields
   const [cryptoAddress, setCryptoAddress] = useState('');
   const [cryptoNetwork, setCryptoNetwork] = useState('tron_trc20');
   const [addressError, setAddressError] = useState('');
-
-  // Bank fields
-  const [cbu, setCbu] = useState('');
-  const [holderName, setHolderName] = useState('');
-  const [holderId, setHolderId] = useState('');
   
   // Estados para el dropdown de red
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
@@ -139,41 +135,20 @@ const PaymentMethodSettings = ({ onBack }) => {
   const handleAddMethod = async (e) => {
     e.preventDefault();
 
-    let newMethod;
-    if (methodType === 'crypto') {
-      if (!alias || !cryptoAddress || !cryptoNetwork) {
-        toast.error(t('paymentMethods.errors.completeAllCryptoFields'));
-        return;
-      }
-      
-      // Validar dirección crypto
-      if (!validateCryptoAddress(cryptoAddress, cryptoNetwork)) {
-        const network = getCurrentNetwork();
-        toast.error(network.errorMessage);
-        return;
-      }
-      
-      newMethod = { type: 'crypto', alias, address: cryptoAddress, network: cryptoNetwork };
-    } else { // bank
-      if (!alias || !cbu || !holderName || !holderId) {
-        toast.error(t('paymentMethods.errors.completeAllBankFields'));
-        return;
-      }
-      
-      // Validar CBU (22 dígitos)
-      if (!/^\d{22}$/.test(cbu.replace(/[^0-9]/g, ''))) {
-        toast.error(t('paymentMethods.errors.invalidCbu'));
-        return;
-      }
-      
-      // Validar CUIT/CUIL (11 dígitos)
-      if (!/^\d{11}$/.test(holderId.replace(/[^0-9]/g, ''))) {
-        toast.error(t('paymentMethods.errors.invalidCuit'));
-        return;
-      }
-      
-      newMethod = { type: 'bank', alias, cbu, holderName, holderId };
+    // Solo validamos crypto ahora
+    if (!alias || !cryptoAddress || !cryptoNetwork) {
+      toast.error(t('paymentMethods.errors.completeAllCryptoFields'));
+      return;
     }
+    
+    // Validar dirección crypto
+    if (!validateCryptoAddress(cryptoAddress, cryptoNetwork)) {
+      const network = getCurrentNetwork();
+      toast.error(network.errorMessage);
+      return;
+    }
+    
+    const newMethod = { type: 'crypto', alias, address: cryptoAddress, network: cryptoNetwork };
 
     const loadingToast = toast.loading(t('paymentMethods.addingMethod'));
     const userId = currentUser.id || currentUser.uid;
@@ -194,9 +169,6 @@ const PaymentMethodSettings = ({ onBack }) => {
       setAlias('');
       setCryptoAddress('');
       setAddressError('');
-      setCbu('');
-      setHolderName('');
-      setHolderId('');
     } else {
       toast.error(`Error: ${result.error}`, { id: loadingToast });
     }
@@ -286,28 +258,12 @@ const PaymentMethodSettings = ({ onBack }) => {
                     </span>
                   </div>
                   
-                  {method.type === 'crypto' ? (
-                    <>
-                      <p className="text-sm text-cyan-400 mb-1">
-                        {networkOptions.find(n => n.value === method.network)?.label || method.network}
-                      </p>
-                      <p className="text-xs text-gray-400 font-mono break-all">
-                        {method.address}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm text-gray-300">
-                        <span className="text-gray-500">{t('paymentMethods.cbuCvu')}:</span> <span className="font-mono">{method.cbu}</span>
-                      </p>
-                      <p className="text-sm text-gray-300">
-                        <span className="text-gray-500">{t('paymentMethods.holder')}:</span> {method.holderName}
-                      </p>
-                      <p className="text-sm text-gray-300">
-                        <span className="text-gray-500">{t('paymentMethods.holderCuit')}:</span> {method.holderId}
-                      </p>
-                    </>
-                  )}
+                  <p className="text-sm text-cyan-400 mb-1">
+                    {networkOptions.find(n => n.value === method.network)?.label || method.network}
+                  </p>
+                  <p className="text-xs text-gray-400 font-mono break-all">
+                    {method.address}
+                  </p>
                 </div>
                 <button onClick={() => handleDeleteMethod(method)} className="p-2 hover:bg-red-500/20 rounded-full text-red-400">
                   <Trash2 size={18} />
@@ -324,10 +280,9 @@ const PaymentMethodSettings = ({ onBack }) => {
       <div>
         <h2 className="text-xl font-bold mb-4">{t('paymentMethods.addNewMethod')}</h2>
         <form onSubmit={handleAddMethod} className="p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-lg border border-[#333] space-y-4">
-          {/* Selector de Tipo */}
-          <div className="flex gap-4 mb-4">
-             <button type="button" onClick={() => setMethodType('crypto')} className={`flex-1 py-2 px-4 rounded-lg transition ${methodType === 'crypto' ? 'bg-cyan-600 text-white' : 'bg-[#333] hover:bg-[#444]'}`}>{t('paymentMethods.cryptoWallet')}</button>
-             <button type="button" onClick={() => setMethodType('bank')} className={`flex-1 py-2 px-4 rounded-lg transition ${methodType === 'bank' ? 'bg-cyan-600 text-white' : 'bg-[#333] hover:bg-[#444]'}`}>{t('paymentMethods.bankTransfer')}</button>
+          {/* Título del formulario - Solo Crypto */}
+          <div className="mb-4">
+            <h3 className="text-lg font-medium text-cyan-400">{t('paymentMethods.cryptoWallet')}</h3>
           </div>
           
           {/* Campos Comunes */}
@@ -336,80 +291,63 @@ const PaymentMethodSettings = ({ onBack }) => {
             <input type="text" id="alias" value={alias} onChange={e => setAlias(e.target.value)} className="w-full p-2 bg-[#1a1a1a] border border-[#444] rounded-lg focus:outline-none focus:border-cyan-500" placeholder={t('paymentMethods.aliasPlaceholder')} />
           </div>
 
-          {methodType === 'crypto' ? (
-            <>
-              {/* Campos Crypto */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">{t('paymentMethods.network')}</label>
-                <div className="relative" ref={networkDropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
-                    className="w-full p-2 bg-[#1a1a1a] border border-[#444] rounded-lg focus:outline-none focus:border-cyan-500 text-left flex items-center justify-between text-white"
-                  >
-                    <span>{getCurrentNetwork().label}</span>
-                    <ChevronDown 
-                      size={20} 
-                      className={`text-gray-400 transition-transform ${isNetworkDropdownOpen ? 'rotate-180' : ''}`} 
-                    />
-                  </button>
-                  
-                  {isNetworkDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#2d2d2d] border border-[#444] rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
-                      {networkOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => handleNetworkSelect(option.value)}
-                          className="w-full text-left px-3 py-2 text-white hover:bg-[#404040] transition-colors first:rounded-t-lg last:rounded-b-lg"
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+          {/* Campos Crypto */}
+          <div className="space-y-4">
+            <div className="relative" ref={networkDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
+                className="w-full p-3 bg-[#1a1a1a] border border-[#444] rounded-lg focus:outline-none focus:border-cyan-500 text-left flex flex-col text-white"
+              >
+                <span className="text-xs text-gray-400 mb-1">{t('paymentMethods.selectNetwork') || 'Selecciona tu red de blockchain'}</span>
+                <div className="flex items-center justify-between w-full">
+                  <span className="font-medium">{getCurrentNetwork().label}</span>
+                  <ChevronDown 
+                    size={20} 
+                    className={`text-gray-400 transition-transform ${isNetworkDropdownOpen ? 'rotate-180' : ''}`} 
+                  />
                 </div>
-              </div>
-              <div>
-                <label htmlFor="cryptoAddress" className="block text-sm font-medium text-gray-300 mb-1">
-                  {t('paymentMethods.walletAddress')}
-                </label>
-                <input 
-                  type="text" 
-                  id="cryptoAddress" 
-                  value={cryptoAddress} 
-                  onChange={handleAddressChange}
-                  placeholder={getCurrentNetwork().placeholder}
-                  className={`w-full p-2 bg-[#1a1a1a] border ${addressError ? 'border-red-500' : 'border-[#444]'} rounded-lg focus:outline-none focus:border-cyan-500 font-mono text-sm`}
-                />
-                {addressError && (
-                  <div className="mt-1 flex items-start gap-1">
-                    <AlertCircle size={14} className="text-red-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-red-400">{addressError}</p>
-                  </div>
-                )}
-                {!addressError && cryptoAddress && (
-                  <p className="text-xs text-green-400 mt-1">{t('paymentMethods.validAddress')}</p>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Campos Banco */}
-              <div>
-                <label htmlFor="holderName" className="block text-sm font-medium text-gray-300 mb-1">{t('paymentMethods.holderName')}</label>
-                <input type="text" id="holderName" value={holderName} onChange={e => setHolderName(e.target.value)} className="w-full p-2 bg-[#1a1a1a] border border-[#444] rounded-lg focus:outline-none focus:border-cyan-500" />
-              </div>
-              <div>
-                <label htmlFor="holderId" className="block text-sm font-medium text-gray-300 mb-1">{t('paymentMethods.holderCuit')}</label>
-                <input type="text" id="holderId" value={holderId} onChange={e => setHolderId(e.target.value)} className="w-full p-2 bg-[#1a1a1a] border border-[#444] rounded-lg focus:outline-none focus:border-cyan-500" />
-              </div>
-              <div>
-                <label htmlFor="cbu" className="block text-sm font-medium text-gray-300 mb-1">{t('paymentMethods.cbuCvu')}</label>
-                <input type="text" id="cbu" value={cbu} onChange={e => setCbu(e.target.value)} className="w-full p-2 bg-[#1a1a1a] border border-[#444] rounded-lg focus:outline-none focus:border-cyan-500" />
-              </div>
-            </>
-          )}
+              </button>
+              
+              {isNetworkDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#2d2d2d] border border-[#444] rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
+                  {networkOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleNetworkSelect(option.value)}
+                      className="w-full text-left px-3 py-2 text-white hover:bg-[#404040] transition-colors first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div>
+              <label htmlFor="cryptoAddress" className="block text-sm font-medium text-gray-300 mb-1">
+                {t('paymentMethods.walletAddress')}
+              </label>
+              <input 
+                type="text" 
+                id="cryptoAddress" 
+                value={cryptoAddress} 
+                onChange={handleAddressChange}
+                placeholder={getCurrentNetwork().placeholder}
+                className={`w-full p-2 bg-[#1a1a1a] border ${addressError ? 'border-red-500' : 'border-[#444]'} rounded-lg focus:outline-none focus:border-cyan-500 font-mono text-sm`}
+              />
+              {addressError && (
+                <div className="mt-1 flex items-start gap-1">
+                  <AlertCircle size={14} className="text-red-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-red-400">{addressError}</p>
+                </div>
+              )}
+              {!addressError && cryptoAddress && (
+                <p className="text-xs text-green-400 mt-1">{t('paymentMethods.validAddress')}</p>
+              )}
+            </div>
+          </div>
 
           <button type="submit" className="w-full py-3 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white rounded-lg hover:opacity-90 transition flex items-center justify-center">
             <PlusCircle size={20} className="mr-2" />

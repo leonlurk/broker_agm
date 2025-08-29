@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { QrCodeIcon, CopyIcon, CheckCircleIcon, XCircleIcon, Loader2Icon } from 'lucide-react';
+import { QrCodeIcon, CopyIcon, CheckCircleIcon, XCircleIcon, Loader2Icon, InfoIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import cryptoPaymentService from '../services/cryptoPaymentService';
 import { supabase } from '../supabase/config';
+import CustomTooltip from './utils/CustomTooltip';
 import toast from 'react-hot-toast';
 
 const CryptoDepositModal = ({ 
@@ -12,6 +14,7 @@ const CryptoDepositModal = ({
   onDepositConfirmed,
   userEmail
 }) => {
+  const { t } = useTranslation('wallet');
   const [loading, setLoading] = useState(false);
   const [walletInfo, setWalletInfo] = useState(null);
   const [copied, setCopied] = useState({ tron: false, bsc: false });
@@ -107,7 +110,7 @@ const CryptoDepositModal = ({
         
         if (!authResult.success) {
           console.warn('Error de autenticación:', authResult.error);
-          setError('Error de autenticación con el servicio de pagos');
+          setError(t('cryptoModal.errors.authError'));
         } else {
           setIsAuthenticated(true);
           console.log('Autenticación exitosa con Payroll API');
@@ -115,8 +118,8 @@ const CryptoDepositModal = ({
       }
     } catch (error) {
       console.error('Error generating wallet:', error);
-      setError(error.message || 'Error al generar la dirección de depósito');
-      toast.error('Error al generar la dirección de depósito');
+      setError(error.message || t('cryptoModal.errors.generateError'));
+      toast.error(t('cryptoModal.errors.generateError'));
     } finally {
       setLoading(false);
     }
@@ -127,13 +130,13 @@ const CryptoDepositModal = ({
     try {
       await navigator.clipboard.writeText(text);
       setCopied({ ...copied, [type]: true });
-      toast.success('Dirección copiada');
+      toast.success(t('cryptoModal.success.addressCopied'));
       
       setTimeout(() => {
         setCopied({ ...copied, [type]: false });
       }, 2000);
     } catch (error) {
-      toast.error('Error al copiar');
+      toast.error(t('cryptoModal.errors.copyError'));
     }
   };
 
@@ -166,7 +169,7 @@ const CryptoDepositModal = ({
       <div className="bg-[#1e1e1e] rounded-2xl p-6 max-w-lg w-full mx-auto border border-[#334155] max-h-[85vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-white">Depósito Crypto</h2>
+          <h2 className="text-2xl font-bold text-white">{t('cryptoModal.title')}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -186,7 +189,7 @@ const CryptoDepositModal = ({
         {loading && (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2Icon className="w-12 h-12 text-cyan-500 animate-spin mb-4" />
-            <p className="text-gray-400">Generando dirección de depósito...</p>
+            <p className="text-gray-400">{t('cryptoModal.generating')}</p>
           </div>
         )}
 
@@ -195,22 +198,37 @@ const CryptoDepositModal = ({
           <div className="space-y-4">
             {/* Network Info */}
             <div className="bg-[#2a2a2a] rounded-lg p-4">
-              <p className="text-sm text-gray-400 mb-1">Red</p>
+              <CustomTooltip content={t('cryptoModal.tooltips.network')}>
+                <div className="flex items-center space-x-2">
+                  <p className="text-sm text-gray-400 mb-1">{t('cryptoModal.network')}</p>
+                  <InfoIcon className="w-4 h-4 text-cyan-400" />
+                </div>
+              </CustomTooltip>
               <p className="text-white font-semibold">{getNetworkName()}</p>
             </div>
 
             {/* Amount Info */}
             <div className="bg-[#2a2a2a] rounded-lg p-4">
-              <p className="text-sm text-gray-400 mb-1">Monto a depositar</p>
+              <CustomTooltip content={t('cryptoModal.tooltips.amount')}>
+                <div className="flex items-center space-x-2 mb-1">
+                  <p className="text-sm text-gray-400">{t('cryptoModal.amountToDeposit')}</p>
+                  <InfoIcon className="w-4 h-4 text-cyan-400" />
+                </div>
+              </CustomTooltip>
               <p className="text-2xl font-bold text-cyan-500">${amount} USD</p>
               <p className="text-xs text-gray-500 mt-1">
-                Mínimo: ${getMinimumDeposit()} USD
+                {t('cryptoModal.minimum')}: ${getMinimumDeposit()} USD
               </p>
             </div>
 
             {/* QR Code */}
             <div className="bg-[#2a2a2a] rounded-lg p-6 flex flex-col items-center">
-              <p className="text-sm text-gray-400 mb-3">Escanea el código QR</p>
+              <CustomTooltip content={t('cryptoModal.tooltips.qrCode')}>
+                <div className="flex items-center space-x-2 mb-3">
+                  <p className="text-sm text-gray-400">{t('cryptoModal.scanQR')}</p>
+                  <InfoIcon className="w-4 h-4 text-cyan-400" />
+                </div>
+              </CustomTooltip>
               <div className="bg-white p-2 rounded-lg">
                 <img 
                   src={relevantWallet.qrCode} 
@@ -222,7 +240,12 @@ const CryptoDepositModal = ({
 
             {/* Wallet Address */}
             <div className="bg-[#2a2a2a] rounded-lg p-4">
-              <p className="text-sm text-gray-400 mb-2">O copia la dirección</p>
+              <CustomTooltip content={t('cryptoModal.tooltips.address')}>
+                <div className="flex items-center space-x-2 mb-2">
+                  <p className="text-sm text-gray-400">{t('cryptoModal.copyAddress')}</p>
+                  <InfoIcon className="w-4 h-4 text-cyan-400" />
+                </div>
+              </CustomTooltip>
               <div className="flex items-center space-x-2">
                 <input
                   type="text"
@@ -251,9 +274,9 @@ const CryptoDepositModal = ({
               <div className="bg-[#2a2a2a] rounded-lg p-4 flex items-center space-x-3">
                 <Loader2Icon className="w-5 h-5 text-cyan-500 animate-spin" />
                 <div className="flex-1">
-                  <p className="text-white font-semibold">Esperando depósito...</p>
+                  <p className="text-white font-semibold">{t('cryptoModal.waiting')}</p>
                   <p className="text-xs text-gray-400">
-                    Verificando cada 10 segundos
+                    {t('cryptoModal.checking')}
                   </p>
                 </div>
               </div>
@@ -263,9 +286,9 @@ const CryptoDepositModal = ({
               <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 flex items-center space-x-3">
                 <CheckCircleIcon className="w-5 h-5 text-green-500" />
                 <div className="flex-1">
-                  <p className="text-green-400 font-semibold">¡Depósito confirmado!</p>
+                  <p className="text-green-400 font-semibold">{t('cryptoModal.confirmed')}</p>
                   <p className="text-xs text-green-300">
-                    Monto: {depositData?.amount} {depositData?.network}
+                    {t('cryptoModal.amount')}: {depositData?.amount} {depositData?.network}
                   </p>
                 </div>
               </div>
@@ -274,32 +297,26 @@ const CryptoDepositModal = ({
             {/* Important Notes */}
             <div className="bg-yellow-900/20 border border-yellow-800 rounded-lg p-4">
               <p className="text-yellow-400 font-semibold text-sm mb-2">
-                ⚠️ Importante
+                ⚠️ {t('cryptoModal.important')}
               </p>
               <ul className="text-xs text-yellow-300 space-y-1">
-                <li>• Envía solo {selectedCoin.split('_')[0]} a esta dirección</li>
-                <li>• Red: {getNetworkName()}</li>
+                <li>• {t('cryptoModal.sendOnly', { coin: selectedCoin.split('_')[0] })}</li>
+                <li>• {t('cryptoModal.networkLabel', { network: getNetworkName() })}</li>
                 {selectedCoin === 'USDT_ERC20' && (
-                  <li className="text-yellow-200">• Esta dirección acepta USDT tanto en Ethereum (ERC-20) como en BSC (BEP-20)</li>
+                  <li className="text-yellow-200">• {t('cryptoModal.acceptsBoth')}</li>
                 )}
-                <li>• Monto mínimo: ${getMinimumDeposit()} USD</li>
-                <li>• Los fondos se acreditarán automáticamente</li>
+                <li>• {t('cryptoModal.minAmount', { amount: getMinimumDeposit() })}</li>
+                <li>• {t('cryptoModal.autoCredit')}</li>
               </ul>
             </div>
 
             {/* Actions */}
-            <div className="flex space-x-3">
-              <button
-                onClick={generateWallet}
-                className="flex-1 py-3 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white rounded-lg transition-colors"
-              >
-                Generar Nueva Dirección
-              </button>
+            <div className="flex justify-center">
               <button
                 onClick={onClose}
-                className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                className="px-8 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
               >
-                Cerrar
+                {t('cryptoModal.close')}
               </button>
             </div>
           </div>

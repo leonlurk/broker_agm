@@ -26,6 +26,10 @@ const Wallet = () => {
   
   const { currentUser, userData } = useAuth();
   
+  // Estado para el balance del broker (nuevo flujo)
+  const [brokerBalance, setBrokerBalance] = useState(0);
+  const [mt5Accounts, setMt5Accounts] = useState([]);
+  
   const { 
     notifyDeposit, 
     notifyWithdrawal, 
@@ -94,9 +98,11 @@ const Wallet = () => {
     setShowTransactionDetail(true);
   };
 
-  // Cargar transacciones iniciales
+  // Cargar transacciones iniciales y datos del broker
   useEffect(() => {
     loadTransactions();
+    loadBrokerBalance();
+    loadMT5Accounts();
     // Hacer supabase disponible globalmente para pruebas
     if (typeof window !== 'undefined') {
       window.supabase = supabase;
@@ -149,6 +155,63 @@ const Wallet = () => {
     return 'text-white';
   };
 
+  // Función para cargar el balance del broker desde Supabase
+  const loadBrokerBalance = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('broker_balance')
+        .eq('id', currentUser.id)
+        .single();
+      
+      if (!error) {
+        setBrokerBalance(data?.broker_balance || 0);
+      }
+    } catch (error) {
+      console.error('Error loading broker balance:', error);
+      setBrokerBalance(0);
+    }
+  };
+
+  // Función para actualizar el balance del broker
+  const updateBrokerBalance = async (newBalance) => {
+    if (!currentUser) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ broker_balance: newBalance })
+        .eq('id', currentUser.id);
+      
+      if (!error) {
+        setBrokerBalance(newBalance);
+      }
+    } catch (error) {
+      console.error('Error updating broker balance:', error);
+    }
+  };
+
+  // Cargar cuentas MT5 del usuario
+  const loadMT5Accounts = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('broker_accounts')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('status', 'active');
+      
+      if (!error && data) {
+        setMt5Accounts(data);
+      }
+    } catch (error) {
+      console.error('Error loading MT5 accounts:', error);
+    }
+  };
+
   // Cargar transacciones desde Supabase
   const loadTransactions = async () => {
     if (!currentUser) return;
@@ -161,7 +224,7 @@ const Wallet = () => {
         // Combinar y formatear todas las transacciones
         const allTransactions = [];
         
-        // Agregar depósitos
+        // Agregar depósitos (ahora van al balance general)
         if (result.deposits) {
           result.deposits.forEach(dep => {
             allTransactions.push({
@@ -172,7 +235,7 @@ const Wallet = () => {
               method: dep.payment_method === 'crypto' ? t('common.methods.crypto') : dep.payment_method,
               date: new Date(dep.submitted_at),
               status: dep.status,
-              account: dep.account_name,
+              account: dep.account_id === 'general' ? t('common.generalBalance') : dep.account_name,
               txHash: dep.transaction_hash
             });
           });
@@ -304,7 +367,12 @@ const Wallet = () => {
       return;
     }
 
-    if ((activeTab === 'retirar' || activeTab === 'transferir') && parseFloat(amount) > selectedAccount.balance) {
+    // Validar fondos suficientes según el tipo de operación
+    if (activeTab === 'retirar' && parseFloat(amount) > brokerBalance) {
+      setError(t('common.errors.insufficientBalance'));
+      return;
+    }
+    if (activeTab === 'transferir' && parseFloat(amount) > selectedAccount.balance) {
       setError(t('common.errors.insufficientBalance'));
       return;
     }
@@ -350,15 +418,15 @@ const Wallet = () => {
         // Obtener el método de pago pre-configurado del usuario
         const userPaymentMethod = userData?.paymentMethods?.[0]; // Usar el primer método configurado
         
-        // Crear solicitud de retiro con los datos del método de pago configurado
+        // Crear solicitud de retiro desde el balance general
         const withdrawalData = {
-          account_id: selectedAccount.id,
-          account_name: selectedAccount.account_name,
+          account_id: 'general', // Retiro desde balance general
+          account_name: t('common.generalBalance'),
           amount: amountNum,
           withdrawal_type: userPaymentMethod?.type === 'crypto' ? 'crypto' : 'bank',
           // Incluir datos del usuario
           user_email: currentUser?.email,
-          user_name: currentUser?.displayName || userData?.nombre || 'Usuario'
+          user_name: currentUser?.displayName || userData?.nombre || t('common:user')
         };
 
         // Si el método es crypto, incluir los datos de la wallet
@@ -382,6 +450,10 @@ const Wallet = () => {
         if (!result.success) {
           throw new Error(result.error || t('withdraw.errors.processingError'));
         }
+
+        // Actualizar balance del broker (restar el monto)
+        const newBalance = brokerBalance - amountNum;
+        await updateBrokerBalance(newBalance);
       } else if (activeTab === 'transferir') {
         // Crear solicitud de transferencia interna
         result = await transactionService.createTransferRequest({
@@ -407,7 +479,7 @@ const Wallet = () => {
         // Send deposit confirmation email
         try {
           await emailServiceProxy.sendDepositConfirmation(
-            { email: currentUser.email, name: currentUser.displayName || 'Usuario' },
+            { email: currentUser.email, name: currentUser.displayName || t('common:user') },
             { amount: depositAmount, accountName: selectedAccount.account_name, currency: 'USD', method: selectedMethod }
           );
           console.log('[Wallet] Deposit confirmation email sent');
@@ -417,13 +489,13 @@ const Wallet = () => {
       } else if (activeTab === 'retirar') {
         const withdrawAmount = parseFloat(amount);
         setSuccess(t('withdraw.success', { amount }));
-        notifyWithdrawal(withdrawAmount, selectedAccount.account_name);
+        notifyWithdrawal(withdrawAmount, t('common.generalBalance'));
         
         // Send withdrawal confirmation email  
         try {
           await emailServiceProxy.sendWithdrawalConfirmation(
-            { email: currentUser.email, name: currentUser.displayName || 'Usuario' },
-            { amount: withdrawAmount, accountName: selectedAccount.account_name, currency: 'USD', method: selectedMethod }
+            { email: currentUser.email, name: currentUser.displayName || t('common:user') },
+            { amount: withdrawAmount, accountName: t('common.generalBalance'), currency: 'USD', method: selectedMethod }
           );
           console.log('[Wallet] Withdrawal confirmation email sent');
         } catch (emailError) {
@@ -468,10 +540,10 @@ const Wallet = () => {
   // Manejar confirmación de depósito crypto
   const handleCryptoDepositConfirmed = async (depositData) => {
     try {
-      // Crear solicitud de depósito usando RPC (Payroll ya confirmó el pago)
+      // Crear solicitud de depósito al balance general del broker (nuevo flujo)
       const result = await transactionService.createDepositRequest({
-        account_id: selectedAccount.id,
-        account_name: selectedAccount.account_name,
+        account_id: 'general', // Balance general, no cuenta MT5
+        account_name: t('common.generalBalance'),
         amount: parseFloat(amount),
         payment_method: 'crypto',
         crypto_currency: selectedCoin,
@@ -491,10 +563,14 @@ const Wallet = () => {
         throw new Error(result.error || t('deposit.errors.processingError'));
       }
 
+      // Actualizar balance del broker (sumar el monto)
+      const newBalance = brokerBalance + parseFloat(amount);
+      await updateBrokerBalance(newBalance);
+
       // Notificar al usuario
       const depositAmount = parseFloat(amount);
       setSuccess(t('deposit.pending', { amount }));
-      notifyDeposit(depositAmount, selectedAccount.account_name);
+      notifyDeposit(depositAmount, t('common.generalBalance'));
 
       // Cerrar modal y resetear
       setShowCryptoDepositModal(false);
@@ -503,6 +579,8 @@ const Wallet = () => {
       // Recargar cuentas y transacciones
       await loadAccounts();
       await loadTransactions();
+      await loadBrokerBalance();
+      await loadBrokerBalance();
     } catch (error) {
       console.error('Error processing crypto deposit:', error);
       notifyError(t('deposit.title'), t('deposit.errors.processingError'));
@@ -576,6 +654,7 @@ const Wallet = () => {
     if (historyFilter === 'transfers') return transaction.type === 'transfer';
     return true;
   });
+
 
   // Renderizar contenido de operación según tipo
   const renderOperationContent = () => {
@@ -762,11 +841,9 @@ const Wallet = () => {
                   min="0"
                   className="w-full px-4 py-3 bg-[#1e1e1e] border border-[#4b5563] rounded-lg text-white placeholder-[#6b7280] focus:border-[#06b6d4] focus:outline-none"
                 />
-                {selectedAccount && (
-                  <p className="text-xs text-[#9ca3af] mt-2">
-                    {t('common.availableBalance')}: ${(selectedAccount.balance || 0).toLocaleString()} USD
-                  </p>
-                )}
+                <p className="text-xs text-[#9ca3af] mt-2">
+                  {t('common.availableBalance')}: ${brokerBalance.toLocaleString()} USD ({t('common.generalBalance')})
+                </p>
               </div>
 
               {/* Mostrar información del método de pago configurado */}
@@ -1027,7 +1104,12 @@ const Wallet = () => {
                   filteredTransactions.map((transaction, index) => (
                     <tr key={transaction.id} className={`${index % 2 === 0 ? 'bg-[#1a1a1a]' : 'bg-[#2a2a2a]'} hover:bg-[#3a3a3a] transition-colors`}>
                       <td className="px-6 py-4 text-gray-300 text-sm">
-                        {transaction.date.toLocaleDateString()}
+                        <div>
+                          {transaction.date.toLocaleDateString()}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {transaction.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -1098,7 +1180,12 @@ const Wallet = () => {
                         ${transaction.amount.toLocaleString()} {transaction.currency}
                       </div>
                       <div className="text-gray-400 text-sm">
-                        {transaction.date.toLocaleDateString()}
+                        <div>
+                          {transaction.date.toLocaleDateString()}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {transaction.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       </div>
                     </div>
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -1178,7 +1265,7 @@ const Wallet = () => {
           <h1 className="text-2xl font-semibold">{t('title')}</h1>
         </div>
         
-        {/* Tabs y botón historial */}
+        {/* Tabs y balance general en la esquina superior */}
         <div className="flex items-center justify-between">
           <div className="flex bg-[#2a2a2a] rounded-lg p-1">
             <button
@@ -1222,16 +1309,25 @@ const Wallet = () => {
             </button>
           </div>
           
-          {/* Botón Historial */}
-          <button
-            onClick={() => setShowHistorialModal(true)}
-            className="flex items-center space-x-2 bg-[#2a2a2a] hover:bg-[#333] border border-[#444] rounded-lg px-4 py-2 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{t('tabs.history')}</span>
-          </button>
+          {/* Balance General y Botón Historial */}
+          <div className="flex items-center space-x-4">
+            {/* Balance General del Broker - Simple */}
+            <div className="text-right">
+              <div className="text-sm text-gray-400">{t('common.generalBalance')}</div>
+              <div className="text-xl font-bold text-white">${brokerBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            </div>
+            
+            {/* Botón Historial */}
+            <button
+              onClick={() => setShowHistorialModal(true)}
+              className="flex items-center space-x-2 bg-[#2a2a2a] hover:bg-[#333] border border-[#444] rounded-lg px-4 py-2 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{t('tabs.history')}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1309,14 +1405,14 @@ const Wallet = () => {
         </div>
       </div>
 
-      {/* Balance Card */}
+      {/* Balance Card Original (si hay cuenta seleccionada) */}
       {selectedAccount && (
         <div className="mb-8">
-          <div className="bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-2xl p-6 border-t border-l border-r border-cyan-500">
+          <div className="bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-2xl p-6 border border-gray-600">
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-gray-400 mb-2 text-sm font-medium">{t('common.availableBalance')}</p>
-                <h2 className="text-3xl font-bold text-white">${(selectedAccount.balance || 0).toLocaleString()}</h2>
+                <p className="text-gray-400 mb-2 text-sm font-medium">{t('common.availableBalance')} - {selectedAccount.account_name}</p>
+                <h3 className="text-2xl font-bold text-white">${(selectedAccount.balance || 0).toLocaleString()}</h3>
                 <p className="text-xs text-gray-400 mt-2">{selectedAccount.accountType} {selectedAccount.accountNumber}</p>
               </div>
               <div className="text-right">

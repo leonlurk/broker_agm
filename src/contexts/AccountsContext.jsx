@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { getUserTradingAccounts } from '../services/tradingAccounts';
+import { getUserTradingAccounts, cleanInactiveDemoAccounts } from '../services/tradingAccounts';
 
 // Tipos de operaciones de billetera
 export const WALLET_OPERATIONS = {
@@ -81,6 +81,28 @@ export const AccountsProvider = ({ children }) => {
         
         console.log('Debug AccountsContext - Organized accounts:', organizedAccounts);
         setAccounts(organizedAccounts);
+        
+        // Run periodic cleanup of inactive demo accounts (only once per session)
+        if (organizedAccounts[ACCOUNT_CATEGORIES.DEMO].length > 0) {
+          const lastCleanup = localStorage.getItem('lastDemoCleanup');
+          const now = Date.now();
+          const ONE_DAY = 24 * 60 * 60 * 1000;
+          
+          if (!lastCleanup || (now - parseInt(lastCleanup)) > ONE_DAY) {
+            cleanInactiveDemoAccounts(currentUser.id)
+              .then(result => {
+                if (result.success && result.deletedCount > 0) {
+                  console.log(`Cleaned ${result.deletedCount} inactive demo accounts`);
+                  // Reload accounts to reflect changes
+                  setTimeout(() => loadAccounts(), 1000);
+                }
+                localStorage.setItem('lastDemoCleanup', now.toString());
+              })
+              .catch(error => {
+                console.error('Error in automatic cleanup:', error);
+              });
+          }
+        }
         
         // Seleccionar automáticamente la primera cuenta REAL si no hay ninguna seleccionada
         // Si no hay cuentas reales, no seleccionar ninguna por defecto

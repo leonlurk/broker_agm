@@ -1,4 +1,11 @@
 {
+  "verification": {
+    "title": "Verify your account",
+    "message": "To start trading, you need to verify your email account first.",
+    "verifyButton": "Verify account",
+    "emailSent": "Verification email sent. Please check your inbox.",
+    "emailError": "Error sending verification email. Please try again."
+  },
   "buttons": {
     "save": "Save",
     "cancel": "Cancel",

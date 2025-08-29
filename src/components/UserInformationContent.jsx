@@ -401,6 +401,7 @@ const UserInformationContent = ({ onBack }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           {/* Email - Solo lectura */}
           <div className="relative">
+            <label className="block text-white text-sm font-medium mb-2">{t('profile.email')}</label>
             <input 
               type="email"
               value={currentUser?.email || ''}
@@ -419,6 +420,7 @@ const UserInformationContent = ({ onBack }) => {
           
           {/* Fecha de nacimiento */}
           <div className="relative">
+            <label className="block text-white text-sm font-medium mb-2">{t('profile.birthDate')}</label>
             <input 
               type="date"
               name="fechanacimiento"
@@ -438,6 +440,7 @@ const UserInformationContent = ({ onBack }) => {
           
           {/* Género */}
           <div className="relative" ref={genderDropdownRef}>
+            <label className="block text-white text-sm font-medium mb-2">{t('profile.gender')}</label>
             <button
               type="button"
               onClick={() => setShowGenderDropdown(!showGenderDropdown)}
@@ -499,6 +502,7 @@ const UserInformationContent = ({ onBack }) => {
           
           {/* País */}
           <div className="relative" ref={countryDropdownRef}>
+            <label className="block text-white text-sm font-medium mb-2">{t('profile.country')}</label>
             <button
               type="button"
               onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
@@ -559,6 +563,7 @@ const UserInformationContent = ({ onBack }) => {
           
           {/* Ciudad */}
           <div>
+            <label className="block text-white text-sm font-medium mb-2">{t('profile.city')}</label>
             <input 
               type="text" 
               name="ciudad" 
@@ -578,6 +583,7 @@ const UserInformationContent = ({ onBack }) => {
           
           {/* Teléfono */}
           <div className="relative">
+            <label className="block text-white text-sm font-medium mb-2">{t('profile.phone')}</label>
             <input 
               type="tel" 
               name="phonenumber" 

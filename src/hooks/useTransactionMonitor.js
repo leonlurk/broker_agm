@@ -4,11 +4,13 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabase/config';
 import { logger } from '../utils/logger';
 import toast from 'react-hot-toast';
 
 export const useTransactionMonitor = (userId, onStatusChange) => {
+  const { t } = useTranslation('wallet');
   const subscriptionsRef = useRef([]);
 
   const handleTransactionUpdate = useCallback((type, payload) => {
@@ -26,43 +28,43 @@ export const useTransactionMonitor = (userId, onStatusChange) => {
         switch(type) {
           case 'deposit':
             if (newStatus === 'confirmed') {
-              message = `✅ Depósito de $${payload.new.amount} confirmado`;
+              message = `✅ ${t('notifications.deposit.confirmed', { amount: payload.new.amount })}`;
               toastType = 'success';
             } else if (newStatus === 'failed') {
-              message = `❌ Depósito de $${payload.new.amount} rechazado`;
+              message = `❌ ${t('notifications.deposit.failed', { amount: payload.new.amount })}`;
               toastType = 'error';
             } else if (newStatus === 'processing') {
-              message = `⏳ Depósito de $${payload.new.amount} en proceso`;
+              message = `⏳ ${t('notifications.deposit.processing', { amount: payload.new.amount })}`;
             }
             break;
             
           case 'withdrawal':
             if (newStatus === 'approved') {
-              message = `✅ Retiro de $${payload.new.amount} aprobado`;
+              message = `✅ ${t('notifications.withdrawal.approved', { amount: payload.new.amount })}`;
               toastType = 'success';
             } else if (newStatus === 'completed') {
-              message = `💰 Retiro de $${payload.new.amount} completado`;
+              message = `💰 ${t('notifications.withdrawal.completed', { amount: payload.new.amount })}`;
               toastType = 'success';
             } else if (newStatus === 'rejected') {
-              message = `❌ Retiro de $${payload.new.amount} rechazado`;
+              message = `❌ ${t('notifications.withdrawal.rejected', { amount: payload.new.amount })}`;
               if (payload.new.rejection_reason) {
                 message += `: ${payload.new.rejection_reason}`;
               }
               toastType = 'error';
             } else if (newStatus === 'processing') {
-              message = `⏳ Retiro de $${payload.new.amount} procesándose`;
+              message = `⏳ ${t('notifications.withdrawal.processing', { amount: payload.new.amount })}`;
             }
             break;
             
           case 'transfer':
             if (newStatus === 'approved') {
-              message = `✅ Transferencia de $${payload.new.amount} aprobada`;
+              message = `✅ ${t('notifications.transfer.approved', { amount: payload.new.amount })}`;
               toastType = 'success';
             } else if (newStatus === 'completed') {
-              message = `💸 Transferencia de $${payload.new.amount} completada`;
+              message = `💸 ${t('notifications.transfer.completed', { amount: payload.new.amount })}`;
               toastType = 'success';
             } else if (newStatus === 'rejected') {
-              message = `❌ Transferencia de $${payload.new.amount} rechazada`;
+              message = `❌ ${t('notifications.transfer.rejected', { amount: payload.new.amount })}`;
               if (payload.new.rejection_reason) {
                 message += `: ${payload.new.rejection_reason}`;
               }
@@ -94,7 +96,7 @@ export const useTransactionMonitor = (userId, onStatusChange) => {
         }
       }
     }
-  }, [onStatusChange]);
+  }, [onStatusChange, t]);
 
   const setupSubscriptions = useCallback(() => {
     if (!userId) {

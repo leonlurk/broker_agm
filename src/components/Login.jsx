@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthAdapter } from '../services/database.adapter';
 import { useTranslation } from 'react-i18next';
 import twoFactorService from '../services/twoFactorService';
 import TwoFactorEmailModal from './TwoFactorEmailModal';
-import { Shield } from 'lucide-react';
+import { Shield, Mail } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { resendVerificationEmail } from '../supabase/auth';
 
 const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const { t } = useTranslation('auth');
+  const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -17,16 +20,38 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const [tempUser, setTempUser] = useState(null);
   const [twoFactorMethod, setTwoFactorMethod] = useState(null);
   const [showEmail2FA, setShowEmail2FA] = useState(false);
+  const [showVerificationNeeded, setShowVerificationNeeded] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [message, setMessage] = useState('');
+
+  // Check for messages from register page
+  useEffect(() => {
+    if (location.state?.message) {
+      setMessage(location.state.message);
+      if (location.state.email) {
+        setVerificationEmail(location.state.email);
+      }
+    }
+  }, [location.state]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setMessage('');
     setLoading(true);
     
     try {
       const { user, error } = await AuthAdapter.loginUser(username, password);
       
       if (error) {
+        // Check if error is due to unverified email
+        if (error.message?.includes('email not confirmed') || error.message?.includes('Email not verified')) {
+          setShowVerificationNeeded(true);
+          setVerificationEmail(username.includes('@') ? username : user?.email || '');
+          setError('Tu email no está verificado. Por favor verifica tu email antes de iniciar sesión.');
+          setLoading(false);
+          return;
+        }
         throw new Error(error.message || t('errors.loginFailed'));
       }
       
@@ -97,15 +122,58 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
     }
   };
 
+  const handleResendVerification = async () => {
+    if (!verificationEmail) {
+      setError('Por favor ingresa tu email primero');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    setMessage('');
+    
+    try {
+      const result = await resendVerificationEmail(verificationEmail);
+      
+      if (result.success) {
+        setMessage('Email de verificación reenviado exitosamente. Por favor revisa tu correo.');
+        setShowVerificationNeeded(false);
+      } else {
+        setError(result.error || 'Error al reenviar el email de verificación');
+      }
+    } catch (err) {
+      console.error('Error resending verification:', err);
+      setError('Error al reenviar el email de verificación');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="w-[330px] h-[700px] sm:w-full md:w-[490px] p-5 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">
       <div className="flex justify-center mb-6">
         <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-16" />
       </div>
       
+      {message && (
+        <div className="bg-green-500 bg-opacity-20 border border-green-600 text-white px-4 py-2 rounded-lg mb-4">
+          {message}
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-500 bg-opacity-20 border border-red-600 text-white px-4 py-2 rounded-lg mb-4">
           {error}
+          {showVerificationNeeded && (
+            <button
+              onClick={handleResendVerification}
+              disabled={loading}
+              className="mt-2 w-full py-2 px-4 bg-cyan-600 text-white rounded-full hover:bg-cyan-700 transition flex items-center justify-center gap-2"
+            >
+              <Mail className="w-4 h-4" />
+              {loading ? 'Enviando...' : 'Reenviar email de verificación'}
+            </button>
+          )}
         </div>
       )}
       

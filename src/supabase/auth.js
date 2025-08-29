@@ -65,6 +65,10 @@ export const registerUser = async (username, email, password, refId = null) => {
     // Temporarily skip username check to avoid hanging - we'll check after signup
     logger.auth(`[Supabase] Proceeding with registration (will check username during profile creation)`);
     
+    // Generate verification token for email confirmation
+    const verificationToken = crypto.randomUUID();
+    logger.auth(`[Supabase] Generated verification token for email confirmation`);
+    
     // Step 1: Sign up with Supabase Auth
     logger.auth(`[Supabase] Calling signUp with email: ${email}`);
     
@@ -74,8 +78,13 @@ export const registerUser = async (username, email, password, refId = null) => {
       options: {
         data: {
           username: username,
-          full_name: username // Use full_name which the trigger expects
-        }
+          full_name: username, // Use full_name which the trigger expects
+          verification_token: verificationToken,
+          email_verified: false
+        },
+        emailRedirectTo: `${window.location.origin}/verify-email?token=${verificationToken}`,
+        // Importante: NO auto-confirmar el email
+        shouldAutoConfirm: false
       }
     };
     
@@ -131,6 +140,23 @@ export const registerUser = async (username, email, password, refId = null) => {
     const user = authData.user;
     logger.auth(`[Supabase] Auth user created successfully`, { uid: user.id });
     
+    // Auto-confirm email in Supabase to allow immediate login
+    // This is needed because we handle email verification ourselves with Brevo
+    try {
+      const { error: confirmError } = await supabase.auth.admin.updateUserById(
+        user.id,
+        { email_confirmed_at: new Date().toISOString() }
+      );
+      
+      if (confirmError) {
+        logger.warn('[Supabase] Could not auto-confirm email, will try alternative method:', confirmError);
+      } else {
+        logger.auth('[Supabase] Email auto-confirmed in Supabase Auth');
+      }
+    } catch (adminError) {
+      logger.warn('[Supabase] Admin API not available, user will need manual confirmation:', adminError.message);
+    }
+    
     // Step 2: Create profile manually (trigger doesn't work for collaborators)
     // First try to create profile using RPC function
     try {
@@ -140,13 +166,15 @@ export const registerUser = async (username, email, password, refId = null) => {
         user_id: user.id,
         user_email: email,
         user_username: username,
-        user_full_name: username
+        user_full_name: username,
+        user_verification_token: verificationToken,
+        user_email_verified: false
       });
       
       if (rpcError) {
         logger.warn('[Supabase] RPC profile creation failed:', rpcError);
         
-        // Fallback: Direct insert
+        // Fallback: Direct insert with verification token
         const userData = {
           id: user.id,
           email: email,
@@ -157,6 +185,9 @@ export const registerUser = async (username, email, password, refId = null) => {
           status: 'active',
           phone: null,
           country: null,
+          email_verified: false,
+          verification_token: verificationToken,  // IMPORTANTE: Guardar el token
+          verification_sent_at: new Date().toISOString(),
           metadata: {
             user_type: 'broker',
             referral_count: 0,
@@ -187,6 +218,22 @@ export const registerUser = async (username, email, password, refId = null) => {
         }
       } else {
         logger.auth('[Supabase] Profile created via RPC:', rpcResult);
+        
+        // Update profile with verification token (in case RPC didn't save it)
+        const { error: tokenUpdateError } = await supabase
+          .from(USERS_TABLE)
+          .update({
+            verification_token: verificationToken,
+            email_verified: false,
+            verification_sent_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+          
+        if (tokenUpdateError) {
+          logger.warn('[Supabase] Could not update verification token:', tokenUpdateError);
+        } else {
+          logger.auth('[Supabase] Verification token saved successfully');
+        }
       }
     } catch (profileError) {
       logger.error('[Supabase] Exception creating profile:', profileError);
@@ -197,7 +244,32 @@ export const registerUser = async (username, email, password, refId = null) => {
 
     logger.auth(`[Supabase] User profile updated successfully`);
     
-    return { user, error: null };
+    // Step 3: Send verification email using Brevo
+    try {
+      logger.auth('[Supabase] Sending verification email via Brevo');
+      const emailServiceProxy = (await import('../services/emailServiceProxy')).default;
+      
+      await emailServiceProxy.sendVerificationEmail(
+        { email: email, name: username },
+        verificationToken
+      );
+      
+      logger.auth('[Supabase] Verification email sent successfully');
+    } catch (emailError) {
+      logger.error('[Supabase] Error sending verification email:', emailError);
+      // Don't fail registration if email fails - user can request resend
+    }
+    
+    // Return user with verification status
+    return { 
+      user: {
+        ...user,
+        email_verified: false,
+        verification_token: verificationToken,
+        needs_email_verification: true
+      }, 
+      error: null 
+    };
   } catch (error) {
     logger.error('[Supabase] Registration error', error);
     return { user: null, error };
@@ -295,8 +367,44 @@ export const loginUser = async (identifier, password) => {
     const user = authData.user;
     logger.auth(`[Supabase] Authentication successful`);
     
-    // Skip profile verification for now to avoid hanging
-    logger.auth(`[Supabase] Login successful (skipping profile verification for performance)`);
+    // Check if email is verified in our custom field
+    // Only check for users that have the email_verified field (new users)
+    try {
+      const { data: profile } = await supabase
+        .from(USERS_TABLE)
+        .select('email_verified, created_at')
+        .eq('id', user.id)
+        .single();
+      
+      // Check email verification status but allow login for all users
+      // We'll track verification status in the user object
+      if (profile) {
+        // Add email_verified status to the user object
+        user.email_verified = profile.email_verified !== false; // true if null or true, false if false
+        
+        // Check if this is a new user (created after we implemented email verification)
+        const createdDate = new Date(profile.created_at);
+        const verificationStartDate = new Date('2025-08-28'); // Today's date when we implemented this
+        
+        if (profile.email_verified === false && createdDate >= verificationStartDate) {
+          // This is a new unverified user
+          user.email_verified = false;
+          logger.auth(`[Supabase] New user email not verified, allowing limited access`);
+        } else if (profile.email_verified === false && createdDate < verificationStartDate) {
+          // Old user with email_verified = false, treat as verified
+          user.email_verified = true;
+          logger.warn(`[Supabase] Legacy user with unverified email, treating as verified:`, user.id);
+        }
+      } else {
+        // If no profile, assume verified (for safety)
+        user.email_verified = true;
+      }
+    } catch (profileError) {
+      logger.warn('[Supabase] Could not check email verification status:', profileError);
+      // Continue login if we can't check (to avoid blocking users)
+    }
+    
+    logger.auth(`[Supabase] Login successful`);
     return { user, error: null };
 
   } catch (error) {
@@ -601,6 +709,168 @@ export const verifyCode = async (code) => {
   return { success: true };
 };
 
+/**
+ * Verify email with token
+ * Custom implementation for email verification with Brevo
+ */
+export const verifyEmailWithToken = async (token) => {
+  try {
+    logger.auth('[Supabase] Verifying email with token:', token);
+    
+    // Find user with this token
+    const { data: profile, error: findError } = await supabase
+      .from(USERS_TABLE)
+      .select('id, email, username, email_verified')
+      .eq('verification_token', token)
+      .single();
+    
+    if (findError) {
+      logger.error('[Supabase] Error finding user with token:', findError);
+      return { 
+        success: false, 
+        error: 'Token de verificación inválido o expirado' 
+      };
+    }
+    
+    if (!profile) {
+      logger.error('[Supabase] No user found with token:', token);
+      return { 
+        success: false, 
+        error: 'Token de verificación no encontrado' 
+      };
+    }
+    
+    // Check if already verified
+    if (profile.email_verified === true) {
+      logger.auth('[Supabase] Email already verified for user:', profile.id);
+      return { 
+        success: true, 
+        user: profile,
+        message: 'Email ya verificado anteriormente' 
+      };
+    }
+    
+    // Update user as verified
+    const { error: updateError } = await supabase
+      .from(USERS_TABLE)
+      .update({
+        email_verified: true,
+        verification_token: null,
+        verified_at: new Date().toISOString()
+      })
+      .eq('id', profile.id);
+    
+    if (updateError) {
+      logger.error('[Supabase] Error updating verification status:', updateError);
+      return { 
+        success: false, 
+        error: 'Error al actualizar el estado de verificación' 
+      };
+    }
+    
+    // Also update the Supabase auth metadata to confirm the email
+    try {
+      const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
+        profile.id,
+        { email_confirmed_at: new Date().toISOString() }
+      );
+      
+      if (authUpdateError) {
+        logger.warn('[Supabase] Could not update auth email confirmation:', authUpdateError);
+      }
+    } catch (authError) {
+      logger.warn('[Supabase] Auth update skipped:', authError.message);
+    }
+    
+    logger.auth('[Supabase] Email verified successfully for user:', profile.id);
+    return { 
+      success: true, 
+      user: profile 
+    };
+  } catch (error) {
+    logger.error('[Supabase] Exception in verifyEmailWithToken:', error);
+    return { 
+      success: false, 
+      error: 'Error inesperado al verificar email' 
+    };
+  }
+};
+
+// Rate limiting storage for email verification resends
+const resendRateLimits = new Map();
+
+/**
+ * Resend verification email - Now uses backend API with rate limiting
+ */
+export const resendVerificationEmail = async (email) => {
+  try {
+    // Check rate limiting (1 resend every 60 seconds)
+    const now = Date.now();
+    const lastResend = resendRateLimits.get(email);
+    
+    if (lastResend) {
+      const timeSinceLastResend = now - lastResend;
+      const waitTime = 60000; // 60 seconds
+      
+      if (timeSinceLastResend < waitTime) {
+        const remainingSeconds = Math.ceil((waitTime - timeSinceLastResend) / 1000);
+        logger.warn(`[Supabase] Rate limit hit for email: ${email}. Wait ${remainingSeconds} seconds`);
+        return { 
+          success: false, 
+          error: `Por favor espera ${remainingSeconds} segundos antes de reenviar el email`,
+          rateLimited: true,
+          remainingSeconds
+        };
+      }
+    }
+    
+    logger.auth('[Supabase] Resending verification email via backend API:', email);
+    
+    // Use backend API endpoint for resending
+    const API_URL = import.meta.env.VITE_CRYPTO_API_URL || 'https://whapy.apekapital.com:446/api';
+    
+    const response = await fetch(`${API_URL}/auth/resend-verification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // Update rate limit timestamp on successful send
+      resendRateLimits.set(email, now);
+      
+      // Clean up old entries after 5 minutes
+      setTimeout(() => {
+        const fiveMinutesAgo = Date.now() - 300000;
+        for (const [key, value] of resendRateLimits.entries()) {
+          if (value < fiveMinutesAgo) {
+            resendRateLimits.delete(key);
+          }
+        }
+      }, 300000);
+      
+      logger.auth('[Supabase] Verification email resent successfully via backend');
+      return { success: true };
+    } else {
+      logger.error('[Supabase] Backend error resending verification:', result.message);
+      return { 
+        success: false, 
+        error: result.message || 'Error al reenviar email de verificación' 
+      };
+    }
+  } catch (error) {
+    logger.error('[Supabase] Error resending verification email:', error);
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+};
+
 // Export all functions for compatibility
 export default {
   registerUser,
@@ -617,5 +887,7 @@ export default {
   addPaymentMethod,
   deletePaymentMethod,
   getPaymentMethods,
-  verifyCode
+  verifyCode,
+  verifyEmailWithToken,
+  resendVerificationEmail
 };

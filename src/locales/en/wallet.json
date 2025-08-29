@@ -17,6 +17,8 @@
     "completeOperation": "Complete operation",
     "availableBalance": "Available Balance",
     "activeAccount": "Active Account",
+    "generalBalance": "Total Balance",
+    "brokerBalance": "Broker Balance",
     "noAccounts": "You have no accounts available",
     "createAccountFirst": "Create an account first in Trading Accounts",
     "loading": "Loading...",
@@ -158,6 +160,64 @@
       "processingError": "Error creating transfer request"
     }
   },
+  "common": {
+    "amount": "Amount",
+    "continue": "Continue",
+    "processing": "Processing...",
+    "important": "Important",
+    "selectAccount": "Select Account",
+    "selectMethod": "Select method",
+    "methodDetails": "Method details",
+    "completeOperation": "Complete operation",
+    "availableBalance": "Available Balance",
+    "activeAccount": "Active Account",
+    "generalBalance": "Total Balance",
+    "brokerBalance": "Broker Balance",
+    "noAccounts": "You have no accounts available",
+    "createAccountFirst": "Create an account first in Trading Accounts",
+    "loading": "Loading...",
+    "reload": "Reload",
+    "close": "Close",
+    "acceptTerms": "I understand and accept the terms",
+    "allAccounts": "All Accounts",
+    "totalBalance": "Total Balance",
+    "balance": "Balance",
+    "quickActions": "Quick Actions",
+    "steps": {
+      "step1": "Step 1",
+      "step2": "Step 2",
+      "step3": "Step 3"
+    },
+    "methods": {
+      "crypto": "Cryptocurrency",
+      "bank": "Bank",
+      "internal": "Internal Transfer",
+      "bankTransfer": "Will be processed via bank transfer",
+      "creditCard": "Will be processed via credit card",
+      "skrill": "Will be processed via Skrill"
+    },
+    "errors": {
+      "selectAccount": "Must select an account",
+      "invalidAmount": "Enter a valid amount",
+      "insufficientBalance": "Insufficient balance",
+      "selectMethod": "Must select a method",
+      "acceptTerms": "Must accept terms and conditions",
+      "processingError": "Error processing operation. Please try again.",
+      "operationError": "Operation Error",
+      "loadingData": "Error loading data"
+    }
+  },
+  "metrics": {
+    "totalDeposits": "Total Deposits",
+    "totalWithdrawals": "Total Withdrawals",
+    "activeAccounts": "Active Accounts",
+    "realAccounts": "Real accounts",
+    "operations": "operations"
+  },
+  "charts": {
+    "balanceEvolution": "Balance Evolution",
+    "accountDistribution": "Account Distribution"
+  },
   "history": {
     "title": "Transaction History",
     "refresh": "Refresh",
@@ -193,6 +253,60 @@
       "cancelled": "Cancelled"
     },
     "empty": "No transactions to show",
-    "loading": "Loading history..."
+    "loading": "Loading history...",
+    "recentTransactions": "Recent Transactions",
+    "viewAll": "View all"
+  },
+  "cryptoModal": {
+    "title": "Crypto Deposit",
+    "network": "Network",
+    "amountToDeposit": "Amount to deposit",
+    "scanQR": "Scan the QR code",
+    "copyAddress": "Or copy the address",
+    "minimum": "Minimum",
+    "generating": "Generating deposit address...",
+    "waiting": "Waiting for deposit...",
+    "checking": "Checking every 10 seconds",
+    "confirmed": "Deposit confirmed!",
+    "amount": "Amount",
+    "close": "Close",
+    "important": "Important",
+    "sendOnly": "Send only {{coin}} to this address",
+    "networkLabel": "Network: {{network}}",
+    "acceptsBoth": "This address accepts USDT on both Ethereum (ERC-20) and BSC (BEP-20)",
+    "minAmount": "Minimum amount: ${{amount}} USD",
+    "autoCredit": "Funds will be credited automatically",
+    "errors": {
+      "authError": "Authentication error with payment service",
+      "generateError": "Error generating deposit address",
+      "copyError": "Error copying"
+    },
+    "success": {
+      "addressCopied": "Address copied"
+    },
+    "tooltips": {
+      "amount": "Please transfer the exact amount specified. If you transfer slightly less (1-2 USD), don't worry - the full amount will still be credited to your account.",
+      "network": "This is the blockchain network you must use to send the transaction. Make sure to select the correct network in your wallet.",
+      "address": "This is the company's deposit address. Copy this exact address or scan the QR code to send your funds.",
+      "qrCode": "Scan this QR code with your wallet app to automatically send the transaction with the correct address."
+    }
+  },
+  "notifications": {
+    "deposit": {
+      "confirmed": "Deposit of ${{amount}} confirmed",
+      "failed": "Deposit of ${{amount}} failed", 
+      "processing": "Deposit of ${{amount}} processing"
+    },
+    "withdrawal": {
+      "approved": "Withdrawal of ${{amount}} approved",
+      "completed": "Withdrawal of ${{amount}} completed",
+      "rejected": "Withdrawal of ${{amount}} rejected",
+      "processing": "Withdrawal of ${{amount}} processing"
+    },
+    "transfer": {
+      "approved": "Transfer of ${{amount}} approved",
+      "completed": "Transfer of ${{amount}} completed",
+      "rejected": "Transfer of ${{amount}} rejected"
+    }
   }
 }

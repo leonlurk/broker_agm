@@ -6,13 +6,14 @@
       "Bash(rg:*)",
       "Bash(grep:*)",
       "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\agm\\flofy-crm/**)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
+    "ask": [],
     "additionalDirectories": [
       "C:\\mnt\\c\\Users\\Administrator\\Desktop\\broker",
       "C:\\c\\Users\\LURK\\Desktop\\PROYECTOS"
-    ],
-    "ask": []
+    ]
   }
 }

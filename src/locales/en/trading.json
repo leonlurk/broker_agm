@@ -39,6 +39,13 @@
       "investorPasswordReadOnly": "Investor Password (Read Only)",
       "currentBalance": "Current Balance",
       "createdAt": "Created",
+      "lastUpdated": "Last updated:",
+      "refresh": "Refresh",
+      "dataWillUpdate": "Data will update in approximately 5 minutes",
+      "refreshing": "Refreshing...",
+      "dataRefreshed": "Data refreshed",
+      "demoAccountLimit": "You have reached the maximum limit of 3 demo accounts. Delete an inactive demo account to create a new one.",
+      "realAccountLimit": "You have reached the maximum limit of 3 real accounts. You cannot create more real accounts.",
       "status": "Status",
       "activeAccount": "Active Account",
       "accountNameLabel": "Account Name",
@@ -60,7 +67,7 @@
       "passwordLabel": "Password:",
       "investorPasswordLabel": "Investor Password:",
       "serverLabel": "Server:",
-      "credentialsWarning": "⚠️ Store these credentials securely. They cannot be recovered later.",
+      "credentialsWarning": "⚠️ These credentials are also available in the 'Details' section of your account.",
       "initialBalanceDescription": "Initial amount for demo account. Demo accounts can practice with virtual funds.",
       "validation": {
         "accountNameRequired": "Account name is required",
@@ -68,7 +75,12 @@
         "authRequired": "You must be authenticated to create an account",
         "createError": "Error creating account",
         "unexpectedError": "Unexpected error creating account"
-      }
+      },
+      "verificationRequired": "Verification Required",
+      "verificationMessage": "To create trading accounts, you must first verify your email. This step is necessary to protect your account and comply with regulations.",
+      "verifyAccount": "Verify my account",
+      "verificationEmailSent": "Verification email sent. Please check your inbox.",
+      "verificationEmailError": "Error sending verification email. Please try again."
     },
     "actions": {
       "deposit": "Deposit",

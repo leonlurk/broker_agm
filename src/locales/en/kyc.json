@@ -20,6 +20,7 @@
     "title": "Country of Residence",
     "description": "Please choose your country of residence",
     "placeholder": "Search country...",
+    "selectCountry": "Select country",
     "notFound": "No countries found"
   },
   "document": {

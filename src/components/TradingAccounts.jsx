@@ -227,6 +227,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState(null);
+  const [canRefresh, setCanRefresh] = useState(true);
 
   // State for new instrument filter
   const [showInstrumentDropdown, setShowInstrumentDropdown] = useState(false);
@@ -674,10 +676,71 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         setIsLoadingMetrics(false);
         setIsRefreshing(false);
         loadingRef.current = false;
+        // Actualizar timestamp de última actualización
+        setLastUpdated(Date.now());
         // Guardar la cuenta cargada exitosamente
         if (account) {
           lastLoadedAccountRef.current = account.account_number;
         }
+      }
+    };
+
+    // Función para refresh manual de datos
+    const handleRefreshData = async () => {
+      if (!canRefresh || isRefreshing) {
+        return;
+      }
+
+      const currentTime = Date.now();
+      const timeSinceLastRefresh = lastRefreshTime ? currentTime - lastRefreshTime : Infinity;
+      const RATE_LIMIT_MS = 30000; // 30 segundos
+
+      // Rate limiting
+      if (timeSinceLastRefresh < RATE_LIMIT_MS) {
+        const remainingTime = Math.ceil((RATE_LIMIT_MS - timeSinceLastRefresh) / 1000);
+        toast.error(`Espere ${remainingTime} segundos antes de actualizar nuevamente`);
+        return;
+      }
+
+      const selectedAccount = getAllAccounts().find(acc => acc.id === selectedAccountId);
+      if (!selectedAccount || !selectedAccount.account_number) {
+        return;
+      }
+
+      try {
+        setCanRefresh(false);
+        setLastRefreshTime(currentTime);
+        
+        // Obtener timestamp antes del fetch
+        const beforeFetch = Date.now();
+        
+        // Llamar a la función de carga de métricas
+        await loadAccountMetrics(selectedAccount);
+        
+        // Verificar si los datos cambiaron comparando timestamps
+        const afterFetch = Date.now();
+        const dataAge = afterFetch - (lastUpdated || 0);
+        
+        // Si los datos no han cambiado (timestamp muy similar), mostrar mensaje
+        if (dataAge < 60000) { // Menos de 1 minuto de diferencia
+          toast.info(t('accounts.fields.dataWillUpdate'), {
+            duration: 4000,
+            icon: '⏱️'
+          });
+        } else {
+          toast.success(t('trading.messages.dataRefreshed') || 'Datos actualizados');
+          setLastUpdated(Date.now());
+        }
+        
+        // Re-habilitar refresh después de 30 segundos
+        setTimeout(() => {
+          setCanRefresh(true);
+        }, RATE_LIMIT_MS);
+        
+      } catch (error) {
+        console.error('Error refreshing data:', error);
+        toast.error('Error al actualizar los datos');
+        setCanRefresh(true);
       }
     };
     
@@ -1701,8 +1764,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           peakBalance = currentBalance;
         }
         
-        // Calcular drawdown como porcentaje desde el pico
-        const drawdown = peakBalance > 0 ? ((peakBalance - currentBalance) / peakBalance) * 100 : 0;
+        // Calcular drawdown como porcentaje desde el pico (negativo para representar pérdida)
+        const drawdown = peakBalance > 0 ? -((peakBalance - currentBalance) / peakBalance) * 100 : 0;
         
         return {
           date: new Date(point.date || point.timestamp).toLocaleDateString('es-ES', { 
@@ -1834,7 +1897,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       
       return {
         date: formattedDate,
-        value: Math.round(drawdown * 100) / 100,
+        value: Math.round(drawdown * 100) / 100, // Ya es negativo por la fórmula
         dateISO: dateKey
       };
     });
@@ -2469,7 +2532,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   return (
                     <>
                 <div className="mb-3 sm:mb-4">
-                  <h2 className="text-lg sm:text-xl font-semibold mb-2">{t('accounts.details.title')}</h2>
+                  <div className="flex justify-between items-start mb-2">
+                    <h2 className="text-lg sm:text-xl font-semibold">{t('accounts.details.title')}</h2>
+                    <p className="text-gray-500 text-xs">
+                      {t('accounts.fields.lastUpdated')} {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
                   <p className="text-gray-400 text-xs sm:text-sm">{t('accounts.details.subtitle')}</p>
                 </div>
                 
@@ -2750,16 +2818,16 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 </CustomTooltip>
                 <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
-                    {(realMetrics?.max_drawdown || 0).toFixed(2)}%
+                    -{(realMetrics?.max_drawdown || 0).toFixed(2)}%
                   </span>
                   <span className={`px-2 py-1 rounded text-xs ${
                     (realMetrics?.current_drawdown || 0) <= 5
-                      ? 'bg-green-800 bg-opacity-30 text-green-400'
+                      ? 'bg-red-800 bg-opacity-30 text-red-400'
                       : (realMetrics?.current_drawdown || 0) <= 10
-                      ? 'bg-yellow-800 bg-opacity-30 text-yellow-400'
-                      : 'bg-red-800 bg-opacity-30 text-red-400'
+                      ? 'bg-red-900 bg-opacity-40 text-red-300'
+                      : 'bg-red-900 bg-opacity-50 text-red-200'
                   }`}>
-                    {t('metrics.current')}: {(realMetrics?.current_drawdown || 0).toFixed(2)}%
+                    {t('metrics.current')}: -{(realMetrics?.current_drawdown || 0).toFixed(2)}%
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-gray-400">{t('metrics.maxCurrent')}</p>
@@ -2905,6 +2973,39 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           
           {/* Sección Beneficio Total con Tabs */}
           <div className="p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl">
+            {/* Timestamp y botón refresh */}
+            <div className="flex justify-between items-center mb-4">
+              <div></div>
+              <div className="flex items-center gap-3">
+                <p className="text-gray-500 text-xs">
+                  {t('accounts.fields.lastUpdated')} {lastUpdated ? new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+                <button
+                  onClick={handleRefreshData}
+                  disabled={!canRefresh || isRefreshing}
+                  className={`p-1.5 rounded-md text-xs transition-colors ${
+                    canRefresh && !isRefreshing
+                      ? 'text-gray-400 hover:text-cyan-400 hover:bg-[#3a3a3a]'
+                      : 'text-gray-600 cursor-not-allowed'
+                  }`}
+                  title={t('accounts.fields.refresh')}
+                >
+                  <svg
+                    className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
             {/* Header con Tabs y Filtro - RESPONSIVE */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
               {/* Tabs */}

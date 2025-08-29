@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Copy, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
 import { createTradingAccount } from '../services/tradingAccounts';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useAccounts } from '../contexts/AccountsContext';
 import emailServiceProxy from '../services/emailServiceProxy';
 import { useTranslation } from 'react-i18next';
+import { resendVerificationEmail } from '../supabase/auth';
 
 export default function TradingChallengeUI() {
   const { t } = useTranslation('trading');
@@ -19,13 +20,29 @@ export default function TradingChallengeUI() {
   const [showLeverageDropdown, setShowLeverageDropdown] = useState(false);
   const [initialBalance, setInitialBalance] = useState('');  // Campo para balance inicial
   
+  // Check if user is verified
+  const isUserVerified = currentUser?.email_verified !== false;
+  
   // Loading and feedback states
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [mt5Credentials, setMt5Credentials] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showInvestorPassword, setShowInvestorPassword] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
 
-  const leverageOptions = ['1:50', '1:100', '1:200', '1:500', '1:1000'];
+  const leverageOptions = ['1:50', '1:100', '1:200', '1:500'];
+
+  const handleCopy = async (text, field) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   const handleLeverageSelect = (option) => {
     setLeverage(option);
@@ -129,7 +146,35 @@ export default function TradingChallengeUI() {
     <div className="bg-[#232323] text-white bg-gradient-to-br from-[#232323] to-[#2d2d2d]">
       <div className="max-w-4xl mx-auto p-4">
         <div className="flex justify-center">
-          {/* Main Content */}
+          {/* Show verification required message for unverified users */}
+          {!isUserVerified ? (
+            <div className="w-full max-w-2xl p-8 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-2xl border border-yellow-500/50">
+              <div className="flex flex-col items-center text-center">
+                <AlertCircle className="text-yellow-500 mb-4" size={48} />
+                <h2 className="text-2xl font-semibold text-white mb-3">
+                  {t('accounts.creation.verificationRequired')}
+                </h2>
+                <p className="text-gray-400 mb-6 max-w-md">
+                  {t('accounts.creation.verificationMessage')}
+                </p>
+                <button
+                  onClick={async () => {
+                    const result = await resendVerificationEmail(currentUser.email);
+                    if (result.success) {
+                      alert(t('accounts.creation.verificationEmailSent'));
+                    } else {
+                      // Show specific error message including rate limiting
+                      alert(result.error || t('accounts.creation.verificationEmailError'));
+                    }
+                  }}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3 px-6 rounded-lg transition-colors"
+                >
+                  {t('accounts.creation.verifyAccount')}
+                </button>
+              </div>
+            </div>
+          ) : (
+          /* Main Content - Only show for verified users */
           <div className="w-full max-w-2xl p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-2xl border border-[#333]">
             <div className="mb-6 md:mb-10">
               {/* Title */}
@@ -147,21 +192,99 @@ export default function TradingChallengeUI() {
                     <div className="mt-4 p-3 bg-black/30 rounded-lg">
                       <p className="text-cyan-400 font-semibold mb-2">{t('accounts.creation.mt5Credentials')}</p>
                       <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center">
                           <span className="text-gray-400">{t('accounts.creation.loginLabel')}</span>
-                          <span className="text-white font-mono">{mt5Credentials.login}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-mono">{mt5Credentials.login}</span>
+                            <button
+                              onClick={() => handleCopy(mt5Credentials.login, 'login')}
+                              className="p-1 hover:bg-gray-700 rounded transition-colors"
+                              title="Copiar"
+                            >
+                              {copiedField === 'login' ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Copy className="w-4 h-4 text-gray-400 hover:text-white" />
+                              )}
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center">
                           <span className="text-gray-400">{t('accounts.creation.passwordLabel')}</span>
-                          <span className="text-white font-mono">{mt5Credentials.password}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-mono">
+                              {showPassword ? mt5Credentials.password : '••••••••'}
+                            </span>
+                            <button
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="p-1 hover:bg-gray-700 rounded transition-colors"
+                              title={showPassword ? 'Ocultar' : 'Mostrar'}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="w-4 h-4 text-gray-400 hover:text-white" />
+                              ) : (
+                                <Eye className="w-4 h-4 text-gray-400 hover:text-white" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleCopy(mt5Credentials.password, 'password')}
+                              className="p-1 hover:bg-gray-700 rounded transition-colors"
+                              title="Copiar"
+                            >
+                              {copiedField === 'password' ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Copy className="w-4 h-4 text-gray-400 hover:text-white" />
+                              )}
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center">
                           <span className="text-gray-400">{t('accounts.creation.investorPasswordLabel')}</span>
-                          <span className="text-white font-mono">{mt5Credentials.investor_password}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-mono">
+                              {showInvestorPassword ? mt5Credentials.investor_password : '••••••••'}
+                            </span>
+                            <button
+                              onClick={() => setShowInvestorPassword(!showInvestorPassword)}
+                              className="p-1 hover:bg-gray-700 rounded transition-colors"
+                              title={showInvestorPassword ? 'Ocultar' : 'Mostrar'}
+                            >
+                              {showInvestorPassword ? (
+                                <EyeOff className="w-4 h-4 text-gray-400 hover:text-white" />
+                              ) : (
+                                <Eye className="w-4 h-4 text-gray-400 hover:text-white" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleCopy(mt5Credentials.investor_password, 'investorPassword')}
+                              className="p-1 hover:bg-gray-700 rounded transition-colors"
+                              title="Copiar"
+                            >
+                              {copiedField === 'investorPassword' ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Copy className="w-4 h-4 text-gray-400 hover:text-white" />
+                              )}
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center">
                           <span className="text-gray-400">{t('accounts.creation.serverLabel')}</span>
-                          <span className="text-white">{mt5Credentials.server || 'AlphaGlobalMarket-Server'}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white">{mt5Credentials.server || 'AlphaGlobalMarket-Server'}</span>
+                            <button
+                              onClick={() => handleCopy(mt5Credentials.server || 'AlphaGlobalMarket-Server', 'server')}
+                              className="p-1 hover:bg-gray-700 rounded transition-colors"
+                              title="Copiar"
+                            >
+                              {copiedField === 'server' ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Copy className="w-4 h-4 text-gray-400 hover:text-white" />
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
                       <p className="text-yellow-400 text-xs mt-3">
@@ -318,6 +441,7 @@ export default function TradingChallengeUI() {
               </div>
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>

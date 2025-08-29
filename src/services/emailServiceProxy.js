@@ -60,10 +60,21 @@ class EmailServiceProxy {
   /**
    * Send email verification
    */
-  async sendVerificationEmail(userData, verificationCode) {
+  async sendVerificationEmail(userData, verificationToken) {
+    // Construir URL de verificación
+    const verificationUrl = `${window.location.origin}/verify-email?token=${verificationToken}`;
+    
+    console.log('[EmailServiceProxy] Sending verification email with:', {
+      email: userData.email,
+      verificationUrl: verificationUrl,
+      verificationToken: verificationToken
+    });
+    
     return await this.sendEmailThroughBackend('verification', {
       email: userData.email,
-      verificationCode: verificationCode
+      userName: userData.name || userData.email.split('@')[0],
+      verificationToken: verificationToken,  // Cambio de verificationCode a verificationToken
+      verificationUrl: verificationUrl
     });
   }
 

@@ -6,6 +6,7 @@ import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import PasswordReset from './components/PasswordReset';
 import VerificationCode from './components/VerificationCode';
+import VerifyEmail from './components/VerifyEmail';
 import Dashboard from './Dashboard';
 import { useAuth } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
@@ -112,6 +113,13 @@ function App() {
             <AuthPageWrapper>
               <PasswordReset />
             </AuthPageWrapper>
+          } 
+        />
+
+        <Route 
+          path="/verify-email" 
+          element={
+            <VerifyEmail />
           } 
         />
         

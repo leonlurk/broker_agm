@@ -2,13 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import Settings from './Settings';
 import UserInformationContent from './UserInformationContent';
 import NotificationsModal from './NotificationsModal';
-import { ChevronDown, ArrowDown, ArrowUp, SlidersHorizontal, Settings as SettingsIcon, Bell } from 'lucide-react';
+import { ChevronDown, ArrowDown, ArrowUp, SlidersHorizontal, Settings as SettingsIcon, Bell, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAccounts, WALLET_OPERATIONS, ACCOUNT_CATEGORIES } from '../contexts/AccountsContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { DatabaseAdapter } from '../services/database.adapter';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from './LanguageSelector';
+import { resendVerificationEmail } from '../supabase/auth';
 
 const fondoTarjetaUrl = "/fondoTarjeta.png";
 
@@ -290,31 +291,66 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
         </div>
       </div>
 
+      {/* Main banner with verification reminder */}
       <div className="mb-6">
-        <div 
-          className="p-4 md:p-6 rounded-2xl relative flex flex-col justify-center border-solid border-t border-l border-r border-cyan-500"
-        >
+        <div className={`flex gap-4 ${currentUser?.email_verified === false ? '' : ''}`}>
+          {/* Main Welcome Banner */}
           <div 
-            className="absolute inset-0 rounded-md"
-            style={{ 
-              backgroundImage: `url(${fondoTarjetaUrl})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              opacity: 0.2,
-              zIndex: 0
-            }}
-          ></div>
-          <div className="relative z-10 py-4">
-            <h2 className="text-xl md:text-3xl font-bold mb-3">{t('common:home.welcomeTitle')}</h2>
-            <p className="text-base md:text-lg mb-4">{t('common:home.welcomeSubtitle')}</p>
-            <button 
-              className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-4 rounded-md hover:opacity-90 transition"
-              style={{ outline: 'none' }}
-              onClick={() => setSelectedOption && setSelectedOption(t('common:home.newAccount'))}
-            >
-              {t('common:home.getStarted')}
-            </button>
+            className={`${currentUser?.email_verified === false ? 'flex-1' : 'w-full'} p-4 md:p-6 rounded-2xl relative flex flex-col justify-center border-solid border-t border-l border-r border-cyan-500`}
+          >
+            <div 
+              className="absolute inset-0 rounded-md"
+              style={{ 
+                backgroundImage: `url(${fondoTarjetaUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                opacity: 0.2,
+                zIndex: 0
+              }}
+            ></div>
+            <div className="relative z-10 py-4">
+              <h2 className="text-xl md:text-3xl font-bold mb-3">{t('common:home.welcomeTitle')}</h2>
+              <p className="text-base md:text-lg mb-4">{t('common:home.welcomeSubtitle')}</p>
+              <button 
+                className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-4 rounded-md hover:opacity-90 transition"
+                style={{ outline: 'none' }}
+                onClick={() => setSelectedOption && setSelectedOption(t('common:home.newAccount'))}
+              >
+                {t('common:home.getStarted')}
+              </button>
+            </div>
           </div>
+
+          {/* Email Verification Reminder Card - Only show for unverified users */}
+          {currentUser?.email_verified === false && (
+            <div className="w-[300px] p-4 rounded-2xl bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/50 flex flex-col justify-center">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="text-yellow-500 mt-1" size={24} />
+                <div className="flex-1">
+                  <h3 className="text-white font-semibold mb-2">
+                    {t('common:verification.title')}
+                  </h3>
+                  <p className="text-gray-300 text-sm mb-4">
+                    {t('common:verification.message')}
+                  </p>
+                  <button
+                    onClick={async () => {
+                      const result = await resendVerificationEmail(currentUser.email);
+                      if (result.success) {
+                        alert(t('common:verification.emailSent'));
+                      } else {
+                        // Show specific error message including rate limiting
+                        alert(result.error || t('common:verification.emailError'));
+                      }
+                    }}
+                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    {t('common:verification.verifyButton')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

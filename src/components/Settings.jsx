@@ -9,9 +9,7 @@ import emailServiceProxy from '../services/emailServiceProxy';
 import toast from 'react-hot-toast';
 import { AuthAdapter } from '../services/database.adapter';
 import PasswordChangeModal from './PasswordChangeModal';
-import TwoFactorModal from './TwoFactorModal';
-import TwoFactorMethodModal from './TwoFactorMethodModal';
-import TwoFactorEmailModal from './TwoFactorEmailModal';
+import TwoFactorDualModal from './TwoFactorDualModal';
 import twoFactorService from '../services/twoFactorService';
 
 const Settings = ({ onBack }) => {
@@ -24,8 +22,6 @@ const Settings = ({ onBack }) => {
   const [kycStatus, setKycStatus] = useState(null);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
-  const [show2FAMethodModal, setShow2FAMethodModal] = useState(false);
-  const [show2FAEmailModal, setShow2FAEmailModal] = useState(false);
   const [twoFactorMethod, setTwoFactorMethod] = useState(null);
   
   // Estados para el cambio de contraseña
@@ -80,8 +76,8 @@ const Settings = ({ onBack }) => {
 
   const handleToggle2FA = async () => {
     if (!twoFactorEnabled) {
-      // Show method selection modal to enable 2FA
-      setShow2FAMethodModal(true);
+      // Go directly to 2FA setup modal (both methods will be configured)
+      setShow2FAModal(true);
     } else {
       // Disable 2FA with confirmation
       if (window.confirm(t('twoFactor.confirmDisable'))) {
@@ -100,18 +96,15 @@ const Settings = ({ onBack }) => {
   };
 
   const handleSelectMethod = (method) => {
+    // This function is no longer needed for dual 2FA
+    // Keeping it for compatibility but it won't be called
     setShow2FAMethodModal(false);
-    if (method === 'email') {
-      setShow2FAEmailModal(true);
-    } else {
-      setShow2FAModal(true);
-    }
+    setShow2FAModal(true);
   };
 
   const handle2FASuccess = () => {
     setTwoFactorEnabled(true);
     setShow2FAModal(false);
-    setShow2FAEmailModal(false);
     // Refresh 2FA method
     const checkMethod = async () => {
       const userId = currentUser.id || currentUser.uid;
@@ -389,36 +382,6 @@ const Settings = ({ onBack }) => {
           </div>
         </div>
 
-        {/* Notifications */}
-        <div className="border border-[#333] rounded-3xl bg-gradient-to-br from-[#232323] to-[#202020]">
-          <div 
-            className="p-4 flex rounded-3xl bg-gradient-to-br from-[#232323] to-[#2d2d2d] justify-between items-center cursor-pointer"
-            onClick={() => toggleSection('notifications')}
-          >
-            <h2 className="text-lg md:text-xl">{t('notifications.title')}</h2>
-            <div className={`transition-transform duration-500 ease-in-out ${expandedSection === 'notifications' ? 'rotate-180' : ''}`}>
-              <ChevronDown className="h-6 w-6 text-gray-400" />
-            </div>
-          </div>
-          <div 
-            className={`overflow-hidden transition-all duration-700 ease-in-out ${
-              expandedSection === 'notifications' ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'
-            }`}
-          >
-            <div className="px-4 pb-4 border-t border-[#333] bg-gradient-to-br from-[#232323] to-[#2d2d2d] pt-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span>{t('notifications.pushNotifications')}</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-cyan-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all duration-300"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Two-Factor Authentication */}
         <div className="border border-[#333] rounded-3xl bg-gradient-to-br from-[#232323] to-[#202020]">
           <div className="p-4 flex rounded-3xl bg-gradient-to-br from-[#232323] to-[#2d2d2d] justify-between items-center">
@@ -487,24 +450,11 @@ const Settings = ({ onBack }) => {
         message={t('modal.updateEmailMessage')}
       />
 
-      {/* 2FA Modals */}
-      <TwoFactorMethodModal
-        isOpen={show2FAMethodModal}
-        onClose={() => setShow2FAMethodModal(false)}
-        onSelectMethod={handleSelectMethod}
-      />
-      
-      <TwoFactorModal
+      {/* 2FA Dual Modal */}
+      <TwoFactorDualModal
         isOpen={show2FAModal}
         onClose={() => setShow2FAModal(false)}
         onSuccess={handle2FASuccess}
-      />
-      
-      <TwoFactorEmailModal
-        isOpen={show2FAEmailModal}
-        onClose={() => setShow2FAEmailModal(false)}
-        onSuccess={handle2FASuccess}
-        isSetup={true}
       />
     </div>
   );

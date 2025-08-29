@@ -1,4 +1,11 @@
 {
+  "verification": {
+    "title": "Verifica tu cuenta",
+    "message": "Para empezar a operar, primero necesitas verificar tu cuenta de correo electrónico.",
+    "verifyButton": "Verificar cuenta",
+    "emailSent": "Email de verificación enviado. Por favor revisa tu correo.",
+    "emailError": "Error al enviar el email de verificación. Intenta nuevamente."
+  },
   "buttons": {
     "save": "Guardar",
     "cancel": "Cancelar",

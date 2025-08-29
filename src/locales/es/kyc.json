@@ -20,6 +20,7 @@
     "title": "País de Residencia",
     "description": "Por favor, elija su país de residencia",
     "placeholder": "Buscar país...",
+    "selectCountry": "Seleccionar país",
     "notFound": "No se encontraron países"
   },
   "document": {

@@ -32,7 +32,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     storage: window.localStorage,
     storageKey: 'agm-broker-auth',
-    flowType: 'implicit' // Changed from 'pkce' to 'implicit' for simpler auth flow
+    flowType: 'implicit', // Changed from 'pkce' to 'implicit' for simpler auth flow
+    // Deshabilitar confirmación automática de email para usar Brevo
+    autoConfirm: false
   },
   db: {
     schema: 'public'

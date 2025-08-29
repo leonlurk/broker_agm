@@ -3,7 +3,7 @@ import { AuthAdapter, DatabaseAdapter } from '../services/database.adapter';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import emailServiceProxy from '../services/emailServiceProxy';
-import { ChevronDown, Search } from 'lucide-react';
+import { ChevronDown, Search, Check, X } from 'lucide-react';
 import axios from 'axios';
 
 const Register = ({ onLoginClick }) => {
@@ -27,8 +27,21 @@ const Register = ({ onLoginClick }) => {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [refId, setRefId] = useState(null);
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Password validation requirements
+  const passwordRequirements = {
+    length: { test: (pwd) => pwd.length >= 12, message: 'Mínimo 12 caracteres' },
+    number: { test: (pwd) => /\d/.test(pwd), message: 'Al menos 1 número' },
+    uppercase: { test: (pwd) => /[A-Z]/.test(pwd), message: 'Al menos 1 mayúscula' },
+    symbol: { test: (pwd) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd), message: 'Al menos 1 símbolo' }
+  };
+
+  const validatePassword = (pwd) => {
+    return Object.values(passwordRequirements).every(req => req.test(pwd));
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -103,6 +116,12 @@ const Register = ({ onLoginClick }) => {
     setMessage(''); // Clear previous message
     console.log(`[Register] handleSubmit initiated. Username: ${username}, Email: ${email}, RefId: ${refId}`);
     
+    // Validate password requirements
+    if (!validatePassword(password)) {
+      console.log("[Register] Password doesn't meet requirements.");
+      return setError('La contraseña debe tener al menos 12 caracteres, 1 número, 1 mayúscula y 1 símbolo');
+    }
+    
     if (password !== confirmPassword) {
       console.log("[Register] Password mismatch.");
       return setError(t('register.errors.passwordMismatch'));
@@ -161,25 +180,55 @@ const Register = ({ onLoginClick }) => {
         }
       }
       
-      // Send welcome email
+      // Auto-login the user after successful registration
+      console.log('[Register] Auto-logging in user after registration');
       try {
-        await emailServiceProxy.sendWelcomeEmail({
-          email: email,
-          name: `${firstName} ${lastName}`.trim() || username
+        // Login with the same credentials
+        const loginResult = await AuthAdapter.loginUser(email, password);
+        
+        if (loginResult.error) {
+          console.error('[Register] Auto-login failed:', loginResult.error);
+          // If auto-login fails, redirect to login page
+          navigate('/login', { 
+            state: { 
+              message: 'Registro exitoso. Por favor inicia sesión.',
+              email: email 
+            }
+          });
+        } else {
+          console.log('[Register] Auto-login successful');
+          
+          // Clear sensitive form data
+          setPassword('');
+          setConfirmPassword('');
+          
+          // Send verification email if needed
+          if (user.needs_email_verification) {
+            try {
+              // Send verification email  
+              await emailServiceProxy.sendVerificationEmail({
+                email: user.email,
+                verificationToken: user.verification_token
+              });
+              console.log('[Register] Verification email sent');
+            } catch (emailError) {
+              console.error('[Register] Error sending verification email:', emailError);
+            }
+          }
+          
+          // Navigate to dashboard (auto-login successful)
+          navigate('/');
+        }
+      } catch (loginError) {
+        console.error('[Register] Auto-login error:', loginError);
+        // If auto-login fails, redirect to login page
+        navigate('/login', { 
+          state: { 
+            message: 'Registro exitoso. Por favor inicia sesión.',
+            email: email 
+          }
         });
-        console.log('[Register] Welcome email sent successfully');
-      } catch (emailError) {
-        console.error('[Register] Error sending welcome email:', emailError);
-        // Don't block registration if email fails
       }
-      
-      setMessage(t('register.success'));
-      setUsername(''); // Clear form on success
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
-      // Navigate immediately to the main dashboard route after successful registration
-      navigate('/'); // Changed from /login and removed setTimeout
     } catch (err) {
       console.error('[Register] handleSubmit caught error:', err);
       setError(err.message || t('register.errors.general'));
@@ -333,7 +382,7 @@ const Register = ({ onLoginClick }) => {
                 type="text"
                 value={countryCode}
                 readOnly
-                className="px-3 py-3 rounded-full bg-gray-900 border border-gray-700 text-white bg-opacity-20 min-w-[80px] text-center"
+                className="px-2 py-3 rounded-full bg-gray-900 border border-gray-700 text-white bg-opacity-20 w-[65px] text-center text-sm"
                 placeholder="+00"
               />
             </div>
@@ -354,6 +403,8 @@ const Register = ({ onLoginClick }) => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setShowPasswordRequirements(true)}
+              onBlur={() => setShowPasswordRequirements(false)}
               className="w-full px-4 py-3 rounded-full bg-gray-900 border bg-opacity-20 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
               placeholder={t('register.placeholders.password')}
               required
@@ -362,6 +413,25 @@ const Register = ({ onLoginClick }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
             </svg>
           </div>
+
+          {/* Password Requirements */}
+          {(showPasswordRequirements || password) && (
+            <div className="bg-gray-900 bg-opacity-30 border border-gray-700 rounded-xl p-3 space-y-1">
+              <p className="text-xs text-gray-400 mb-2">Requisitos de la contraseña:</p>
+              {Object.entries(passwordRequirements).map(([key, req]) => (
+                <div key={key} className="flex items-center gap-2 text-xs">
+                  {req.test(password) ? (
+                    <Check className="w-3 h-3 text-green-500" />
+                  ) : (
+                    <X className="w-3 h-3 text-red-500" />
+                  )}
+                  <span className={req.test(password) ? 'text-green-400' : 'text-gray-400'}>
+                    {req.message}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           
           <div className="relative">
             <input
@@ -375,6 +445,16 @@ const Register = ({ onLoginClick }) => {
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
             </svg>
+            {/* Show match status if both passwords have content */}
+            {confirmPassword && (
+              <div className="absolute right-3 top-3.5">
+                {password === confirmPassword ? (
+                  <Check className="w-5 h-5 text-green-500" />
+                ) : (
+                  <X className="w-5 h-5 text-red-500" />
+                )}
+              </div>
+            )}
           </div>
         </div>
 

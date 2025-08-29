@@ -193,7 +193,7 @@ class TwoFactorService {
   }
 
   /**
-   * Enable 2FA for a user
+   * Enable 2FA for a user (both app and email)
    * @param {string} userId - User ID
    * @param {string} secret - The verified secret
    * @param {string[]} backupCodes - Backup codes
@@ -204,13 +204,16 @@ class TwoFactorService {
       await this.checkTableStructure();
       const structure = this.tableStructure;
       
-      // Store 2FA data in database
+      // Store 2FA data in database with both methods enabled
       const now = new Date().toISOString();
       const dataToInsert = {
         user_id: userId,
         [structure.secretColumn]: secret,
         [structure.backupCodesColumn]: backupCodes,
         [structure.enabledColumn]: true,
+        two_fa_method: 'both', // Changed from 'app' or 'email' to 'both'
+        app_2fa_enabled: true,  // Track app method separately
+        email_2fa_enabled: true, // Track email method separately
         [structure.enabledAtColumn]: now,
         [structure.updatedAtColumn]: now,
         created_at: now
@@ -221,7 +224,7 @@ class TwoFactorService {
         .upsert(dataToInsert);
 
       if (error) {
-        logger.error('[2FA] Error enabling 2FA:', error);
+        logger.error('[2FA] Error enabling dual 2FA:', error);
         return { success: false, error: error.message };
       }
 
@@ -236,10 +239,10 @@ class TwoFactorService {
         return { success: false, error: userError.message };
       }
 
-      logger.info('[2FA] 2FA enabled for user:', userId);
+      logger.info('[2FA] Dual 2FA (app + email) enabled for user:', userId);
       return { success: true };
     } catch (error) {
-      logger.error('[2FA] Error enabling 2FA:', error);
+      logger.error('[2FA] Error enabling dual 2FA:', error);
       return { success: false, error: error.message };
     }
   }
@@ -536,7 +539,7 @@ class TwoFactorService {
     try {
       const { data, error } = await supabase
         .from('user_2fa')
-        .select('two_fa_method')
+        .select('two_fa_method, app_2fa_enabled, email_2fa_enabled')
         .eq('user_id', userId)
         .single();
       
@@ -544,6 +547,12 @@ class TwoFactorService {
         return { method: null };
       }
       
+      // Return 'both' for dual authentication
+      if (data.two_fa_method === 'both' || (data.app_2fa_enabled && data.email_2fa_enabled)) {
+        return { method: 'both', app: true, email: true };
+      }
+      
+      // Legacy support for single methods
       return { method: data.two_fa_method || 'authenticator' };
     } catch (error) {
       logger.error('[2FA] Error getting 2FA method:', error);
