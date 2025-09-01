@@ -29,7 +29,6 @@ const Register = ({ onLoginClick }) => {
   const [refId, setRefId] = useState(null);
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPasswordField, setShowConfirmPasswordField] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -418,23 +417,16 @@ const Register = ({ onLoginClick }) => {
           
           <div className="relative">
             <input
-              type={showConfirmPasswordField ? "text" : "password"}
+              type={showPassword ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-full bg-gray-900 border bg-opacity-20 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 pr-20"
+              className="w-full px-4 py-3 rounded-full bg-gray-900 border bg-opacity-20 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 pr-12"
               placeholder={t('register.placeholders.confirmPassword')}
               required
             />
             <svg className="absolute top-1/2 transform -translate-y-1/2 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
             </svg>
-            <button
-              type="button"
-              onClick={() => setShowConfirmPasswordField(!showConfirmPasswordField)}
-              className="absolute top-1/2 transform -translate-y-1/2 right-10 text-gray-400 hover:text-gray-300 focus:outline-none"
-            >
-              {showConfirmPasswordField ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
             {/* Show match status if both passwords have content */}
             {confirmPassword && (
               <div className="absolute top-1/2 transform -translate-y-1/2 right-3">

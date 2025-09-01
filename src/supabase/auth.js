@@ -826,20 +826,61 @@ export const resendVerificationEmail = async (email) => {
     
     logger.auth('[Supabase] Resending verification email via backend API:', email);
     
-    // Use backend API endpoint for resending
-    const API_URL = import.meta.env.VITE_CRYPTO_API_URL || 'https://whapy.apekapital.com:446/api';
+    // Get user data to generate new verification token
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, username, email')
+      .eq('email', email)
+      .single();
     
-    const response = await fetch(`${API_URL}/auth/resend-verification`, {
+    if (userError || !userData) {
+      logger.error('[Supabase] User not found for email:', email);
+      return { 
+        success: false, 
+        error: 'Usuario no encontrado' 
+      };
+    }
+    
+    // Generate new verification token
+    const verificationToken = crypto.randomUUID();
+    
+    // Update user with new verification token
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ 
+        verification_token: verificationToken,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userData.id);
+    
+    if (updateError) {
+      logger.error('[Supabase] Error updating verification token:', updateError);
+      return { 
+        success: false, 
+        error: 'Error al actualizar token de verificación' 
+      };
+    }
+    
+    // Use the same endpoint as registration (through emailServiceProxy)
+    const API_URL = import.meta.env.VITE_CRYPTO_API_URL || 'https://whapy.apekapital.com:446/api';
+    const verificationUrl = `${window.location.origin}/verify-email?token=${verificationToken}`;
+    
+    const response = await fetch(`${API_URL}/email/verification`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ email })
+      body: JSON.stringify({ 
+        email: userData.email,
+        userName: userData.username || userData.email.split('@')[0],
+        verificationToken: verificationToken,
+        verificationUrl: verificationUrl
+      })
     });
     
     const result = await response.json();
     
-    if (result.success) {
+    if (response.ok && result.success) {
       // Update rate limit timestamp on successful send
       resendRateLimits.set(email, now);
       

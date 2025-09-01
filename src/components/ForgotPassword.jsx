@@ -50,9 +50,9 @@ const ForgotPassword = ({ onContinue, onLoginClick }) => {
   };
 
   return (
-    <div className="w-[420px] h-[900px] sm:w-full md:w-[620px] p-6 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">
-      <div className="flex justify-center mb-8">
-        <img src="/logo.png" alt="AGM Logo" className="h-25" />
+    <div className="w-[330px] h-[700px] sm:w-full md:w-[490px] p-5 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">
+      <div className="flex justify-center mb-6">
+        <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-16" />
       </div>
       
       {error && (
@@ -67,8 +67,8 @@ const ForgotPassword = ({ onContinue, onLoginClick }) => {
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-4">          
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-3">          
           <div className="relative">
             <input
               type="text"
