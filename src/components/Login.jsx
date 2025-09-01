@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { AuthAdapter } from '../services/database.adapter';
+import { AuthAdapter, DatabaseAdapter } from '../services/database.adapter';
 import { useTranslation } from 'react-i18next';
 import twoFactorService from '../services/twoFactorService';
 import TwoFactorEmailModal from './TwoFactorEmailModal';
 import { Shield, Mail } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { resendVerificationEmail } from '../supabase/auth';
 
 const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const { t } = useTranslation('auth');
   const location = useLocation();
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -74,9 +75,22 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
         }
         setLoading(false);
       } else {
-        // No 2FA, proceed with login
-        console.log('Login successful:', user);
-        onLoginSuccess();
+        // No 2FA, check email verification before proceeding
+        console.log('Login successful, checking email verification:', user);
+        
+        // Check if email is verified in the database
+        const userId = user.id || user.uid;
+        const { data: userData } = await DatabaseAdapter.users.getById(userId);
+        
+        if (userData && userData.email_verified === false) {
+          // Email not verified, redirect to verification pending page
+          console.log('Email not verified, redirecting to verification page');
+          navigate('/verify-email-pending');
+        } else {
+          // Email verified or old user, proceed to dashboard
+          console.log('Email verified, proceeding to dashboard');
+          onLoginSuccess();
+        }
       }
     } catch (err) {
       console.error('Login component error:', err);
@@ -112,9 +126,21 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
         }
       }
       
-      // 2FA verified, proceed with login
-      console.log('Login successful with 2FA:', tempUser);
-      onLoginSuccess();
+      // 2FA verified, check email verification before proceeding
+      console.log('Login successful with 2FA, checking email verification:', tempUser);
+      
+      // Check if email is verified in the database
+      const { data: userData } = await DatabaseAdapter.users.getById(userId);
+      
+      if (userData && userData.email_verified === false) {
+        // Email not verified, redirect to verification pending page
+        console.log('Email not verified, redirecting to verification page');
+        navigate('/verify-email-pending');
+      } else {
+        // Email verified or old user, proceed to dashboard
+        console.log('Email verified, proceeding to dashboard');
+        onLoginSuccess();
+      }
     } catch (err) {
       console.error('2FA verification error:', err);
       setError(t('twoFactor.errors.verifyFailed'));
@@ -298,10 +324,23 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
             setShowEmail2FA(false);
             setError('');
           }}
-          onSuccess={() => {
+          onSuccess={async () => {
             setShowEmail2FA(false);
-            console.log('Login successful with email 2FA:', tempUser);
-            onLoginSuccess();
+            console.log('Login successful with email 2FA, checking email verification:', tempUser);
+            
+            // Check if email is verified in the database
+            const userId = tempUser.id || tempUser.uid;
+            const { data: userData } = await DatabaseAdapter.users.getById(userId);
+            
+            if (userData && userData.email_verified === false) {
+              // Email not verified, redirect to verification pending page
+              console.log('Email not verified, redirecting to verification page');
+              navigate('/verify-email-pending');
+            } else {
+              // Email verified or old user, proceed to dashboard
+              console.log('Email verified, proceeding to dashboard');
+              onLoginSuccess();
+            }
           }}
           isSetup={false}
           currentUser={tempUser}

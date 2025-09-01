@@ -3,7 +3,7 @@ import { AuthAdapter, DatabaseAdapter } from '../services/database.adapter';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import emailServiceProxy from '../services/emailServiceProxy';
-import { ChevronDown, Search, Check, X } from 'lucide-react';
+import { ChevronDown, Search, Check, X, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 
 const Register = ({ onLoginClick }) => {
@@ -13,7 +13,7 @@ const Register = ({ onLoginClick }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [country, setCountry] = useState('');
-  const [countryCode, setCountryCode] = useState('+54');
+  const [countryCode, setCountryCode] = useState('+');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [countries, setCountries] = useState([]);
   const [countrySearch, setCountrySearch] = useState('');
@@ -28,6 +28,8 @@ const Register = ({ onLoginClick }) => {
   const [loading, setLoading] = useState(false);
   const [refId, setRefId] = useState(null);
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPasswordField, setShowConfirmPasswordField] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -180,55 +182,29 @@ const Register = ({ onLoginClick }) => {
         }
       }
       
-      // Auto-login the user after successful registration
-      console.log('[Register] Auto-logging in user after registration');
-      try {
-        // Login with the same credentials
-        const loginResult = await AuthAdapter.loginUser(email, password);
-        
-        if (loginResult.error) {
-          console.error('[Register] Auto-login failed:', loginResult.error);
-          // If auto-login fails, redirect to login page
-          navigate('/login', { 
-            state: { 
-              message: 'Registro exitoso. Por favor inicia sesión.',
-              email: email 
-            }
+      // NO auto-login - redirect to email verification page
+      console.log('[Register] Registration successful, redirecting to email verification page');
+      
+      // Clear sensitive form data
+      setPassword('');
+      setConfirmPassword('');
+      
+      // Send verification email if needed
+      if (user.needs_email_verification) {
+        try {
+          // Send verification email  
+          await emailServiceProxy.sendVerificationEmail({
+            email: user.email,
+            verificationToken: user.verification_token
           });
-        } else {
-          console.log('[Register] Auto-login successful');
-          
-          // Clear sensitive form data
-          setPassword('');
-          setConfirmPassword('');
-          
-          // Send verification email if needed
-          if (user.needs_email_verification) {
-            try {
-              // Send verification email  
-              await emailServiceProxy.sendVerificationEmail({
-                email: user.email,
-                verificationToken: user.verification_token
-              });
-              console.log('[Register] Verification email sent');
-            } catch (emailError) {
-              console.error('[Register] Error sending verification email:', emailError);
-            }
-          }
-          
-          // Navigate to dashboard (auto-login successful)
-          navigate('/');
+          console.log('[Register] Verification email sent');
+        } catch (emailError) {
+          console.error('[Register] Error sending verification email:', emailError);
         }
-      } catch (loginError) {
-        console.error('[Register] Auto-login error:', loginError);
-        // If auto-login fails, redirect to login page
-        navigate('/login', { 
-          state: { 
-            message: 'Registro exitoso. Por favor inicia sesión.',
-            email: email 
-          }
-        });
       }
+      
+      // Navigate to email verification pending page
+      navigate('/verify-email-pending');
     } catch (err) {
       console.error('[Register] handleSubmit caught error:', err);
       setError(err.message || t('register.errors.general'));
@@ -400,18 +376,25 @@ const Register = ({ onLoginClick }) => {
           
           <div className="relative">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onFocus={() => setShowPasswordRequirements(true)}
               onBlur={() => setShowPasswordRequirements(false)}
-              className="w-full px-4 py-3 rounded-full bg-gray-900 border bg-opacity-20 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
+              className="w-full px-4 py-3 rounded-full bg-gray-900 border bg-opacity-20 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 pr-12"
               placeholder={t('register.placeholders.password')}
               required
             />
-            <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="absolute top-1/2 transform -translate-y-1/2 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
             </svg>
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-1/2 transform -translate-y-1/2 right-3 text-gray-400 hover:text-gray-300 focus:outline-none"
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
           </div>
 
           {/* Password Requirements */}
@@ -435,19 +418,26 @@ const Register = ({ onLoginClick }) => {
           
           <div className="relative">
             <input
-              type="password"
+              type={showConfirmPasswordField ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-full bg-gray-900 border bg-opacity-20 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
+              className="w-full px-4 py-3 rounded-full bg-gray-900 border bg-opacity-20 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 pr-20"
               placeholder={t('register.placeholders.confirmPassword')}
               required
             />
-            <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="absolute top-1/2 transform -translate-y-1/2 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
             </svg>
+            <button
+              type="button"
+              onClick={() => setShowConfirmPasswordField(!showConfirmPasswordField)}
+              className="absolute top-1/2 transform -translate-y-1/2 right-10 text-gray-400 hover:text-gray-300 focus:outline-none"
+            >
+              {showConfirmPasswordField ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
             {/* Show match status if both passwords have content */}
             {confirmPassword && (
-              <div className="absolute right-3 top-3.5">
+              <div className="absolute top-1/2 transform -translate-y-1/2 right-3">
                 {password === confirmPassword ? (
                   <Check className="w-5 h-5 text-green-500" />
                 ) : (

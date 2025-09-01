@@ -12,10 +12,10 @@ import PasswordChangeModal from './PasswordChangeModal';
 import TwoFactorDualModal from './TwoFactorDualModal';
 import twoFactorService from '../services/twoFactorService';
 
-const Settings = ({ onBack }) => {
+const Settings = ({ onBack, openKYC = false }) => {
   const { t } = useTranslation('settings');
   const [expandedSection, setExpandedSection] = useState(null);
-  const [showKYC, setShowKYC] = useState(false);
+  const [showKYC, setShowKYC] = useState(openKYC);
   const [showPaymentSettings, setShowPaymentSettings] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);

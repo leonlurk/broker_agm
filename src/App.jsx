@@ -7,6 +7,7 @@ import ResetPassword from './components/ResetPassword';
 import PasswordReset from './components/PasswordReset';
 import VerificationCode from './components/VerificationCode';
 import VerifyEmail from './components/VerifyEmail';
+import EmailVerificationPending from './components/EmailVerificationPending';
 import Dashboard from './Dashboard';
 import { useAuth } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
@@ -17,18 +18,14 @@ import useKYCRealtimeMonitor from './hooks/useKYCRealtimeMonitor';
 import './i18n/config'; // Importar configuración de i18n
 
 function App() {
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, userData } = useAuth();
   const navigate = useNavigate();
   
   // Monitor KYC status changes in real-time
   useKYCRealtimeMonitor();
   
-  // Redirect to dashboard if already authenticated
-  useEffect(() => {
-    if (isAuthenticated && window.location.pathname === '/login') {
-      navigate('/dashboard');
-    }
-  }, [isAuthenticated, navigate]);
+  // NO auto-redirect - users must explicitly login
+  // Removed automatic navigation to dashboard
   
   const handleLogout = async () => {
     try {
@@ -124,10 +121,38 @@ function App() {
         />
         
         <Route 
+          path="/verify-email-pending" 
+          element={
+            <EmailVerificationPending />
+          } 
+        />
+        
+        <Route 
           path="/dashboard/*" 
           element={
             isAuthenticated ? (
-              <Dashboard onLogout={handleLogout} user={currentUser} />
+              // Check email verification before allowing dashboard access
+              userData?.email_verified === false ? (
+                <Navigate to="/verify-email-pending" replace />
+              ) : (
+                <Dashboard onLogout={handleLogout} user={currentUser} />
+              )
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+        
+        {/* Root route - check authentication and email verification */}
+        <Route 
+          path="/" 
+          element={
+            isAuthenticated ? (
+              userData?.email_verified === false ? (
+                <Navigate to="/verify-email-pending" replace />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
             ) : (
               <Navigate to="/login" replace />
             )

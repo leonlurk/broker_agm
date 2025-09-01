@@ -12,7 +12,7 @@ import {
 } from "react-icons/ri";
 import { useTranslation } from 'react-i18next';
 
-const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
+const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
     const { t } = useTranslation('dashboard');
     const [expandedOptions, setExpandedOptions] = useState({
         Herramientas: false,
@@ -277,10 +277,20 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout }) => {
                     <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : 'my-4'}`}></div>
                     <button
                         onClick={() => handleNavigation("Nueva Cuenta")}
-                        className={`flex items-center justify-center space-x-2 rounded-md w-full bg-gradient-to-r from-[#0F7490] to-[#0A5A72] hover:opacity-90 transition 
+                        className={`flex items-center justify-center space-x-2 rounded-md w-full transition relative
+                                   ${user?.kyc_status !== 'approved' 
+                                     ? 'bg-gray-600 opacity-50 cursor-not-allowed' 
+                                     : 'bg-gradient-to-r from-[#0F7490] to-[#0A5A72] hover:opacity-90'}
                                    ${isMobile ? 'py-2.5 px-3 text-base' : 'py-4 px-4 text-lg'}`}
                         style={{ outline: 'none' }}
+                        disabled={user?.kyc_status !== 'approved'}
+                        title={user?.kyc_status !== 'approved' ? 'Completa tu verificación KYC para crear cuentas MT5' : ''}
                     >
+                        {user?.kyc_status !== 'approved' && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                                <span className="text-black text-xs font-bold">!</span>
+                            </span>
+                        )}
                         <span className={`${isMobile ? 'text-lg' : 'text-xl'} mr-1`}>+</span>
                         <span>{t('quickActions.newAccount')}</span>
                     </button>

@@ -10,7 +10,7 @@ import { resendVerificationEmail } from '../supabase/auth';
 
 export default function TradingChallengeUI() {
   const { t } = useTranslation('trading');
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   const { notifyAccountCreated } = useNotifications();
   const { loadAccounts } = useAccounts();
   const [accountType, setAccountType] = useState('Real');
@@ -20,8 +20,9 @@ export default function TradingChallengeUI() {
   const [showLeverageDropdown, setShowLeverageDropdown] = useState(false);
   const [initialBalance, setInitialBalance] = useState('');  // Campo para balance inicial
   
-  // Check if user is verified
+  // Check if user is verified (both email and KYC)
   const isUserVerified = currentUser?.email_verified !== false;
+  const isKYCApproved = userData?.kyc_status === 'approved';
   
   // Loading and feedback states
   const [isLoading, setIsLoading] = useState(false);

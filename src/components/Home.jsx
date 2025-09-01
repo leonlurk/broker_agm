@@ -9,7 +9,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { DatabaseAdapter } from '../services/database.adapter';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from './LanguageSelector';
-import { resendVerificationEmail } from '../supabase/auth';
 
 const fondoTarjetaUrl = "/fondoTarjeta.png";
 
@@ -291,12 +290,12 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
         </div>
       </div>
 
-      {/* Main banner with verification reminder */}
+      {/* Main banner with KYC reminder */}
       <div className="mb-6">
-        <div className={`flex gap-4 ${currentUser?.email_verified === false ? '' : ''}`}>
+        <div className={`flex gap-4 ${user?.kyc_status !== 'approved' ? '' : ''}`}>
           {/* Main Welcome Banner */}
           <div 
-            className={`${currentUser?.email_verified === false ? 'flex-1' : 'w-full'} p-4 md:p-6 rounded-2xl relative flex flex-col justify-center border-solid border-t border-l border-r border-cyan-500`}
+            className={`${user?.kyc_status !== 'approved' ? 'flex-1' : 'w-full'} p-4 md:p-6 rounded-2xl relative flex flex-col justify-center border-solid border-t border-l border-r border-cyan-500`}
           >
             <div 
               className="absolute inset-0 rounded-md"
@@ -312,40 +311,55 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
               <h2 className="text-xl md:text-3xl font-bold mb-3">{t('common:home.welcomeTitle')}</h2>
               <p className="text-base md:text-lg mb-4">{t('common:home.welcomeSubtitle')}</p>
               <button 
-                className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-4 rounded-md hover:opacity-90 transition"
+                className={`bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-4 rounded-md transition ${
+                  user?.kyc_status !== 'approved' 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'hover:opacity-90'
+                }`}
                 style={{ outline: 'none' }}
-                onClick={() => setSelectedOption && setSelectedOption(t('common:home.newAccount'))}
+                onClick={() => {
+                  if (user?.kyc_status === 'approved') {
+                    setSelectedOption && setSelectedOption(t('common:home.newAccount'));
+                  } else {
+                    alert('Debes completar tu verificación KYC antes de crear cuentas MT5');
+                  }
+                }}
+                disabled={user?.kyc_status !== 'approved'}
               >
                 {t('common:home.getStarted')}
               </button>
             </div>
           </div>
 
-          {/* Email Verification Reminder Card - Only show for unverified users */}
-          {currentUser?.email_verified === false && (
+          {/* KYC Verification Reminder Card - Only show for non-approved users */}
+          {user?.kyc_status !== 'approved' && (
             <div className="w-[300px] p-4 rounded-2xl bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/50 flex flex-col justify-center">
               <div className="flex items-start gap-3">
                 <AlertCircle className="text-yellow-500 mt-1" size={24} />
                 <div className="flex-1">
                   <h3 className="text-white font-semibold mb-2">
-                    {t('common:verification.title')}
+                    Verificación KYC Requerida
                   </h3>
                   <p className="text-gray-300 text-sm mb-4">
-                    {t('common:verification.message')}
+                    {user?.kyc_status === 'pending' 
+                      ? 'Tu documentación está en proceso de revisión.'
+                      : user?.kyc_status === 'rejected'
+                      ? 'Tu documentación fue rechazada. Por favor, envíala nuevamente.'
+                      : 'Para poder operar y crear cuentas MT5, debes completar la verificación KYC.'}
                   </p>
                   <button
-                    onClick={async () => {
-                      const result = await resendVerificationEmail(currentUser.email);
-                      if (result.success) {
-                        alert(t('common:verification.emailSent'));
-                      } else {
-                        // Show specific error message including rate limiting
-                        alert(result.error || t('common:verification.emailError'));
-                      }
+                    onClick={() => {
+                      // Navegar directamente a la sección KYC
+                      onSettingsClick && onSettingsClick(true);
                     }}
                     className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 px-4 rounded-lg transition-colors"
+                    disabled={user?.kyc_status === 'pending'}
                   >
-                    {t('common:verification.verifyButton')}
+                    {user?.kyc_status === 'pending' 
+                      ? 'En Revisión...'
+                      : user?.kyc_status === 'rejected'
+                      ? 'Reenviar Documentos'
+                      : 'Completar Verificación'}
                   </button>
                 </div>
               </div>
