@@ -827,8 +827,9 @@ export const resendVerificationEmail = async (email) => {
     logger.auth('[Supabase] Resending verification email via backend API:', email);
     
     // Get user data to generate new verification token
+    // Usar la tabla profiles en lugar de users
     const { data: userData, error: userError } = await supabase
-      .from('users')
+      .from(USERS_TABLE) // Usar la constante USERS_TABLE que es 'profiles'
       .select('id, username, email')
       .eq('email', email)
       .single();
@@ -846,7 +847,7 @@ export const resendVerificationEmail = async (email) => {
     
     // Update user with new verification token
     const { error: updateError } = await supabase
-      .from('users')
+      .from(USERS_TABLE) // Usar la constante USERS_TABLE que es 'profiles'
       .update({ 
         verification_token: verificationToken,
         updated_at: new Date().toISOString()

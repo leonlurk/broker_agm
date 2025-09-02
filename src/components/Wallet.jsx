@@ -372,7 +372,8 @@ const Wallet = () => {
       setError(t('common.errors.insufficientBalance'));
       return;
     }
-    if (activeTab === 'transferir' && parseFloat(amount) > selectedAccount.balance) {
+    // Para transferencias, validar contra el balance general
+    if (activeTab === 'transferir' && parseFloat(amount) > brokerBalance) {
       setError(t('common.errors.insufficientBalance'));
       return;
     }
@@ -455,14 +456,23 @@ const Wallet = () => {
         const newBalance = brokerBalance - amountNum;
         await updateBrokerBalance(newBalance);
       } else if (activeTab === 'transferir') {
-        // Crear solicitud de transferencia interna
+        // Crear solicitud de transferencia desde balance general a cuenta MT5
         result = await transactionService.createTransferRequest({
-          from_account_id: selectedAccount.id,
-          from_account_name: selectedAccount.account_name,
+          from_account_id: 'general', // Balance general como origen
+          from_account_name: t('common.generalBalance'),
           to_account_id: transferToAccount.id,
           to_account_name: transferToAccount.account_name,
           amount: amountNum
         });
+        
+        if (result.success) {
+          // Actualizar el balance del broker (restar el monto)
+          const newBalance = brokerBalance - amountNum;
+          await updateBrokerBalance(newBalance);
+          
+          // TODO: Actualizar el balance de la cuenta MT5 destino
+          // Esto debería manejarse idealmente en el backend con una función RPC
+        }
         
         if (!result.success) {
           throw new Error(result.error || t('transfer.errors.processingError'));
@@ -504,7 +514,7 @@ const Wallet = () => {
       } else if (activeTab === 'transferir') {
         const transferAmount = parseFloat(amount);
         setSuccess(t('transfer.success', { amount }));
-        notifyTransfer(transferAmount, selectedAccount.account_name, transferToAccount.account_name);
+        notifyTransfer(transferAmount, t('common.generalBalance'), transferToAccount.account_name);
       }
 
       // Limpiar formulario
@@ -667,14 +677,28 @@ const Wallet = () => {
 
   // Contenido para transferencias
   const renderTransferContent = () => {
+    // Para transferencias, usamos el balance general como origen
+    const sourceBalance = brokerBalance;
+    const sourceName = t('common.generalBalance');
+    
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Paso 1: Seleccionar cuenta destino */}
+        {/* Paso 1: Origen (Balance General) y Destino */}
         <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 1 ? 'border-[#06b6d4]' : 'border-[#334155]'}`}>
           <h3 className="text-lg font-semibold mb-2 text-white">{t('common.steps.step1')}</h3>
-          <p className="text-[#9ca3af] mb-6 text-sm">{t('transfer.selectDestination')}</p>
+          <p className="text-[#9ca3af] mb-4 text-sm">{t('transfer.selectDestination')}</p>
+          
+          {/* Mostrar origen fijo: Balance General */}
+          <div className="mb-4 p-4 bg-gradient-to-br from-cyan-900/20 to-cyan-800/20 border border-cyan-500/30 rounded-lg">
+            <div className="text-xs text-cyan-400 mb-1">Origen</div>
+            <div className="font-semibold text-white">{sourceName}</div>
+            <div className="text-sm text-cyan-300 mt-1">
+              ${sourceBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD
+            </div>
+          </div>
           
           <div className="relative" ref={transferDropdownRef}>
+            <div className="text-xs text-gray-400 mb-2">Destino (Cuenta MT5)</div>
             <button 
               onClick={() => setShowTransferAccountDropdown(!showTransferAccountDropdown)}
               className="w-full p-4 text-left rounded-lg border-2 border-[#4b5563] bg-[#1e1e1e] hover:bg-[#374151] transition-colors font-medium text-[#9ca3af] hover:text-white"
@@ -682,7 +706,7 @@ const Wallet = () => {
               <div className="flex items-center gap-3">
                 <RefreshCw className="w-6 h-6 text-white" />
                 <span>
-                  {transferToAccount ? `${transferToAccount.account_name} (${transferToAccount.account_number})` : t('transfer.selectDestination')}
+                  {transferToAccount ? `${transferToAccount.account_name} (${transferToAccount.account_number})` : 'Seleccionar cuenta MT5 destino'}
                 </span>
               </div>
             </button>
@@ -690,7 +714,8 @@ const Wallet = () => {
             {showTransferAccountDropdown && (
               <div className="absolute top-full left-0 mt-2 w-full bg-[#232323] border border-[#334155] rounded-lg shadow-xl z-50">
                 <div className="p-2 max-h-60 overflow-y-auto">
-                  {availableAccounts.filter(acc => acc.id !== selectedAccount?.id).map((account) => (
+                  {/* Solo mostrar cuentas MT5 como destino */}
+                  {availableAccounts.map((account) => (
                     <button
                       key={account.id}
                       onClick={() => handleSelectTransferAccount(account)}
@@ -732,25 +757,27 @@ const Wallet = () => {
             <div className="space-y-4">
               <div className="p-4 bg-[#1e1e1e] rounded-lg border border-[#334155]">
                 <div className="flex items-center gap-3 mb-3">
-                  <ArrowUp className="w-6 h-6 text-white" />
+                  <ArrowUp className="w-6 h-6 text-cyan-400" />
                   <div>
                     <div className="font-medium text-white">{t('transfer.fromAccount')}</div>
-                    <div className="text-sm text-[#9ca3af]">{selectedAccount?.accountName}</div>
+                    <div className="text-sm text-[#9ca3af]">{sourceName}</div>
+                    <div className="text-xs text-cyan-300">${sourceBalance.toLocaleString()} USD</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <ArrowDown className="w-6 h-6 text-white" />
+                  <ArrowDown className="w-6 h-6 text-emerald-400" />
                   <div>
                     <div className="font-medium text-white">{t('transfer.toAccount')}</div>
-                    <div className="text-sm text-[#9ca3af]">{transferToAccount.accountName}</div>
+                    <div className="text-sm text-[#9ca3af]">{transferToAccount.account_name} (MT5)</div>
+                    <div className="text-xs text-emerald-300">Balance actual: ${(transferToAccount.balance || 0).toLocaleString()} USD</div>
                   </div>
                 </div>
               </div>
               
-              <div className="p-4 bg-[#1e1e1e] rounded-lg border border-[#334155]">
-                <p className="text-[#22d3ee] mb-2 text-sm font-medium">{t('common.important')}:</p>
+              <div className="p-4 bg-gradient-to-br from-blue-900/20 to-blue-800/20 border border-blue-500/30 rounded-lg">
+                <p className="text-[#22d3ee] mb-2 text-sm font-medium">💡 {t('common.important')}:</p>
                 <p className="text-[#9ca3af] text-xs leading-relaxed">
-                  {t('transfer.instant')}
+                  Transferencia desde su wallet principal hacia su cuenta MT5. {t('transfer.instant')}
                 </p>
               </div>
             </div>
@@ -1404,6 +1431,7 @@ const Wallet = () => {
           )}
         </div>
       </div>
+      )}
 
       {/* Balance Card Original (si hay cuenta seleccionada) */}
       {selectedAccount && (

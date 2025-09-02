@@ -184,7 +184,7 @@ class KYCService {
 
       // Update user's KYC status
       await supabase
-        .from('users')
+        .from('profiles')
         .update({
           kyc_verified: status === 'approved',
           kyc_status: status

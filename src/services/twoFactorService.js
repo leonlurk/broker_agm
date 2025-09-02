@@ -230,7 +230,7 @@ class TwoFactorService {
 
       // Update user's 2FA status
       const { error: userError } = await supabase
-        .from('users')
+        .from('profiles')
         .update({ two_factor_enabled: true })
         .eq('id', userId);
 
@@ -276,7 +276,7 @@ class TwoFactorService {
 
       // Update user's 2FA status
       const { error: userError } = await supabase
-        .from('users')
+        .from('profiles')
         .update({ two_factor_enabled: false })
         .eq('id', userId);
 
@@ -510,7 +510,7 @@ class TwoFactorService {
       
       // Update user's 2FA status
       const { error: userError } = await supabase
-        .from('users')
+        .from('profiles')
         .update({ 
           two_factor_enabled: true,
           two_factor_method: 'email'

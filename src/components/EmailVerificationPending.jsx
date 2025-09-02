@@ -14,6 +14,49 @@ const EmailVerificationPending = () => {
   const [resendMessage, setResendMessage] = useState('');
   const [resendError, setResendError] = useState('');
   const [countdown, setCountdown] = useState(0);
+  const [attemptCount, setAttemptCount] = useState(0);
+  
+  // Rate limit configuration
+  const RATE_LIMIT_KEY = `email_verification_${currentUser?.email}`;
+  const MAX_ATTEMPTS = 3; // Máximo 3 intentos
+  const COOLDOWN_TIME = 60; // 60 segundos entre intentos
+  const BLOCK_TIME = 300; // 5 minutos de bloqueo después de 3 intentos
+  
+  // Load rate limit state from localStorage on mount
+  useEffect(() => {
+    if (currentUser?.email) {
+      const storedData = localStorage.getItem(RATE_LIMIT_KEY);
+      if (storedData) {
+        try {
+          const data = JSON.parse(storedData);
+          const now = Date.now();
+          
+          // Check if user is blocked (after max attempts)
+          if (data.attempts >= MAX_ATTEMPTS && data.blockedUntil > now) {
+            const remainingSeconds = Math.ceil((data.blockedUntil - now) / 1000);
+            setCountdown(remainingSeconds);
+            setAttemptCount(data.attempts);
+            setResendError(`Has alcanzado el límite de intentos. Espera ${Math.ceil(remainingSeconds / 60)} minutos.`);
+          }
+          // Check if still in cooldown
+          else if (data.lastAttempt && (now - data.lastAttempt) < COOLDOWN_TIME * 1000) {
+            const remainingSeconds = Math.ceil((COOLDOWN_TIME * 1000 - (now - data.lastAttempt)) / 1000);
+            setCountdown(remainingSeconds);
+            setAttemptCount(data.attempts || 0);
+          }
+          // Reset if block time has passed
+          else if (data.attempts >= MAX_ATTEMPTS && data.blockedUntil <= now) {
+            localStorage.removeItem(RATE_LIMIT_KEY);
+            setAttemptCount(0);
+          } else {
+            setAttemptCount(data.attempts || 0);
+          }
+        } catch (e) {
+          console.error('Error parsing rate limit data:', e);
+        }
+      }
+    }
+  }, [currentUser?.email, RATE_LIMIT_KEY]);
   
   // Si el usuario no está autenticado, redirigir al login
   useEffect(() => {
@@ -30,8 +73,30 @@ const EmailVerificationPending = () => {
     }
   }, [countdown]);
   
+  // Save rate limit state to localStorage
+  const saveRateLimitState = (attempts, blockedUntil = null) => {
+    const data = {
+      attempts,
+      lastAttempt: Date.now(),
+      blockedUntil
+    };
+    localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(data));
+  };
+  
   const handleResendEmail = async () => {
     if (resending || countdown > 0) return;
+    
+    // Check if user has reached max attempts
+    if (attemptCount >= MAX_ATTEMPTS) {
+      const storedData = localStorage.getItem(RATE_LIMIT_KEY);
+      if (storedData) {
+        const data = JSON.parse(storedData);
+        if (data.blockedUntil > Date.now()) {
+          setResendError(`Has alcanzado el límite de ${MAX_ATTEMPTS} intentos. Por favor espera antes de intentar nuevamente.`);
+          return;
+        }
+      }
+    }
     
     setResending(true);
     setResendMessage('');
@@ -41,8 +106,23 @@ const EmailVerificationPending = () => {
       const result = await resendVerificationEmail(currentUser?.email);
       
       if (result.success) {
-        setResendMessage('¡Email de verificación enviado! Revisa tu bandeja de entrada.');
-        setCountdown(60); // 60 segundos de espera antes de poder reenviar
+        // Increment attempt count
+        const newAttemptCount = attemptCount + 1;
+        setAttemptCount(newAttemptCount);
+        
+        // Set appropriate cooldown
+        if (newAttemptCount >= MAX_ATTEMPTS) {
+          // Block for 5 minutes after max attempts
+          const blockedUntil = Date.now() + (BLOCK_TIME * 1000);
+          saveRateLimitState(newAttemptCount, blockedUntil);
+          setCountdown(BLOCK_TIME);
+          setResendMessage('¡Email enviado! Has alcanzado el límite de intentos. Espera 5 minutos antes de intentar nuevamente.');
+        } else {
+          // Normal cooldown
+          saveRateLimitState(newAttemptCount);
+          setCountdown(COOLDOWN_TIME);
+          setResendMessage(`¡Email de verificación enviado! Revisa tu bandeja de entrada. (Intento ${newAttemptCount}/${MAX_ATTEMPTS})`);
+        }
       } else {
         if (result.rateLimited && result.remainingSeconds) {
           setCountdown(result.remainingSeconds);
@@ -141,6 +221,15 @@ const EmailVerificationPending = () => {
             </div>
           </div>
           
+          {/* Contador de intentos */}
+          {attemptCount > 0 && attemptCount < MAX_ATTEMPTS && !resendMessage && !resendError && (
+            <div className="bg-blue-500 bg-opacity-20 border border-blue-600 text-white px-4 py-2 rounded-lg mb-4">
+              <p className="text-xs text-center">
+                Intentos de reenvío: {attemptCount}/{MAX_ATTEMPTS}
+              </p>
+            </div>
+          )}
+          
           {/* Mensaje de éxito o error */}
           {resendMessage && (
             <div className="bg-green-500 bg-opacity-20 border border-green-600 text-white px-4 py-2 rounded-lg mb-4">
@@ -176,7 +265,15 @@ const EmailVerificationPending = () => {
               ) : countdown > 0 ? (
                 <>
                   <RefreshCw className="w-5 h-5" />
-                  Reenviar email ({countdown}s)
+                  {countdown > COOLDOWN_TIME ? 
+                    `Bloqueado (${Math.ceil(countdown / 60)}min ${countdown % 60}s)` : 
+                    `Reenviar email (${countdown}s)`
+                  }
+                </>
+              ) : attemptCount >= MAX_ATTEMPTS ? (
+                <>
+                  <RefreshCw className="w-5 h-5" />
+                  Límite de intentos alcanzado
                 </>
               ) : (
                 <>

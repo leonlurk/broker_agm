@@ -49,7 +49,8 @@
     }
   },
   "deposit": {
-    "title": "Depositar Fondos",
+    "title": "Depositar Fondos a Wallet Principal",
+    "toWallet": "Los fondos se acreditarán en tu Wallet Principal",
     "selectAccount": "Seleccionar Cuenta",
     "selectMethod": "Método de Pago",
     "selectCoin": "Seleccionar moneda",
