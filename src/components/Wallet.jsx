@@ -1431,7 +1431,6 @@ const Wallet = () => {
           )}
         </div>
       </div>
-      )}
 
       {/* Balance Card Original (si hay cuenta seleccionada) */}
       {selectedAccount && (
