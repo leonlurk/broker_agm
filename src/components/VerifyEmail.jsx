@@ -100,11 +100,12 @@ const VerifyEmail = () => {
   }, [searchParams, navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen w-full flex items-center justify-center bg-black bg-no-repeat bg-cover bg-center"
+      style={{ backgroundImage: 'url(/fondo.png)', width: '100vw', height: '100vh' }}>
       <div className="w-full max-w-md p-8 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <img src="/logo.png" alt="AGM Logo" className="h-20" />
+          <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-16" />
         </div>
 
         {/* Content */}

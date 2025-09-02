@@ -43,7 +43,7 @@ const ResetPassword = ({ onContinue, onLoginClick }) => {
   return (
     <div className="w-[420px] h-[900px] sm:w-full md:w-[620px] p-6 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">
       <div className="flex justify-center mb-8">
-        <img src="/logo.png" alt="AGM Logo" className="h-25" />
+        <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-16" />
       </div>
       
       {error && (

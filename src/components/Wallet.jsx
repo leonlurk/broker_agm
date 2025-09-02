@@ -182,7 +182,7 @@ const Wallet = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ broker_balance: newBalance })
+        .update({ broker_balance: newBalance, updated_at: new Date().toISOString() })
         .eq('id', currentUser.id);
       
       if (!error) {

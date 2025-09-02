@@ -148,8 +148,21 @@ const EmailVerificationPending = () => {
       const { data: userData } = await DatabaseAdapter.users.getById(currentUser?.id || currentUser?.uid);
       
       if (userData && userData.email_verified === true) {
-        // Email verificado, puede ir al dashboard
-        navigate('/dashboard');
+        // Email verificado, ir al login para que vuelva a autenticarse
+        // Limpiar el rate limit del localStorage ya que fue verificado
+        if (RATE_LIMIT_KEY) {
+          localStorage.removeItem(RATE_LIMIT_KEY);
+        }
+        
+        // Hacer logout para forzar nuevo login
+        await DatabaseAdapter.auth.logout();
+        
+        // Navegar al login con mensaje de éxito
+        navigate('/login', { 
+          state: { 
+            message: 'Email verificado exitosamente. Por favor inicia sesión con tus credenciales.' 
+          }
+        });
       } else {
         // Email aún no verificado
         setResendError('Tu email aún no ha sido verificado. Por favor revisa tu bandeja de entrada y haz clic en el enlace de verificación.');
@@ -168,7 +181,7 @@ const EmailVerificationPending = () => {
       <div className="w-[330px] h-[700px] sm:w-full md:w-[490px] p-5 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            <img src="/logo.png" alt="AGM Logo" className="h-16" />
+            <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-16" />
           </div>
           
           {/* Icono y título */}
