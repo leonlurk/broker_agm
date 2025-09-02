@@ -6,6 +6,7 @@ import TwoFactorEmailModal from './TwoFactorEmailModal';
 import { Shield, Mail } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { resendVerificationEmail } from '../supabase/auth';
+import toast from 'react-hot-toast';
 
 const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const { t } = useTranslation('auth');
@@ -37,7 +38,6 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setMessage('');
     setLoading(true);
     
@@ -49,7 +49,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
         if (error.message?.includes('email not confirmed') || error.message?.includes('Email not verified')) {
           setShowVerificationNeeded(true);
           setVerificationEmail(username.includes('@') ? username : user?.email || '');
-          setError('Tu email no está verificado. Por favor verifica tu email antes de iniciar sesión.');
+          toast.error('Tu email no está verificado. Por favor verifica tu email antes de iniciar sesión.');
           setLoading(false);
           return;
         }
@@ -94,18 +94,17 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
       }
     } catch (err) {
       console.error('Login component error:', err);
-      setError(err.message || t('errors.unexpected'));
+      toast.error(err.message || t('errors.unexpected'));
       setLoading(false);
     }
   };
 
   const handleVerify2FA = async () => {
     if (twoFactorCode.length !== 6) {
-      setError(t('twoFactor.errors.invalidCode'));
+      toast.error(t('twoFactor.errors.invalidCode'));
       return;
     }
 
-    setError('');
     setLoading(true);
 
     try {
@@ -120,7 +119,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
         const backupValid = await twoFactorService.verifyBackupCode(userId, twoFactorCode);
         
         if (!backupValid) {
-          setError(t('twoFactor.errors.incorrectCode'));
+          toast.error(t('twoFactor.errors.incorrectCode'));
           setLoading(false);
           return;
         }
@@ -143,14 +142,14 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
       }
     } catch (err) {
       console.error('2FA verification error:', err);
-      setError(t('twoFactor.errors.verifyFailed'));
+      toast.error(t('twoFactor.errors.verifyFailed'));
       setLoading(false);
     }
   };
 
   const handleResendVerification = async () => {
     if (!verificationEmail) {
-      setError('Por favor ingresa tu email primero');
+      toast.error('Por favor ingresa tu email primero');
       return;
     }
     
@@ -165,11 +164,11 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
         setMessage('Email de verificación reenviado exitosamente. Por favor revisa tu correo.');
         setShowVerificationNeeded(false);
       } else {
-        setError(result.error || 'Error al reenviar el email de verificación');
+        toast.error(result.error || 'Error al reenviar el email de verificación');
       }
     } catch (err) {
       console.error('Error resending verification:', err);
-      setError('Error al reenviar el email de verificación');
+      toast.error('Error al reenviar el email de verificación');
     } finally {
       setLoading(false);
     }
@@ -187,11 +186,10 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
         </div>
       )}
 
-      {error && (
-        <div className="bg-red-500 bg-opacity-20 border border-red-600 text-white px-4 py-2 rounded-lg mb-4">
-          {error}
-          {showVerificationNeeded && (
-            <button
+      {showVerificationNeeded && (
+        <div className="bg-yellow-500 bg-opacity-20 border border-yellow-600 text-white px-4 py-2 rounded-lg mb-4">
+          <div className="text-sm mb-2">Email no verificado</div>
+          <button
               onClick={handleResendVerification}
               disabled={loading}
               className="mt-2 w-full py-2 px-4 bg-cyan-600 text-white rounded-full hover:bg-cyan-700 transition flex items-center justify-center gap-2"
@@ -199,7 +197,6 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
               <Mail className="w-4 h-4" />
               {loading ? 'Enviando...' : 'Reenviar email de verificación'}
             </button>
-          )}
         </div>
       )}
       

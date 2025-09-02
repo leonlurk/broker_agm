@@ -21,6 +21,16 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
     });
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    
+    // Debug KYC status
+    useEffect(() => {
+        console.log("[Sidebar] User data received:", {
+            exists: !!user,
+            kyc_status: user?.kyc_status,
+            kyc_verified: user?.kyc_verified,
+            email: user?.email
+        });
+    }, [user]);
 
     // Detectar si es dispositivo móvil
     useEffect(() => {
@@ -278,15 +288,15 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                     <button
                         onClick={() => handleNavigation("Nueva Cuenta")}
                         className={`flex items-center justify-center space-x-2 rounded-md w-full transition relative
-                                   ${user?.kyc_status !== 'approved' 
+                                   ${!user || user?.kyc_status !== 'approved' 
                                      ? 'bg-gray-600 opacity-50 cursor-not-allowed' 
                                      : 'bg-gradient-to-r from-[#0F7490] to-[#0A5A72] hover:opacity-90'}
                                    ${isMobile ? 'py-2.5 px-3 text-base' : 'py-4 px-4 text-lg'}`}
                         style={{ outline: 'none' }}
-                        disabled={user?.kyc_status !== 'approved'}
-                        title={user?.kyc_status !== 'approved' ? 'Completa tu verificación KYC para crear cuentas MT5' : ''}
+                        disabled={!user || user?.kyc_status !== 'approved'}
+                        title={!user ? 'Cargando información del usuario...' : user?.kyc_status !== 'approved' ? 'Completa tu verificación KYC para crear cuentas MT5' : ''}
                     >
-                        {user?.kyc_status !== 'approved' && (
+                        {(!user || user?.kyc_status !== 'approved') && (
                             <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
                                 <span className="text-black text-xs font-bold">!</span>
                             </span>

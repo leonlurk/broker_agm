@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "./contexts/AuthContext";
 import Sidebar from "./Sidebar";
+import toast from 'react-hot-toast';
 import Home from "./components/Home";
 import TradingChallenge from './components/TradingChallenge';
 import PipCalculator from './components/PipCalculator';
@@ -32,6 +33,16 @@ const Dashboard = ({ onLogout }) => {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const mainContentRef = useRef(null);
+  
+  // Debug: Log userData changes
+  useEffect(() => {
+    console.log("[Dashboard] userData updated:", {
+      exists: !!userData,
+      kyc_status: userData?.kyc_status,
+      kyc_verified: userData?.kyc_verified,
+      email: userData?.email
+    });
+  }, [userData]);
   
   // Detectar tamaño de pantalla
   useEffect(() => {
@@ -72,10 +83,10 @@ const Dashboard = ({ onLogout }) => {
       userDataExists: !!userData
     });
     
-    // Bloquear acceso a "Nueva Cuenta" si no tiene KYC aprobado
-    if ((option === "Nueva Cuenta" || option === "New Account") && userData?.kyc_status !== 'approved') {
-      console.log("[Dashboard - src] Blocking Nueva Cuenta - KYC not approved");
-      alert('Debes completar tu verificación KYC antes de poder crear cuentas MT5. Por favor, dirígete a Configuración para completar el proceso.');
+    // Bloquear acceso a "Nueva Cuenta" si no tiene KYC aprobado o si userData no está cargado
+    if ((option === "Nueva Cuenta" || option === "New Account") && (!userData || userData?.kyc_status !== 'approved')) {
+      console.log("[Dashboard - src] Blocking Nueva Cuenta - KYC not approved or userData not loaded");
+      toast.error('Debes completar tu verificación KYC antes de poder crear cuentas MT5. Por favor, dirígete a Configuración para completar el proceso.');
       return;
     }
     
@@ -93,9 +104,9 @@ const Dashboard = ({ onLogout }) => {
   const handleNavigationWithParams = (option, params = null) => {
     console.log("[Dashboard - src] handleNavigationWithParams:", option, params);
     
-    // Bloquear acceso a "Nueva Cuenta" si no tiene KYC aprobado
-    if ((option === "Nueva Cuenta" || option === "New Account") && userData?.kyc_status !== 'approved') {
-      alert('Debes completar tu verificación KYC antes de poder crear cuentas MT5. Por favor, dirígete a Configuración para completar el proceso.');
+    // Bloquear acceso a "Nueva Cuenta" si no tiene KYC aprobado o si userData no está cargado
+    if ((option === "Nueva Cuenta" || option === "New Account") && (!userData || userData?.kyc_status !== 'approved')) {
+      toast.error('Debes completar tu verificación KYC antes de poder crear cuentas MT5. Por favor, dirígete a Configuración para completar el proceso.');
       return;
     }
     
@@ -156,7 +167,7 @@ const Dashboard = ({ onLogout }) => {
             isApproved: userData?.kyc_status === 'approved'
           });
           
-          if (userData?.kyc_status !== 'approved') {
+          if (!userData || userData?.kyc_status !== 'approved') {
             return (
               <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
                 <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-2xl p-8 max-w-md text-center">
@@ -167,7 +178,9 @@ const Dashboard = ({ onLogout }) => {
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-3">Verificación KYC Requerida</h2>
                   <p className="text-gray-300 mb-6">
-                    {userData?.kyc_status === 'pending' 
+                    {!userData
+                      ? 'Cargando información del usuario...'
+                      : userData?.kyc_status === 'pending' 
                       ? 'Tu documentación está en proceso de revisión. Una vez aprobada, podrás crear cuentas MT5.'
                       : userData?.kyc_status === 'rejected'
                       ? 'Tu documentación fue rechazada. Por favor, envíala nuevamente desde la sección de Configuración.'
@@ -177,7 +190,9 @@ const Dashboard = ({ onLogout }) => {
                     onClick={() => handleSettingsClick(true)}
                     className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3 px-6 rounded-lg transition-colors"
                   >
-                    {userData?.kyc_status === 'pending' 
+                    {!userData
+                      ? 'Cargando...'
+                      : userData?.kyc_status === 'pending' 
                       ? 'Ver Estado'
                       : userData?.kyc_status === 'rejected'
                       ? 'Reenviar Documentos'
