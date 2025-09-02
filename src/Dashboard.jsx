@@ -66,9 +66,15 @@ const Dashboard = ({ onLogout }) => {
   // en lugar de cambiar la sección seleccionada
   const handleSidebarOptionChange = (option) => {
     console.log("[Dashboard - src] handleSidebarOptionChange received:", option);
+    console.log("[Dashboard - src] Current userData KYC status:", {
+      kyc_status: userData?.kyc_status,
+      kyc_verified: userData?.kyc_verified,
+      userDataExists: !!userData
+    });
     
     // Bloquear acceso a "Nueva Cuenta" si no tiene KYC aprobado
     if ((option === "Nueva Cuenta" || option === "New Account") && userData?.kyc_status !== 'approved') {
+      console.log("[Dashboard - src] Blocking Nueva Cuenta - KYC not approved");
       alert('Debes completar tu verificación KYC antes de poder crear cuentas MT5. Por favor, dirígete a Configuración para completar el proceso.');
       return;
     }
@@ -145,6 +151,11 @@ const Dashboard = ({ onLogout }) => {
       case "Nueva Cuenta":
       case "New Account":
           // Verificar KYC antes de mostrar el componente
+          console.log("[Dashboard - src] Rendering Nueva Cuenta - KYC check:", {
+            kyc_status: userData?.kyc_status,
+            isApproved: userData?.kyc_status === 'approved'
+          });
+          
           if (userData?.kyc_status !== 'approved') {
             return (
               <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">

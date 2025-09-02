@@ -513,7 +513,7 @@ const Wallet = () => {
         }
       } else if (activeTab === 'transferir') {
         const transferAmount = parseFloat(amount);
-        setSuccess(t('transfer.success', { amount }));
+        setSuccess('Solicitud de transferencia enviada. Será procesada una vez sea aprobada por un administrador.');
         notifyTransfer(transferAmount, t('common.generalBalance'), transferToAccount.account_name);
       }
 

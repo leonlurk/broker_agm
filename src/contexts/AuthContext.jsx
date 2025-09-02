@@ -21,6 +21,12 @@ export const AuthProvider = ({ children }) => {
     const userId = user.uid || user.id;
     const { data, error } = await DatabaseAdapter.users.getById(userId);
     if (data && !error) {
+      // Log KYC status for debugging
+      logger.info("[AUTH] fetchUserData - KYC status:", {
+        kyc_status: data.kyc_status || 'not_submitted',
+        kyc_verified: data.kyc_verified || false
+      });
+      
       // También cargar los métodos de pago desde la tabla dedicada
       if (AuthAdapter.isSupabase()) {
         try {
@@ -32,7 +38,23 @@ export const AuthProvider = ({ children }) => {
           data.paymentMethods = [];
         }
       }
+      
+      // Ensure KYC fields are always present
+      data.kyc_status = data.kyc_status || 'not_submitted';
+      data.kyc_verified = data.kyc_verified || false;
+      
       setUserData(data);
+    } else {
+      // Set minimal data with KYC fields
+      logger.warn("[AUTH] fetchUserData - Using minimal data");
+      setUserData({
+        id: userId,
+        email: user.email,
+        username: user.email?.split('@')[0] || 'user',
+        created_at: new Date().toISOString(),
+        kyc_status: 'not_submitted',
+        kyc_verified: false
+      });
     }
   };
 
@@ -68,6 +90,12 @@ export const AuthProvider = ({ children }) => {
           
           if (data && !error) {
             logger.auth("User data fetched successfully");
+            // Log KYC status for debugging
+            logger.info("[AUTH] User KYC status:", {
+              kyc_status: data.kyc_status || 'not_submitted',
+              kyc_verified: data.kyc_verified || false
+            });
+            
             // También cargar los métodos de pago desde la tabla dedicada
             if (AuthAdapter.isSupabase()) {
               try {
@@ -79,6 +107,11 @@ export const AuthProvider = ({ children }) => {
                 data.paymentMethods = [];
               }
             }
+            
+            // Ensure KYC fields are always present
+            data.kyc_status = data.kyc_status || 'not_submitted';
+            data.kyc_verified = data.kyc_verified || false;
+            
             setUserData(data);
           } else if (error) {
             // Don't sign out on error, just use minimal data
@@ -87,7 +120,9 @@ export const AuthProvider = ({ children }) => {
               id: userId, 
               email: user.email,
               username: user.email?.split('@')[0] || 'user',
-              created_at: new Date().toISOString()
+              created_at: new Date().toISOString(),
+              kyc_status: 'not_submitted',  // Always include KYC status
+              kyc_verified: false
             });
           } else {
             // User not in database yet, create minimal data
@@ -96,7 +131,9 @@ export const AuthProvider = ({ children }) => {
               id: userId, 
               email: user.email,
               username: user.email?.split('@')[0] || 'user',
-              created_at: new Date().toISOString()
+              created_at: new Date().toISOString(),
+              kyc_status: 'not_submitted',  // Always include KYC status
+              kyc_verified: false
             });
           }
         } catch (error) {
