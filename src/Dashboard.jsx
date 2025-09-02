@@ -139,6 +139,13 @@ const Dashboard = ({ onLogout }) => {
   // Función para renderizar el contenido según la opción seleccionada
   const renderContent = () => {
     console.log("[Dashboard - src] renderContent checking selectedOption:", selectedOption); // Log antes del switch
+    console.log("[Dashboard - src] Current KYC status in renderContent:", {
+      userData_exists: !!userData,
+      kyc_status: userData?.kyc_status,
+      kyc_verified: userData?.kyc_verified,
+      selectedOption
+    });
+    
     // Si estamos mostrando la configuración
     if (showSettings) {
       return <Settings onBack={handleBackFromSettings} openKYC={navigationParams?.openKYC} />;
@@ -163,8 +170,12 @@ const Dashboard = ({ onLogout }) => {
       case "New Account":
           // Verificar KYC antes de mostrar el componente
           console.log("[Dashboard - src] Rendering Nueva Cuenta - KYC check:", {
+            userData_exists: !!userData,
             kyc_status: userData?.kyc_status,
-            isApproved: userData?.kyc_status === 'approved'
+            kyc_status_type: typeof userData?.kyc_status,
+            isApproved: userData?.kyc_status === 'approved',
+            shouldShowWarning: !userData || userData?.kyc_status !== 'approved',
+            fullUserData: userData
           });
           
           if (!userData || userData?.kyc_status !== 'approved') {

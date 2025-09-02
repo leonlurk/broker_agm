@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import { DatabaseAdapter } from '../services/database.adapter';
 
 const KYCVerification = ({ onBack }) => {
   const { currentUser } = useAuth();
@@ -73,8 +74,33 @@ const KYCVerification = ({ onBack }) => {
       if (currentUser?.uid || currentUser?.id) {
         const userId = currentUser.id || currentUser.uid;
         console.log('Checking KYC status for user:', userId);
+        
+        // First check in kyc_verifications table
         const status = await kycService.getKYCStatus(userId);
-        console.log('KYC status retrieved:', status);
+        console.log('KYC status from kyc_verifications:', status);
+        
+        // If not found in kyc_verifications, check profiles table
+        if (status.status === 'not_submitted') {
+          try {
+            const { data: userData } = await DatabaseAdapter.users.getById(userId);
+            
+            if (userData?.kyc_status && userData.kyc_status !== 'not_submitted') {
+              console.log('KYC status from profiles:', userData.kyc_status);
+              setKycStatus({
+                status: userData.kyc_status,
+                details: {
+                  submittedAt: userData.kyc_submitted || userData.created_at,
+                  reviewedAt: userData.kyc_reviewed,
+                  fromProfiles: true // Flag to indicate data source
+                }
+              });
+              return;
+            }
+          } catch (error) {
+            console.error('Error checking profiles table:', error);
+          }
+        }
+        
         setKycStatus(status);
       }
     };

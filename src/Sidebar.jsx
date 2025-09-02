@@ -48,6 +48,8 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
     }, []);
 
     const handleNavigation = (option) => {
+        console.log("[Sidebar] handleNavigation called with:", option, "KYC status:", user?.kyc_status);
+        
         if (option === "Herramientas" || option === "Copytrading" || option === "Pamm") {
             // Cerrar todos los dropdowns primero
             const allClosed = {

@@ -7,7 +7,7 @@ import kycService from '../services/kycService';
 import { useTranslation } from 'react-i18next';
 import emailServiceProxy from '../services/emailServiceProxy';
 import toast from 'react-hot-toast';
-import { AuthAdapter } from '../services/database.adapter';
+import { AuthAdapter, DatabaseAdapter } from '../services/database.adapter';
 import PasswordChangeModal from './PasswordChangeModal';
 import TwoFactorDualModal from './TwoFactorDualModal';
 import twoFactorService from '../services/twoFactorService';
@@ -43,8 +43,32 @@ const Settings = ({ onBack, openKYC = false }) => {
       if (currentUser?.uid || currentUser?.id) {
         const userId = currentUser.id || currentUser.uid;
         
-        // Check KYC status
+        // Check KYC status - first in kyc_verifications
         const kycResult = await kycService.getKYCStatus(userId);
+        console.log('[Settings] KYC status from kyc_verifications:', kycResult);
+        
+        // If not found in kyc_verifications, check profiles table
+        if (kycResult.status === 'not_submitted') {
+          try {
+            const { data: userData } = await DatabaseAdapter.users.getById(userId);
+            
+            if (userData?.kyc_status && userData.kyc_status !== 'not_submitted') {
+              console.log('[Settings] KYC status from profiles:', userData.kyc_status);
+              setKycStatus({
+                status: userData.kyc_status,
+                details: {
+                  submittedAt: userData.kyc_submitted || userData.created_at,
+                  reviewedAt: userData.kyc_reviewed,
+                  fromProfiles: true
+                }
+              });
+              return;
+            }
+          } catch (error) {
+            console.error('[Settings] Error checking profiles table:', error);
+          }
+        }
+        
         setKycStatus(kycResult);
         
         // Check 2FA status

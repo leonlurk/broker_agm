@@ -225,6 +225,16 @@ export const DatabaseAdapter = {
           logger.error('[DB Adapter] Error getting user', error);
           return { data: null, error };
         }
+        
+        // Log KYC fields specifically
+        logger.info('[DB Adapter] User data retrieved:', {
+          userId,
+          hasData: !!data,
+          kyc_status: data?.kyc_status,
+          kyc_verified: data?.kyc_verified,
+          email: data?.email
+        });
+        
         return { data, error: null };
       } else {
         // Firebase implementation
