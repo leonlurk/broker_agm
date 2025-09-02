@@ -3,7 +3,7 @@ import { AuthAdapter, DatabaseAdapter } from '../services/database.adapter';
 import { useTranslation } from 'react-i18next';
 import twoFactorService from '../services/twoFactorService';
 import TwoFactorEmailModal from './TwoFactorEmailModal';
-import { Shield, Mail } from 'lucide-react';
+import { Shield, Mail, Eye, EyeOff } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { resendVerificationEmail } from '../supabase/auth';
 import toast from 'react-hot-toast';
@@ -25,6 +25,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const [showVerificationNeeded, setShowVerificationNeeded] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Check for messages from register page
   useEffect(() => {
@@ -219,13 +220,20 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
           
           <div className="relative">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20"
+              className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 pr-12 bg-opacity-20"
               placeholder={t('fields.password')}
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-1/2 transform -translate-y-1/2 right-3 text-gray-400 hover:text-gray-300 focus:outline-none"
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
             <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
             </svg>
