@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AuthAdapter, DatabaseAdapter } from '../services/database.adapter';
 import { useTranslation } from 'react-i18next';
 import twoFactorService from '../services/twoFactorService';
@@ -24,22 +24,26 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const [showEmail2FA, setShowEmail2FA] = useState(false);
   const [showVerificationNeeded, setShowVerificationNeeded] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
-  const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const toastShownRef = useRef(false);
 
   // Check for messages from register page
   useEffect(() => {
-    if (location.state?.message) {
-      setMessage(location.state.message);
+    if (location.state?.message && !toastShownRef.current) {
+      // Show as toast instead of inline message (only once)
+      toast.success(location.state.message);
+      toastShownRef.current = true;
+      
       if (location.state.email) {
         setVerificationEmail(location.state.email);
       }
+      // Clear the state to prevent showing again on refresh
+      navigate(location.pathname, { replace: true });
     }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage('');
     setLoading(true);
     
     try {
@@ -181,11 +185,6 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
         <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-16" />
       </div>
       
-      {message && (
-        <div className="bg-green-500 bg-opacity-20 border border-green-600 text-white px-4 py-2 rounded-lg mb-4">
-          {message}
-        </div>
-      )}
 
       {showVerificationNeeded && (
         <div className="bg-yellow-500 bg-opacity-20 border border-yellow-600 text-white px-4 py-2 rounded-lg mb-4">

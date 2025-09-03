@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { AuthAdapter } from '../services/database.adapter';
 import emailServiceProxy from '../services/emailServiceProxy';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 
 const ForgotPassword = ({ onContinue, onLoginClick }) => {
   const { t } = useTranslation('auth');
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -24,26 +24,16 @@ const ForgotPassword = ({ onContinue, onLoginClick }) => {
         throw new Error(error.message || t('forgotPassword.errors.sendFailed'));
       }
       
-      // Send password reset email through Brevo
-      try {
-        const resetLink = `https://alphaglobalmarket.io/reset-password?email=${encodeURIComponent(email)}`;
-        await emailServiceProxy.sendPasswordResetEmail(
-          { email: email, name: username || t('common.user') },
-          resetLink
-        );
-        console.log('[ForgotPassword] Password reset email sent via Brevo');
-      } catch (emailError) {
-        console.error('[ForgotPassword] Error sending reset email via Brevo:', emailError);
-        // Don't block the flow if Brevo fails, Firebase already sent one
-      }
+      // Supabase already sends the reset email, no need for Brevo
+      console.log('[ForgotPassword] Password reset email sent via Supabase');
       
-      setMessage(t('forgotPassword.success'));
+      toast.success(t('forgotPassword.success'));
       setTimeout(() => {
-        onContinue();
+        onLoginClick();
       }, 3000);
     } catch (err) {
       console.error('Password reset error:', err);
-      setError(err.message || t('forgotPassword.errors.general'));
+      toast.error(err.message || t('forgotPassword.errors.general'));
     } finally {
       setLoading(false);
     }
@@ -55,34 +45,9 @@ const ForgotPassword = ({ onContinue, onLoginClick }) => {
         <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-16" />
       </div>
       
-      {error && (
-        <div className="bg-red-500 bg-opacity-20 border border-red-600 text-white px-4 py-2 rounded-lg mb-4">
-          {error}
-        </div>
-      )}
-      
-      {message && (
-        <div className="bg-green-500 bg-opacity-20 border border-green-600 text-white px-4 py-2 rounded-lg mb-4">
-          {message}
-        </div>
-      )}
       
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="space-y-3">          
-          <div className="relative">
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 rounded-full bg-gray-900 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 bg-opacity-20"
-              placeholder={t('fields.username')}
-              required
-            />
-            <svg className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zm-4 7a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-            </svg>
-          </div>
-          
+        <div className="space-y-3">
           <div className="relative">
             <input
               type="email"

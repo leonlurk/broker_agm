@@ -10,6 +10,7 @@ import transactionService from '../services/transactionService';
 import useTransactionMonitor from '../hooks/useTransactionMonitor';
 import { supabase } from '../supabase/config';
 import { Coins, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Wallet = () => {
   const { t } = useTranslation('wallet');
@@ -52,16 +53,27 @@ const Wallet = () => {
   const [walletAddress, setWalletAddress] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [showTransferAccountDropdown, setShowTransferAccountDropdown] = useState(false);
   const [showHistorialModal, setShowHistorialModal] = useState(false);
   const [showTransactionDetail, setShowTransactionDetail] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [showCryptoDepositModal, setShowCryptoDepositModal] = useState(false);
+  
+  // Estados para el modal de retiro mejorado
+  const [selectedWithdrawMethod, setSelectedWithdrawMethod] = useState(null);
+  const [showWithdrawMethodDropdown, setShowWithdrawMethodDropdown] = useState(false);
+  const [showAddMethodForm, setShowAddMethodForm] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  
+  // Estados para agregar método desde modal
+  const [newMethodAlias, setNewMethodAlias] = useState('');
+  const [newMethodAddress, setNewMethodAddress] = useState('');
+  const [newMethodNetwork, setNewMethodNetwork] = useState('tron_trc20');
+  const [addressError, setAddressError] = useState('');
   const dropdownRef = useRef(null);
   const transferDropdownRef = useRef(null);
+  const withdrawMethodDropdownRef = useRef(null);
 
   // Estados para historial de transacciones
   const [transactions, setTransactions] = useState([]);
@@ -103,6 +115,7 @@ const Wallet = () => {
     loadTransactions();
     loadBrokerBalance();
     loadMT5Accounts();
+    loadPaymentMethods();
     // Hacer supabase disponible globalmente para pruebas
     if (typeof window !== 'undefined') {
       window.supabase = supabase;
@@ -131,6 +144,9 @@ const Wallet = () => {
       }
       if (transferDropdownRef.current && !transferDropdownRef.current.contains(event.target)) {
         setShowTransferAccountDropdown(false);
+      }
+      if (withdrawMethodDropdownRef.current && !withdrawMethodDropdownRef.current.contains(event.target)) {
+        setShowWithdrawMethodDropdown(false);
       }
     };
 
@@ -209,6 +225,30 @@ const Wallet = () => {
       }
     } catch (error) {
       console.error('Error loading MT5 accounts:', error);
+    }
+  };
+  
+  // Cargar métodos de pago del usuario
+  const loadPaymentMethods = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const userId = currentUser.id || currentUser.uid;
+      const { data, error } = await supabase
+        .from('payment_methods')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+        
+      if (!error) {
+        setPaymentMethods(data || []);
+        // Auto-seleccionar el primer método si existe y no hay uno seleccionado
+        if (data && data.length > 0 && !selectedWithdrawMethod) {
+          setSelectedWithdrawMethod(data[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading payment methods:', error);
     }
   };
 
@@ -327,7 +367,88 @@ const Wallet = () => {
   const handleSelectMethod = (method) => {
     setSelectedMethod(method);
     goToStep(2);
-    setError('');
+  };
+  
+  // Función para manejar selección de método de retiro
+  const handleSelectWithdrawMethod = (method) => {
+    setSelectedWithdrawMethod(method);
+    setShowWithdrawMethodDropdown(false);
+  };
+  
+  // Validar dirección crypto
+  const validateCryptoAddress = (address, network) => {
+    const networkValidations = {
+      'tron_trc20': /^T[A-Za-z1-9]{33}$/,
+      'ethereum_erc20': /^0x[a-fA-F0-9]{40}$/
+    };
+    return networkValidations[network]?.test(address) || false;
+  };
+  
+  // Agregar nuevo método de retiro desde el modal
+  const handleAddWithdrawMethod = async () => {
+    if (!newMethodAlias || !newMethodAddress || !newMethodNetwork) {
+      toast.error(t('settings:paymentMethods.errors.completeAllCryptoFields'));
+      return;
+    }
+    
+    if (!validateCryptoAddress(newMethodAddress, newMethodNetwork)) {
+      const errorMessages = {
+        'tron_trc20': t('settings:paymentMethods.errors.tronAddressFormat'),
+        'ethereum_erc20': t('settings:paymentMethods.errors.ethereumAddressFormat')
+      };
+      toast.error(errorMessages[newMethodNetwork]);
+      return;
+    }
+    
+    // Validar duplicados
+    const isDuplicate = paymentMethods.some(method => 
+      method.type === 'crypto' && 
+      method.address === newMethodAddress && 
+      method.network === newMethodNetwork
+    );
+    
+    if (isDuplicate) {
+      toast.error(t('settings:paymentMethods.errors.duplicateWallet'));
+      return;
+    }
+    
+    const newMethod = {
+      type: 'crypto',
+      alias: newMethodAlias,
+      address: newMethodAddress,
+      network: newMethodNetwork
+    };
+    
+    try {
+      const userId = currentUser.id || currentUser.uid;
+      const { data, error } = await supabase
+        .from('payment_methods')
+        .insert({
+          user_id: userId,
+          ...newMethod,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (!error && data) {
+        toast.success(t('settings:paymentMethods.methodAddedSuccess'));
+        await loadPaymentMethods(); // Recargar lista
+        setSelectedWithdrawMethod(data); // Seleccionar el nuevo método
+        setShowAddMethodForm(false);
+        // Limpiar formulario
+        setNewMethodAlias('');
+        setNewMethodAddress('');
+        setNewMethodNetwork('tron_trc20');
+        setAddressError('');
+      } else {
+        console.error('Error adding payment method:', error);
+        toast.error(error?.message || t('settings:paymentMethods.errors.loadingMethods'));
+      }
+    } catch (error) {
+      console.error('Error adding payment method:', error);
+      toast.error(t('settings:paymentMethods.errors.loadingMethods'));
+    }
   };
 
   // Manejar selección de moneda
@@ -340,7 +461,7 @@ const Wallet = () => {
   // Manejar selección de cuenta para transferencia
   const handleSelectTransferAccount = (account) => {
     if (account.id === selectedAccount?.id) {
-      setError(t('transfer.errors.sameAccount'));
+      toast.error(t('transfer.errors.sameAccount'));
       return;
     }
     setTransferToAccount(account);
@@ -352,45 +473,45 @@ const Wallet = () => {
   // Procesar operación
   const handleProcessOperation = async () => {
     if (!selectedAccount || !currentUser) {
-      setError(t('common.errors.selectAccount'));
+      toast.error(t('common.errors.selectAccount'));
       return;
     }
 
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-      setError(t('common.errors.invalidAmount'));
+      toast.error(t('common.errors.invalidAmount'));
       return;
     }
 
     // Validar monto mínimo para depósitos
-    if (activeTab === 'depositar' && parseFloat(amount) < 100) {
-      setError(t('deposit.errors.minAmount'));
+    if (activeTab === 'depositar' && parseFloat(amount) < 50) {
+      toast.error(t('deposit.errors.minAmount'));
       return;
     }
 
     // Validar fondos suficientes según el tipo de operación
     if (activeTab === 'retirar' && parseFloat(amount) > brokerBalance) {
-      setError(t('common.errors.insufficientBalance'));
+      toast.error(t('common.errors.insufficientBalance'));
       return;
     }
     // Para transferencias, validar contra el balance general
     if (activeTab === 'transferir' && parseFloat(amount) > brokerBalance) {
-      setError(t('common.errors.insufficientBalance'));
+      toast.error(t('common.errors.insufficientBalance'));
       return;
     }
 
     // Solo validar método de pago para depósitos (los retiros usan el método pre-configurado)
     if (activeTab === 'depositar' && !selectedMethod) {
-      setError(t('common.errors.selectMethod'));
+      toast.error(t('common.errors.selectMethod'));
       return;
     }
 
     if (activeTab === 'transferir' && !transferToAccount) {
-      setError(t('transfer.errors.selectAccount'));
+      toast.error(t('transfer.errors.selectAccount'));
       return;
     }
 
     if (!acceptTerms) {
-      setError(t('common.errors.acceptTerms'));
+      toast.error(t('common.errors.acceptTerms'));
       return;
     }
 
@@ -416,35 +537,28 @@ const Wallet = () => {
 
       // Usar las funciones RPC según el tipo de operación
       if (activeTab === 'retirar') {
-        // Obtener el método de pago pre-configurado del usuario
-        const userPaymentMethod = userData?.paymentMethods?.[0]; // Usar el primer método configurado
+        // Validar que se haya seleccionado un método de retiro
+        if (!selectedWithdrawMethod) {
+          toast.error(t('withdraw.selectMethod'));
+          return;
+        }
         
-        // Crear solicitud de retiro desde el balance general
+        // Crear solicitud de retiro desde el balance general usando el método seleccionado
         const withdrawalData = {
-          account_id: 'general', // Retiro desde balance general
+          account_id: 'general', // Retiro solo desde balance general
           account_name: t('common.generalBalance'),
           amount: amountNum,
-          withdrawal_type: userPaymentMethod?.type === 'crypto' ? 'crypto' : 'bank',
+          withdrawal_type: 'crypto', // Solo crypto por ahora
           // Incluir datos del usuario
           user_email: currentUser?.email,
           user_name: currentUser?.displayName || userData?.nombre || t('common:user')
         };
 
-        // Si el método es crypto, incluir los datos de la wallet
-        if (userPaymentMethod?.type === 'crypto') {
-          withdrawalData.crypto_currency = userPaymentMethod.currency || 'USDT';
-          withdrawalData.wallet_address = userPaymentMethod.address;
-          withdrawalData.network = userPaymentMethod.network || 'tron';
-        } else if (userPaymentMethod?.type === 'bank') {
-          // Si es banco, incluir los datos bancarios
-          withdrawalData.bank_name = userPaymentMethod.bankName;
-          withdrawalData.bank_account = userPaymentMethod.accountNumber;
-          withdrawalData.bank_details = {
-            accountHolder: userPaymentMethod.accountHolder,
-            swift: userPaymentMethod.swift,
-            iban: userPaymentMethod.iban
-          };
-        }
+        // Incluir los datos del método de retiro seleccionado
+        withdrawalData.crypto_currency = 'USDT';
+        withdrawalData.wallet_address = selectedWithdrawMethod.address;
+        withdrawalData.network = selectedWithdrawMethod.network === 'tron_trc20' ? 'tron' : 'ethereum';
+        withdrawalData.method_alias = selectedWithdrawMethod.alias;
 
         result = await transactionService.createWithdrawalRequest(withdrawalData);
         
@@ -513,7 +627,7 @@ const Wallet = () => {
         }
       } else if (activeTab === 'transferir') {
         const transferAmount = parseFloat(amount);
-        setSuccess('Solicitud de transferencia enviada. Será procesada una vez sea aprobada por un administrador.');
+        toast.success(t('transfer.successMessage'));
         notifyTransfer(transferAmount, t('common.generalBalance'), transferToAccount.account_name);
       }
 
@@ -529,7 +643,7 @@ const Wallet = () => {
     } catch (error) {
       console.error('Error processing operation:', error);
       const errorMessage = t('common.errors.processingError');
-      setError(errorMessage);
+      // Error ya mostrado via notifyError
       notifyError(t('common.errors.operationError'), errorMessage);
     } finally {
       setIsLoading(false);
@@ -579,7 +693,7 @@ const Wallet = () => {
 
       // Notificar al usuario
       const depositAmount = parseFloat(amount);
-      setSuccess(t('deposit.pending', { amount }));
+      toast.success(t('deposit.pending', { amount }));
       notifyDeposit(depositAmount, t('common.generalBalance'));
 
       // Cerrar modal y resetear
@@ -626,8 +740,8 @@ const Wallet = () => {
 
   // Opciones de criptomonedas - USDT en ambas redes
   const getCryptoOptions = () => [
-    { id: 'USDT_TRC20', name: 'USDT (TRC-20)', network: 'Tron', min: 100, confirmations: 20 },
-    { id: 'USDT_ERC20', name: 'USDT (ERC-20)', network: 'Ethereum', min: 100, confirmations: 12 }
+    { id: 'USDT_TRC20', name: 'USDT (TRC-20)', network: 'Tron', min: 50, confirmations: 20 },
+    { id: 'USDT_ERC20', name: 'USDT (ERC-20)', network: 'Ethereum', min: 50, confirmations: 12 }
   ];
 
   // Filtrar cuentas disponibles para selección - Solo cuentas reales
@@ -847,7 +961,7 @@ const Wallet = () => {
     const methods = getMethodOptions();
     const cryptoOptions = getCryptoOptions();
 
-    // Si es un retiro, simplificar el flujo - solo mostrar el monto
+    // Modal de retiro mejorado con selector de métodos
     if (activeTab === 'retirar') {
       return (
         <div className="max-w-2xl mx-auto">
@@ -855,8 +969,156 @@ const Wallet = () => {
             <h3 className="text-lg font-semibold mb-2 text-white">{t('withdraw.title')}</h3>
             <p className="text-[#9ca3af] mb-6 text-sm">{t('withdraw.enterAmount')}</p>
             
-            <div>
-              <div className="mb-4">
+            <div className="space-y-6">
+              {/* Selector de Método de Retiro */}
+              <div>
+                <label className="block text-sm font-medium text-[#9ca3af] mb-2">
+                  {t('withdraw.withdrawalMethod')}
+                </label>
+                <div className="relative" ref={withdrawMethodDropdownRef}>
+                  <button
+                    onClick={() => setShowWithdrawMethodDropdown(!showWithdrawMethodDropdown)}
+                    className="w-full px-4 py-3 bg-[#1e1e1e] border border-[#4b5563] rounded-lg text-white placeholder-[#6b7280] focus:border-[#06b6d4] focus:outline-none flex items-center justify-between"
+                  >
+                    <span>
+                      {selectedWithdrawMethod ? 
+                        `${selectedWithdrawMethod.alias} (${selectedWithdrawMethod.network === 'tron_trc20' ? 'TRC-20' : 'ERC-20'})` : 
+                        t('withdraw.selectMethod')
+                      }
+                    </span>
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {showWithdrawMethodDropdown && (
+                    <div className="absolute top-full left-0 mt-2 w-full bg-[#232323] border border-[#334155] rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                      <div className="p-2">
+                        {/* Métodos existentes */}
+                        {paymentMethods.map((method) => (
+                          <button
+                            key={method.id}
+                            onClick={() => handleSelectWithdrawMethod(method)}
+                            className="w-full p-3 text-left rounded-lg hover:bg-[#374151] transition-colors mb-1"
+                          >
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="font-medium text-white">{method.alias}</div>
+                                <div className="text-xs text-[#9ca3af]">
+                                  {method.network === 'tron_trc20' ? 'USDT (TRC-20)' : 'USDT (ERC-20)'} • 
+                                  {method.address?.substring(0, 6)}...{method.address?.substring(method.address.length - 4)}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                        
+                        {/* Botón para agregar nuevo método */}
+                        <button
+                          onClick={() => {
+                            setShowAddMethodForm(true);
+                            setShowWithdrawMethodDropdown(false);
+                          }}
+                          className="w-full p-3 text-left rounded-lg hover:bg-[#374151] transition-colors border-t border-[#4b5563] mt-2 pt-3"
+                        >
+                          <div className="flex items-center gap-2 text-cyan-400">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span className="font-medium">{t('withdraw.addNewMethod')}</span>
+                          </div>
+                          <div className="text-xs text-[#9ca3af] mt-1 ml-7">
+                            {t('withdraw.addMethodDescription')}
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Formulario para agregar nuevo método */}
+              {showAddMethodForm && (
+                <div className="bg-[#1e1e1e] p-4 rounded-lg border border-[#4b5563]">
+                  <h4 className="text-white font-medium mb-4">{t('withdraw.newMethodTitle')}</h4>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm text-[#9ca3af] mb-1">{t('settings:paymentMethods.alias')}</label>
+                      <input
+                        type="text"
+                        value={newMethodAlias}
+                        onChange={(e) => setNewMethodAlias(e.target.value)}
+                        placeholder={t('settings:paymentMethods.aliasPlaceholder')}
+                        className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#4b5563] rounded-lg text-white text-sm focus:border-[#06b6d4] focus:outline-none"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm text-[#9ca3af] mb-1">{t('settings:paymentMethods.network')}</label>
+                      <select
+                        value={newMethodNetwork}
+                        onChange={(e) => setNewMethodNetwork(e.target.value)}
+                        className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#4b5563] rounded-lg text-white text-sm focus:border-[#06b6d4] focus:outline-none"
+                      >
+                        <option value="tron_trc20">{t('settings:paymentMethods.networks.tetherTron')}</option>
+                        <option value="ethereum_erc20">{t('settings:paymentMethods.networks.tetherEthereum')}</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm text-[#9ca3af] mb-1">{t('settings:paymentMethods.cryptoAddress')}</label>
+                      <input
+                        type="text"
+                        value={newMethodAddress}
+                        onChange={(e) => {
+                          setNewMethodAddress(e.target.value);
+                          if (e.target.value && !validateCryptoAddress(e.target.value, newMethodNetwork)) {
+                            const errorMessages = {
+                              'tron_trc20': t('settings:paymentMethods.errors.tronAddressFormat'),
+                              'ethereum_erc20': t('settings:paymentMethods.errors.ethereumAddressFormat')
+                            };
+                            setAddressError(errorMessages[newMethodNetwork]);
+                          } else {
+                            setAddressError('');
+                          }
+                        }}
+                        placeholder={newMethodNetwork === 'tron_trc20' ? 'TJk2UJsS9x...' : '0x742d35Cc6...'}
+                        className={`w-full px-3 py-2 bg-[#2a2a2a] border rounded-lg text-white text-sm focus:outline-none ${
+                          addressError ? 'border-red-500 focus:border-red-500' : 'border-[#4b5563] focus:border-[#06b6d4]'
+                        }`}
+                      />
+                      {addressError && (
+                        <p className="text-red-400 text-xs mt-1">{addressError}</p>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={handleAddWithdrawMethod}
+                        disabled={!newMethodAlias || !newMethodAddress || !!addressError}
+                        className="px-4 py-2 bg-[#06b6d4] hover:bg-[#0891b2] text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {t('settings:paymentMethods.add')}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowAddMethodForm(false);
+                          setNewMethodAlias('');
+                          setNewMethodAddress('');
+                          setAddressError('');
+                        }}
+                        className="px-4 py-2 bg-[#4b5563] hover:bg-[#6b7280] text-white rounded-lg text-sm font-medium transition-colors"
+                      >
+                        {t('settings:paymentMethods.cancel')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Campo de Monto */}
+              <div>
                 <label className="block text-sm font-medium text-[#9ca3af] mb-2">
                   {t('common.amount')} (USD)
                 </label>
@@ -872,34 +1134,17 @@ const Wallet = () => {
                   {t('common.availableBalance')}: ${brokerBalance.toLocaleString()} USD ({t('common.generalBalance')})
                 </p>
               </div>
-
-              {/* Mostrar información del método de pago configurado */}
-              {userData?.paymentMethods && userData.paymentMethods.length > 0 && (
-                <div className="bg-[#1e1e1e] p-4 rounded-lg mb-4 border border-[#334155]">
-                  <p className="text-[#22d3ee] mb-2 text-sm font-medium">{t('withdraw.paymentMethod')}:</p>
-                  <div className="space-y-2">
-                    {userData.paymentMethods.map((method, index) => (
-                      <div key={index} className="text-[#9ca3af] text-xs">
-                        <span className="font-medium">{method.alias || method.type}</span>
-                        {method.type === 'crypto' && method.address && (
-                          <span className="ml-2 text-[#6b7280]">
-                            ({method.address.substring(0, 6)}...{method.address.substring(method.address.length - 4)})
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-[#1e1e1e] p-4 rounded-lg mb-6 border border-[#334155]">
+              
+              {/* Información importante */}
+              <div className="bg-[#1e1e1e] p-4 rounded-lg border border-[#334155]">
                 <p className="text-[#22d3ee] mb-2 text-sm font-medium">{t('common.important')}:</p>
                 <p className="text-[#9ca3af] text-xs leading-relaxed">
                   {t('withdraw.processingTime')}
                 </p>
               </div>
               
-              <div className="flex items-center mb-6">
+              {/* Checkbox de confirmación */}
+              <div className="flex items-center">
                 <input 
                   type="checkbox" 
                   id="terms" 
@@ -907,18 +1152,19 @@ const Wallet = () => {
                   onChange={(e) => setAcceptTerms(e.target.checked)}
                   className="mr-3 w-4 h-4 text-[#06b6d4] bg-[#1e1e1e] border-[#4b5563] rounded focus:ring-[#06b6d4] focus:ring-2"
                 />
-                <label htmlFor="terms" className="text-sm text-[#9ca3af] font-medium">
-                  {t('common.acceptTerms')}
+                <label htmlFor="terms" className="text-[#9ca3af] text-sm">
+                  {t('common.confirmData')}
                 </label>
               </div>
               
-              <button 
+              {/* Botón de envío */}
+              <button
                 onClick={handleProcessOperation}
-                disabled={!acceptTerms || !amount || isLoading}
-                className={`w-full py-3 rounded-lg text-center font-semibold transition-all ${
-                  acceptTerms && amount && !isLoading
-                    ? 'bg-gradient-to-r from-[#06b6d4] to-[#0891b2] hover:from-[#0891b2] hover:to-[#0e7490] text-white' 
-                    : 'bg-[#374151] text-[#6b7280] cursor-not-allowed'
+                disabled={isLoading || !acceptTerms || !amount || !selectedWithdrawMethod}
+                className={`w-full py-3 rounded-lg font-medium transition-colors ${
+                  isLoading || !acceptTerms || !amount || !selectedWithdrawMethod
+                    ? 'bg-[#4b5563] text-[#9ca3af] cursor-not-allowed'
+                    : 'bg-[#06b6d4] hover:bg-[#0891b2] text-white'
                 }`}
               >
                 {isLoading ? t('common.processing') : t('tabs.withdraw')}
@@ -1021,12 +1267,12 @@ const Wallet = () => {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="100.00"
-                  min="100"
+                  placeholder="50.00"
+                  min="50"
                   className="w-full px-4 py-3 bg-[#1e1e1e] border border-[#4b5563] rounded-lg text-white placeholder-[#6b7280] focus:border-[#06b6d4] focus:outline-none"
                 />
                 <p className="text-xs text-[#22d3ee] mt-1">
-                  {t('deposit.minAmount', { amount: '$100 USD' })}
+                  {t('deposit.minAmount', { amount: '$50 USD' })}
                 </p>
               </div>
 
@@ -1292,62 +1538,69 @@ const Wallet = () => {
           <h1 className="text-2xl font-semibold">{t('title')}</h1>
         </div>
         
-        {/* Tabs y balance general en la esquina superior */}
-        <div className="flex items-center justify-between">
-          <div className="flex bg-[#2a2a2a] rounded-lg p-1">
-            <button
-              onClick={() => {
-                setActiveTab('depositar');
-                resetForm();
-              }}
-              className={`px-4 py-2 rounded-md transition-all ${
-                activeTab === 'depositar'
-                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/20'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {t('tabs.deposit')}
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('retirar');
-                resetForm();
-              }}
-              className={`px-4 py-2 rounded-md transition-all ${
-                activeTab === 'retirar'
-                  ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-500/20'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {t('tabs.withdraw')}
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('transferir');
-                resetForm();
-              }}
-              className={`px-4 py-2 rounded-md transition-all ${
-                activeTab === 'transferir'
-                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/20'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {t('tabs.transfer')}
-            </button>
+        {/* Card Unificada con Balance, Historial y Botones */}
+        <div className="bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-2xl border border-[#333] p-6 shadow-xl">
+          <div className="flex flex-col items-center text-center mb-6">
+            {/* Balance Total Prominente */}
+            <div className="mb-2">
+              <div className="text-lg text-gray-400 mb-1">{t('common.generalBalance')}</div>
+              <div className="text-4xl font-bold text-white mb-1">${brokerBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+              <div className="text-sm text-cyan-400">USD</div>
+            </div>
           </div>
           
-          {/* Balance General y Botón Historial */}
-          <div className="flex items-center space-x-4">
-            {/* Balance General del Broker - Simple */}
-            <div className="text-right">
-              <div className="text-sm text-gray-400">{t('common.generalBalance')}</div>
-              <div className="text-xl font-bold text-white">${brokerBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+          {/* Botones de Acción */}
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+            {/* Botones Principales */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setActiveTab('depositar');
+                  resetForm();
+                }}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 ${
+                  activeTab === 'depositar'
+                    ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/20'
+                    : 'bg-[#374151] text-gray-300 hover:bg-[#4b5563] hover:text-white'
+                }`}
+              >
+                <ArrowDown className="w-5 h-5" />
+                {t('tabs.deposit')}
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('retirar');
+                  resetForm();
+                }}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 ${
+                  activeTab === 'retirar'
+                    ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-500/20'
+                    : 'bg-[#374151] text-gray-300 hover:bg-[#4b5563] hover:text-white'
+                }`}
+              >
+                <ArrowUp className="w-5 h-5" />
+                {t('tabs.withdraw')}
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('transferir');
+                  resetForm();
+                }}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 ${
+                  activeTab === 'transferir'
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/20'
+                    : 'bg-[#374151] text-gray-300 hover:bg-[#4b5563] hover:text-white'
+                }`}
+              >
+                <RefreshCw className="w-5 h-5" />
+                {t('tabs.transfer')}
+              </button>
             </div>
             
             {/* Botón Historial */}
             <button
               onClick={() => setShowHistorialModal(true)}
-              className="flex items-center space-x-2 bg-[#2a2a2a] hover:bg-[#333] border border-[#444] rounded-lg px-4 py-2 transition-colors"
+              className="flex items-center gap-2 px-4 py-3 bg-[#2a2a2a] hover:bg-[#333] border border-[#444] rounded-xl text-gray-300 hover:text-white transition-all transform hover:scale-105"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1358,98 +1611,7 @@ const Wallet = () => {
         </div>
       </div>
 
-      {/* Selección de cuenta */}
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-2">
-          <label className="text-sm text-gray-400">{t('common.selectAccount')}:</label>
-          <button 
-            onClick={loadAccounts}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-3 py-1 bg-[#2a2a2a] hover:bg-[#333] border border-[#444] rounded-lg text-xs text-gray-400 hover:text-white transition-colors"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {isLoading ? t('common.loading') : t('common.reload')}
-          </button>
-        </div>
-        <div className="relative" ref={dropdownRef}>
-          <button 
-            onClick={() => setShowAccountDropdown(!showAccountDropdown)}
-            className="flex items-center justify-between w-full max-w-md px-4 py-3 bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] hover:from-[#3a3a3a] hover:to-[#2e2e2e] rounded-xl border border-[#333] transition-all duration-200"
-          >
-            <span className="text-white font-medium">
-              {selectedAccount ? `${selectedAccount.account_name} (${selectedAccount.account_number})` : t('common.selectAccount')}
-            </span>
-            <svg 
-              className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${showAccountDropdown ? 'rotate-180' : ''}`} 
-              viewBox="0 0 20 20" 
-              fill="currentColor"
-            >
-              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-
-          {/* Dropdown de cuentas */}
-          {showAccountDropdown && (
-            <div className="absolute top-full left-0 mt-2 w-full max-w-md bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] border border-[#333] rounded-xl shadow-xl z-50">
-              <div className="p-2 max-h-60 overflow-y-auto">
-                {availableAccounts.length > 0 ? (
-                  availableAccounts.map((account) => (
-                    <button
-                      key={account.id}
-                      onClick={() => {
-                        selectAccount(account);
-                        setShowAccountDropdown(false);
-                      }}
-                      className={`w-full p-4 text-left rounded-lg transition-all duration-200 ${
-                        selectedAccount?.id === account.id
-                          ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/20 border border-cyan-500/50'
-                          : 'hover:bg-[#3a3a3a]'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-medium text-white">{account.account_name}</div>
-                          <div className="text-xs text-gray-400">{account.account_type} • {account.account_number}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-semibold text-white">${(account.balance || 0).toLocaleString()}</div>
-                          <div className="text-xs text-gray-400">USD</div>
-                        </div>
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-gray-400">
-                    <p className="mb-2">{t('common.noAccounts')}</p>
-                    <p className="text-sm">{t('common.createAccountFirst')}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Balance Card Original (si hay cuenta seleccionada) */}
-      {selectedAccount && (
-        <div className="mb-8">
-          <div className="bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-2xl p-6 border border-gray-600">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-gray-400 mb-2 text-sm font-medium">{t('common.availableBalance')} - {selectedAccount.account_name}</p>
-                <h3 className="text-2xl font-bold text-white">${(selectedAccount.balance || 0).toLocaleString()}</h3>
-                <p className="text-xs text-gray-400 mt-2">{selectedAccount.accountType} {selectedAccount.accountNumber}</p>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-400 mb-2">{t('common.activeAccount')}</div>
-                <div className="text-lg font-semibold text-white">{selectedAccount.accountName}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Selector y contenedor de balance removidos según solicitud del usuario */}
 
       {/* Contenido principal */}
       <div className="flex-1">
@@ -1469,17 +1631,7 @@ const Wallet = () => {
         )}
       </div>
 
-      {/* Mensajes de estado */}
-      {error && (
-        <div className="mt-6 p-4 bg-red-900/30 border border-red-500/50 rounded-lg text-red-200">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="mt-6 p-4 bg-green-900/30 border border-green-500/50 rounded-lg text-green-200">
-          {success}
-        </div>
-      )}
+      {/* Los mensajes de estado ahora usan toast */}
 
       {/* Modal de Historial */}
       {showHistorialModal && (

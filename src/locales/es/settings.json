@@ -239,18 +239,37 @@
   "modal": {
     "changePasswordTitle": "Cambio de Contraseña",
     "changePasswordMessage": "Para cambiar tu contraseña, envíanos un correo electrónico con tu solicitud. Te responderemos con las instrucciones necesarias para completar el proceso de forma segura.",
-    "updateEmailTitle": "Actualización de Correo Electrónico",
-    "updateEmailMessage": "Para actualizar tu correo electrónico, envíanos un mensaje con tu solicitud. Te guiaremos a través del proceso de verificación necesario.",
+    "updateEmailTitle": "Cambiar Correo Electrónico",
+    "updateEmailMessage": "Para cambiar tu correo electrónico de forma segura, completa el siguiente formulario:",
+    "currentEmail": "Correo Actual",
+    "currentEmailPlaceholder": "Ingresa tu correo actual",
+    "newEmail": "Nuevo Correo",
+    "newEmailPlaceholder": "Ingresa tu nuevo correo",
+    "changeReason": "Motivo del Cambio",
+    "changeReasonPlaceholder": "Selecciona un motivo",
+    "changeReasons": {
+      "security": "Motivos de seguridad",
+      "access": "Perdí acceso al correo actual",
+      "typo": "Error en el correo registrado",
+      "preference": "Cambio de preferencia personal",
+      "work": "Cambio laboral",
+      "other": "Otro motivo"
+    },
+    "submitEmailChange": "Enviar Solicitud",
+    "emailChangeSubmitted": "Nuestro equipo de soporte se estará comunicando contigo para validar el cambio de correo entre 24 y 48 horas hábiles",
+    "emailValidationError": "Por favor ingresa un correo válido",
+    "emailsMatchError": "El nuevo correo debe ser diferente al actual",
+    "reasonRequiredError": "Selecciona un motivo para el cambio",
     "supportEmail": "Correo de soporte:",
     "close": "Cerrar",
-    "securePasswordChangeDescription": "Para cambiar tu contraseña de forma segura, te enviaremos un código de verificación a tu email registrado.",
+    "securePasswordChangeDescription": "Para cambiar tu contraseña de forma segura, te enviaremos un código de verificación a tu email registrado. Solo necesitarás ingresar tu nueva contraseña.",
     "sendingVerificationCode": "Enviando...",
     "sendVerificationCode": "Enviar Código de Verificación",
     "verificationCodeSent": "Hemos enviado un código de 6 dígitos a tu email. Ingrésalo a continuación:",
     "verificationCodePlaceholder": "123456",
     "verifyCode": "Verificar Código",
     "resendCode": "Reenviar código",
-    "codeVerifiedSuccessfully": "✓ Código verificado correctamente",
+    "codeVerifiedSuccessfully": "✓ Código verificado correctamente. Ahora puedes establecer tu nueva contraseña:",
     "currentPassword": "Contraseña Actual",
     "currentPasswordPlaceholder": "Ingresa tu contraseña actual",
     "newPassword": "Nueva Contraseña",
@@ -265,6 +284,9 @@
       "special": "Un carácter especial (!@#$%^&*)"
     },
     "passwordMismatch": "Las contraseñas no coinciden",
+    "passwordRequirementsNotMet": "La nueva contraseña no cumple con todos los requisitos",
+    "updatingPassword": "Actualizando contraseña...",
+    "passwordUpdatedSuccess": "Contraseña actualizada correctamente",
     "updatePassword": "Actualizar Contraseña"
   },
   "twoFactor": {
@@ -279,7 +301,6 @@
     "verify": "Verificar",
     "verifying": "Verificando...",
     "enabledSuccess": "¡2FA Activado Exitosamente!",
-    "emailEnabledSuccess": "¡2FA por Email Activado Exitosamente!",
     "backupCodesInfo": "Guarda estos códigos de respaldo en un lugar seguro. Cada código puede usarse solo una vez.",
     "backupCodes": "Códigos de Respaldo",
     "backupCodesWarning": "⚠️ Estos códigos no se mostrarán nuevamente. Guárdalos ahora.",
@@ -330,6 +351,9 @@
     "dualEnabledInfo": "Ambos métodos de verificación están activos",
     "secretCopied": "Código secreto copiado",
     "confirmCloseBackup": "¿Has guardado los códigos de respaldo? No se mostrarán nuevamente.",
+    "selectMethods": "Selecciona los métodos que deseas activar:",
+    "selectAtLeastOne": "Selecciona al menos un método para continuar",
+    "enableMethods": "Activar Métodos",
     "errors": {
       "generateFailed": "Error al generar el código QR",
       "invalidCode": "El código debe tener 6 dígitos",
@@ -337,7 +361,9 @@
       "enableFailed": "Error al activar 2FA",
       "verifyFailed": "Error al verificar el código",
       "disableFailed": "Error al desactivar 2FA",
-      "sendFailed": "Error al enviar el código de verificación"
+      "sendFailed": "Error al enviar el código de verificación",
+      "enableAppFailed": "Error al activar autenticación por aplicación",
+      "enableEmailFailed": "Error al activar autenticación por email"
     }
   },
   "paymentMethods": {
@@ -375,7 +401,8 @@
       "loadingMethods": "Error al cargar los métodos de retiro",
       "tronAddressFormat": "La dirección Tron debe comenzar con \"T\" y tener 34 caracteres",
       "ethereumAddressFormat": "La dirección Ethereum debe comenzar con \"0x\" y tener 42 caracteres",
-      "bitcoinAddressFormat": "Dirección Bitcoin inválida. Debe ser una dirección Legacy o SegWit válida"
+      "bitcoinAddressFormat": "Dirección Bitcoin inválida. Debe ser una dirección Legacy o SegWit válida",
+      "duplicateWallet": "No se pueden guardar dos wallets iguales. Esta dirección y red ya están registradas."
     },
     "networks": {
       "tetherTron": "Tether USD - Tron (TRC-20)",

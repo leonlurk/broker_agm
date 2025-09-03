@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Star, MessageSquare, Send } from 'lucide-react';
 import useTranslation from '../hooks/useTranslation';
+import toast from 'react-hot-toast';
 
 const CommentsRatingModal = ({ isOpen, onClose, trader, onSubmit }) => {
   const { t } = useTranslation();
@@ -20,11 +21,11 @@ const CommentsRatingModal = ({ isOpen, onClose, trader, onSubmit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (rating === 0) {
-      alert(t('comments.pleaseSelectRating'));
+      toast.error(t('comments.pleaseSelectRating'));
       return;
     }
     if (comment.trim().length < 10) {
-      alert(t('comments.commentTooShort'));
+      toast.error(t('comments.commentTooShort'));
       return;
     }
 
@@ -44,7 +45,7 @@ const CommentsRatingModal = ({ isOpen, onClose, trader, onSubmit }) => {
       onClose();
     } catch (error) {
       console.error('Error submitting comment:', error);
-      alert(t('comments.submitError'));
+      toast.error(t('comments.submitError'));
     } finally {
       setIsSubmitting(false);
     }

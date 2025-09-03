@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import Settings from './Settings';
 import UserInformationContent from './UserInformationContent';
 import NotificationsModal from './NotificationsModal';
-import { ChevronDown, ArrowDown, ArrowUp, SlidersHorizontal, Settings as SettingsIcon, Bell, AlertCircle, CheckCircle } from 'lucide-react';
+import { ChevronDown, ArrowDown, ArrowUp, SlidersHorizontal, Settings as SettingsIcon, Bell, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { useAccounts, WALLET_OPERATIONS, ACCOUNT_CATEGORIES } from '../contexts/AccountsContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { DatabaseAdapter } from '../services/database.adapter';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import LanguageSelector from './LanguageSelector';
 
 const fondoTarjetaUrl = "/fondoTarjeta.png";
@@ -47,7 +48,123 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     apellido: ''
   });
   const [accountFilter, setAccountFilter] = useState('all'); // 'all', 'real', 'demo'
+  const [kycCardDismissed, setKycCardDismissed] = useState(() => {
+    return localStorage.getItem('kycCardDismissed') === 'true';
+  });
   const dropdownRef = useRef(null);
+
+  // Función para cerrar permanentemente el cartel KYC aprobado
+  const dismissKycCard = () => {
+    setKycCardDismissed(true);
+    localStorage.setItem('kycCardDismissed', 'true');
+  };
+
+  // Función para renderizar el cartel KYC según su estado
+  const renderKycCard = () => {
+    // No mostrar si ha sido cerrado y está aprobado
+    if (kycCardDismissed && user?.kyc_status === 'approved') {
+      return null;
+    }
+
+    // No mostrar si ya está aprobado y no se ha cerrado aún
+    if (user?.kyc_status === 'approved') {
+      return (
+        <div className="w-[300px] p-4 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/50 flex flex-col justify-center relative">
+          <button
+            onClick={dismissKycCard}
+            className="absolute top-3 right-3 text-green-500 hover:text-green-400 transition-colors"
+          >
+            <X size={20} />
+          </button>
+          <div className="flex items-start gap-3">
+            <CheckCircle className="text-green-500 mt-1" size={24} />
+            <div className="flex-1">
+              <h3 className="text-white font-semibold mb-2">
+                {t('dashboard:kycCard.approved.title')}
+              </h3>
+              <p className="text-gray-300 text-sm">
+                {t('dashboard:kycCard.approved.message')}
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // No mostrar para usuarios sin KYC definido o ya aprobado
+    if (!user?.kyc_status || user?.kyc_status === 'approved') {
+      return null;
+    }
+
+    // Configuración según el estado
+    const getKycConfig = () => {
+      switch (user?.kyc_status) {
+        case 'pending':
+          return {
+            colors: 'from-blue-500/10 to-cyan-500/10 border-blue-500/50',
+            iconColor: 'text-blue-500',
+            icon: AlertCircle,
+            title: t('dashboard:kycCard.pending.title'),
+            message: t('dashboard:kycCard.pending.message'),
+            buttonText: t('dashboard:kycCard.pending.button'),
+            buttonColors: 'bg-blue-500 hover:bg-blue-600 cursor-not-allowed',
+            disabled: true
+          };
+        case 'rejected':
+          return {
+            colors: 'from-red-500/10 to-orange-500/10 border-red-500/50',
+            iconColor: 'text-red-500',
+            icon: AlertCircle,
+            title: t('dashboard:kycCard.rejected.title'),
+            message: t('dashboard:kycCard.rejected.message'),
+            buttonText: t('dashboard:kycCard.rejected.button'),
+            buttonColors: 'bg-red-500 hover:bg-red-600',
+            disabled: false
+          };
+        default: // not_submitted or any other status
+          return {
+            colors: 'from-yellow-500/10 to-orange-500/10 border-yellow-500/50',
+            iconColor: 'text-yellow-500',
+            icon: AlertCircle,
+            title: t('dashboard:kycCard.required.title'),
+            message: t('dashboard:kycCard.required.message'),
+            buttonText: t('dashboard:kycCard.required.button'),
+            buttonColors: 'bg-yellow-500 hover:bg-yellow-600',
+            disabled: false
+          };
+      }
+    };
+
+    const config = getKycConfig();
+    const Icon = config.icon;
+
+    return (
+      <div className={`w-[300px] p-4 rounded-2xl bg-gradient-to-br ${config.colors} flex flex-col justify-center`}>
+        <div className="flex items-start gap-3">
+          <Icon className={`${config.iconColor} mt-1`} size={24} />
+          <div className="flex-1">
+            <h3 className="text-white font-semibold mb-2">
+              {config.title}
+            </h3>
+            <p className="text-gray-300 text-sm mb-4">
+              {config.message}
+            </p>
+            <button
+              onClick={() => {
+                if (!config.disabled) {
+                  onSettingsClick && onSettingsClick(true, true);
+                }
+              }}
+              className={`w-full ${config.buttonColors} text-black font-semibold py-2 px-4 rounded-lg transition-colors ${config.disabled ? 'opacity-75' : ''}`}
+              disabled={config.disabled}
+            >
+              {config.buttonText}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Cargar datos del usuario desde la base de datos
   useEffect(() => {
@@ -159,6 +276,12 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   };
 
   const handleDeposit = () => {
+    // Verificar KYC antes de permitir depositar
+    if (user?.kyc_status !== 'approved') {
+      toast.error(t('common:kyc.depositWithdrawBlocked'));
+      return;
+    }
+    
     console.log("Deposit button clicked for account:", selectedAccount?.account_name);
     const operationData = startWalletOperation(WOP.DEPOSIT, selectedAccount);
     if (setSelectedOption) {
@@ -167,6 +290,12 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   };
 
   const handleWithdraw = () => {
+    // Verificar KYC antes de permitir retirar
+    if (user?.kyc_status !== 'approved') {
+      toast.error(t('common:kyc.depositWithdrawBlocked'));
+      return;
+    }
+    
     console.log("Withdraw button clicked for account:", selectedAccount?.account_name);
     const operationData = startWalletOperation(WOP.WITHDRAW, selectedAccount);
     if (setSelectedOption) {
@@ -175,6 +304,12 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   };
 
   const handleTransfer = () => {
+    // Verificar KYC antes de permitir transferir
+    if (user?.kyc_status !== 'approved') {
+      toast.error(t('common:kyc.depositWithdrawBlocked'));
+      return;
+    }
+    
     console.log("Transfer button clicked for account:", selectedAccount?.account_name);
     const operationData = startWalletOperation(WOP.TRANSFER, selectedAccount);
     if (setSelectedOption) {
@@ -205,16 +340,16 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   const allAccountsForSelector = getAllAccounts();
   
   // Filtrar solo cuentas reales para el tablero principal
-  const realAccountsOnly = getAccountsByCategory(t('dashboard:accountSummary.realAccounts'));
+  const realAccountsOnly = getAccountsByCategory(ACC_CAT.REAL);
   
   // Obtener todas las cuentas y filtrarlas según el filtro seleccionado
   const getFilteredAccounts = () => {
     let filteredAccounts = [];
     
     if (accountFilter === 'real') {
-      filteredAccounts = getAccountsByCategory(t('dashboard:accountSummary.realAccounts'));
+      filteredAccounts = getAccountsByCategory(ACC_CAT.REAL);
     } else if (accountFilter === 'demo') {
-      filteredAccounts = getAccountsByCategory('Cuentas Demo');
+      filteredAccounts = getAccountsByCategory(ACC_CAT.DEMO);
     } else {
       // 'all' - obtener todas las cuentas
       filteredAccounts = getAllAccounts();
@@ -292,10 +427,10 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
 
       {/* Main banner with KYC reminder */}
       <div className="mb-6">
-        <div className={`flex gap-4 ${user?.kyc_status !== 'approved' ? '' : ''}`}>
+        <div className={`flex gap-4`}>
           {/* Main Welcome Banner */}
           <div 
-            className={`${user?.kyc_status !== 'approved' ? 'flex-1' : 'w-full'} p-4 md:p-6 rounded-2xl relative flex flex-col justify-center border-solid border-t border-l border-r border-cyan-500`}
+            className={`${renderKycCard() ? 'flex-1' : 'w-full'} p-4 md:p-6 rounded-2xl relative flex flex-col justify-center border-solid border-t border-l border-r border-cyan-500`}
           >
             <div 
               className="absolute inset-0 rounded-md"
@@ -321,7 +456,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                   if (user?.kyc_status === 'approved') {
                     setSelectedOption && setSelectedOption(t('common:home.newAccount'));
                   } else {
-                    alert('Debes completar tu verificación KYC antes de crear cuentas MT5');
+                    toast.error(t('common:kyc.verificationRequired'));
                   }
                 }}
                 disabled={user?.kyc_status !== 'approved'}
@@ -331,40 +466,8 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
             </div>
           </div>
 
-          {/* KYC Verification Reminder Card - Only show for non-approved users */}
-          {user?.kyc_status !== 'approved' && (
-            <div className="w-[300px] p-4 rounded-2xl bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/50 flex flex-col justify-center">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="text-yellow-500 mt-1" size={24} />
-                <div className="flex-1">
-                  <h3 className="text-white font-semibold mb-2">
-                    Verificación KYC Requerida
-                  </h3>
-                  <p className="text-gray-300 text-sm mb-4">
-                    {user?.kyc_status === 'pending' 
-                      ? 'Tu documentación está en proceso de revisión.'
-                      : user?.kyc_status === 'rejected'
-                      ? 'Tu documentación fue rechazada. Por favor, envíala nuevamente.'
-                      : 'Para poder operar y crear cuentas MT5, debes completar la verificación KYC.'}
-                  </p>
-                  <button
-                    onClick={() => {
-                      // Navegar directamente a la sección KYC
-                      onSettingsClick && onSettingsClick(true);
-                    }}
-                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 px-4 rounded-lg transition-colors"
-                    disabled={user?.kyc_status === 'pending'}
-                  >
-                    {user?.kyc_status === 'pending' 
-                      ? 'En Revisión...'
-                      : user?.kyc_status === 'rejected'
-                      ? 'Reenviar Documentos'
-                      : 'Completar Verificación'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* KYC Verification Dynamic Card */}
+          {renderKycCard()}
         </div>
       </div>
 
@@ -432,12 +535,12 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
              <button
                onClick={handleDeposit}
                className={`bg-[#2a2a2a] border py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base ${
-                 selectedAccount 
+                 selectedAccount && user?.kyc_status === 'approved'
                    ? 'border-cyan-500/50 hover:border-cyan-500/80 text-white hover:bg-[#333] cursor-pointer' 
                    : 'border-gray-600/50 text-gray-500 cursor-not-allowed opacity-50'
                }`}
                style={{ outline: 'none' }}
-               disabled={!selectedAccount}
+               disabled={!selectedAccount || user?.kyc_status !== 'approved'}
              >
                {t('wallet:deposit.title')}
                <ArrowDown size={16} className="transform -rotate-90"/>
@@ -445,12 +548,12 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
              <button
                onClick={handleWithdraw}
                className={`bg-[#2a2a2a] border py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base ${
-                 selectedAccount 
+                 selectedAccount && user?.kyc_status === 'approved'
                    ? 'border-cyan-500/50 hover:border-cyan-500/80 text-gray-300 hover:text-white hover:bg-[#333] cursor-pointer' 
                    : 'border-gray-600/50 text-gray-500 cursor-not-allowed opacity-50'
                }`}
                style={{ outline: 'none' }}
-               disabled={!selectedAccount}
+               disabled={!selectedAccount || user?.kyc_status !== 'approved'}
              >
                {t('wallet:withdraw.title')}
                 <ArrowUp size={16} className="transform -rotate-90"/>
@@ -458,12 +561,12 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
              <button
                onClick={handleTransfer}
                className={`bg-[#2a2a2a] border py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base ${
-                 selectedAccount 
+                 selectedAccount && user?.kyc_status === 'approved'
                    ? 'border-cyan-500/50 hover:border-cyan-500/80 text-gray-300 hover:text-white hover:bg-[#333] cursor-pointer' 
                    : 'border-gray-600/50 text-gray-500 cursor-not-allowed opacity-50'
                }`}
                style={{ outline: 'none' }}
-               disabled={!selectedAccount}
+               disabled={!selectedAccount || user?.kyc_status !== 'approved'}
              >
                {t('wallet:transfer.title')}
                <SlidersHorizontal size={16} className="transform rotate-90"/>
@@ -503,7 +606,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                      : 'bg-transparent border-gray-600 text-gray-400 hover:border-gray-500'
                  }`}
              >
-                 {t('dashboard:accountSummary.demoAccounts')} ({getAccountsByCategory('Cuentas Demo').length})
+                 {t('dashboard:accountSummary.demoAccounts')} ({getAccountsByCategory(ACC_CAT.DEMO).length})
              </button>
          </div>
 

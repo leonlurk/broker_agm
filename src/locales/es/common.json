@@ -88,6 +88,11 @@
     "terms": "Debe aceptar los términos y condiciones",
     "selectOption": "Seleccione una opción"
   },
+  "kyc": {
+    "verificationRequired": "Para crear una cuenta de MetaTrader 5, primero debes realizar la verificación KYC",
+    "depositWithdrawBlocked": "Para depositar, retirar o transferir fondos, primero debes completar la verificación KYC",
+    "featureBlocked": "Para acceder a esta funcionalidad, primero debes completar la verificación KYC"
+  },
   "time": {
     "days": "días",
     "hours": "horas",
@@ -101,7 +106,12 @@
     "year": "Año",
     "dateFormat": "DD/MM/YYYY",
     "timeFormat": "HH:mm:ss",
-    "locale": "es-ES"
+    "locale": "es-ES",
+    "now": "ahora",
+    "oneMinuteAgo": "hace 1 minuto",
+    "minutesAgo": "hace {{count}} minutos",
+    "oneDayAgo": "hace 1 día",
+    "daysAgo": "hace {{count}} días"
   },
   "currency": {
     "usd": "USD",
@@ -132,5 +142,9 @@
     "showing": "Mostrando {{start}} a {{end}} de {{total}} resultados",
     "previous": "Anterior",
     "next": "Siguiente"
+  },
+  "clipboard": {
+    "orderNumberCopied": "Número de orden copiado al portapapeles",
+    "copyError": "Error al copiar al portapapeles"
   }
 }

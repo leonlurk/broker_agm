@@ -5,8 +5,8 @@ const CustomTooltip = ({ content, children }) => {
     <div className="relative flex items-center group">
       {children}
       <div className="
-        absolute bottom-full left-1/2 -translate-x-1/2 
-        mb-3 
+        absolute left-full top-1/2 -translate-y-1/2 
+        ml-3 
         w-max max-w-xs
         px-3 py-2
         bg-gradient-to-br from-gray-800 to-gray-900
@@ -19,15 +19,15 @@ const CustomTooltip = ({ content, children }) => {
         transform scale-95 group-hover:scale-100
         transition-all duration-200 ease-in-out
         pointer-events-none 
-        z-20
-        origin-bottom
+        z-50
+        origin-left
       ">
         {content}
         <div 
-          className="absolute top-full left-1/2 -translate-x-1/2 
+          className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 
           w-0 h-0 
-          border-x-[6px] border-x-transparent 
-          border-t-[6px] border-t-gray-800"
+          border-y-[6px] border-y-transparent 
+          border-r-[6px] border-r-gray-800"
         ></div>
       </div>
     </div>

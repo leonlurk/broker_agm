@@ -6,6 +6,7 @@ import affiliatesService from '../services/affiliatesService';
 import WithdrawalHistoryDetails from './WithdrawalHistoryDetails';
 import Pagination from './utils/Pagination';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 
 // Component now uses affiliatesService for all data
 
@@ -132,11 +133,11 @@ const AfiliadosDashboard = () => {
     const referralLink = affiliatesService.generateReferralLink(text);
     navigator.clipboard.writeText(referralLink)
       .then(() => {
-        alert(t('dashboard.messages.linkCopied'));
+        toast.success(t('dashboard.messages.linkCopied'));
       })
       .catch(err => {
         console.error('Error al copiar: ', err);
-        alert(t('dashboard.messages.copyError'));
+        toast.error(t('dashboard.messages.copyError'));
       });
   };
 

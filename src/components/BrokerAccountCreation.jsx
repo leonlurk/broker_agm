@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { createBrokerAccount, checkBrokerApiStatus } from '../services/brokerAccountsService';
 import { logger } from '../utils/logger';
+import toast from 'react-hot-toast';
 
 const BrokerAccountCreation = ({ onAccountCreated, onCancel }) => {
   const { currentUser } = useAuth();
@@ -91,8 +92,8 @@ const BrokerAccountCreation = ({ onAccountCreated, onCancel }) => {
     }
 
     // Leverage validation
-    if (formData.leverage < 1 || formData.leverage > 1000) {
-      newErrors.leverage = 'Apalancamiento debe estar entre 1 y 1000';
+    if (formData.leverage < 1 || formData.leverage > 200) {
+      newErrors.leverage = 'Apalancamiento debe estar entre 1 y 200';
     }
 
     // Initial deposit validation
@@ -142,7 +143,20 @@ const BrokerAccountCreation = ({ onAccountCreated, onCancel }) => {
         }
 
         // Show success message with MT5 credentials
-        alert(`¡Cuenta Real creada exitosamente!\n\nLogin: ${result.account.accountNumber}\nPassword: ${result.account.password}\nInvestor Password: ${result.account.investorPassword}\nBalance: $${result.account.balance}\nServidor: AGM-Server`);
+        toast.success(
+          <div>
+            <h4 className="font-bold mb-2">¡Cuenta Real creada exitosamente!</h4>
+            <div className="text-sm space-y-1">
+              <p><span className="font-medium">Login:</span> {result.account.accountNumber}</p>
+              <p><span className="font-medium">Password:</span> {result.account.password}</p>
+              <p><span className="font-medium">Investor Password:</span> {result.account.investorPassword}</p>
+              <p><span className="font-medium">Balance:</span> ${result.account.balance}</p>
+              <p><span className="font-medium">Servidor:</span> AGM-Server</p>
+            </div>
+            <p className="text-xs mt-2 opacity-75">Guarda estas credenciales en un lugar seguro</p>
+          </div>,
+          { duration: 8000 }
+        );
       } else {
         throw new Error('Account creation failed');
       }
@@ -324,12 +338,20 @@ const BrokerAccountCreation = ({ onAccountCreated, onCancel }) => {
                 errors.leverage ? 'border-red-500' : 'border-gray-600'
               }`}
             >
+              <option value={10}>1:10</option>
+              <option value={20}>1:20</option>
+              <option value={30}>1:30</option>
+              <option value={40}>1:40</option>
               <option value={50}>1:50</option>
+              <option value={60}>1:60</option>
+              <option value={70}>1:70</option>
+              <option value={80}>1:80</option>
+              <option value={90}>1:90</option>
               <option value={100}>1:100</option>
+              <option value={125}>1:125</option>
+              <option value={150}>1:150</option>
+              <option value={175}>1:175</option>
               <option value={200}>1:200</option>
-              <option value={300}>1:300</option>
-              <option value={400}>1:400</option>
-              <option value={500}>1:500</option>
             </select>
             {errors.leverage && (
               <p className="text-red-400 text-xs mt-1">{errors.leverage}</p>

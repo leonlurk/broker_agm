@@ -248,7 +248,6 @@
     "verify": "Verify",
     "verifying": "Verifying...",
     "enabledSuccess": "2FA Successfully Enabled!",
-    "emailEnabledSuccess": "Email 2FA Successfully Enabled!",
     "backupCodesInfo": "Save these backup codes in a safe place. Each code can only be used once.",
     "backupCodes": "Backup Codes",
     "backupCodesWarning": "⚠️ These codes won't be shown again. Save them now.",
@@ -299,6 +298,9 @@
     "dualEnabledInfo": "Both verification methods are active",
     "secretCopied": "Secret code copied",
     "confirmCloseBackup": "Have you saved the backup codes? They won't be shown again.",
+    "selectMethods": "Select the methods you want to activate:",
+    "selectAtLeastOne": "Select at least one method to continue",
+    "enableMethods": "Enable Methods",
     "errors": {
       "generateFailed": "Failed to generate QR code",
       "invalidCode": "Code must be 6 digits",
@@ -306,24 +308,45 @@
       "enableFailed": "Failed to enable 2FA",
       "verifyFailed": "Failed to verify code",
       "disableFailed": "Failed to disable 2FA",
-      "sendFailed": "Failed to send verification code"
+      "sendFailed": "Failed to send verification code",
+      "enableAppFailed": "Failed to enable authenticator app",
+      "enableEmailFailed": "Failed to enable email authentication"
     }
   },
   "modal": {
     "changePasswordTitle": "Password Change",
     "changePasswordMessage": "To change your password, please send us an email with your request. We will respond with the necessary instructions to complete the process securely.",
-    "updateEmailTitle": "Email Update", 
-    "updateEmailMessage": "To update your email address, send us a message with your request. We will guide you through the necessary verification process.",
+    "updateEmailTitle": "Change Email Address",
+    "updateEmailMessage": "To change your email address securely, please complete the following form:",
+    "currentEmail": "Current Email",
+    "currentEmailPlaceholder": "Enter your current email",
+    "newEmail": "New Email",
+    "newEmailPlaceholder": "Enter your new email",
+    "changeReason": "Reason for Change",
+    "changeReasonPlaceholder": "Select a reason",
+    "changeReasons": {
+      "security": "Security reasons",
+      "access": "Lost access to current email",
+      "typo": "Error in registered email",
+      "preference": "Personal preference change",
+      "work": "Job change",
+      "other": "Other reason"
+    },
+    "submitEmailChange": "Submit Request",
+    "emailChangeSubmitted": "Our support team will contact you to validate the email change within 24-48 business hours",
+    "emailValidationError": "Please enter a valid email address",
+    "emailsMatchError": "The new email must be different from the current one",
+    "reasonRequiredError": "Please select a reason for the change",
     "supportEmail": "Support email:",
     "close": "Close",
-    "securePasswordChangeDescription": "To securely change your password, we will send a verification code to your registered email.",
+    "securePasswordChangeDescription": "To securely change your password, we will send a verification code to your registered email. You will only need to enter your new password.",
     "sendingVerificationCode": "Sending...",
     "sendVerificationCode": "Send Verification Code",
     "verificationCodeSent": "We have sent a 6-digit code to your email. Enter it below:",
     "verificationCodePlaceholder": "123456",
     "verifyCode": "Verify Code",
     "resendCode": "Resend code",
-    "codeVerifiedSuccessfully": "✓ Code verified successfully",
+    "codeVerifiedSuccessfully": "✓ Code verified successfully. You can now set your new password:",
     "currentPassword": "Current Password",
     "currentPasswordPlaceholder": "Enter your current password",
     "newPassword": "New Password",
@@ -338,6 +361,9 @@
       "special": "One special character (!@#$%^&*)"
     },
     "passwordMismatch": "Passwords do not match",
+    "passwordRequirementsNotMet": "The new password does not meet all requirements",
+    "updatingPassword": "Updating password...",
+    "passwordUpdatedSuccess": "Password updated successfully",
     "updatePassword": "Update Password"
   },
   "paymentMethods": {
@@ -375,7 +401,8 @@
       "loadingMethods": "Error loading withdrawal methods",
       "tronAddressFormat": "Tron address must start with \"T\" and have 34 characters",
       "ethereumAddressFormat": "Ethereum address must start with \"0x\" and have 42 characters",
-      "bitcoinAddressFormat": "Invalid Bitcoin address. Must be a valid Legacy or SegWit address"
+      "bitcoinAddressFormat": "Invalid Bitcoin address. Must be a valid Legacy or SegWit address",
+      "duplicateWallet": "Cannot save duplicate wallets. This address and network are already registered."
     },
     "networks": {
       "tetherTron": "Tether USD - Tron (TRC-20)",

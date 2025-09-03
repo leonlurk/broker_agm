@@ -31,7 +31,7 @@ const FloatingChatButton = () => {
   };
 
   const minimizeChat = () => {
-    setIsMinimized(true);
+    setIsMinimized(false); // No need to track minimized state
     setIsOpen(false);
   };
 
@@ -56,18 +56,7 @@ const FloatingChatButton = () => {
           </div>
         )}
 
-        {/* Minimized Chat Indicator */}
-        {isMinimized && (
-          <div 
-            onClick={() => setIsOpen(true)}
-            className="mb-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full p-3 shadow-lg cursor-pointer hover:scale-105 transition-transform duration-200 border border-cyan-400/30"
-          >
-            <div className="flex items-center gap-2 text-white">
-              <MessageCircle size={20} />
-              <span className="text-sm font-medium">Chat minimizado</span>
-            </div>
-          </div>
-        )}
+        {/* Minimized Chat Indicator - Removed for cleaner UX */}
 
         {/* Main FAB */}
         {!isOpen && (

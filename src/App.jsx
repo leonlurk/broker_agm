@@ -5,7 +5,6 @@ import Register from './components/Register';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import PasswordReset from './components/PasswordReset';
-import VerificationCode from './components/VerificationCode';
 import VerifyEmail from './components/VerifyEmail';
 import EmailVerificationPending from './components/EmailVerificationPending';
 import Dashboard from './Dashboard';
@@ -76,21 +75,13 @@ function App() {
           element={
             <AuthPageWrapper>
               <ForgotPassword 
-                onContinue={() => navigate('/verification')} 
+                onContinue={() => navigate('/login')} 
                 onLoginClick={() => navigate('/login')} 
               />
             </AuthPageWrapper>
           } 
         />
         
-        <Route 
-          path="/verification" 
-          element={
-            <AuthPageWrapper>
-              <VerificationCode onContinue={() => navigate('/reset-password')} />
-            </AuthPageWrapper>
-          } 
-        />
         
         <Route 
           path="/reset-password" 

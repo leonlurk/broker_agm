@@ -5,6 +5,7 @@ import { getFollowers, getTraderStats } from '../services/copytradingService';
 import ConfigurarGestorModal from './ConfigurarGestorModal';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 
 // Datos iniciales vacíos - se cargarán dinámicamente desde la API
 const initialTraderDashboardData = {
@@ -226,11 +227,11 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
       await new Promise(resolve => setTimeout(resolve, 1500));
       console.log('Perfil guardado:', profileData);
       // Aquí iría la lógica real de guardado
-      alert('Perfil actualizado correctamente');
+      toast.success(t('settings.profile.messages.profileUpdated'));
       setView('dashboard');
     } catch (error) {
       console.error('Error guardando perfil:', error);
-      alert('Error al guardar el perfil');
+      toast.error(t('settings.profile.messages.saveError'));
     } finally {
       setIsSaving(false);
     }

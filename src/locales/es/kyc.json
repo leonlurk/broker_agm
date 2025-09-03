@@ -93,6 +93,7 @@
   },
   "buttons": {
     "back": "Volver a Ajustes",
+    "backToDashboard": "Volver al Dashboard",
     "next": "Siguiente",
     "submit": "Enviar Documentos para Verificación",
     "submitting": "Enviando...",

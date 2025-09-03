@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import emailServiceProxy from '../services/emailServiceProxy';
 import { ChevronDown, Search, Check, X, Eye, EyeOff } from 'lucide-react';
+import toast from 'react-hot-toast';
 import axios from 'axios';
 
 const Register = ({ onLoginClick }) => {
@@ -120,16 +121,19 @@ const Register = ({ onLoginClick }) => {
     // Validate password requirements
     if (!validatePassword(password)) {
       console.log("[Register] Password doesn't meet requirements.");
-      return setError('La contraseña debe tener al menos 12 caracteres, 1 número, 1 mayúscula y 1 símbolo');
+      toast.error('La contraseña debe tener al menos 12 caracteres, 1 número, 1 mayúscula y 1 símbolo');
+      return;
     }
     
     if (password !== confirmPassword) {
       console.log("[Register] Password mismatch.");
-      return setError(t('register.errors.passwordMismatch'));
+      toast.error(t('register.errors.passwordMismatch'));
+      return;
     }
     
     if (!acceptTerms) {
-      return setError(t('register.errors.termsRequired'));
+      toast.error(t('register.errors.termsRequired'));
+      return;
     }
     
     setLoading(true);
@@ -202,11 +206,31 @@ const Register = ({ onLoginClick }) => {
         }
       }
       
+      // Store temporary user info for verification page (since Supabase doesn't keep unverified users authenticated)
+      const tempUserInfo = {
+        email: user.email,
+        id: user.id,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('pending_verification_user', JSON.stringify(tempUserInfo));
+      
       // Navigate to email verification pending page
       navigate('/verify-email-pending');
     } catch (err) {
       console.error('[Register] handleSubmit caught error:', err);
-      setError(err.message || t('register.errors.general'));
+      
+      // Handle specific error messages
+      let errorMessage = err.message || t('register.errors.general');
+      
+      // Check for user already exists error (various formats)
+      if (errorMessage.toLowerCase().includes('user already') || 
+          errorMessage.toLowerCase().includes('already registered') ||
+          errorMessage.toLowerCase().includes('already exists')) {
+        errorMessage = 'El usuario ya está registrado';
+      }
+      
+      // Show toast notification instead of inline error
+      toast.error(errorMessage);
     } finally {
       console.log("[Register] handleSubmit finished.");
       setLoading(false);
@@ -219,11 +243,6 @@ const Register = ({ onLoginClick }) => {
         <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-16" />
       </div>
       
-      {error && (
-        <div className="bg-red-500 bg-opacity-20 border border-red-600 text-white px-4 py-2 rounded-lg mb-4">
-          {error}
-        </div>
-      )}
       
       {message && (
         <div className="bg-green-500 bg-opacity-20 border border-green-600 text-white px-4 py-2 rounded-lg mb-4">
@@ -463,14 +482,7 @@ const Register = ({ onLoginClick }) => {
         </button>
 
         <div className="mt-4 text-center">
-          <button
-            type="button"
-            onClick={onLoginClick}
-            className="text-gray-300 hover:text-white bg-transparent"
-          >
-            {t('register.verifyNow')}
-          </button>
-          <p className="text-gray-400 mt-1">
+          <p className="text-gray-400">
             {t('register.alreadyRegistered')} <button type="button" onClick={onLoginClick} className="text-white font-semibold bg-transparent">{t('register.login')}</button>
           </p>
         </div>

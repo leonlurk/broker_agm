@@ -211,9 +211,6 @@ class TwoFactorService {
         [structure.secretColumn]: secret,
         [structure.backupCodesColumn]: backupCodes,
         [structure.enabledColumn]: true,
-        two_fa_method: 'both', // Changed from 'app' or 'email' to 'both'
-        app_2fa_enabled: true,  // Track app method separately
-        email_2fa_enabled: true, // Track email method separately
         [structure.enabledAtColumn]: now,
         [structure.updatedAtColumn]: now,
         created_at: now
@@ -228,16 +225,8 @@ class TwoFactorService {
         return { success: false, error: error.message };
       }
 
-      // Update user's 2FA status
-      const { error: userError } = await supabase
-        .from('profiles')
-        .update({ two_factor_enabled: true })
-        .eq('id', userId);
-
-      if (userError) {
-        logger.error('[2FA] Error updating user status:', userError);
-        return { success: false, error: userError.message };
-      }
+      // No need to update profiles table - all 2FA data is in user_2fa table
+      logger.info('[2FA] 2FA status is managed in user_2fa table only');
 
       logger.info('[2FA] Dual 2FA (app + email) enabled for user:', userId);
       return { success: true };
@@ -274,16 +263,8 @@ class TwoFactorService {
         return { success: false, error: error.message };
       }
 
-      // Update user's 2FA status
-      const { error: userError } = await supabase
-        .from('profiles')
-        .update({ two_factor_enabled: false })
-        .eq('id', userId);
-
-      if (userError) {
-        logger.error('[2FA] Error updating user status:', userError);
-        return { success: false, error: userError.message };
-      }
+      // No need to update profiles table - all 2FA data is in user_2fa table
+      logger.info('[2FA] 2FA status is managed in user_2fa table only');
 
       logger.info('[2FA] 2FA disabled for user:', userId);
       return { success: true };
@@ -300,26 +281,61 @@ class TwoFactorService {
    */
   async get2FAStatus(userId) {
     try {
-      await this.checkTableStructure();
-      const structure = this.tableStructure;
+      // Log userId to debug
+      logger.info('[2FA] Getting 2FA status for userId:', userId);
       
+      if (!userId) {
+        logger.warn('[2FA] No userId provided to get2FAStatus');
+        return { enabled: false };
+      }
+      
+      // Use actual column names directly based on your table structure
       const { data, error } = await supabase
         .from('user_2fa')
-        .select('*')
+        .select('user_id, is_enabled, secret_key')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to handle no rows
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // No 2FA record found
+        // Log the specific error for debugging
+        logger.error('[2FA] Error fetching 2FA status:', {
+          error: error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          userId: userId
+        });
+        
+        if (error.code === 'PGRST116' || error.code === '42P01') {
+          // No 2FA record found or table doesn't exist
           return { enabled: false };
         }
-        throw error;
+        
+        // For 406 errors, return disabled state but log the issue
+        if (error.code === '406' || error.message?.includes('406')) {
+          logger.warn('[2FA] 406 error - likely RLS policy issue for userId:', userId);
+          return { enabled: false };
+        }
+        
+        // Don't throw, return disabled state
+        return { enabled: false };
       }
 
+      // If no data, user hasn't set up 2FA
+      if (!data) {
+        logger.info('[2FA] No 2FA record found for userId:', userId);
+        return { enabled: false };
+      }
+      
+      logger.info('[2FA] 2FA status retrieved:', { 
+        userId: userId, 
+        enabled: data.is_enabled || false
+      });
+
       return {
-        enabled: data[structure.enabledColumn] || false,
-        secret: data[structure.secretColumn]
+        enabled: data.is_enabled || false,
+        secret: data.secret_key
       };
     } catch (error) {
       logger.error('[2FA] Error getting 2FA status:', error);
@@ -486,7 +502,6 @@ class TwoFactorService {
       const twoFAData = {
         user_id: userId,
         [structure.enabledColumn]: true,
-        two_fa_method: 'email', // Add this field to track the method
         [structure.enabledAtColumn]: new Date().toISOString(),
         [structure.updatedAtColumn]: new Date().toISOString()
       };
@@ -508,19 +523,8 @@ class TwoFactorService {
         if (error) throw error;
       }
       
-      // Update user's 2FA status
-      const { error: userError } = await supabase
-        .from('profiles')
-        .update({ 
-          two_factor_enabled: true,
-          two_factor_method: 'email'
-        })
-        .eq('id', userId);
-      
-      if (userError) {
-        logger.error('[2FA] Error updating user status:', userError);
-        return { success: false, error: userError.message };
-      }
+      // No need to update profiles table - all 2FA data is in user_2fa table
+      logger.info('[2FA] Email 2FA enabled - status managed in user_2fa table');
       
       logger.info('[2FA] Email 2FA enabled for user:', userId);
       return { success: true };
@@ -537,23 +541,38 @@ class TwoFactorService {
    */
   async get2FAMethod(userId) {
     try {
-      const { data, error } = await supabase
-        .from('user_2fa')
-        .select('two_fa_method, app_2fa_enabled, email_2fa_enabled')
-        .eq('user_id', userId)
-        .single();
+      logger.info('[2FA] Getting 2FA method for userId:', userId);
       
-      if (error || !data) {
+      if (!userId) {
+        logger.warn('[2FA] No userId provided to get2FAMethod');
         return { method: null };
       }
       
-      // Return 'both' for dual authentication
-      if (data.two_fa_method === 'both' || (data.app_2fa_enabled && data.email_2fa_enabled)) {
-        return { method: 'both', app: true, email: true };
+      const { data, error } = await supabase
+        .from('user_2fa')
+        .select('is_enabled')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (error) {
+        logger.error('[2FA] Error fetching 2FA method:', {
+          error: error,
+          code: error.code,
+          message: error.message,
+          userId: userId
+        });
+        
+        // Return null method for any error
+        return { method: null };
       }
       
-      // Legacy support for single methods
-      return { method: data.two_fa_method || 'authenticator' };
+      if (!data) {
+        logger.info('[2FA] No 2FA method found for userId:', userId);
+        return { method: null };
+      }
+      
+      // Since we don't have method columns in the table, return default
+      return { method: 'authenticator' };
     } catch (error) {
       logger.error('[2FA] Error getting 2FA method:', error);
       return { method: null };

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Calendar, ArrowDown, ChevronDown, Copy, DollarSign, Loader } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const OperationsHistory = () => {
+  const { t } = useTranslation('common');
   const allOperaciones = [
     { estado: 'Terminado', fecha: '12/1/2025 14:48', numOrden: '73c5cd26-21a8-4c03', tipo: 'Purchase - 5K Standard', metodo: 'Criptomoneda', cantidad: '$280.00' },
     { estado: 'Pendiente', fecha: '11/1/2025 10:22', numOrden: '82d6fe37-32b9-5d14', tipo: 'Purchase - 10K Standard', metodo: 'Tarjeta', cantidad: '$390.00' },
@@ -221,10 +224,11 @@ const OperationsHistory = () => {
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text)
       .then(() => {
-        alert('Número de orden copiado al portapapeles');
+        toast.success(t('clipboard.orderNumberCopied'));
       })
       .catch(err => {
         console.error('Error al copiar: ', err);
+        toast.error(t('clipboard.copyError'));
       });
   };
 

@@ -16,12 +16,41 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [copiedCodes, setCopiedCodes] = useState(false);
   const [copiedSecret, setCopiedSecret] = useState(false);
+  const [selectedMethods, setSelectedMethods] = useState({ app: false, email: false });
+  
+  // Calculate total steps based on selected methods
+  const totalSteps = 1 + (selectedMethods.app ? 2 : 0) + (selectedMethods.email ? 1 : 0) + 1; // Intro + App(2) + Email(1) + Backup(1)
 
   useEffect(() => {
-    if (isOpen && step === 2) {
+    if (isOpen && step === 2 && selectedMethods.app) {
       generateSecret();
     }
-  }, [isOpen, step]);
+  }, [isOpen, step, selectedMethods.app]);
+  
+  // Helper functions for step navigation
+  const getNextStep = (currentStep) => {
+    if (currentStep === 1) {
+      return selectedMethods.app ? 2 : (selectedMethods.email ? 4 : 5);
+    }
+    if (currentStep === 2) return 3; // App setup to verify
+    if (currentStep === 3) {
+      return selectedMethods.email ? 4 : 5; // After app verify, go to email or backup codes
+    }
+    if (currentStep === 4) return 5; // Email to backup codes
+    return currentStep + 1;
+  };
+  
+  const getPrevStep = (currentStep) => {
+    if (currentStep === 5) {
+      return selectedMethods.email ? 4 : (selectedMethods.app ? 3 : 1);
+    }
+    if (currentStep === 4) {
+      return selectedMethods.app ? 3 : 1;
+    }
+    if (currentStep === 3) return 2;
+    if (currentStep === 2) return 1;
+    return currentStep - 1;
+  };
 
   const generateSecret = async () => {
     if (!currentUser?.email) return;
@@ -34,7 +63,7 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
       setBackupCodes(result.backupCodes);
     } catch (error) {
       console.error('Error generating 2FA secret:', error);
-      toast.error(t('twoFactor.errors.generateFailed') || 'Error al generar el código 2FA');
+      toast.error(t('twoFactor.errors.generateFailed'));
       onClose();
     } finally {
       setLoading(false);
@@ -43,7 +72,7 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleVerifyCode = async () => {
     if (verificationCode.length !== 6) {
-      toast.error(t('twoFactor.errors.invalidCode') || 'Código inválido');
+      toast.error(t('twoFactor.errors.invalidCode'));
       return;
     }
 
@@ -54,17 +83,17 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
       const isValid = await twoFactorService.verifyToken(verificationCode, secret, userId);
       
       if (!isValid) {
-        toast.error(t('twoFactor.errors.incorrectCode') || 'Código incorrecto');
+        toast.error(t('twoFactor.errors.incorrectCode'));
         setLoading(false);
         return;
       }
 
-      // Move to email info step
-      setStep(4);
+      // Move to next step based on selected methods
+      setStep(getNextStep(3));
       setVerificationCode('');
     } catch (error) {
       console.error('Error verifying 2FA code:', error);
-      toast.error(t('twoFactor.errors.verifyFailed') || 'Error al verificar el código');
+      toast.error(t('twoFactor.errors.verifyFailed'));
     } finally {
       setLoading(false);
     }
@@ -75,17 +104,32 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       const userId = currentUser.id || currentUser.uid;
       
-      // Enable both 2FA methods
-      const result = await twoFactorService.enable2FA(userId, secret, backupCodes);
+      let success = true;
       
-      if (result.success) {
+      // Enable app 2FA if selected
+      if (selectedMethods.app) {
+        const appResult = await twoFactorService.enable2FA(userId, secret, backupCodes);
+        if (!appResult.success) {
+          success = false;
+          toast.error(t('twoFactor.errors.enableAppFailed'));
+        }
+      }
+      
+      // Enable email 2FA if selected
+      if (selectedMethods.email && success) {
+        const emailResult = await twoFactorService.enableEmail2FA(userId);
+        if (!emailResult.success) {
+          success = false;
+          toast.error(t('twoFactor.errors.enableEmailFailed'));
+        }
+      }
+      
+      if (success) {
         setStep(5); // Show backup codes
-      } else {
-        toast.error(t('twoFactor.errors.enableFailed') || 'Error al activar 2FA');
       }
     } catch (error) {
-      console.error('Error enabling dual 2FA:', error);
-      toast.error(t('twoFactor.errors.enableFailed') || 'Error al activar 2FA');
+      console.error('Error enabling 2FA:', error);
+      toast.error(t('twoFactor.errors.enableFailed'));
     } finally {
       setLoading(false);
     }
@@ -95,19 +139,19 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
     const codesText = backupCodes.join('\n');
     navigator.clipboard.writeText(codesText);
     setCopiedCodes(true);
-    toast.success(t('twoFactor.backupCodesCopied') || 'Códigos copiados');
+    toast.success(t('twoFactor.backupCodesCopied'));
     setTimeout(() => setCopiedCodes(false), 3000);
   };
 
   const handleCopySecret = () => {
     navigator.clipboard.writeText(secret);
     setCopiedSecret(true);
-    toast.success(t('twoFactor.secretCopied') || 'Código secreto copiado');
+    toast.success(t('twoFactor.secretCopied'));
     setTimeout(() => setCopiedSecret(false), 3000);
   };
 
   const handleComplete = () => {
-    toast.success(t('notifications.twoFactorEnabled') || '2FA activado correctamente');
+    toast.success(t('messages.twoFactorEnabled'));
     onSuccess && onSuccess();
     onClose();
     // Reset state
@@ -151,7 +195,7 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
         {/* Progress Indicator */}
         <div className="px-6 pt-4">
           <div className="flex items-center justify-between mb-6">
-            {[1, 2, 3, 4, 5].map((s) => (
+            {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
               <div
                 key={s}
                 className={`flex-1 h-2 mx-1 rounded-full transition-colors ${
@@ -176,9 +220,20 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
                 </p>
                 
                 <div className="space-y-3">
-                  <div className="bg-[#1a1a1a] p-4 rounded-lg flex items-center gap-3">
+                  <div 
+                    onClick={() => setSelectedMethods(prev => ({ ...prev, app: !prev.app }))}
+                    className={`bg-[#1a1a1a] p-4 rounded-lg flex items-center gap-3 cursor-pointer transition-all border-2 ${
+                      selectedMethods.app ? 'border-cyan-500 bg-cyan-500/10' : 'border-transparent hover:border-gray-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedMethods.app}
+                      onChange={(e) => setSelectedMethods(prev => ({ ...prev, app: e.target.checked }))}
+                      className="w-5 h-5 rounded border-gray-600 bg-transparent text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
+                    />
                     <Smartphone className="w-5 h-5 text-cyan-500 flex-shrink-0" />
-                    <div className="text-left">
+                    <div className="text-left flex-1">
                       <p className="text-white font-medium">
                         {t('twoFactor.appMethod') || 'Aplicación Autenticadora'}
                       </p>
@@ -188,9 +243,20 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
                     </div>
                   </div>
                   
-                  <div className="bg-[#1a1a1a] p-4 rounded-lg flex items-center gap-3">
+                  <div 
+                    onClick={() => setSelectedMethods(prev => ({ ...prev, email: !prev.email }))}
+                    className={`bg-[#1a1a1a] p-4 rounded-lg flex items-center gap-3 cursor-pointer transition-all border-2 ${
+                      selectedMethods.email ? 'border-cyan-500 bg-cyan-500/10' : 'border-transparent hover:border-gray-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedMethods.email}
+                      onChange={(e) => setSelectedMethods(prev => ({ ...prev, email: e.target.checked }))}
+                      className="w-5 h-5 rounded border-gray-600 bg-transparent text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
+                    />
                     <Mail className="w-5 h-5 text-cyan-500 flex-shrink-0" />
-                    <div className="text-left">
+                    <div className="text-left flex-1">
                       <p className="text-white font-medium">
                         {t('twoFactor.emailMethod') || 'Verificación por Email'}
                       </p>
@@ -202,17 +268,32 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
                 </div>
               </div>
 
-              <button
-                onClick={() => setStep(2)}
-                className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors"
-              >
-                {t('twoFactor.startSetup') || 'Comenzar Configuración'}
-              </button>
+              {(selectedMethods.app || selectedMethods.email) && (
+                <button
+                  onClick={() => {
+                    // Navigate to the appropriate next step based on selection
+                    if (selectedMethods.app) {
+                      setStep(2); // Go to app setup
+                    } else if (selectedMethods.email) {
+                      setStep(4); // Go to email setup
+                    }
+                  }}
+                  className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  {t('twoFactor.startSetup') || 'Comenzar Configuración'}
+                </button>
+              )}
+              
+              {!selectedMethods.app && !selectedMethods.email && (
+                <div className="text-center text-amber-400 text-sm">
+                  {t('twoFactor.selectAtLeastOne') || 'Selecciona al menos un método para continuar'}
+                </div>
+              )}
             </div>
           )}
 
           {/* Step 2: App QR Code */}
-          {step === 2 && (
+          {step === 2 && selectedMethods.app && (
             <div className="space-y-6">
               <div className="text-center">
                 <h3 className="text-lg font-semibold text-white mb-4">
@@ -253,7 +334,7 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
 
               <button
-                onClick={() => setStep(3)}
+                onClick={() => setStep(getNextStep(2))}
                 disabled={loading}
                 className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
               >
@@ -263,7 +344,7 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
           )}
 
           {/* Step 3: Verify App Code */}
-          {step === 3 && (
+          {step === 3 && selectedMethods.app && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-semibold text-white mb-4 text-center">
@@ -294,7 +375,7 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(getPrevStep(3))}
                   className="flex-1 py-3 bg-[#333] hover:bg-[#444] text-white rounded-lg font-medium transition-colors"
                 >
                   {t('twoFactor.back') || 'Atrás'}
@@ -311,7 +392,7 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
           )}
 
           {/* Step 4: Email Info */}
-          {step === 4 && (
+          {step === 4 && selectedMethods.email && (
             <div className="space-y-6">
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -335,13 +416,21 @@ const TwoFactorDualModal = ({ isOpen, onClose, onSuccess }) => {
                 </div>
               </div>
 
-              <button
-                onClick={handleEnableDual2FA}
-                disabled={loading}
-                className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-              >
-                {loading ? t('twoFactor.enabling') : t('twoFactor.continue')}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep(getPrevStep(4))}
+                  className="flex-1 py-3 bg-[#333] hover:bg-[#444] text-white rounded-lg font-medium transition-colors"
+                >
+                  {t('twoFactor.back') || 'Atrás'}
+                </button>
+                <button
+                  onClick={handleEnableDual2FA}
+                  disabled={loading}
+                  className="flex-2 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {loading ? t('twoFactor.enabling') : t('twoFactor.enableMethods')}
+                </button>
+              </div>
             </div>
           )}
 

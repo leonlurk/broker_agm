@@ -112,29 +112,6 @@ const PasswordChangeModal = ({
             <>
               <p className="text-green-400 text-sm mb-4">{t('modal.codeVerifiedSuccessfully')}</p>
               
-              {/* Contraseña Actual */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t('modal.currentPassword')}
-                </label>
-                <div className="relative">
-                  <input
-                    type={showOldPassword ? 'text' : 'password'}
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-[#1a1a1a] border border-[#333] text-white pr-12 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    placeholder={t('modal.currentPasswordPlaceholder')}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowOldPassword(!showOldPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                  >
-                    {showOldPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
-              </div>
-
               {/* Nueva Contraseña */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -212,7 +189,7 @@ const PasswordChangeModal = ({
 
               <button
                 onClick={handlePasswordChange}
-                disabled={!oldPassword || !allRequirementsMet || newPassword !== confirmPassword}
+                disabled={!allRequirementsMet || newPassword !== confirmPassword}
                 className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Lock size={20} />

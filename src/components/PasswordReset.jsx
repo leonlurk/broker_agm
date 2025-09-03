@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
 const PasswordReset = () => {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [code, setCode] = useState('');
@@ -30,7 +31,7 @@ const PasswordReset = () => {
     try {
       const storedData = localStorage.getItem('passwordResetCode');
       if (!storedData) {
-        setCodeError('No hay solicitud de restablecimiento activa');
+        setCodeError(t('resetPassword.errors.tokenExpired'));
         setValidCode(false);
         return false;
       }
@@ -39,7 +40,7 @@ const PasswordReset = () => {
       
       // Verificar si el código ha expirado
       if (Date.now() - timestamp > expiresIn) {
-        setCodeError('El código ha expirado. Solicita uno nuevo.');
+        setCodeError(t('resetPassword.errors.tokenExpired'));
         setValidCode(false);
         localStorage.removeItem('passwordResetCode');
         return false;
@@ -47,7 +48,7 @@ const PasswordReset = () => {
 
       // Verificar si el código coincide
       if (inputCode !== storedCode) {
-        setCodeError('Código incorrecto');
+        setCodeError(t('resetPassword.errors.tokenInvalid'));
         setValidCode(false);
         return false;
       }
@@ -56,7 +57,7 @@ const PasswordReset = () => {
       setValidCode(true);
       return true;
     } catch (error) {
-      setCodeError('Error al validar el código');
+      setCodeError(t('resetPassword.errors.tokenInvalid'));
       setValidCode(false);
       return false;
     }
@@ -88,39 +89,39 @@ const PasswordReset = () => {
     e.preventDefault();
 
     if (!validCode) {
-      toast.error('Por favor, ingresa un código válido');
+      toast.error(t('resetPassword.errors.tokenInvalid'));
       return;
     }
 
     if (!allRequirementsMet) {
-      toast.error('La contraseña no cumple con todos los requisitos');
+      toast.error(t('resetPassword.errors.weakPassword'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error('Las contraseñas no coinciden');
+      toast.error(t('resetPassword.errors.passwordMismatch'));
       return;
     }
 
     setLoading(true);
-    const toastId = toast.loading('Actualizando contraseña...');
+    const toastId = toast.loading(t('resetPassword.loading'));
 
     try {
       const storedData = JSON.parse(localStorage.getItem('passwordResetCode'));
       const result = await AuthAdapter.updatePassword(storedData.email, newPassword);
 
       if (result.success) {
-        toast.success('Contraseña actualizada correctamente', { id: toastId });
+        toast.success(t('resetPassword.success'), { id: toastId });
         localStorage.removeItem('passwordResetCode');
         setTimeout(() => {
           navigate('/login');
         }, 2000);
       } else {
-        toast.error(result.error || 'Error al actualizar la contraseña', { id: toastId });
+        toast.error(result.error || t('resetPassword.errors.updateFailed'), { id: toastId });
       }
     } catch (error) {
       console.error('Error updating password:', error);
-      toast.error('Error al actualizar la contraseña', { id: toastId });
+      toast.error(t('resetPassword.errors.general'), { id: toastId });
     } finally {
       setLoading(false);
     }
@@ -131,15 +132,15 @@ const PasswordReset = () => {
       <div className="w-full max-w-md">
         <div className="bg-[#232323] border border-[#333] rounded-3xl p-8 shadow-2xl">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Restablecer Contraseña</h1>
-            <p className="text-gray-400">Ingresa el código que recibiste por email</p>
+            <h1 className="text-3xl font-bold text-white mb-2">{t('resetPassword.title')}</h1>
+            <p className="text-gray-400">{t('resetPassword.description')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Código de verificación */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Código de Verificación
+                {t('resetPassword.verificationCode')}
               </label>
               <input
                 type="text"
@@ -167,7 +168,7 @@ const PasswordReset = () => {
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Nueva Contraseña
+                    {t('resetPassword.newPassword')}
                   </label>
                   <div className="relative">
                     <input
@@ -190,23 +191,23 @@ const PasswordReset = () => {
                   <div className="mt-3 space-y-1">
                     <p className={`text-xs flex items-center gap-1 ${requirements.length ? 'text-green-400' : 'text-gray-400'}`}>
                       {requirements.length ? <Check size={14} /> : <X size={14} />}
-                      Mínimo 8 caracteres
+                      {t('resetPassword.requirements.minLength')}
                     </p>
                     <p className={`text-xs flex items-center gap-1 ${requirements.uppercase ? 'text-green-400' : 'text-gray-400'}`}>
                       {requirements.uppercase ? <Check size={14} /> : <X size={14} />}
-                      Una mayúscula
+                      {t('resetPassword.requirements.uppercase')}
                     </p>
                     <p className={`text-xs flex items-center gap-1 ${requirements.lowercase ? 'text-green-400' : 'text-gray-400'}`}>
                       {requirements.lowercase ? <Check size={14} /> : <X size={14} />}
-                      Una minúscula
+                      {t('resetPassword.requirements.lowercase')}
                     </p>
                     <p className={`text-xs flex items-center gap-1 ${requirements.number ? 'text-green-400' : 'text-gray-400'}`}>
                       {requirements.number ? <Check size={14} /> : <X size={14} />}
-                      Un número
+                      {t('resetPassword.requirements.number')}
                     </p>
                     <p className={`text-xs flex items-center gap-1 ${requirements.special ? 'text-green-400' : 'text-gray-400'}`}>
                       {requirements.special ? <Check size={14} /> : <X size={14} />}
-                      Un carácter especial (!@#$%^&*)
+                      {t('resetPassword.requirements.special')}
                     </p>
                   </div>
                 </div>
@@ -214,7 +215,7 @@ const PasswordReset = () => {
                 {/* Confirmar contraseña */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Confirmar Contraseña
+                    {t('resetPassword.confirmPassword')}
                   </label>
                   <div className="relative">
                     <input
@@ -235,7 +236,7 @@ const PasswordReset = () => {
                     </button>
                   </div>
                   {confirmPassword && confirmPassword !== newPassword && (
-                    <p className="mt-2 text-sm text-red-400">Las contraseñas no coinciden</p>
+                    <p className="mt-2 text-sm text-red-400">{t('resetPassword.errors.passwordMismatch')}</p>
                   )}
                 </div>
               </>
@@ -244,18 +245,18 @@ const PasswordReset = () => {
             {/* Botón de envío */}
             <button
               type="submit"
-              disabled={loading || !validCode || !allRequirementsMet || newPassword !== confirmPassword}
+              disabled={loading || !isValidSession || !allRequirementsMet || newPassword !== confirmPassword}
               className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
                   <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                  Actualizando...
+                  {t('resetPassword.loading')}
                 </>
               ) : (
                 <>
                   <Lock size={20} />
-                  Actualizar Contraseña
+                  {t('resetPassword.button')}
                 </>
               )}
             </button>
@@ -267,7 +268,7 @@ const PasswordReset = () => {
                 onClick={() => navigate('/login')}
                 className="text-gray-400 hover:text-cyan-400 transition-colors text-sm"
               >
-                Volver al inicio de sesión
+                {t('resetPassword.backToLogin')}
               </button>
             </div>
           </form>

@@ -4,27 +4,35 @@ import { Mail, CheckCircle, ArrowRight, RefreshCw } from 'lucide-react';
 import { resendVerificationEmail } from '../supabase/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { DatabaseAdapter } from '../services/database.adapter';
+import { AuthAdapter } from '../services/database.adapter';
+import toast from 'react-hot-toast';
 
 const EmailVerificationPending = () => {
-  const { t } = useTranslation();
+  const { t, ready, i18n } = useTranslation('auth');
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [resending, setResending] = useState(false);
-  const [resendMessage, setResendMessage] = useState('');
-  const [resendError, setResendError] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [attemptCount, setAttemptCount] = useState(0);
+  const [pendingUser, setPendingUser] = useState(null);
+  
+  // Log para debug
+  useEffect(() => {
+    console.log('EmailVerificationPending - i18n ready:', ready);
+    console.log('EmailVerificationPending - current language:', i18n.language);
+    console.log('EmailVerificationPending - test translation:', t('emailPending.title'));
+  }, [ready, i18n.language, t]);
   
   // Rate limit configuration
-  const RATE_LIMIT_KEY = `email_verification_${currentUser?.email}`;
+  const userEmail = currentUser?.email || pendingUser?.email;
+  const RATE_LIMIT_KEY = `email_verification_${userEmail}`;
   const MAX_ATTEMPTS = 3; // Máximo 3 intentos
   const COOLDOWN_TIME = 60; // 60 segundos entre intentos
   const BLOCK_TIME = 300; // 5 minutos de bloqueo después de 3 intentos
   
   // Load rate limit state from localStorage on mount
   useEffect(() => {
-    if (currentUser?.email) {
+    if (userEmail) {
       const storedData = localStorage.getItem(RATE_LIMIT_KEY);
       if (storedData) {
         try {
@@ -36,7 +44,7 @@ const EmailVerificationPending = () => {
             const remainingSeconds = Math.ceil((data.blockedUntil - now) / 1000);
             setCountdown(remainingSeconds);
             setAttemptCount(data.attempts);
-            setResendError(`Has alcanzado el límite de intentos. Espera ${Math.ceil(remainingSeconds / 60)} minutos.`);
+            // No mostrar toast aquí, solo setear el contador
           }
           // Check if still in cooldown
           else if (data.lastAttempt && (now - data.lastAttempt) < COOLDOWN_TIME * 1000) {
@@ -56,11 +64,35 @@ const EmailVerificationPending = () => {
         }
       }
     }
-  }, [currentUser?.email, RATE_LIMIT_KEY]);
+  }, [userEmail, RATE_LIMIT_KEY]);
   
-  // Si el usuario no está autenticado, redirigir al login
+  // Cargar información del usuario pendiente de verificación (solo una vez)
   useEffect(() => {
-    if (!currentUser) {
+    const tempUserData = localStorage.getItem('pending_verification_user');
+    if (tempUserData) {
+      try {
+        const userData = JSON.parse(tempUserData);
+        // Verificar que los datos no sean muy antiguos (máximo 1 hora)
+        const oneHour = 60 * 60 * 1000;
+        if (Date.now() - userData.timestamp < oneHour) {
+          setPendingUser(userData);
+        } else {
+          // Datos expirados, limpiar
+          localStorage.removeItem('pending_verification_user');
+        }
+      } catch (error) {
+        console.error('Error parsing pending user data:', error);
+        localStorage.removeItem('pending_verification_user');
+      }
+    }
+  }, []); // Sin dependencias, solo ejecutar una vez
+
+  // Redirigir al login si no hay usuario ni datos temporales
+  useEffect(() => {
+    // Solo redirigir si NO hay usuario autenticado Y NO hay datos temporales
+    // Pero hay que esperar a que los datos temporales se hayan cargado primero
+    const tempUserData = localStorage.getItem('pending_verification_user');
+    if (!currentUser && !tempUserData) {
       navigate('/login');
     }
   }, [currentUser, navigate]);
@@ -92,18 +124,16 @@ const EmailVerificationPending = () => {
       if (storedData) {
         const data = JSON.parse(storedData);
         if (data.blockedUntil > Date.now()) {
-          setResendError(`Has alcanzado el límite de ${MAX_ATTEMPTS} intentos. Por favor espera antes de intentar nuevamente.`);
+          toast.error(t('emailPending.messages.rateLimited', `Has alcanzado el límite de ${MAX_ATTEMPTS} intentos. Por favor espera antes de intentar nuevamente.`, { max: MAX_ATTEMPTS }));
           return;
         }
       }
     }
     
     setResending(true);
-    setResendMessage('');
-    setResendError('');
     
     try {
-      const result = await resendVerificationEmail(currentUser?.email);
+      const result = await resendVerificationEmail(userEmail);
       
       if (result.success) {
         // Increment attempt count
@@ -116,64 +146,69 @@ const EmailVerificationPending = () => {
           const blockedUntil = Date.now() + (BLOCK_TIME * 1000);
           saveRateLimitState(newAttemptCount, blockedUntil);
           setCountdown(BLOCK_TIME);
-          setResendMessage('¡Email enviado! Has alcanzado el límite de intentos. Espera 5 minutos antes de intentar nuevamente.');
+          toast.success(t('emailPending.messages.limitReached', '¡Email enviado! Has alcanzado el límite de intentos. Espera 5 minutos antes de intentar nuevamente.'));
         } else {
           // Normal cooldown
           saveRateLimitState(newAttemptCount);
           setCountdown(COOLDOWN_TIME);
-          setResendMessage(`¡Email de verificación enviado! Revisa tu bandeja de entrada. (Intento ${newAttemptCount}/${MAX_ATTEMPTS})`);
+          toast.success(t('emailPending.messages.emailSent', `¡Email de verificación enviado! Revisa tu bandeja de entrada. (Intento ${newAttemptCount}/${MAX_ATTEMPTS})`, { current: newAttemptCount, max: MAX_ATTEMPTS }));
         }
       } else {
         if (result.rateLimited && result.remainingSeconds) {
           setCountdown(result.remainingSeconds);
-          setResendError(result.error);
+          toast.error(result.error);
         } else {
-          setResendError(result.error || 'Error al enviar el email de verificación');
+          toast.error(result.error || t('auth.errors.general', 'Ocurrió un error'));
         }
       }
     } catch (error) {
-      setResendError('Error inesperado. Por favor intenta más tarde.');
+      toast.error(t('auth.errors.unexpected', 'Error inesperado'));
     } finally {
       setResending(false);
     }
   };
   
   const handleGoToLogin = async () => {
-    // Verificar si el email ya fue verificado antes de navegar
+    // Con "Confirm email" activado en Supabase, si el usuario hace clic aquí
+    // es porque cree que ya verificó su email pero sigue viendo esta pantalla
     setResending(true);
-    setResendError('');
     
     try {
-      // Verificar el estado actual del usuario
-      const { data: userData } = await DatabaseAdapter.users.getById(currentUser?.id || currentUser?.uid);
+      // Hacer logout y redirigir al login para que vuelva a intentar autenticarse
+      // Si realmente verificó su email, ahora podrá entrar sin problemas
+      await AuthAdapter.logoutUser();
       
-      if (userData && userData.email_verified === true) {
-        // Email verificado, ir al login para que vuelva a autenticarse
-        // Limpiar el rate limit del localStorage ya que fue verificado
-        if (RATE_LIMIT_KEY) {
-          localStorage.removeItem(RATE_LIMIT_KEY);
-        }
-        
-        // Hacer logout para forzar nuevo login
-        await DatabaseAdapter.auth.logout();
-        
-        // Navegar al login con mensaje de éxito
-        navigate('/login', { 
-          state: { 
-            message: 'Email verificado exitosamente. Por favor inicia sesión con tus credenciales.' 
-          }
-        });
-      } else {
-        // Email aún no verificado
-        setResendError('Tu email aún no ha sido verificado. Por favor revisa tu bandeja de entrada y haz clic en el enlace de verificación.');
+      // Limpiar datos temporales y rate limit
+      localStorage.removeItem('pending_verification_user');
+      if (RATE_LIMIT_KEY) {
+        localStorage.removeItem(RATE_LIMIT_KEY);
       }
+      
+      navigate('/login', { 
+        state: { 
+          message: 'Por favor inicia sesión nuevamente. Si ya verificaste tu email, podrás acceder normalmente.' 
+        }
+      });
+      
     } catch (error) {
-      console.error('Error verificando estado:', error);
-      setResendError('Error al verificar el estado. Por favor intenta nuevamente.');
+      console.error('Error al hacer logout:', error);
+      toast.error(t('emailPending.messages.verifyError', 'Error al verificar el estado. Por favor intenta de nuevo.'));
     } finally {
       setResending(false);
     }
   };
+  
+  // Si las traducciones no están listas, mostrar un loading o contenido en español por defecto
+  if (!ready) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-black bg-no-repeat bg-cover bg-center"
+        style={{ backgroundImage: 'url(/fondo.png)', width: '100vw', height: '100vh' }}>
+        <div className="w-[330px] h-[700px] sm:w-full md:w-[490px] p-5 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex items-center justify-center">
+          <div className="text-white">Cargando...</div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-black bg-no-repeat bg-cover bg-center"
@@ -188,7 +223,7 @@ const EmailVerificationPending = () => {
           <div className="flex justify-center mb-4">
             <div className="relative">
               <div className="w-16 h-16 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 rounded-full flex items-center justify-center">
-                <Mail className="w-8 h-8 text-cyan-400" />
+                <Mail className="w-8 h-8 text-white" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
                 <span className="text-black text-xs font-bold">!</span>
@@ -197,18 +232,18 @@ const EmailVerificationPending = () => {
           </div>
           
           <h1 className="text-xl font-bold text-white text-center mb-3">
-            Verificación de Email Pendiente
+            {t('emailPending.title', 'Verificación de Email Pendiente')}
           </h1>
           
           {/* Mensaje principal */}
           <p className="text-gray-300 text-center mb-6">
-            Hemos enviado un email de verificación a:
+            {t('emailPending.sentTo', 'Hemos enviado un email de verificación a:')}
           </p>
           
           {/* Email del usuario */}
           <div className="bg-gray-900 bg-opacity-20 border border-gray-700 rounded-lg p-3 mb-4">
-            <p className="text-cyan-400 text-center text-sm font-medium">
-              {currentUser?.email}
+            <p className="text-white text-center text-sm font-medium">
+              {userEmail}
             </p>
           </div>
           
@@ -217,42 +252,29 @@ const EmailVerificationPending = () => {
             <div className="flex items-start gap-2">
               <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
               <p className="text-gray-300 text-xs">
-                Revisa tu bandeja de entrada y haz clic en el enlace de verificación
+                {t('emailPending.instructions.checkInbox', 'Revisa tu bandeja de entrada y haz clic en el enlace de verificación')}
               </p>
             </div>
             <div className="flex items-start gap-2">
               <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
               <p className="text-gray-300 text-xs">
-                Si no encuentras el email, revisa tu carpeta de spam
+                {t('emailPending.instructions.checkSpam', 'Si no encuentras el email, revisa tu carpeta de spam')}
               </p>
             </div>
             <div className="flex items-start gap-2">
               <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
               <p className="text-gray-300 text-xs">
-                Una vez verificado, podrás acceder al broker
+                {t('emailPending.instructions.accessBroker', 'Una vez verificado, podrás acceder al broker')}
               </p>
             </div>
           </div>
           
           {/* Contador de intentos */}
-          {attemptCount > 0 && attemptCount < MAX_ATTEMPTS && !resendMessage && !resendError && (
+          {attemptCount > 0 && attemptCount < MAX_ATTEMPTS && (
             <div className="bg-blue-500 bg-opacity-20 border border-blue-600 text-white px-4 py-2 rounded-lg mb-4">
               <p className="text-xs text-center">
-                Intentos de reenvío: {attemptCount}/{MAX_ATTEMPTS}
+                {t('emailPending.attempts', `Intentos de reenvío: ${attemptCount}/${MAX_ATTEMPTS}`, { current: attemptCount, max: MAX_ATTEMPTS })}
               </p>
-            </div>
-          )}
-          
-          {/* Mensaje de éxito o error */}
-          {resendMessage && (
-            <div className="bg-green-500 bg-opacity-20 border border-green-600 text-white px-4 py-2 rounded-lg mb-4">
-              <p className="text-sm text-center">{resendMessage}</p>
-            </div>
-          )}
-          
-          {resendError && (
-            <div className="bg-red-500 bg-opacity-20 border border-red-600 text-white px-4 py-2 rounded-lg mb-4">
-              <p className="text-sm text-center">{resendError}</p>
             </div>
           )}
           
@@ -273,25 +295,25 @@ const EmailVerificationPending = () => {
               {resending ? (
                 <>
                   <RefreshCw className="w-5 h-5 animate-spin" />
-                  Enviando...
+                  {t('emailPending.resending', 'Enviando...')}
                 </>
               ) : countdown > 0 ? (
                 <>
                   <RefreshCw className="w-5 h-5" />
                   {countdown > COOLDOWN_TIME ? 
-                    `Bloqueado (${Math.ceil(countdown / 60)}min ${countdown % 60}s)` : 
-                    `Reenviar email (${countdown}s)`
+                    t('emailPending.blockedTime', `Bloqueado (${Math.ceil(countdown / 60)}min ${countdown % 60}s)`, { minutes: Math.ceil(countdown / 60), seconds: countdown % 60 }) : 
+                    t('emailPending.cooldown', `Reenviar email (${countdown}s)`, { seconds: countdown })
                   }
                 </>
               ) : attemptCount >= MAX_ATTEMPTS ? (
                 <>
                   <RefreshCw className="w-5 h-5" />
-                  Límite de intentos alcanzado
+                  {t('emailPending.limitReached', 'Límite de intentos alcanzado')}
                 </>
               ) : (
                 <>
                   <RefreshCw className="w-5 h-5" />
-                  Reenviar email de verificación
+                  {t('emailPending.resendButton', 'Reenviar email de verificación')}
                 </>
               )}
             </button>
@@ -302,7 +324,7 @@ const EmailVerificationPending = () => {
               disabled={resending}
               className="w-full py-3 px-4 rounded-full font-medium bg-gray-900 bg-opacity-20 border border-gray-700 text-gray-300 hover:bg-gray-800 hover:bg-opacity-30 transition-colors flex items-center justify-center gap-2"
             >
-              {resending ? 'Verificando...' : 'Ya verifiqué mi email'}
+              {resending ? t('emailPending.verifyingStatus', 'Verificando...') : t('emailPending.alreadyVerified', 'Ya verifiqué mi email')}
               {!resending && <ArrowRight className="w-5 h-5" />}
             </button>
           </div>
@@ -310,9 +332,9 @@ const EmailVerificationPending = () => {
           {/* Nota adicional */}
           <div className="mt-4 pt-4 border-t border-gray-700">
             <p className="text-gray-400 text-xs text-center">
-              ¿Problemas? Contacta a{' '}
-              <a href="mailto:soporte@agmbroker.com" className="text-cyan-400 hover:text-cyan-300">
-                soporte@agmbroker.com
+              {t('emailPending.support', '¿Necesitas ayuda? Contacta a')}{' '}
+              <a href="mailto:support@alphaglobalmarket.io" className="text-cyan-400 hover:text-cyan-300">
+                support@alphaglobalmarket.io
               </a>
             </p>
           </div>

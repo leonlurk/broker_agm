@@ -114,26 +114,32 @@ export const AuthProvider = ({ children }) => {
             
             setUserData(data);
           } else if (error) {
-            // Don't sign out on error, just use minimal data
-            logger.warn("Error fetching user profile, using minimal data", error);
+            // Con "Confirm email" activado, si hay error obteniendo perfil pero el usuario 
+            // está autenticado, significa que el email YA está verificado
+            logger.warn("Error fetching user profile, but user is authenticated - email must be verified", error);
+            
             setUserData({ 
               id: userId, 
               email: user.email,
               username: user.email?.split('@')[0] || 'user',
               created_at: new Date().toISOString(),
-              kyc_status: 'not_submitted',  // Always include KYC status
-              kyc_verified: false
+              kyc_status: 'not_submitted',
+              kyc_verified: false,
+              email_verified: true  // Si está autenticado con "Confirm email" activado, está verificado
             });
           } else {
-            // User not in database yet, create minimal data
-            logger.warn("User profile not found, creating minimal data");
+            // Si no hay perfil pero el usuario está autenticado, crear datos mínimos
+            // Con "Confirm email" activado, solo usuarios verificados pueden autenticarse
+            logger.warn("User profile not found, but user is authenticated - creating minimal verified data");
+            
             setUserData({ 
               id: userId, 
               email: user.email,
               username: user.email?.split('@')[0] || 'user',
               created_at: new Date().toISOString(),
-              kyc_status: 'not_submitted',  // Always include KYC status
-              kyc_verified: false
+              kyc_status: 'not_submitted',
+              kyc_verified: false,
+              email_verified: true  // Si está autenticado con "Confirm email" activado, está verificado
             });
           }
         } catch (error) {

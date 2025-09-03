@@ -68,7 +68,7 @@ const TwoFactorEmailModal = ({ isOpen, onClose, onSuccess, isSetup = false }) =>
           // Enable email 2FA
           const enableResult = await twoFactorService.enableEmail2FA(userId);
           if (enableResult.success) {
-            toast.success(t('twoFactor.emailEnabledSuccess'));
+            toast.success(t('messages.twoFactorEnabled'));
             onSuccess && onSuccess();
             onClose();
           } else {

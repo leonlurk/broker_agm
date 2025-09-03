@@ -73,7 +73,8 @@
         "leverageRequired": "Debe seleccionar un apalancamiento",
         "authRequired": "Debe estar autenticado para crear una cuenta",
         "createError": "Error al crear la cuenta",
-        "unexpectedError": "Error inesperado al crear la cuenta"
+        "unexpectedError": "Error inesperado al crear la cuenta",
+        "kycRequiredForMT5": "Debes completar tu verificación KYC antes de crear cuentas MetaTrader 5"
       },
       "verificationRequired": "Verificación Requerida",
       "verificationMessage": "Para crear cuentas de trading, primero debes verificar tu correo electrónico. Este paso es necesario para proteger tu cuenta y cumplir con las regulaciones.",
@@ -646,6 +647,12 @@
     "all": "Todos",
     "profit": "Ganancia",
     "loss": "Pérdida",
+    "last7Days": "Últimos 7 días",
+    "last30Days": "Últimos 30 días",
+    "last90Days": "Últimos 90 días",
+    "custom": "Personalizado",
+    "dateFrom": "Fecha desde",
+    "dateTo": "Fecha hasta",
     "lastMonth": "Último mes",
     "lastThreeMonths": "Últimos 3 meses", 
     "lastYear": "Último año",

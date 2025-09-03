@@ -40,6 +40,28 @@
       "contact": "Contacto"
     }
   },
+  "kycCard": {
+    "required": {
+      "title": "Verificación KYC Requerida",
+      "message": "Para poder operar y crear cuentas MetaTrader 5, debes completar la verificación KYC.",
+      "button": "Completar Verificación"
+    },
+    "pending": {
+      "title": "Verificación en Proceso",
+      "message": "Tu documentación está en proceso de revisión. Te notificaremos cuando esté completa.",
+      "button": "En Revisión..."
+    },
+    "rejected": {
+      "title": "Documentación Rechazada",
+      "message": "Tu documentación fue rechazada. Por favor, envíala nuevamente.",
+      "button": "Reenviar Documentos"
+    },
+    "approved": {
+      "title": "¡Verificación Completada!",
+      "message": "Tu documentación ha sido aprobada. Ya puedes acceder a todas las funcionalidades.",
+      "dismiss": "Cerrar"
+    }
+  },
   "stats": {
     "balance": "Balance Total",
     "equity": "Patrimonio",

@@ -75,13 +75,6 @@ const PaymentMethodSettings = ({ onBack }) => {
       placeholder: '0x742d35Cc6...',
       regex: /^0x[a-fA-F0-9]{40}$/,
       errorMessage: t('paymentMethods.errors.ethereumAddressFormat')
-    },
-    { 
-      value: 'bitcoin', 
-      label: t('paymentMethods.networks.bitcoinMain'),
-      placeholder: 'bc1qxy2kgdyg...',
-      regex: /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/,
-      errorMessage: t('paymentMethods.errors.bitcoinAddressFormat')
     }
   ];
 
@@ -148,6 +141,18 @@ const PaymentMethodSettings = ({ onBack }) => {
       return;
     }
     
+    // Validar que no exista una wallet duplicada (misma dirección y red)
+    const isDuplicate = paymentMethods.some(method => 
+      method.type === 'crypto' && 
+      method.address === cryptoAddress && 
+      method.network === cryptoNetwork
+    );
+    
+    if (isDuplicate) {
+      toast.error(t('paymentMethods.errors.duplicateWallet'));
+      return;
+    }
+    
     const newMethod = { type: 'crypto', alias, address: cryptoAddress, network: cryptoNetwork };
 
     const loadingToast = toast.loading(t('paymentMethods.addingMethod'));
@@ -177,13 +182,13 @@ const PaymentMethodSettings = ({ onBack }) => {
   const handleDeleteMethod = async (method) => {
     // Usar una confirmación con toast más elegante
     const confirmDelete = () => {
-      toast((t) => (
+      toast((toastInstance) => (
         <div>
           <p className="font-medium mb-2">{t('paymentMethods.confirmDelete', { alias: method.alias })}</p>
           <div className="flex gap-2">
             <button
               onClick={async () => {
-                toast.dismiss(t.id);
+                toast.dismiss(toastInstance.id);
                 const loadingToast = toast.loading(t('paymentMethods.deleting'));
                 const userId = currentUser.id || currentUser.uid;
                 const result = await AuthAdapter.deletePaymentMethod(userId, method);
@@ -206,7 +211,7 @@ const PaymentMethodSettings = ({ onBack }) => {
               {t('paymentMethods.delete')}
             </button>
             <button
-              onClick={() => toast.dismiss(t.id)}
+              onClick={() => toast.dismiss(toastInstance.id)}
               className="px-3 py-1 bg-gray-600 text-white rounded-md text-sm"
             >
               {t('paymentMethods.cancel')}

@@ -93,6 +93,7 @@
   },
   "buttons": {
     "back": "Back to Settings",
+    "backToDashboard": "Back to Dashboard",
     "next": "Next",
     "submit": "Submit Documents for Verification",
     "submitting": "Submitting...",

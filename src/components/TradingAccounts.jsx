@@ -143,9 +143,10 @@ const profitLossOptions = [
 ];
 
 const benefitChartFilterOptions = [
-  { value: 'lastMonth', label: 'filters.lastMonth' },
-  { value: 'lastThreeMonths', label: 'filters.lastThreeMonths' },
-  { value: 'lastYear', label: 'filters.lastYear' },
+  { value: 'last7Days', label: 'filters.last7Days' },
+  { value: 'last30Days', label: 'filters.last30Days' },
+  { value: 'last90Days', label: 'filters.last90Days' },
+  { value: 'custom', label: 'filters.custom' },
 ];
 
 const rendimientoPeriodOptions = [
@@ -154,7 +155,7 @@ const rendimientoPeriodOptions = [
 ];
 
 const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerRef }) => {
-  const { t } = useTranslation('trading');
+  const { t } = useTranslation(['trading', 'common']);
   
   // Helper function to translate options for dropdowns
   const translateOptions = (options) => options.map(option => ({
@@ -232,14 +233,34 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // State for new instrument filter
   const [showInstrumentDropdown, setShowInstrumentDropdown] = useState(false);
+
+  // Función para obtener tiempo transcurrido en minutos
+  const getTimeAgoInMinutes = (timestamp) => {
+    if (!timestamp) return null;
+    const now = Date.now();
+    const diffInMinutes = Math.floor((now - timestamp) / (1000 * 60));
+    return diffInMinutes;
+  };
+
+  // Función para obtener días desde la creación
+  const getDaysFromCreation = (createdDate) => {
+    if (!createdDate) return null;
+    const now = new Date();
+    const created = createdDate?.toDate ? createdDate.toDate() : new Date(createdDate);
+    const diffInTime = now - created;
+    const diffInDays = Math.floor(diffInTime / (1000 * 60 * 60 * 24));
+    return diffInDays;
+  };
   const [instrumentSearchTerm, setInstrumentSearchTerm] = useState('');
   const [favoriteInstruments, setFavoriteInstruments] = useState([]);
   const [instrumentFilterType, setInstrumentFilterType] = useState('forex');
   const instrumentDropdownRef = useRef(null);
 
   // Estados para el gráfico de beneficio total
-  const [benefitChartFilter, setBenefitChartFilter] = useState('lastMonth');
+  const [benefitChartFilter, setBenefitChartFilter] = useState('last30Days');
   const [benefitChartTab, setBenefitChartTab] = useState('benefitTotal');
+  const [customDateFrom, setCustomDateFrom] = useState('');
+  const [customDateTo, setCustomDateTo] = useState('');
   
   // Estados para filtros del gráfico de rendimiento
   const [rendimientoFilters, setRendimientoFilters] = useState({
@@ -275,8 +296,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     if (currentUser) {
       const userId = currentUser.id;
       DatabaseAdapter.users.getById(userId).then(({ data, error }) => {
-        if (data && data.favorite_pip_instruments) {
-          setFavoriteInstruments(data.favorite_pip_instruments);
+        if (data && data.favoriteHistoryInstruments) {
+          setFavoriteInstruments(data.favoriteHistoryInstruments);
         }
       }).catch(error => {
         console.error("Error fetching favorite instruments:", error);
@@ -302,9 +323,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   }, [showInstrumentDropdown]);
 
   const toggleFavorite = async (instrumentValue) => {
-    if (!currentUser) return; // Or handle local favorites for non-logged-in users
+    if (!currentUser) {
+      setFavoriteInstruments(prev =>
+        prev.includes(instrumentValue)
+          ? prev.filter(fav => fav !== instrumentValue)
+          : [...prev, instrumentValue]
+      );
+      return;
+    }
 
-    const userId = currentUser.id;
     const isCurrentlyFavorite = favoriteInstruments.includes(instrumentValue);
 
     setFavoriteInstruments(prev =>
@@ -312,6 +339,36 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         ? prev.filter(fav => fav !== instrumentValue)
         : [...prev, instrumentValue]
     );
+
+    try {
+      // Get current user data first
+      const { data: currentUserData } = await DatabaseAdapter.users.getById(currentUser.id);
+      const currentFavorites = currentUserData?.favoriteHistoryInstruments || [];
+      
+      let newFavorites;
+      if (isCurrentlyFavorite) {
+        newFavorites = currentFavorites.filter(fav => fav !== instrumentValue);
+      } else {
+        newFavorites = [...currentFavorites, instrumentValue];
+      }
+
+      // Update user data
+      const { error } = await DatabaseAdapter.users.update(currentUser.id, {
+        favoriteHistoryInstruments: newFavorites
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error("Error updating favorite instruments in database:", error);
+      // Revert if error occurs
+      setFavoriteInstruments(prev =>
+        isCurrentlyFavorite
+          ? [...prev, instrumentValue]
+          : prev.filter(fav => fav !== instrumentValue)
+      );
+    }
 
     try {
       const newFavorites = isCurrentlyFavorite 
@@ -333,6 +390,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     if (instrumentFilterType === 'forex') instrumentsToFilter = forexInstruments;
     else if (instrumentFilterType === 'stocks') instrumentsToFilter = stockInstruments;
     else if (instrumentFilterType === 'crypto') instrumentsToFilter = cryptoInstruments;
+    else if (instrumentFilterType === 'metal') instrumentsToFilter = metalInstruments;
+    else if (instrumentFilterType === 'index') instrumentsToFilter = indicesInstruments;
 
     const searched = instrumentsToFilter.filter(item =>
       item.label.toLowerCase().includes(instrumentSearchTerm.toLowerCase())
@@ -457,10 +516,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       filteredAccounts = realAccountsOnly;
     } else if (activeTab === 'demo') {
       filteredAccounts = demoAccountsOnly;
-    } else if (activeTab === 'copytrading') {
-      filteredAccounts = getAccountsByCategory(ACC_CAT.COPYTRADING);
-    } else if (activeTab === 'pamm') {
-      filteredAccounts = getAccountsByCategory(ACC_CAT.PAMM);
+    // } else if (activeTab === 'copytrading') {
+    //   filteredAccounts = getAccountsByCategory(ACC_CAT.COPYTRADING);
+    // } else if (activeTab === 'pamm') {
+    //   filteredAccounts = getAccountsByCategory(ACC_CAT.PAMM);
     } else {
       // 'all' - obtener todas las cuentas
       filteredAccounts = getAllAccounts();
@@ -873,7 +932,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     // Si no hay datos históricos pero hay balance actual, mostrar una línea desde 0
     (currentSelectedAccount && currentSelectedAccount.balance > 0) ? [
       { name: t('trading.charts.start'), value: 0 },
-      { name: t('trading.charts.current'), value: currentSelectedAccount.balance }
+      { name: t('trading:charts.current'), value: currentSelectedAccount.balance }
     ] : 
     // Si no hay datos, mostrar todo en 0
     [
@@ -1428,10 +1487,20 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       
       // Tomar los últimos puntos según el filtro
       let dataPoints = realBalanceHistory;
-      if (benefitChartFilter === 'lastMonth') {
+      if (benefitChartFilter === 'last7Days') {
+        dataPoints = realBalanceHistory.slice(-7); // Últimos 7 días
+      } else if (benefitChartFilter === 'last30Days') {
         dataPoints = realBalanceHistory.slice(-30); // Últimos 30 días
-      } else if (benefitChartFilter === 'lastThreeMonths') {
+      } else if (benefitChartFilter === 'last90Days') {
         dataPoints = realBalanceHistory.slice(-90); // Últimos 90 días
+      } else if (benefitChartFilter === 'custom' && customDateFrom && customDateTo) {
+        // Filtrar por rango personalizado
+        const fromDate = new Date(customDateFrom).getTime();
+        const toDate = new Date(customDateTo).getTime();
+        dataPoints = realBalanceHistory.filter(point => {
+          const pointDate = new Date(point.date || point.timestamp).getTime();
+          return pointDate >= fromDate && pointDate <= toDate;
+        });
       }
       
       // Reducir puntos para evitar aglomeración
@@ -1481,18 +1550,29 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     // Determinar máximo de puntos según dispositivo
     maxPoints = isMobile ? 6 : 12;
     
-    if (benefitChartFilter === 'lastYear') {
-      startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    if (benefitChartFilter === 'last7Days') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       endDate = new Date(now);
-      dateFormat = isMobile ? 'quarter' : 'month'; // Trimestres en móvil, meses en desktop
-    } else if (benefitChartFilter === 'lastThreeMonths') {
-      startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+      dateFormat = 'day';
+    } else if (benefitChartFilter === 'last30Days') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       endDate = new Date(now);
-      dateFormat = isMobile ? 'month' : 'week'; // Meses en móvil, semanas en desktop
-    } else if (benefitChartFilter === 'lastMonth') {
-      startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      dateFormat = isMobile ? 'week' : 'day';
+    } else if (benefitChartFilter === 'last90Days') {
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
       endDate = new Date(now);
-      dateFormat = isMobile ? 'week' : 'day'; // Semanas en móvil, días en desktop
+      dateFormat = isMobile ? 'month' : 'week';
+    } else if (benefitChartFilter === 'custom' && customDateFrom && customDateTo) {
+      startDate = new Date(customDateFrom);
+      endDate = new Date(customDateTo);
+      const daysDiff = (endDate - startDate) / (1000 * 60 * 60 * 24);
+      if (daysDiff <= 7) {
+        dateFormat = 'day';
+      } else if (daysDiff <= 30) {
+        dateFormat = isMobile ? 'week' : 'day';
+      } else {
+        dateFormat = isMobile ? 'month' : 'week';
+      }
     } else {
       // Para "Último mes" por defecto, usar el rango de datos disponibles
       const dates = dataToProcess.map(item => new Date(item.fechaISO));
@@ -1655,18 +1735,23 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     const now = new Date();
     let startDate, endDate, dateFormat;
     
-    if (benefitChartFilter === 'lastYear') {
-      startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-      endDate = new Date(now);
-      dateFormat = 'month';
-    } else if (benefitChartFilter === 'lastThreeMonths') {
-      startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-      endDate = new Date(now);
-      dateFormat = 'week';
-    } else if (benefitChartFilter === 'lastMonth') {
-      startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    if (benefitChartFilter === 'last7Days') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       endDate = new Date(now);
       dateFormat = 'day';
+    } else if (benefitChartFilter === 'last30Days') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      endDate = new Date(now);
+      dateFormat = 'day';
+    } else if (benefitChartFilter === 'last90Days') {
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      endDate = new Date(now);
+      dateFormat = 'week';
+    } else if (benefitChartFilter === 'custom' && customDateFrom && customDateTo) {
+      startDate = new Date(customDateFrom);
+      endDate = new Date(customDateTo);
+      const daysDiff = (endDate - startDate) / (1000 * 60 * 60 * 24);
+      dateFormat = daysDiff <= 30 ? 'day' : 'week';
     } else {
       // Para "Último mes" por defecto, usar el rango de datos disponibles
       const dates = dataToProcess.map(item => new Date(item.fechaISO));
@@ -1807,18 +1892,23 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     const now = new Date();
     let startDate, endDate, dateFormat;
     
-    if (benefitChartFilter === 'lastYear') {
-      startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-      endDate = new Date(now);
-      dateFormat = 'month';
-    } else if (benefitChartFilter === 'lastThreeMonths') {
-      startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-      endDate = new Date(now);
-      dateFormat = 'week';
-    } else if (benefitChartFilter === 'lastMonth') {
-      startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    if (benefitChartFilter === 'last7Days') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       endDate = new Date(now);
       dateFormat = 'day';
+    } else if (benefitChartFilter === 'last30Days') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      endDate = new Date(now);
+      dateFormat = 'day';
+    } else if (benefitChartFilter === 'last90Days') {
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      endDate = new Date(now);
+      dateFormat = 'week';
+    } else if (benefitChartFilter === 'custom' && customDateFrom && customDateTo) {
+      startDate = new Date(customDateFrom);
+      endDate = new Date(customDateTo);
+      const daysDiff = (endDate - startDate) / (1000 * 60 * 60 * 24);
+      dateFormat = daysDiff <= 30 ? 'day' : 'week';
     } else {
       // Para "Último mes" por defecto, usar el rango de datos disponibles
       const dates = dataToProcess.map(item => new Date(item.fechaISO));
@@ -2228,6 +2318,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             >
               {isMobile ? t('accounts.types.demoShort') : t('accounts.types.demo')} ({demoAccountsOnly.length})
             </button>
+            {/* 
             <button
               onClick={() => setActiveTab('copytrading')}
               className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm focus:outline-none transition-all text-center ${
@@ -2248,6 +2339,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             >
               PAMM ({getAccountsByCategory(ACC_CAT.PAMM).length})
             </button>
+            */}
           </div>
         </div>
 
@@ -2287,7 +2379,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   </div>
                   
                   {/* Account Info */}
-                  <div className={isMobile ? 'text-center' : ''}>
+                  <div className={isMobile ? "text-center" : ""}>
                       <h3 className="text-base sm:text-lg font-bold text-white mb-1">
                         {account.account_name || t('trading.accounts.noName')} 
                         {isMobile && <br />}
@@ -2296,7 +2388,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     <div className={`${isMobile ? 'space-y-1' : 'flex items-center space-x-4'} text-xs sm:text-sm text-gray-400`}>
                         <span>{t('accounts.fields.accountType')}: {account.account_type || 'N/A'}</span>
                         <span>{t('accounts.fields.balance')}: ${(account.balance || 0).toFixed(2)}</span>
-                        <span>{t('accounts.fields.platform')}: {account.platform || 'MT5'}</span>
+                        <span>{t('accounts.fields.platform')}: {account.platform || 'MetaTrader 5'}</span>
                     </div>
                   </div>
                 </div>
@@ -2411,7 +2503,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   };
 
   return (
-    <div className="flex flex-col p-3 sm:p-4 text-white">
+    <div className="flex flex-col p-3 sm:p-4 text-white overflow-x-hidden">
       {/* Back Button */}
       <div className="mb-3 sm:mb-4 flex items-center">
         <img 
@@ -2535,7 +2627,18 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <div className="flex justify-between items-start mb-2">
                     <h2 className="text-lg sm:text-xl font-semibold">{t('accounts.details.title')}</h2>
                     <p className="text-gray-500 text-xs">
-                      {t('accounts.fields.lastUpdated')} {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {(() => {
+                        const minutesAgo = getTimeAgoInMinutes(lastUpdated);
+                        if (minutesAgo === null) {
+                          return `${t('accounts.fields.lastUpdated')} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                        } else if (minutesAgo === 0) {
+                          return `${t('accounts.fields.lastUpdated')} ${t('common:time.now')}`;
+                        } else if (minutesAgo === 1) {
+                          return `${t('accounts.fields.lastUpdated')} ${t('common:time.oneMinuteAgo')}`;
+                        } else {
+                          return `${t('accounts.fields.lastUpdated')} ${t('common:time.minutesAgo', { count: minutesAgo })}`;
+                        }
+                      })()}
                     </p>
                   </div>
                   <p className="text-gray-400 text-xs sm:text-sm">{t('accounts.details.subtitle')}</p>
@@ -2554,7 +2657,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">{t('trading.accounts.fields.activeAccount')}: 30 {t('trading.time.days')}</span>
+                          <span className="text-gray-400">{t('accounts.fields.activeAccount')}: {(() => {
+                            const daysActive = getDaysFromCreation(selectedAccount.created_at || selectedAccount.createdAt);
+                            return daysActive !== null ? `${daysActive} ${t('common:time.days')}` : 'N/A';
+                          })()}</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
@@ -2574,7 +2680,18 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">{t('accounts.fields.createdAt')}: {selectedAccount.createdAt ? new Date(selectedAccount.createdAt?.toDate?.() || selectedAccount.createdAt).toLocaleDateString() : 'N/A'}</span>
+                          <span className="text-gray-400">{t('accounts.fields.createdAt')}: {(() => {
+                            const daysFromCreation = getDaysFromCreation(selectedAccount.created_at || selectedAccount.createdAt);
+                            if (daysFromCreation === null) {
+                              return 'N/A';
+                            } else if (daysFromCreation === 0) {
+                              return t('common:time.today');
+                            } else if (daysFromCreation === 1) {
+                              return t('common:time.oneDayAgo');
+                            } else {
+                              return t('common:time.daysAgo', { count: daysFromCreation });
+                            }
+                          })()}</span>
                   </div>
                 </div>
 
@@ -2724,10 +2841,26 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           <div className={`${isMobile ? 'space-y-4' : 'grid grid-cols-1 lg:grid-cols-4 gap-6'} mb-4 sm:mb-6`}>
             
             {/* Balance Card - Lado izquierdo (2 columnas - menos ancho) */}
-            <div className={`${isMobile ? 'w-full' : 'lg:col-span-2'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl`}>
-              <CustomTooltip content={t('tooltips.balance')}>
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4 cursor-help">{t('balance')}</h2>
-              </CustomTooltip>
+            <div className={`${isMobile ? 'w-full' : 'lg:col-span-2'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl relative`}>
+              <div className="flex justify-between items-start mb-3 sm:mb-4">
+                <CustomTooltip content={t('tooltips.balance')}>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold cursor-help">{t('balance')}</h2>
+                </CustomTooltip>
+                <p className="text-gray-500 text-xs">
+                  {(() => {
+                    const minutesAgo = getTimeAgoInMinutes(lastUpdated);
+                    if (minutesAgo === null) {
+                      return `${t('accounts.fields.lastUpdated')} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                    } else if (minutesAgo === 0) {
+                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.now')}`;
+                    } else if (minutesAgo === 1) {
+                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.oneMinuteAgo')}`;
+                    } else {
+                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.minutesAgo', { count: minutesAgo })}`;
+                    }
+                  })()}
+                </p>
+              </div>
               <div className="flex items-center mb-4 sm:mb-6">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3 text-white">
                   ${(realMetrics?.balance || balanceData[balanceData.length - 1]?.value || 0).toLocaleString()}
@@ -2777,8 +2910,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         }}
                         labelStyle={{ color: '#ffffff' }}
                         itemStyle={{ color: '#ffffff' }}
-                        formatter={(value) => [`$${value.toLocaleString()}`, t('trading.accounts.fields.balance')]}
-                        labelFormatter={(label) => `${t('trading.charts.month')}: ${label}`}
+                        formatter={(value) => [`$${value.toLocaleString()}`, t('trading:accounts.fields.balance')]}
+                        labelFormatter={(label) => {
+                          // Formatear la fecha de manera más legible
+                          if (typeof label === 'string' && label.includes('-')) {
+                            const date = new Date(label);
+                            return `${t('trading:charts.date')}: ${date.toLocaleDateString()}`;
+                          }
+                          return `${t('trading:charts.current')}`;
+                        }}
                       />
                       <Area
                       type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={2}
@@ -2818,7 +2958,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 </CustomTooltip>
                 <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
-                    -{(realMetrics?.max_drawdown || 0).toFixed(2)}%
+                    ${(() => {
+                      const currentBalance = realMetrics?.balance || 0;
+                      const maxDrawdownPercent = realMetrics?.max_drawdown || 0;
+                      const drawdownAmount = (currentBalance * maxDrawdownPercent) / 100;
+                      return drawdownAmount.toFixed(2);
+                    })()}
                   </span>
                   <span className={`px-2 py-1 rounded text-xs ${
                     (realMetrics?.current_drawdown || 0) <= 5
@@ -2827,7 +2972,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       ? 'bg-red-900 bg-opacity-40 text-red-300'
                       : 'bg-red-900 bg-opacity-50 text-red-200'
                   }`}>
-                    {t('metrics.current')}: -{(realMetrics?.current_drawdown || 0).toFixed(2)}%
+                    {t('metrics.current')}: ${(() => {
+                      const currentBalance = realMetrics?.balance || 0;
+                      const currentDrawdownPercent = realMetrics?.current_drawdown || 0;
+                      const currentDrawdownAmount = (currentBalance * currentDrawdownPercent) / 100;
+                      return currentDrawdownAmount.toFixed(2);
+                    })()}
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-gray-400">{t('metrics.maxCurrent')}</p>
@@ -3053,6 +3203,34 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               </div>
             </div>
 
+            {/* Filtros de fecha personalizada */}
+            {benefitChartFilter === 'custom' && (
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    {t('filters.dateFrom')}
+                  </label>
+                  <input
+                    type="date"
+                    value={customDateFrom}
+                    onChange={(e) => setCustomDateFrom(e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    {t('filters.dateTo')}
+                  </label>
+                  <input
+                    type="date"
+                    value={customDateTo}
+                    onChange={(e) => setCustomDateTo(e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Título */}
             <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-white">
               {isMobile ? t(benefitChartTab).split(' ')[0] : t(benefitChartTab)}
@@ -3128,7 +3306,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         : (typeof numValue === 'number' ? numValue.toLocaleString() : '0');
                       return [`${unit}${formattedValue}`, benefitChartTab];
                     }}
-                    labelFormatter={(label) => `${t('trading.charts.date')}: ${label}`}
+                    labelFormatter={(label) => {
+                      // Formatear la fecha de manera más legible
+                      if (typeof label === 'string' && label.includes('-')) {
+                        const date = new Date(label);
+                        return `${t('trading.charts.date')}: ${date.toLocaleDateString()}`;
+                      }
+                      return `${t('trading.charts.date')}: ${label}`;
+                    }}
                   />
                   <Line 
                     type="monotone" 
@@ -3387,10 +3572,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     {showInstrumentDropdown && (
                       <div className="absolute z-20 mt-1 w-full bg-[#2d2d2d] border border-[#444] rounded-lg shadow-lg max-h-72 overflow-y-auto">
                         <div className="p-2 sticky top-0 bg-[#2d2d2d] z-20 border-b border-[#444]">
-                          <div className="flex justify-between space-x-2 mb-2">
-                            <button onClick={() => setInstrumentFilterType('forex')} className={`flex-1 px-3 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'forex' ? 'border-cyan-500' : 'border-gray-700'}`}>Forex</button>
-                            <button onClick={() => setInstrumentFilterType('stocks')} className={`flex-1 px-3 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'stocks' ? 'border-cyan-500' : 'border-gray-700'}`}>Acciones</button>
-                            <button onClick={() => setInstrumentFilterType('crypto')} className={`flex-1 px-3 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'crypto' ? 'border-cyan-500' : 'border-gray-700'}`}>Cripto</button>
+                          <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-2">
+                            <button onClick={() => setInstrumentFilterType('forex')} className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'forex' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>Forex</button>
+                            <button onClick={() => setInstrumentFilterType('stocks')} className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'stocks' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>Acciones</button>
+                            <button onClick={() => setInstrumentFilterType('crypto')} className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'crypto' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>Cripto</button>
+                            <button onClick={() => setInstrumentFilterType('metal')} className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'metal' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>Metales</button>
+                            <button onClick={() => setInstrumentFilterType('index')} className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'index' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>Índices</button>
                           </div>
                           <div className="relative">
                             <input
@@ -3527,7 +3714,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   ))}
                 </div>
               ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-hidden">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#333]">

@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { DatabaseAdapter } from '../services/database.adapter';
 
-const KYCVerification = ({ onBack }) => {
+const KYCVerification = ({ onBack, fromHome = false }) => {
   const { currentUser } = useAuth();
   const { notifyKYCSubmitted } = useNotifications();
   const { t } = useTranslation('kyc');
@@ -461,7 +461,7 @@ const KYCVerification = ({ onBack }) => {
                 onClick={onBack}
                 className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition-colors"
               >
-                {t('buttons.back')}
+                {fromHome ? t('buttons.backToDashboard') : t('buttons.back')}
               </button>
               {config.showResubmit && (
                 <button
@@ -526,12 +526,17 @@ const KYCVerification = ({ onBack }) => {
     <div className="p-4 md:p-6 bg-[#232323] text-white flex flex-col">
       {/* Header with back button */}
       <div className="mb-4">
-        <img 
-          src="/Back.svg" 
-          alt="Back" 
-          onClick={onBack}
-          className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
-        />
+        <div className="flex items-center gap-3">
+          <img 
+            src="/Back.svg" 
+            alt="Back" 
+            onClick={onBack}
+            className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
+          />
+          <span className="text-gray-400 text-sm">
+            {fromHome ? t('buttons.backToDashboard') : t('buttons.back')}
+          </span>
+        </div>
       </div>
       
       {/* Show Status Card or Form based on KYC status */}

@@ -88,6 +88,11 @@
     "terms": "You must accept the terms and conditions",
     "selectOption": "Select an option"
   },
+  "kyc": {
+    "verificationRequired": "To create a MetaTrader 5 account, you must first complete KYC verification",
+    "depositWithdrawBlocked": "To deposit, withdraw or transfer funds, you must first complete KYC verification",
+    "featureBlocked": "To access this feature, you must first complete KYC verification"
+  },
   "time": {
     "days": "days",
     "hours": "hours",
@@ -101,7 +106,12 @@
     "year": "Year",
     "dateFormat": "MM/DD/YYYY",
     "timeFormat": "HH:mm:ss",
-    "locale": "en-US"
+    "locale": "en-US",
+    "now": "now",
+    "oneMinuteAgo": "1 minute ago",
+    "minutesAgo": "{{count}} minutes ago",
+    "oneDayAgo": "1 day ago",
+    "daysAgo": "{{count}} days ago"
   },
   "currency": {
     "usd": "USD",
@@ -132,5 +142,9 @@
     "showing": "Showing {{start}} to {{end}} of {{total}} results",
     "previous": "Previous",
     "next": "Next"
+  },
+  "clipboard": {
+    "orderNumberCopied": "Order number copied to clipboard",
+    "copyError": "Error copying to clipboard"
   }
 }

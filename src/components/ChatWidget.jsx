@@ -78,7 +78,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
 
   const renderMessage = (message) => {
     const isUser = message.sender === 'user';
-    const isAI = message.sender === 'flofy';
+    const isAI = message.sender === 'alpha';
     const isAsesor = message.sender === 'asesor';
     const isSystem = message.sender === 'system';
 
@@ -110,7 +110,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
           {/* Sender Label */}
           {!isUser && (
             <div className="text-xs font-medium mb-1 opacity-70">
-              {isAI ? 'Flofy AI' : isAsesor ? 'Asesor Humano' : 'Sistema'}
+              {isAI ? 'Alpha AI' : isAsesor ? 'Asesor Humano' : 'Sistema'}
             </div>
           )}
           
@@ -141,7 +141,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   };
 
   return (
-    <div className="w-80 h-128 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
+    <div className="w-80 h-[500px] max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-4 text-white">
         <div className="flex items-center justify-between">
@@ -171,12 +171,6 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
             >
               <Minimize2 size={16} />
             </button>
-            <button 
-              onClick={onClose}
-              className="p-1 rounded-full hover:bg-white/20 transition-colors"
-            >
-              <X size={16} />
-            </button>
           </div>
         </div>
       </div>
@@ -191,7 +185,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <Bot size={48} className="mx-auto text-cyan-500 mb-4" />
-              <h3 className="text-gray-700 font-medium mb-2">¡Hola! Soy Flofy</h3>
+              <h3 className="text-gray-700 font-medium mb-2">¡Hola! Soy Alpha</h3>
               <p className="text-gray-500 text-sm">
                 Tu asistente de trading en AGM.{' '}
                 {currentUser ? `¡Hola ${userData?.username || 'trader'}!` : ''}
@@ -240,9 +234,10 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
           <button
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isLoading}
-            className="w-8 h-8 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-blue-800 flex items-center justify-center hover:from-blue-700 hover:to-blue-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            title="Enviar mensaje"
           >
-            <Send size={16} />
+            <span className="text-white text-xl font-bold" style={{color: 'white'}}>➤</span>
           </button>
         </div>
         

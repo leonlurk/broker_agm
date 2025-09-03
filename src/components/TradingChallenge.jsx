@@ -7,6 +7,7 @@ import { useAccounts } from '../contexts/AccountsContext';
 import emailServiceProxy from '../services/emailServiceProxy';
 import { useTranslation } from 'react-i18next';
 import { resendVerificationEmail } from '../supabase/auth';
+import toast from 'react-hot-toast';
 
 export default function TradingChallengeUI() {
   const { t } = useTranslation('trading');
@@ -33,7 +34,7 @@ export default function TradingChallengeUI() {
   const [showInvestorPassword, setShowInvestorPassword] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
 
-  const leverageOptions = ['1:50', '1:100', '1:200', '1:500'];
+  const leverageOptions = ['1:50', '1:100', '1:200'];
 
   const handleCopy = async (text, field) => {
     try {
@@ -162,10 +163,10 @@ export default function TradingChallengeUI() {
                   onClick={async () => {
                     const result = await resendVerificationEmail(currentUser.email);
                     if (result.success) {
-                      alert(t('accounts.creation.verificationEmailSent'));
+                      toast.success(t('accounts.creation.verificationEmailSent'));
                     } else {
                       // Show specific error message including rate limiting
-                      alert(result.error || t('accounts.creation.verificationEmailError'));
+                      toast.error(result.error || t('accounts.creation.verificationEmailError'));
                     }
                   }}
                   className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3 px-6 rounded-lg transition-colors"

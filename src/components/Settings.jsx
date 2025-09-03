@@ -10,9 +10,10 @@ import toast from 'react-hot-toast';
 import { AuthAdapter, DatabaseAdapter } from '../services/database.adapter';
 import PasswordChangeModal from './PasswordChangeModal';
 import TwoFactorDualModal from './TwoFactorDualModal';
+import EmailChangeModal from './EmailChangeModal';
 import twoFactorService from '../services/twoFactorService';
 
-const Settings = ({ onBack, openKYC = false }) => {
+const Settings = ({ onBack, openKYC = false, fromHome = false }) => {
   const { t } = useTranslation('settings');
   const [expandedSection, setExpandedSection] = useState(null);
   const [showKYC, setShowKYC] = useState(openKYC);
@@ -208,45 +209,27 @@ const Settings = ({ onBack, openKYC = false }) => {
 
   const handlePasswordChange = async () => {
     // Validaciones
-    if (!oldPassword) {
-      toast.error('Debes ingresar tu contraseña actual');
-      return;
-    }
-
     const requirements = validatePassword(newPassword);
     const allRequirementsMet = Object.values(requirements).every(req => req);
     
     if (!allRequirementsMet) {
-      toast.error('La nueva contraseña no cumple con todos los requisitos');
+      toast.error(t('modal.passwordRequirementsNotMet') || 'La nueva contraseña no cumple con todos los requisitos');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error('Las contraseñas no coinciden');
+      toast.error(t('modal.passwordMismatch'));
       return;
     }
 
-    if (oldPassword === newPassword) {
-      toast.error('La nueva contraseña debe ser diferente a la actual');
-      return;
-    }
-
-    const toastId = toast.loading('Actualizando contraseña...');
+    const toastId = toast.loading(t('modal.updatingPassword') || 'Actualizando contraseña...');
 
     try {
-      // Primero verificar la contraseña actual
-      const verifyResult = await AuthAdapter.verifyPassword(currentUser.email, oldPassword);
-      
-      if (!verifyResult.success) {
-        toast.error('La contraseña actual es incorrecta', { id: toastId });
-        return;
-      }
-
-      // Actualizar la contraseña
+      // Actualizar la contraseña directamente (sin verificar la actual)
       const result = await AuthAdapter.updatePassword(currentUser.email, newPassword);
 
       if (result.success) {
-        toast.success('Contraseña actualizada correctamente', { id: toastId });
+        toast.success(t('modal.passwordUpdatedSuccess') || 'Contraseña actualizada correctamente', { id: toastId });
         setShowPasswordModal(false);
         // Limpiar todos los campos
         setPasswordResetStep('initial');
@@ -268,51 +251,18 @@ const Settings = ({ onBack, openKYC = false }) => {
     setShowEmailModal(true);
   };
 
-  // Modal Component para otros usos
-  const Modal = ({ isOpen, onClose, title, message }) => {
-    if (!isOpen) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-gradient-to-br from-[#232323] to-[#2d2d2d] border border-[#333] rounded-2xl p-6 max-w-md w-full mx-4">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold text-white">{title}</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors p-1"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          
-          {/* Content */}
-          <div className="mb-6">
-            <p className="text-gray-300 text-sm leading-relaxed mb-4">
-              {message}
-            </p>
-            <div className="bg-[#1a1a1a] border border-[#333] rounded-lg p-3">
-              <p className="text-xs text-gray-400 mb-1">{t('modal.supportEmail')}</p>
-              <p className="text-cyan-400 font-medium">support@alphaglobalmarket.io</p>
-            </div>
-          </div>
-          
-          {/* Actions */}
-          <div className="flex justify-center">
-            <button
-              onClick={onClose}
-              className="bg-gradient-to-r from-[#0891b2] to-[#0c4a6e] text-white py-2.5 px-6 rounded-lg hover:opacity-90 transition-opacity"
-            >
-              {t('modal.close')}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   if (showKYC) {
-    return <KYCVerification onBack={() => setShowKYC(false)} />;
+    return <KYCVerification 
+      onBack={() => {
+        setShowKYC(false);
+        // Si vino desde Home, volver al Dashboard
+        if (fromHome) {
+          onBack();
+        }
+      }}
+      fromHome={fromHome}
+    />;
   }
   
   if (showPaymentSettings) {
@@ -467,11 +417,9 @@ const Settings = ({ onBack, openKYC = false }) => {
         validatePassword={validatePassword}
       />
 
-      <Modal
+      <EmailChangeModal
         isOpen={showEmailModal}
         onClose={() => setShowEmailModal(false)}
-        title={t('modal.updateEmailTitle')}
-        message={t('modal.updateEmailMessage')}
       />
 
       {/* 2FA Dual Modal */}

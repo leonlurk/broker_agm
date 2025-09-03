@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "./contexts/AuthContext";
 import Sidebar from "./Sidebar";
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import Home from "./components/Home";
 import TradingChallenge from './components/TradingChallenge';
 import PipCalculator from './components/PipCalculator';
@@ -27,6 +28,7 @@ import BrokerAccountCreation from "./components/BrokerAccountCreation";
 
 const Dashboard = ({ onLogout }) => {
   const { currentUser, userData } = useAuth();
+  const { t } = useTranslation('common');
   const [selectedOption, setSelectedOption] = useState("Dashboard");
   const [navigationParams, setNavigationParams] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -86,7 +88,7 @@ const Dashboard = ({ onLogout }) => {
     // Bloquear acceso a "Nueva Cuenta" si no tiene KYC aprobado o si userData no está cargado
     if ((option === "Nueva Cuenta" || option === "New Account") && (!userData || userData?.kyc_status !== 'approved')) {
       console.log("[Dashboard - src] Blocking Nueva Cuenta - KYC not approved or userData not loaded");
-      toast.error('Debes completar tu verificación KYC antes de poder crear cuentas MT5. Por favor, dirígete a Configuración para completar el proceso.');
+      toast.error(t('kyc.verificationRequired'));
       return;
     }
     
@@ -106,7 +108,7 @@ const Dashboard = ({ onLogout }) => {
     
     // Bloquear acceso a "Nueva Cuenta" si no tiene KYC aprobado o si userData no está cargado
     if ((option === "Nueva Cuenta" || option === "New Account") && (!userData || userData?.kyc_status !== 'approved')) {
-      toast.error('Debes completar tu verificación KYC antes de poder crear cuentas MT5. Por favor, dirígete a Configuración para completar el proceso.');
+      toast.error(t('kyc.verificationRequired'));
       return;
     }
     
@@ -123,11 +125,11 @@ const Dashboard = ({ onLogout }) => {
 
 
   // Manejador para mostrar la pantalla de configuración
-  const handleSettingsClick = (showKYCDirectly = false) => {
+  const handleSettingsClick = (showKYCDirectly = false, fromHome = false) => {
     setShowSettings(true);
     if (showKYCDirectly) {
-      // Pasaremos este parámetro a Settings
-      setNavigationParams({ openKYC: true });
+      // Pasaremos este parámetro a Settings indicando también el origen
+      setNavigationParams({ openKYC: true, fromHome: fromHome });
     }
   };
 
@@ -148,7 +150,11 @@ const Dashboard = ({ onLogout }) => {
     
     // Si estamos mostrando la configuración
     if (showSettings) {
-      return <Settings onBack={handleBackFromSettings} openKYC={navigationParams?.openKYC} />;
+      return <Settings 
+        onBack={handleBackFromSettings} 
+        openKYC={navigationParams?.openKYC}
+        fromHome={navigationParams?.fromHome}
+      />;
     }
     
 
@@ -198,7 +204,7 @@ const Dashboard = ({ onLogout }) => {
                       : 'Para crear cuentas MT5 y comenzar a operar, debes completar el proceso de verificación KYC.'}
                   </p>
                   <button
-                    onClick={() => handleSettingsClick(true)}
+                    onClick={() => handleSettingsClick(true, false)}
                     className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3 px-6 rounded-lg transition-colors"
                   >
                     {!userData
