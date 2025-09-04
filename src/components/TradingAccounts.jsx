@@ -3325,24 +3325,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     }}
                     labelStyle={{ color: '#ffffff' }}
                     itemStyle={{ color: '#ffffff' }}
-                    formatter={(value, name, props) => {
+                    formatter={(value, name) => {
                       const unit = benefitChartTab === 'drawdown' ? '%' : '$';
                       const numValue = typeof value === 'number' ? value : 0;
                       const formattedValue = benefitChartTab === 'drawdown' 
                         ? (typeof numValue === 'number' ? numValue.toFixed(2) : '0') 
                         : (typeof numValue === 'number' ? numValue.toLocaleString() : '0');
                       
-                      // Traducir el label según el tab actual
-                      let translatedLabel = '';
-                      if (benefitChartTab === 'benefitTotal') {
-                        translatedLabel = t('trading:charts.totalProfit');
-                      } else if (benefitChartTab === 'balance') {
-                        translatedLabel = t('trading:accounts.fields.balance');
-                      } else if (benefitChartTab === 'drawdown') {
-                        translatedLabel = t('trading:charts.drawdown');
-                      }
-                      
-                      return [translatedLabel, `${unit}${formattedValue}`];
+                      // Use the name from the Line component
+                      return [`${unit}${formattedValue}`, name];
                     }}
                     labelFormatter={(label) => {
                       // Formatear la fecha de manera más legible
@@ -3355,7 +3346,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   />
                   <Line 
                     type="monotone" 
-                    dataKey="value" 
+                    dataKey="value"
+                    name={
+                      benefitChartTab === 'benefitTotal' 
+                        ? t('trading:charts.totalProfit')
+                        : benefitChartTab === 'balance'
+                        ? t('trading:accounts.fields.balance')
+                        : t('trading:charts.drawdown')
+                    }
                     stroke="#06b6d4" 
                     strokeWidth={isMobile ? 2 : 3}
                     dot={isMobile ? false : { fill: '#06b6d4', strokeWidth: 0, r: 4 }}

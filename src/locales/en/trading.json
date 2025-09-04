@@ -697,7 +697,8 @@
     "unknown": "Unknown",
     "drawdown": "Drawdown",
     "month": "Month",
-    "date": "Date"
+    "date": "Date",
+    "totalProfit": "Total Profit"
   },
   "tooltips": {
     "balance": "The total capital in your account, including unrealized gains and losses.",

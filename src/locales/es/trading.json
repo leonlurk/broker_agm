@@ -681,7 +681,8 @@
     "unknown": "Desconocido",
     "drawdown": "Drawdown",
     "month": "Mes",
-    "date": "Fecha"
+    "date": "Fecha",
+    "totalProfit": "Beneficio Total"
   },
   "tooltips": {
     "balance": "El capital total de tu cuenta, incluyendo ganancias y pérdidas no realizadas.",
