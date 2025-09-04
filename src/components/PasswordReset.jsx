@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Check, X } from 'lucide-react';
 import { AuthAdapter } from '../services/database.adapter';
+import { supabase } from '../supabase/config';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
 const PasswordReset = () => {
   const { t } = useTranslation('auth');
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -17,15 +19,52 @@ const PasswordReset = () => {
   const [loading, setLoading] = useState(false);
   const [validCode, setValidCode] = useState(false);
   const [codeError, setCodeError] = useState('');
+  const [isValidSession, setIsValidSession] = useState(false);
+  const [isEmailRecovery, setIsEmailRecovery] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    // Obtener código de la URL si existe
-    const urlCode = searchParams.get('code');
-    if (urlCode) {
-      setCode(urlCode);
-      validateCode(urlCode);
-    }
-  }, [searchParams]);
+    const checkForEmailRecovery = async () => {
+      // Debug logs
+      console.log('Full URL:', window.location.href);
+      console.log('Hash:', window.location.hash);
+      
+      // Verificar si viene del email con tokens
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const type = hashParams.get('type');
+      
+      console.log('Access Token:', accessToken);
+      console.log('Type:', type);
+      
+      // IMPORTANTE: Supabase puede procesar el hash y luego redirigir
+      // Así que también verificamos si hay una sesión activa
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Current session:', session);
+      
+      if ((type === 'recovery' && accessToken) || (session && session.user)) {
+        // Viene del email de recuperación O hay sesión activa
+        console.log('Email recovery detected!');
+        setIsEmailRecovery(true);
+        setIsValidSession(true);
+        setValidCode(true); // Para habilitar el botón
+      } else {
+        // Flujo normal con código
+        console.log('Normal flow - checking for code');
+        const urlCode = searchParams.get('code');
+        if (urlCode) {
+          setCode(urlCode);
+          validateCode(urlCode);
+        } else {
+          // Si no hay nada, mostrar como si necesitara código
+          setIsEmailRecovery(false);
+        }
+      }
+      setCheckingSession(false);
+    };
+
+    checkForEmailRecovery();
+  }, [searchParams, navigate, t]);
 
   const validateCode = (inputCode) => {
     try {
@@ -33,6 +72,7 @@ const PasswordReset = () => {
       if (!storedData) {
         setCodeError(t('resetPassword.errors.tokenExpired'));
         setValidCode(false);
+        setIsValidSession(false);
         return false;
       }
 
@@ -42,6 +82,7 @@ const PasswordReset = () => {
       if (Date.now() - timestamp > expiresIn) {
         setCodeError(t('resetPassword.errors.tokenExpired'));
         setValidCode(false);
+        setIsValidSession(false);
         localStorage.removeItem('passwordResetCode');
         return false;
       }
@@ -50,15 +91,18 @@ const PasswordReset = () => {
       if (inputCode !== storedCode) {
         setCodeError(t('resetPassword.errors.tokenInvalid'));
         setValidCode(false);
+        setIsValidSession(false);
         return false;
       }
 
       setCodeError('');
       setValidCode(true);
+      setIsValidSession(true);
       return true;
     } catch (error) {
       setCodeError(t('resetPassword.errors.tokenInvalid'));
       setValidCode(false);
+      setIsValidSession(false);
       return false;
     }
   };
@@ -107,8 +151,24 @@ const PasswordReset = () => {
     const toastId = toast.loading(t('resetPassword.loading'));
 
     try {
-      const storedData = JSON.parse(localStorage.getItem('passwordResetCode'));
-      const result = await AuthAdapter.updatePassword(storedData.email, newPassword);
+      let result;
+      
+      if (isEmailRecovery) {
+        // Usar Supabase para actualizar contraseña
+        const { error } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+
+        if (error) {
+          throw error;
+        }
+        
+        result = { success: true };
+      } else {
+        // Flujo normal con código
+        const storedData = JSON.parse(localStorage.getItem('passwordResetCode'));
+        result = await AuthAdapter.updatePassword(storedData.email, newPassword);
+      }
 
       if (result.success) {
         toast.success(t('resetPassword.success'), { id: toastId });
@@ -127,6 +187,18 @@ const PasswordReset = () => {
     }
   };
 
+  // Mostrar loading mientras verificamos la sesión
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] via-[#2d2d2d] to-[#1a1a1a] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-400">{t('loading', 'Verificando sesión...')}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] via-[#2d2d2d] to-[#1a1a1a] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -137,31 +209,33 @@ const PasswordReset = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Código de verificación */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                {t('resetPassword.verificationCode')}
-              </label>
-              <input
-                type="text"
-                value={code}
-                onChange={handleCodeChange}
-                placeholder="123456"
-                className={`w-full px-4 py-3 rounded-xl bg-[#1a1a1a] border ${
-                  codeError ? 'border-red-500' : validCode ? 'border-green-500' : 'border-[#333]'
-                } text-white text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-cyan-500`}
-                maxLength="6"
-                required
-              />
-              {codeError && (
-                <p className="mt-2 text-sm text-red-400">{codeError}</p>
-              )}
-              {validCode && (
-                <p className="mt-2 text-sm text-green-400 flex items-center gap-1">
-                  <Check size={16} /> Código válido
-                </p>
-              )}
-            </div>
+            {/* Código de verificación - Solo mostrar si NO es recuperación desde email */}
+            {!isEmailRecovery && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {t('resetPassword.verificationCode')}
+                </label>
+                <input
+                  type="text"
+                  value={code}
+                  onChange={handleCodeChange}
+                  placeholder="123456"
+                  className={`w-full px-4 py-3 rounded-xl bg-[#1a1a1a] border ${
+                    codeError ? 'border-red-500' : validCode ? 'border-green-500' : 'border-[#333]'
+                  } text-white text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-cyan-500`}
+                  maxLength="6"
+                  required={!isEmailRecovery}
+                />
+                {codeError && (
+                  <p className="mt-2 text-sm text-red-400">{codeError}</p>
+                )}
+                {validCode && (
+                  <p className="mt-2 text-sm text-green-400 flex items-center gap-1">
+                    <Check size={16} /> Código válido
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Nueva contraseña */}
             {validCode && (

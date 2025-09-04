@@ -8,6 +8,7 @@ import PasswordReset from './components/PasswordReset';
 import VerifyEmail from './components/VerifyEmail';
 import EmailVerificationPending from './components/EmailVerificationPending';
 import Dashboard from './Dashboard';
+import AuthCallback from './components/AuthCallback';
 import { useAuth } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
 import { AuthAdapter } from './services/database.adapter';
@@ -93,6 +94,11 @@ function App() {
               />
             </AuthPageWrapper>
           } 
+        />
+
+        <Route 
+          path="/auth/callback" 
+          element={<AuthCallback />} 
         />
 
         <Route 

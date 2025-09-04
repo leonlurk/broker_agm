@@ -1,36 +1,79 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabase/config';
+import toast from 'react-hot-toast';
 
 const ResetPassword = ({ onContinue, onLoginClick }) => {
   const { t } = useTranslation('auth');
+  const location = useLocation();
+  const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isValidSession, setIsValidSession] = useState(false);
+  
+  useEffect(() => {
+    // Verificar si llegamos desde el AuthCallback con una sesión válida
+    if (location.state?.isValidSession) {
+      setIsValidSession(true);
+    } else {
+      // Si no venimos del callback, verificar si hay una sesión activa
+      const checkSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast.error(t('resetPassword.errors.noSession', 'No hay sesión válida. Por favor usa el enlace del email.'));
+          navigate('/forgot-password');
+        } else {
+          setIsValidSession(true);
+        }
+      };
+      checkSession();
+    }
+  }, [location.state, navigate, t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setMessage('');
 
+    if (!isValidSession) {
+      return setError(t('resetPassword.errors.noSession', 'Sesión inválida'));
+    }
+
     if (password !== confirmPassword) {
       return setError(t('resetPassword.errors.passwordMismatch'));
     }
 
-    if (password.length < 6) {
-      return setError(t('resetPassword.errors.weakPassword'));
+    if (password.length < 12) {
+      return setError(t('resetPassword.errors.weakPassword', 'La contraseña debe tener al menos 12 caracteres'));
     }
 
     setLoading(true);
     
     try {
-      // Simular actualización de contraseña
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Actualizar la contraseña usando Supabase
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+
+      if (error) {
+        throw error;
+      }
       
-      setMessage(t('resetPassword.success'));
+      toast.success(t('resetPassword.success', 'Contraseña actualizada exitosamente'));
+      
+      // Cerrar sesión para que el usuario inicie sesión con su nueva contraseña
+      await supabase.auth.signOut();
+      
       setTimeout(() => {
-        onContinue();
+        navigate('/login', { 
+          state: { 
+            message: t('resetPassword.loginMessage', 'Tu contraseña ha sido actualizada. Por favor inicia sesión con tu nueva contraseña.') 
+          }
+        });
       }, 2000);
     } catch (err) {
       console.error('Password update error:', err);
@@ -39,6 +82,18 @@ const ResetPassword = ({ onContinue, onLoginClick }) => {
       setLoading(false);
     }
   };
+
+  // No mostrar el formulario si no hay sesión válida
+  if (!isValidSession) {
+    return (
+      <div className="w-[420px] h-[900px] sm:w-full md:w-[620px] p-6 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-400">{t('loading', 'Verificando sesión...')}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-[420px] h-[900px] sm:w-full md:w-[620px] p-6 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">

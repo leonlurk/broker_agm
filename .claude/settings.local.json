@@ -7,7 +7,8 @@
       "Bash(grep:*)",
       "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\agm\\flofy-crm/**)",
       "Bash(cat:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\AGM\\broker\\broker_agm\\src/**)"
     ],
     "deny": [],
     "ask": [],
