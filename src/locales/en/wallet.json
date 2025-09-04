@@ -54,7 +54,7 @@
     "selectMethod": "Payment Method",
     "selectCoin": "Select coin",
     "amount": "Amount",
-    "minAmount": "Minimum amount: $100 USD",
+    "minAmount": "Minimum amount: {{amount}}",
     "maxAmount": "Maximum amount: {{amount}}",
     "importantNote": "Ensure funds come from a legitimate source.",
     "success": "${{amount}} USD deposit initiated successfully. We will notify you when processed.",
@@ -81,7 +81,7 @@
     "button": "Make Deposit",
     "processing": "Processing...",
     "errors": {
-      "minAmount": "Minimum amount for deposits is $100 USD",
+      "minAmount": "Minimum amount for deposits is $50 USD",
       "maxAmount": "Amount exceeds maximum",
       "invalidAmount": "Invalid amount",
       "selectAccount": "Select an account",

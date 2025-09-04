@@ -382,6 +382,7 @@
     "holderName": "Nombre del Titular",
     "holderCuit": "CUIT/CUIL del Titular",
     "cbuCvu": "CBU/CVU",
+    "add": "Agregar",
     "addMethod": "Agregar Método",
     "addingMethod": "Agregando método de retiro...",
     "methodAddedSuccess": "Método de retiro agregado con éxito",

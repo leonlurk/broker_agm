@@ -73,6 +73,7 @@
     "noResults": "No results found",
     "confirmDelete": "Are you sure you want to delete?",
     "confirmAction": "Are you sure you want to continue?",
+    "confirmData": "I understand and want to continue",
     "welcome": "Welcome",
     "goodbye": "Goodbye"
   },

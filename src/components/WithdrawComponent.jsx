@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const WithdrawComponent = () => {
+  const { t } = useTranslation(['wallet', 'common', 'paymentMethods']);
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [selectedCoin, setSelectedCoin] = useState(null);
@@ -278,7 +280,7 @@ const WithdrawComponent = () => {
                     onChange={(e) => setAcceptTerms(e.target.checked)}
                     className="mr-3 w-4 h-4 text-[#06b6d4] bg-[#1e1e1e] border-[#4b5563] rounded focus:ring-[#06b6d4] focus:ring-2"
                   />
-                  <label htmlFor="terms" className="text-sm text-[#9ca3af] font-medium">Entiendo y quiero continuar</label>
+                  <label htmlFor="terms" className="text-sm text-[#9ca3af] font-medium">{t('common:messages.confirmData')}</label>
                 </div>
                 
                 <button 

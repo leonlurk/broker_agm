@@ -11,9 +11,10 @@ import {
   RiUserStarLine
 } from "react-icons/ri";
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 
 const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
-    const { t } = useTranslation('dashboard');
+    const { t } = useTranslation(['dashboard', 'common']);
     const [expandedOptions, setExpandedOptions] = useState({
         Herramientas: false,
         Copytrading: false,
@@ -288,14 +289,28 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                 <div className={`mt-auto ${isMobile ? 'px-2' : 'px-4'}`}>
                     <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : 'my-4'}`}></div>
                     <button
-                        onClick={() => handleNavigation("Nueva Cuenta")}
+                        onClick={() => {
+                            if (!user || user?.kyc_status !== 'approved') {
+                                toast.error(t('common:kyc.verificationRequired'), {
+                                    duration: 4000,
+                                    position: 'top-right',
+                                    style: {
+                                        background: '#1f2937',
+                                        color: '#fff',
+                                        border: '1px solid #dc2626'
+                                    },
+                                    icon: '⚠️'
+                                });
+                            } else {
+                                handleNavigation("Nueva Cuenta");
+                            }
+                        }}
                         className={`flex items-center justify-center space-x-2 rounded-md w-full transition relative
                                    ${!user || user?.kyc_status !== 'approved' 
                                      ? 'bg-gray-600 opacity-50 cursor-not-allowed' 
                                      : 'bg-gradient-to-r from-[#0F7490] to-[#0A5A72] hover:opacity-90'}
                                    ${isMobile ? 'py-2.5 px-3 text-base' : 'py-4 px-4 text-lg'}`}
                         style={{ outline: 'none' }}
-                        disabled={!user || user?.kyc_status !== 'approved'}
                         title={!user ? 'Cargando información del usuario...' : user?.kyc_status !== 'approved' ? 'Completa tu verificación KYC para crear cuentas MT5' : ''}
                     >
                         {(!user || user?.kyc_status !== 'approved') && (

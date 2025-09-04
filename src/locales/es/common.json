@@ -73,6 +73,7 @@
     "noResults": "No se encontraron resultados",
     "confirmDelete": "¿Está seguro que desea eliminar?",
     "confirmAction": "¿Está seguro que desea continuar?",
+    "confirmData": "Entiendo y quiero continuar",
     "welcome": "Bienvenido",
     "goodbye": "Hasta pronto"
   },

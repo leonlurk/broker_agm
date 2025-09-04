@@ -172,7 +172,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     refreshAccounts
   } = useAccounts();
 
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
 
   // Determinar el estado inicial basado en los parámetros de navegación
   // para evitar el parpadeo de la doble navegación.
@@ -573,6 +573,19 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   }, [navigationParams, getAllAccounts]);
   
   const handleCreateAccount = () => {
+    if (userData?.kyc_status !== 'approved') {
+      toast.error(t('common:kyc.verificationRequired'), {
+        duration: 4000,
+        position: 'top-right',
+        style: {
+          background: '#1f2937',
+          color: '#fff',
+          border: '1px solid #dc2626'
+        },
+        icon: '⚠️'
+      });
+      return;
+    }
     setSelectedOption && setSelectedOption("Nueva Cuenta");
   };
 
@@ -683,7 +696,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 fechaISO: op.close_time || op.open_time,
                 instrumento: op.symbol || 'N/A',
                 bandera: getInstrumentIcon(op.symbol || 'N/A'),
-                tipo: op.type === 'BUY' ? t('trading.positions.types.buy') : op.type === 'SELL' ? t('trading.positions.types.sell') : op.type,
+                tipo: op.type === 'BUY' ? t('positions.types.buy') : op.type === 'SELL' ? t('positions.types.sell') : op.type,
                 lotaje: (op.volume || 0).toFixed(2),
                 stopLossFormatted: op.stop_loss ? parseFloat(op.stop_loss).toFixed(5) : '0.0',
                 takeProfitFormatted: op.take_profit ? parseFloat(op.take_profit).toFixed(5) : '0.0',
@@ -931,7 +944,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     })) : 
     // Si no hay datos históricos pero hay balance actual, mostrar una línea desde 0
     (currentSelectedAccount && currentSelectedAccount.balance > 0) ? [
-      { name: t('trading.charts.start'), value: 0 },
+      { name: t('trading:charts.start'), value: 0 },
       { name: t('trading:charts.current'), value: currentSelectedAccount.balance }
     ] : 
     // Si no hay datos, mostrar todo en 0
@@ -1097,7 +1110,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         tiempoCierre: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
         instrumento: op.symbol,
         bandera: getInstrumentIcon(op.symbol),
-        tipo: op.operation_type === 'BUY' ? t('trading.positions.types.buy') : t('trading.positions.types.sell'),
+        tipo: op.operation_type === 'BUY' ? t('positions.types.buy') : t('positions.types.sell'),
         lotaje: parseFloat(op.volume).toFixed(2),
         stopLoss: op.stop_loss ? parseFloat(op.stop_loss).toFixed(5) : 'N/A',
         stopLossPct: op.stop_loss ? 
@@ -1130,7 +1143,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'EURUSD',
       bandera: '/EU.svg',
-      tipo: t('trading.positions.types.buy'),
+      tipo: t('positions.types.buy'),
       lotaje: '1',
       stopLoss: '$95,00',
       stopLossPct: '5.0%',
@@ -1159,7 +1172,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'XAUUSD',
       bandera: '/US.svg',
-      tipo: t('trading.positions.types.sell'),
+      tipo: t('positions.types.sell'),
       lotaje: '1',
       stopLoss: '$95,00',
       stopLossPct: '5.0%',
@@ -1189,7 +1202,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'GBPUSD',
       bandera: '/US.svg',
-      tipo: t('trading.positions.types.buy'),
+      tipo: t('positions.types.buy'),
       lotaje: '2',
       stopLoss: '$120,00',
       stopLossPct: '4.0%',
@@ -1218,7 +1231,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'USDJPY',
       bandera: '/US.svg',
-      tipo: t('trading.positions.types.sell'),
+      tipo: t('positions.types.sell'),
       lotaje: '1.5',
       stopLoss: '$140,00',
       stopLossPct: '6.0%',
@@ -1248,7 +1261,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'EURUSD',
       bandera: '/EU.svg',
-      tipo: t('trading.positions.types.sell'),
+      tipo: t('positions.types.sell'),
       lotaje: '1.2',
       stopLoss: '$85,00',
       stopLossPct: '4.5%',
@@ -1277,7 +1290,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'XAUUSD',
       bandera: '/US.svg',
-      tipo: t('trading.positions.types.buy'),
+      tipo: t('positions.types.buy'),
       lotaje: '0.8',
       stopLoss: '$180,00',
       stopLossPct: '7.0%',
@@ -1307,7 +1320,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'GBPUSD',
       bandera: '/US.svg',
-      tipo: t('trading.positions.types.sell'),
+      tipo: t('positions.types.sell'),
       lotaje: '1.8',
       stopLoss: '$160,00',
       stopLossPct: '6.5%',
@@ -1336,7 +1349,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'USDJPY',
       bandera: '/US.svg',
-      tipo: t('trading.positions.types.buy'),
+      tipo: t('positions.types.buy'),
       lotaje: '1.1',
       stopLoss: '$110,00',
       stopLossPct: '5.5%',
@@ -1366,7 +1379,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'EURUSD',
       bandera: '/EU.svg',
-      tipo: t('trading.positions.types.buy'),
+      tipo: t('positions.types.buy'),
       lotaje: '1.3',
       stopLoss: '$100,00',
       stopLossPct: '5.0%',
@@ -1395,7 +1408,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       tiempoCierre: '00:30:23',
       instrumento: 'XAUUSD',
       bandera: '/US.svg',
-      tipo: t('trading.positions.types.sell'),
+      tipo: t('positions.types.sell'),
       lotaje: '0.6',
       stopLoss: '$200,00',
       stopLossPct: '8.0%',
@@ -1695,13 +1708,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     if (currentSelectedAccount && currentSelectedAccount.balance > 0) {
       const now = new Date();
       return [
-        { date: t('trading.charts.start'), value: 0 },
+        { date: t('trading:charts.start'), value: 0 },
         { date: now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }), value: currentSelectedAccount.balance }
       ];
     }
     
     // Sin datos
-    return [{ date: t('trading.charts.noData'), value: 0 }];
+    return [{ date: t('trading:charts.noData'), value: 0 }];
   };
   
   // Función anterior renombrada para no perder funcionalidad
@@ -2017,7 +2030,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       const colors = ['#06b6d4', '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
       
       return realInstruments.distribution.map((item, index) => ({
-        name: item.symbol || item.name || t('trading.charts.unknown'),
+        name: item.symbol || item.name || t('trading:charts.unknown'),
         value: item.percentage || 0,
         color: colors[index % colors.length],
         ganancia: item.profit || 0,
@@ -2034,7 +2047,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     if (dataToProcess.length === 0) {
       return [
         {
-          name: t('trading.charts.noOperations'),
+          name: t('trading:charts.noOperations'),
           value: 100,
           color: '#4a5568',
           ganancia: 0,
@@ -2064,7 +2077,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     if (totalOperaciones === 0) {
       return [
         {
-          name: t('trading.charts.noOperations'),
+          name: t('trading:charts.noOperations'),
           value: 100,
           color: '#4a5568',
           ganancia: 0,
@@ -2214,7 +2227,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Función para renderizar las credenciales MT5 en móvil como tarjetas
   const renderMobileCredentials = (selectedAccount) => {
     const credentials = [
-      { label: t('trading.accounts.fields.server'), value: selectedAccount.server || 'AlphaGlobalMarket-Server', field: 'Server' },
+      { label: t('trading:accounts.fields.server'), value: selectedAccount.server || 'AlphaGlobalMarket-Server', field: 'Server' },
       { label: t('accounts.fields.masterPassword'), value: selectedAccount.master_password || selectedAccount.mt5_password || '••••••••', field: 'Contraseña Master', isPassword: true, showKey: 'master' },
       { label: t('accounts.fields.accountNumber'), value: selectedAccount.account_number, field: 'Número de Cuenta' },
       { label: t('accounts.fields.investorPasswordReadOnly'), value: selectedAccount.investor_password || selectedAccount.investorPassword, field: 'Contraseña Investor', isPassword: true, showKey: 'investor', canConfigure: true }
@@ -2242,7 +2255,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <button
                 onClick={() => togglePasswordVisibility(cred.showKey)}
                 className="p-1 hover:bg-[#2a2a2a] rounded"
-                title={showPasswords[cred.showKey] ? t('trading.accounts.actions.hidePassword') : t('trading.accounts.actions.showPassword')}
+                title={showPasswords[cred.showKey] ? t('trading:accounts.actions.hidePassword') : t('trading:accounts.actions.showPassword')}
               >
                 {showPasswords[cred.showKey] ? (
                   <EyeOff size={12} className="text-gray-400 hover:text-white" />
@@ -2281,8 +2294,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           {/* Create Account Button */}
           <button 
             onClick={handleCreateAccount}
-            className="w-full py-3 px-4 bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white rounded-lg hover:opacity-90 transition flex items-center justify-center mb-4 sm:mb-6 text-sm sm:text-base"
+            className={`relative w-full py-3 px-4 bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white rounded-lg transition flex items-center justify-center mb-4 sm:mb-6 text-sm sm:text-base ${
+              userData?.kyc_status !== 'approved' ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
+            }`}
           >
+            {userData?.kyc_status !== 'approved' && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                <span className="text-black text-xs font-bold">!</span>
+              </span>
+            )}
             + {t('accounts.create')}
           </button>
           
@@ -2381,7 +2401,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   {/* Account Info */}
                   <div className={isMobile ? "text-center" : ""}>
                       <h3 className="text-base sm:text-lg font-bold text-white mb-1">
-                        {account.account_name || t('trading.accounts.noName')} 
+                        {account.account_name || t('trading:accounts.noName')} 
                         {isMobile && <br />}
                         <span className="text-sm sm:text-base">(ID: {account.account_number || 'N/A'})</span>
                       </h3>
@@ -2524,8 +2544,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           {/* Create Account Button */}
           <button 
             onClick={handleCreateAccount}
-            className="w-full py-3 px-4 bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white rounded-lg hover:opacity-90 transition flex items-center justify-center mb-4 sm:mb-6 text-sm sm:text-base"
+            className={`relative w-full py-3 px-4 bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white rounded-lg transition flex items-center justify-center mb-4 sm:mb-6 text-sm sm:text-base ${
+              userData?.kyc_status !== 'approved' ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
+            }`}
           >
+            {userData?.kyc_status !== 'approved' && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                <span className="text-black text-xs font-bold">!</span>
+              </span>
+            )}
             + {t('accounts.create')}
           </button>
           
@@ -2591,7 +2618,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 onClick={() => setSelectedAccountId(account.id)}
               >
                   <div className="font-medium text-white text-sm sm:text-base">
-                    {account.account_name || t('trading.accounts.noName')} 
+                    {account.account_name || t('trading:accounts.noName')} 
                     {isMobile && <br />}
                     <span className="text-xs sm:text-sm">(ID: {account.account_number || 'N/A'})</span>
                   </div>
@@ -2616,7 +2643,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   if (!selectedAccount) {
                     return (
                       <div className="text-center text-gray-400 py-8">
-                        <p>{t('trading.accounts.messages.accountNotFound')}</p>
+                        <p>{t('trading:accounts.messages.accountNotFound')}</p>
                       </div>
                     );
                   }
@@ -2711,7 +2738,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         <button
                           onClick={() => copyToClipboard(selectedAccount.server || 'AlphaGlobalMarket-Server', 'Server')}
                           className={`${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity p-1 hover:bg-[#2a2a2a] rounded`}
-                          title={t('trading.accounts.actions.copyServer')}
+                          title={t('trading:accounts.actions.copyServer')}
                         >
                           {copiedField === 'Server' ? (
                             <Check size={12} className="text-green-400" />
@@ -2733,7 +2760,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           <button
                             onClick={() => togglePasswordVisibility('master')}
                             className="p-1 hover:bg-[#2a2a2a] rounded"
-                            title={showPasswords.master ? t('trading.accounts.actions.hidePassword') : t('trading.accounts.actions.showPassword')}
+                            title={showPasswords.master ? t('trading:accounts.actions.hidePassword') : t('trading:accounts.actions.showPassword')}
                           >
                             {showPasswords.master ? (
                               <EyeOff size={14} className="text-gray-400 hover:text-white" />
@@ -2744,7 +2771,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           <button
                             onClick={() => copyToClipboard(selectedAccount.mt5_password || selectedAccount.master_password || '', 'Contraseña Master')}
                             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
-                            title={t('trading.accounts.actions.copyMasterPassword')}
+                            title={t('trading:accounts.actions.copyMasterPassword')}
                           >
                             {copiedField === 'Contraseña Master' ? (
                               <Check size={14} className="text-green-400" />
@@ -2764,7 +2791,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         <button
                           onClick={() => copyToClipboard(selectedAccount.account_number, 'Número de Cuenta')}
                           className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
-                          title={t('trading.accounts.actions.copyAccountNumber')}
+                          title={t('trading:accounts.actions.copyAccountNumber')}
                         >
                           {copiedField === 'Número de Cuenta' ? (
                             <Check size={14} className="text-green-400" />
@@ -2788,7 +2815,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                               <button
                                 onClick={() => togglePasswordVisibility('investor')}
                                 className="p-1 hover:bg-[#2a2a2a] rounded"
-                                title={showPasswords.investor ? t('trading.accounts.actions.hidePassword') : t('trading.accounts.actions.showPassword')}
+                                title={showPasswords.investor ? t('trading:accounts.actions.hidePassword') : t('trading:accounts.actions.showPassword')}
                               >
                                 {showPasswords.investor ? (
                                   <EyeOff size={14} className="text-gray-400 hover:text-white" />
@@ -2799,7 +2826,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                               <button
                                 onClick={() => copyToClipboard(selectedAccount.mt5_investor_password || selectedAccount.investorPassword || '', 'Contraseña Investor')}
                                 className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#2a2a2a] rounded"
-                                title={t('trading.accounts.actions.copyInvestorPassword')}
+                                title={t('trading:accounts.actions.copyInvestorPassword')}
                               >
                                 {copiedField === 'Contraseña Investor' ? (
                                   <Check size={14} className="text-green-400" />
@@ -2811,7 +2838,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           </>
                         ) : (
                           <div className="text-gray-500 font-medium">
-                            {t('trading.accounts.messages.notConfigured')}
+                            {t('trading:accounts.messages.notConfigured')}
                           </div>
                         )}
                       </div>
@@ -2826,8 +2853,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           ) : (
             <div className="bg-gradient-to-br from-[#2a2a2a] to-[#1e1e1e] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#333] flex items-center justify-center h-48 sm:h-64">
               <div className="text-center text-gray-400">
-                <h3 className="text-base sm:text-lg mb-2">{t('trading.accounts.messages.selectAccount')}</h3>
-                <p className="text-sm">{t('trading.accounts.messages.chooseAccount')}</p>
+                <h3 className="text-base sm:text-lg mb-2">{t('trading:accounts.messages.selectAccount')}</h3>
+                <p className="text-sm">{t('trading:accounts.messages.chooseAccount')}</p>
               </div>
             </div>
           )}
@@ -3273,7 +3300,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     domain={['dataMin - 100', 'dataMax + 100']}
                     width={isMobile ? 50 : 60}
                     tickFormatter={(value) => {
-                      if (benefitChartTab === t('trading.charts.drawdown')) {
+                      if (benefitChartTab === 'drawdown') {
                         return `${typeof value === 'number' ? value.toFixed(1) : 0}%`;
                       }
                       if (typeof value === 'number' && Math.abs(value) >= 1000) {
@@ -3298,21 +3325,32 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     }}
                     labelStyle={{ color: '#ffffff' }}
                     itemStyle={{ color: '#ffffff' }}
-                    formatter={(value) => {
-                      const unit = benefitChartTab === t('trading.charts.drawdown') ? '%' : '$';
+                    formatter={(value, name, props) => {
+                      const unit = benefitChartTab === 'drawdown' ? '%' : '$';
                       const numValue = typeof value === 'number' ? value : 0;
-                      const formattedValue = benefitChartTab === t('trading.charts.drawdown') 
+                      const formattedValue = benefitChartTab === 'drawdown' 
                         ? (typeof numValue === 'number' ? numValue.toFixed(2) : '0') 
                         : (typeof numValue === 'number' ? numValue.toLocaleString() : '0');
-                      return [`${unit}${formattedValue}`, benefitChartTab];
+                      
+                      // Traducir el label según el tab actual
+                      let translatedLabel = '';
+                      if (benefitChartTab === 'benefitTotal') {
+                        translatedLabel = t('trading:charts.totalProfit');
+                      } else if (benefitChartTab === 'balance') {
+                        translatedLabel = t('trading:accounts.fields.balance');
+                      } else if (benefitChartTab === 'drawdown') {
+                        translatedLabel = t('trading:charts.drawdown');
+                      }
+                      
+                      return [translatedLabel, `${unit}${formattedValue}`];
                     }}
                     labelFormatter={(label) => {
                       // Formatear la fecha de manera más legible
                       if (typeof label === 'string' && label.includes('-')) {
                         const date = new Date(label);
-                        return `${t('trading.charts.date')}: ${date.toLocaleDateString()}`;
+                        return `${t('trading:charts.date')}: ${date.toLocaleDateString()}`;
                       }
-                      return `${t('trading.charts.date')}: ${label}`;
+                      return `${t('trading:charts.date')}: ${label}`;
                     }}
                   />
                   <Line 
@@ -3349,7 +3387,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       : (realInstruments === null ? dynamicInstrumentsData : []);
                     
                     // Si no hay datos, mostrar mensaje profesional
-                    if (dataToUse.length === 0 || (dataToUse.length === 1 && dataToUse[0].name === t('trading.charts.noOperations'))) {
+                    if (dataToUse.length === 0 || (dataToUse.length === 1 && dataToUse[0].name === t('trading:charts.noOperations'))) {
                       return (
                         <div className="flex flex-col justify-center h-full">
                           <div className="p-4 bg-[#1a1a1a] rounded-lg border border-[#333]">
@@ -3379,7 +3417,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       : (realInstruments === null ? dynamicInstrumentsData : []);
                     
                     // Si no hay datos o es "Sin operaciones", mostrar mensaje profesional
-                    if (dataToUse.length === 0 || (dataToUse.length === 1 && dataToUse[0].name === t('trading.charts.noOperations'))) {
+                    if (dataToUse.length === 0 || (dataToUse.length === 1 && dataToUse[0].name === t('trading:charts.noOperations'))) {
                       return (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
@@ -3921,7 +3959,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   value={investorPassword}
                   onChange={(e) => setInvestorPassword(e.target.value)}
                   className="w-full bg-[#0f0f0f] border border-[#333] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                  placeholder={t('trading.accounts.passwordPlaceholder')}
+                  placeholder={t('trading:accounts.passwordPlaceholder')}
                   disabled={isUpdatingPassword}
                 />
               </div>
@@ -3937,7 +3975,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full bg-[#0f0f0f] border border-[#333] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                  placeholder={t('trading.accounts.confirmPasswordPlaceholder')}
+                  placeholder={t('trading:accounts.confirmPasswordPlaceholder')}
                   disabled={isUpdatingPassword}
                 />
               </div>

@@ -278,7 +278,16 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   const handleDeposit = () => {
     // Verificar KYC antes de permitir depositar
     if (user?.kyc_status !== 'approved') {
-      toast.error(t('common:kyc.depositWithdrawBlocked'));
+      toast.error(t('common:kyc.depositWithdrawBlocked'), {
+        duration: 4000,
+        position: 'top-right',
+        style: {
+          background: '#1f2937',
+          color: '#fff',
+          border: '1px solid #dc2626'
+        },
+        icon: '⚠️'
+      });
       return;
     }
     
@@ -292,7 +301,16 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   const handleWithdraw = () => {
     // Verificar KYC antes de permitir retirar
     if (user?.kyc_status !== 'approved') {
-      toast.error(t('common:kyc.depositWithdrawBlocked'));
+      toast.error(t('common:kyc.depositWithdrawBlocked'), {
+        duration: 4000,
+        position: 'top-right',
+        style: {
+          background: '#1f2937',
+          color: '#fff',
+          border: '1px solid #dc2626'
+        },
+        icon: '⚠️'
+      });
       return;
     }
     
@@ -306,7 +324,16 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   const handleTransfer = () => {
     // Verificar KYC antes de permitir transferir
     if (user?.kyc_status !== 'approved') {
-      toast.error(t('common:kyc.depositWithdrawBlocked'));
+      toast.error(t('common:kyc.depositWithdrawBlocked'), {
+        duration: 4000,
+        position: 'top-right',
+        style: {
+          background: '#1f2937',
+          color: '#fff',
+          border: '1px solid #dc2626'
+        },
+        icon: '⚠️'
+      });
       return;
     }
     
@@ -446,7 +473,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
               <h2 className="text-xl md:text-3xl font-bold mb-3">{t('common:home.welcomeTitle')}</h2>
               <p className="text-base md:text-lg mb-4">{t('common:home.welcomeSubtitle')}</p>
               <button 
-                className={`bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-4 rounded-md transition ${
+                className={`relative bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-4 rounded-md transition ${
                   user?.kyc_status !== 'approved' 
                     ? 'opacity-50 cursor-not-allowed' 
                     : 'hover:opacity-90'
@@ -456,11 +483,24 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                   if (user?.kyc_status === 'approved') {
                     setSelectedOption && setSelectedOption(t('common:home.newAccount'));
                   } else {
-                    toast.error(t('common:kyc.verificationRequired'));
+                    toast.error(t('common:kyc.featureBlocked'), {
+                      duration: 4000,
+                      position: 'top-right',
+                      style: {
+                        background: '#1f2937',
+                        color: '#fff',
+                        border: '1px solid #dc2626'
+                      },
+                      icon: '⚠️'
+                    });
                   }
                 }}
-                disabled={user?.kyc_status !== 'approved'}
               >
+                {user?.kyc_status !== 'approved' && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                    <span className="text-black text-xs font-bold">!</span>
+                  </span>
+                )}
                 {t('common:home.getStarted')}
               </button>
             </div>
@@ -534,40 +574,55 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
           <div className="flex flex-col gap-3 w-full md:w-auto">
              <button
                onClick={handleDeposit}
-               className={`bg-[#2a2a2a] border py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base ${
+               className={`relative bg-[#2a2a2a] border py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base ${
                  selectedAccount && user?.kyc_status === 'approved'
                    ? 'border-cyan-500/50 hover:border-cyan-500/80 text-white hover:bg-[#333] cursor-pointer' 
                    : 'border-gray-600/50 text-gray-500 cursor-not-allowed opacity-50'
                }`}
                style={{ outline: 'none' }}
-               disabled={!selectedAccount || user?.kyc_status !== 'approved'}
+               disabled={!selectedAccount}
              >
+               {user?.kyc_status !== 'approved' && (
+                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                   <span className="text-black text-xs font-bold">!</span>
+                 </span>
+               )}
                {t('wallet:deposit.title')}
                <ArrowDown size={16} className="transform -rotate-90"/>
              </button>
              <button
                onClick={handleWithdraw}
-               className={`bg-[#2a2a2a] border py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base ${
+               className={`relative bg-[#2a2a2a] border py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base ${
                  selectedAccount && user?.kyc_status === 'approved'
                    ? 'border-cyan-500/50 hover:border-cyan-500/80 text-gray-300 hover:text-white hover:bg-[#333] cursor-pointer' 
                    : 'border-gray-600/50 text-gray-500 cursor-not-allowed opacity-50'
                }`}
                style={{ outline: 'none' }}
-               disabled={!selectedAccount || user?.kyc_status !== 'approved'}
+               disabled={!selectedAccount}
              >
+               {user?.kyc_status !== 'approved' && (
+                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                   <span className="text-black text-xs font-bold">!</span>
+                 </span>
+               )}
                {t('wallet:withdraw.title')}
                 <ArrowUp size={16} className="transform -rotate-90"/>
              </button>
              <button
                onClick={handleTransfer}
-               className={`bg-[#2a2a2a] border py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base ${
+               className={`relative bg-[#2a2a2a] border py-2.5 px-6 rounded-lg transition flex items-center justify-center gap-2 text-sm md:text-base ${
                  selectedAccount && user?.kyc_status === 'approved'
                    ? 'border-cyan-500/50 hover:border-cyan-500/80 text-gray-300 hover:text-white hover:bg-[#333] cursor-pointer' 
                    : 'border-gray-600/50 text-gray-500 cursor-not-allowed opacity-50'
                }`}
                style={{ outline: 'none' }}
-               disabled={!selectedAccount || user?.kyc_status !== 'approved'}
+               disabled={!selectedAccount}
              >
+               {user?.kyc_status !== 'approved' && (
+                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                   <span className="text-black text-xs font-bold">!</span>
+                 </span>
+               )}
                {t('wallet:transfer.title')}
                <SlidersHorizontal size={16} className="transform rotate-90"/>
              </button>

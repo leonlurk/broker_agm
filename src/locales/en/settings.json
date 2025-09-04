@@ -382,6 +382,7 @@
     "holderName": "Account Holder Name",
     "holderCuit": "Holder's CUIT/CUIL",
     "cbuCvu": "CBU/CVU",
+    "add": "Add",
     "addMethod": "Add Method",
     "addingMethod": "Adding withdrawal method...",
     "methodAddedSuccess": "Withdrawal method added successfully",

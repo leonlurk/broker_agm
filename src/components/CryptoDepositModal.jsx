@@ -156,8 +156,8 @@ const CryptoDepositModal = ({
   };
 
   const getMinimumDeposit = () => {
-    // Mínimo de $100 USD para todos los depósitos
-    return 100;
+    // Mínimo de $50 USD para todos los depósitos
+    return 50;
   };
 
   if (!isOpen) return null;

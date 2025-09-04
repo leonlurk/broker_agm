@@ -55,7 +55,7 @@
     "selectMethod": "Método de Pago",
     "selectCoin": "Seleccionar moneda",
     "amount": "Monto",
-    "minAmount": "Monto mínimo: $100 USD",
+    "minAmount": "Monto mínimo: {{amount}}",
     "maxAmount": "Monto máximo: {{amount}}",
     "importantNote": "Asegúrese de que los fondos provienen de una fuente legítima.",
     "success": "Depósito de ${{amount}} USD iniciado correctamente. Le notificaremos cuando sea procesado.",
@@ -82,7 +82,7 @@
     "button": "Realizar Depósito",
     "processing": "Procesando...",
     "errors": {
-      "minAmount": "El monto mínimo para depósitos es $100 USD",
+      "minAmount": "El monto mínimo para depósitos es $50 USD",
       "maxAmount": "El monto excede el máximo permitido",
       "invalidAmount": "Monto inválido",
       "selectAccount": "Selecciona una cuenta",

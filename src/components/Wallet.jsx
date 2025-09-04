@@ -70,10 +70,12 @@ const Wallet = () => {
   const [newMethodAlias, setNewMethodAlias] = useState('');
   const [newMethodAddress, setNewMethodAddress] = useState('');
   const [newMethodNetwork, setNewMethodNetwork] = useState('tron_trc20');
+  const [showNetworkDropdown, setShowNetworkDropdown] = useState(false);
   const [addressError, setAddressError] = useState('');
   const dropdownRef = useRef(null);
   const transferDropdownRef = useRef(null);
   const withdrawMethodDropdownRef = useRef(null);
+  const networkDropdownRef = useRef(null);
 
   // Estados para historial de transacciones
   const [transactions, setTransactions] = useState([]);
@@ -373,6 +375,7 @@ const Wallet = () => {
   const handleSelectWithdrawMethod = (method) => {
     setSelectedWithdrawMethod(method);
     setShowWithdrawMethodDropdown(false);
+    setShowAddMethodForm(false); // Ocultar formulario de agregar método si está abierto
   };
   
   // Validar dirección crypto
@@ -1056,14 +1059,65 @@ const Wallet = () => {
                     
                     <div>
                       <label className="block text-sm text-[#9ca3af] mb-1">{t('settings:paymentMethods.network')}</label>
-                      <select
-                        value={newMethodNetwork}
-                        onChange={(e) => setNewMethodNetwork(e.target.value)}
-                        className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#4b5563] rounded-lg text-white text-sm focus:border-[#06b6d4] focus:outline-none"
-                      >
-                        <option value="tron_trc20">{t('settings:paymentMethods.networks.tetherTron')}</option>
-                        <option value="ethereum_erc20">{t('settings:paymentMethods.networks.tetherEthereum')}</option>
-                      </select>
+                      <div className="relative" ref={networkDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => setShowNetworkDropdown(!showNetworkDropdown)}
+                          className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#4b5563] rounded-lg text-white text-sm focus:border-[#06b6d4] focus:outline-none flex items-center justify-between"
+                        >
+                          <span>
+                            {newMethodNetwork === 'tron_trc20' 
+                              ? t('settings:paymentMethods.networks.tetherTron')
+                              : t('settings:paymentMethods.networks.tetherEthereum')}
+                          </span>
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        
+                        {showNetworkDropdown && (
+                          <div className="absolute top-full left-0 mt-1 w-full bg-[#232323] border border-[#334155] rounded-lg shadow-xl z-50">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewMethodNetwork('tron_trc20');
+                                setShowNetworkDropdown(false);
+                                // Limpiar error si la dirección actual no es válida para la nueva red
+                                if (newMethodAddress && !validateCryptoAddress(newMethodAddress, 'tron_trc20')) {
+                                  setNewMethodAddress('');
+                                  setAddressError('');
+                                }
+                              }}
+                              className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                                newMethodNetwork === 'tron_trc20' 
+                                  ? 'bg-[#374151] text-white' 
+                                  : 'text-gray-300 hover:bg-[#374151] hover:text-white'
+                              }`}
+                            >
+                              {t('settings:paymentMethods.networks.tetherTron')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewMethodNetwork('ethereum_erc20');
+                                setShowNetworkDropdown(false);
+                                // Limpiar error si la dirección actual no es válida para la nueva red
+                                if (newMethodAddress && !validateCryptoAddress(newMethodAddress, 'ethereum_erc20')) {
+                                  setNewMethodAddress('');
+                                  setAddressError('');
+                                }
+                              }}
+                              className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                                newMethodNetwork === 'ethereum_erc20' 
+                                  ? 'bg-[#374151] text-white' 
+                                  : 'text-gray-300 hover:bg-[#374151] hover:text-white'
+                              }`}
+                            >
+                              {t('settings:paymentMethods.networks.tetherEthereum')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     <div>
@@ -1153,7 +1207,7 @@ const Wallet = () => {
                   className="mr-3 w-4 h-4 text-[#06b6d4] bg-[#1e1e1e] border-[#4b5563] rounded focus:ring-[#06b6d4] focus:ring-2"
                 />
                 <label htmlFor="terms" className="text-[#9ca3af] text-sm">
-                  {t('common.confirmData')}
+                  {t('common:messages.confirmData')}
                 </label>
               </div>
               
