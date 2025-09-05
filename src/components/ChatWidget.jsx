@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Send, Minimize2, X, Bot, User, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Minimize2, X, Bot, User, Clock, CheckCircle, AlertCircle, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,6 +21,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentSection, setCurrentSection] = useState('messages'); // 'messages', 'help'
+  const [messageFeedback, setMessageFeedback] = useState({});
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -76,14 +77,41 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
     }
   };
 
+  // Manejar feedback de mensajes
+  const handleFeedback = (messageId, isHelpful) => {
+    setMessageFeedback(prev => ({
+      ...prev,
+      [messageId]: isHelpful
+    }));
+    
+    // Guardar feedback en localStorage
+    const feedbackData = {
+      messageId,
+      isHelpful,
+      timestamp: new Date().toISOString()
+    };
+    
+    const existingFeedback = JSON.parse(localStorage.getItem('agm_chat_feedback') || '[]');
+    existingFeedback.push(feedbackData);
+    localStorage.setItem('agm_chat_feedback', JSON.stringify(existingFeedback));
+    
+    // Si no fue útil, ofrecer alternativas
+    if (!isHelpful) {
+      toast.info('Gracias por tu feedback. ¿Necesitas hablar con un asesor humano?');
+    } else {
+      toast.success('¡Gracias por tu feedback!');
+    }
+  };
+
   const renderMessage = (message) => {
     const isUser = message.sender === 'user';
-    const isAI = message.sender === 'alpha';
+    const isAI = message.sender === 'flofy' || message.sender === 'alpha';
     const isAsesor = message.sender === 'asesor';
     const isSystem = message.sender === 'system';
 
     return (
-      <div key={message.id} className={`flex mb-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
+      <React.Fragment key={message.id}>
+        <div className={`flex mb-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
         {/* Avatar */}
         {!isUser && (
           <div className="flex-shrink-0 mr-3">
@@ -137,6 +165,40 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
           </div>
         )}
       </div>
+      
+      {/* Feedback buttons para mensajes de IA */}
+      {isAI && !messageFeedback[message.id] && (
+        <div className="flex gap-2 ml-11 mt-1 mb-2">
+          <button
+            onClick={() => handleFeedback(message.id, true)}
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-green-100 rounded-full text-gray-600 hover:text-green-600 transition-colors"
+            title="Respuesta útil"
+          >
+            <ThumbsUp size={12} />
+            <span>Útil</span>
+          </button>
+          <button
+            onClick={() => handleFeedback(message.id, false)}
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-red-100 rounded-full text-gray-600 hover:text-red-600 transition-colors"
+            title="Respuesta no útil"
+          >
+            <ThumbsDown size={12} />
+            <span>No útil</span>
+          </button>
+        </div>
+      )}
+      
+      {/* Mostrar feedback dado */}
+      {messageFeedback[message.id] !== undefined && (
+        <div className="flex items-center gap-1 ml-11 mt-1 mb-2 text-xs text-gray-500">
+          {messageFeedback[message.id] ? (
+            <><ThumbsUp size={12} className="text-green-500" /> Marcaste como útil</>
+          ) : (
+            <><ThumbsDown size={12} className="text-red-500" /> Marcaste como no útil</>
+          )}
+        </div>
+      )}
+      </React.Fragment>
     );
   };
 
@@ -241,13 +303,15 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
           </button>
         </div>
         
-        {/* Quick Actions */}
+        {/* Quick Actions - Mejoradas con más opciones */}
         <div className="flex flex-wrap gap-1 mt-2">
           {[
             'Crear cuenta demo',
             'Hacer depósito',
             'Verificar KYC',
-            'Instrumentos disponibles'
+            'Cómo retirar',
+            'Sistema PAMM',
+            'Copy Trading'
           ].map((action) => (
             <button
               key={action}

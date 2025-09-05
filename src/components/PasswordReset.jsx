@@ -25,42 +25,50 @@ const PasswordReset = () => {
 
   useEffect(() => {
     const checkForEmailRecovery = async () => {
-      // Debug logs
-      console.log('Full URL:', window.location.href);
-      console.log('Hash:', window.location.hash);
-      
-      // Verificar si viene del email con tokens
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const type = hashParams.get('type');
-      
-      console.log('Access Token:', accessToken);
-      console.log('Type:', type);
-      
-      // IMPORTANTE: Supabase puede procesar el hash y luego redirigir
-      // Así que también verificamos si hay una sesión activa
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('Current session:', session);
-      
-      if ((type === 'recovery' && accessToken) || (session && session.user)) {
-        // Viene del email de recuperación O hay sesión activa
-        console.log('Email recovery detected!');
-        setIsEmailRecovery(true);
-        setIsValidSession(true);
-        setValidCode(true); // Para habilitar el botón
-      } else {
-        // Flujo normal con código
-        console.log('Normal flow - checking for code');
-        const urlCode = searchParams.get('code');
-        if (urlCode) {
-          setCode(urlCode);
-          validateCode(urlCode);
+      try {
+        // Debug logs
+        console.log('Full URL:', window.location.href);
+        console.log('Hash:', window.location.hash);
+        console.log('Pathname:', window.location.pathname);
+        
+        // Verificar si viene del email con tokens en el hash
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const type = hashParams.get('type');
+        
+        // También verificar si ya hay una sesión activa (Supabase puede haber procesado el token)
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('Current session:', session);
+        console.log('Session error:', error);
+        
+        // Verificar si estamos en la ruta de reset password
+        const isOnResetRoute = window.location.pathname.includes('reset-password');
+        
+        // Si hay token de recuperación O sesión activa Y estamos en la página de reset
+        if ((type === 'recovery' && accessToken) || (session && isOnResetRoute)) {
+          console.log('Email recovery flow detected!');
+          setIsEmailRecovery(true);
+          setIsValidSession(true);
+          setValidCode(true); // Para habilitar el formulario
         } else {
-          // Si no hay nada, mostrar como si necesitara código
-          setIsEmailRecovery(false);
+          // Flujo normal con código de verificación
+          console.log('Normal verification code flow');
+          const urlCode = searchParams.get('code');
+          if (urlCode) {
+            setCode(urlCode);
+            validateCode(urlCode);
+          } else {
+            setIsEmailRecovery(false);
+            setIsValidSession(false);
+          }
         }
+      } catch (error) {
+        console.error('Error checking email recovery:', error);
+        setIsEmailRecovery(false);
+        setIsValidSession(false);
+      } finally {
+        setCheckingSession(false);
       }
-      setCheckingSession(false);
     };
 
     checkForEmailRecovery();
@@ -132,7 +140,8 @@ const PasswordReset = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validCode) {
+    // Solo validar código si no es recuperación desde email
+    if (!isEmailRecovery && !validCode) {
       toast.error(t('resetPassword.errors.tokenInvalid'));
       return;
     }
@@ -205,7 +214,11 @@ const PasswordReset = () => {
         <div className="bg-[#232323] border border-[#333] rounded-3xl p-8 shadow-2xl">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">{t('resetPassword.title')}</h1>
-            <p className="text-gray-400">{t('resetPassword.description')}</p>
+            <p className="text-gray-400">
+              {isEmailRecovery 
+                ? t('resetPassword.enterNewPassword', 'Ingresa tu nueva contraseña')
+                : t('resetPassword.description')}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -237,8 +250,8 @@ const PasswordReset = () => {
               </div>
             )}
 
-            {/* Nueva contraseña */}
-            {validCode && (
+            {/* Nueva contraseña - Mostrar si es recuperación desde email O si el código es válido */}
+            {(isEmailRecovery || validCode) && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -319,7 +332,7 @@ const PasswordReset = () => {
             {/* Botón de envío */}
             <button
               type="submit"
-              disabled={loading || !isValidSession || !allRequirementsMet || newPassword !== confirmPassword}
+              disabled={loading || (!isEmailRecovery && !isValidSession) || !allRequirementsMet || newPassword !== confirmPassword}
               className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (

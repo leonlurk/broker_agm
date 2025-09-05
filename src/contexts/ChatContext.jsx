@@ -1,7 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+// Usar el servicio mejorado si está disponible, si no usar el original
+import enhancedChatService from '../services/enhancedChatService';
 import chatService from '../services/chatService';
 import { logger } from '../utils/logger';
+
+// Decidir qué servicio usar
+const activeChatService = enhancedChatService || chatService;
 
 const ChatContext = createContext();
 
@@ -31,7 +36,7 @@ export const ChatProvider = ({ children }) => {
   const initializeChatService = async () => {
     try {
       setConnectionStatus('connecting');
-      await chatService.initialize();
+      await activeChatService.initialize();
       
       if (currentUser) {
         const userId = currentUser.id || currentUser.uid;
@@ -41,7 +46,7 @@ export const ChatProvider = ({ children }) => {
         await loadConversationHistory(userId);
         
         // Check human control status
-        const humanControlStatus = await chatService.checkHumanControl(userId);
+        const humanControlStatus = await activeChatService.checkHumanControl(userId);
         setIsHumanControlled(humanControlStatus);
       }
       
@@ -56,7 +61,7 @@ export const ChatProvider = ({ children }) => {
 
   const loadConversationHistory = async (userId) => {
     try {
-      const result = await chatService.getConversationHistory(userId);
+      const result = await activeChatService.getConversationHistory(userId);
       
       if (result.success) {
         const conversationId = `conversation_${userId}`;
@@ -101,7 +106,7 @@ export const ChatProvider = ({ children }) => {
       });
 
       // Process message through chat service
-      const result = await chatService.processUserMessage(userId, message, userData);
+      const result = await activeChatService.processUserMessage(userId, message, userData);
 
       if (result.success) {
         // Update conversation with real message IDs and AI response
@@ -169,7 +174,7 @@ export const ChatProvider = ({ children }) => {
     const newControlStatus = !isHumanControlled;
 
     try {
-      const result = await chatService.toggleHumanControl(userId, newControlStatus);
+      const result = await activeChatService.toggleHumanControl(userId, newControlStatus);
       
       if (result.success) {
         setIsHumanControlled(newControlStatus);
