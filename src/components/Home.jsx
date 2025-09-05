@@ -155,7 +155,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                   onSettingsClick && onSettingsClick(true, true);
                 }
               }}
-              className={`w-full ${config.buttonColors} text-black font-semibold py-2 px-4 rounded-lg transition-colors ${config.disabled ? 'opacity-75' : ''}`}
+              className={`w-full ${config.buttonColors} text-white font-semibold py-2 px-4 rounded-lg transition-colors ${config.disabled ? 'opacity-75' : ''}`}
               disabled={config.disabled}
             >
               {config.buttonText}

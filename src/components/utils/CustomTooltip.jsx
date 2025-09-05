@@ -46,7 +46,7 @@ const CustomTooltip = ({ content, children, position = 'auto' }) => {
         transform scale-95 group-hover:scale-100
         transition-all duration-200 ease-in-out
         pointer-events-none 
-        z-50
+        z-[9999]
         origin-right
       `
     : `
@@ -64,7 +64,7 @@ const CustomTooltip = ({ content, children, position = 'auto' }) => {
         transform scale-95 group-hover:scale-100
         transition-all duration-200 ease-in-out
         pointer-events-none 
-        z-50
+        z-[9999]
         origin-left
       `;
       

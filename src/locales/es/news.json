@@ -1,0 +1,56 @@
+{
+  "title": "Noticias Económicas",
+  "marketClosed": "Mercado Cerrado",
+  "today": "El día de hoy",
+  "showingLastFriday": "Mostrando datos del último viernes",
+  "filters": {
+    "currencyCountry": "Filtro de Moneda/País",
+    "all": "Todos",
+    "none": "Ninguno",
+    "impact": "Filtro de Impacto",
+    "visibility": "Filtro de Visibilidad",
+    "holidays": "Feriados",
+    "low": "Bajo",
+    "medium": "Medio",
+    "high": "Alto",
+    "hidePastNews": "Ocultar noticias pasadas",
+    "showRestrictedOnly": "Mostrar solo eventos restringidos"
+  },
+  "table": {
+    "description": "Descripción",
+    "instrument": "Instrumento",
+    "date": "Fecha",
+    "actual": "Actual",
+    "forecast": "Pronóstico",
+    "previous": "Previo",
+    "action": "Acción",
+    "restrictedEvent": "Evento Restringido",
+    "expired": "Expirado",
+    "addToCalendar": "Añadir al calendario"
+  },
+  "errors": {
+    "loadingError": "Error al cargar las noticias",
+    "noEvents": "No hay eventos económicos para mostrar"
+  },
+  "days": {
+    "monday": "Lunes",
+    "tuesday": "Martes",
+    "wednesday": "Miércoles",
+    "thursday": "Jueves",
+    "friday": "Viernes"
+  },
+  "months": {
+    "january": "Enero",
+    "february": "Febrero",
+    "march": "Marzo",
+    "april": "Abril",
+    "may": "Mayo",
+    "june": "Junio",
+    "july": "Julio",
+    "august": "Agosto",
+    "september": "Septiembre",
+    "october": "Octubre",
+    "november": "Noviembre",
+    "december": "Diciembre"
+  }
+}

@@ -940,7 +940,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     // Usar datos reales del histórico de balance
     realBalanceHistory.slice(-9).map((point, index) => ({
       name: point.date || `Día ${index + 1}`,
-      value: point.value || 0
+      value: point.value || 0,
+      timestamp: point.timestamp || point.date || null,
+      fullDate: point.date || point.timestamp || null
     })) : 
     // Si no hay datos históricos pero hay balance actual, mostrar una línea desde 0
     (currentSelectedAccount && currentSelectedAccount.balance > 0) ? [
@@ -2933,18 +2935,56 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           border: '1px solid #333',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          color: '#ffffff'
+                          color: '#ffffff',
+                          padding: '12px'
                         }}
-                        labelStyle={{ color: '#ffffff' }}
+                        labelStyle={{ color: '#9CA3AF', marginBottom: '8px' }}
                         itemStyle={{ color: '#ffffff' }}
                         formatter={(value) => [`$${value.toLocaleString()}`, t('trading:accounts.fields.balance')]}
-                        labelFormatter={(label) => {
-                          // Formatear la fecha de manera más legible
-                          if (typeof label === 'string' && label.includes('-')) {
-                            const date = new Date(label);
-                            return `${t('trading:charts.date')}: ${date.toLocaleDateString()}`;
+                        content={(props) => {
+                          const { active, payload, label } = props;
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            const dateStr = data.fullDate || data.timestamp || label;
+                            
+                            let formattedDate = '';
+                            let formattedTime = '';
+                            
+                            if (dateStr && typeof dateStr === 'string' && dateStr.includes('-')) {
+                              const date = new Date(dateStr);
+                              if (!isNaN(date.getTime())) {
+                                // Format date according to locale
+                                formattedDate = date.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                });
+                                
+                                // Format time
+                                formattedTime = date.toLocaleTimeString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                });
+                              }
+                            }
+                            
+                            return (
+                              <div style={{ backgroundColor: '#232323', border: '1px solid #333', borderRadius: '8px', padding: '12px' }}>
+                                {formattedDate && (
+                                  <div style={{ color: '#9CA3AF', marginBottom: '8px', fontSize: '12px' }}>
+                                    {formattedDate} {formattedTime && `• ${formattedTime}`}
+                                  </div>
+                                )}
+                                <div style={{ fontSize: '14px' }}>
+                                  <span style={{ color: '#9CA3AF' }}>{t('trading:accounts.fields.balance')}: </span>
+                                  <span style={{ color: '#ffffff', fontWeight: 'bold' }}>
+                                    ${payload[0].value.toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+                            );
                           }
-                          return `${t('trading:charts.current')}`;
+                          return null;
                         }}
                       />
                       <Area
@@ -3155,7 +3195,25 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <div></div>
               <div className="flex items-center gap-3">
                 <p className="text-gray-500 text-xs">
-                  {t('accounts.fields.lastUpdated')} {lastUpdated ? new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {(() => {
+                    if (!lastUpdated) {
+                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.now')}`;
+                    }
+                    const now = new Date();
+                    const updated = new Date(lastUpdated);
+                    const diffInMs = now - updated;
+                    const minutesAgo = Math.floor(diffInMs / 60000);
+                    
+                    if (diffInMs < 0) {
+                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.now')}`;
+                    } else if (minutesAgo === 0) {
+                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.now')}`;
+                    } else if (minutesAgo === 1) {
+                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.oneMinuteAgo')}`;
+                    } else {
+                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.minutesAgo', { count: minutesAgo })}`;
+                    }
+                  })()}
                 </p>
                 <button
                   onClick={handleRefreshData}
@@ -3596,7 +3654,22 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <label className="block text-gray-400 text-xs sm:text-sm mb-2">{t('instrument')}</label>
                   <div className="relative">
                     <button
-                      onClick={() => setShowInstrumentDropdown(!showInstrumentDropdown)}
+                      onClick={() => {
+                        setShowInstrumentDropdown(!showInstrumentDropdown);
+                        // Auto scroll when opening dropdown
+                        if (!showInstrumentDropdown) {
+                          setTimeout(() => {
+                            const dropdownElement = instrumentDropdownRef.current?.querySelector('.absolute');
+                            if (dropdownElement) {
+                              const rect = dropdownElement.getBoundingClientRect();
+                              const isOutOfView = rect.bottom > window.innerHeight || rect.top < 0;
+                              if (isOutOfView) {
+                                dropdownElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                              }
+                            }
+                          }, 50);
+                        }
+                      }}
                       className="w-full bg-[#2a2a2a] border border-[#444] rounded-lg px-3 sm:px-4 py-2 text-white text-left flex justify-between items-center"
                     >
                       <span className="truncate">{selectedInstrumentLabel}</span>
@@ -3606,14 +3679,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     </button>
                     
                     {showInstrumentDropdown && (
-                      <div className="absolute z-20 mt-1 w-full bg-[#2d2d2d] border border-[#444] rounded-lg shadow-lg max-h-72 overflow-y-auto">
+                      <div className="absolute z-20 mt-1 w-full min-w-[320px] md:min-w-[420px] bg-[#2d2d2d] border border-[#444] rounded-lg shadow-lg max-h-72 overflow-y-auto">
                         <div className="p-2 sticky top-0 bg-[#2d2d2d] z-20 border-b border-[#444]">
-                          <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-2">
-                            <button onClick={() => setInstrumentFilterType('forex')} className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'forex' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>Forex</button>
-                            <button onClick={() => setInstrumentFilterType('stocks')} className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'stocks' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>Acciones</button>
-                            <button onClick={() => setInstrumentFilterType('crypto')} className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'crypto' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>Cripto</button>
-                            <button onClick={() => setInstrumentFilterType('metal')} className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'metal' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>Metales</button>
-                            <button onClick={() => setInstrumentFilterType('index')} className={`px-2 py-1.5 rounded-full text-xs sm:text-sm border ${instrumentFilterType === 'index' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>Índices</button>
+                          <div className="flex gap-1 mb-2 overflow-x-auto">
+                            <button onClick={() => setInstrumentFilterType('forex')} className={`px-3 py-1.5 rounded-full text-xs sm:text-sm border whitespace-nowrap flex-shrink-0 ${instrumentFilterType === 'forex' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>Forex</button>
+                            <button onClick={() => setInstrumentFilterType('stocks')} className={`px-3 py-1.5 rounded-full text-xs sm:text-sm border whitespace-nowrap flex-shrink-0 ${instrumentFilterType === 'stocks' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>{i18n.language === 'es' ? 'Acciones' : 'Stocks'}</button>
+                            <button onClick={() => setInstrumentFilterType('crypto')} className={`px-3 py-1.5 rounded-full text-xs sm:text-sm border whitespace-nowrap flex-shrink-0 ${instrumentFilterType === 'crypto' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>{i18n.language === 'es' ? 'Cripto' : 'Crypto'}</button>
+                            <button onClick={() => setInstrumentFilterType('metal')} className={`px-3 py-1.5 rounded-full text-xs sm:text-sm border whitespace-nowrap flex-shrink-0 ${instrumentFilterType === 'metal' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>{i18n.language === 'es' ? 'Metales' : 'Metals'}</button>
+                            <button onClick={() => setInstrumentFilterType('index')} className={`px-3 py-1.5 rounded-full text-xs sm:text-sm border whitespace-nowrap flex-shrink-0 ${instrumentFilterType === 'index' ? 'border-cyan-500 bg-transparent' : 'border-gray-700 bg-transparent'}`} style={{ outline: 'none' }}>{i18n.language === 'es' ? 'Índices' : 'Indices'}</button>
                           </div>
                           <div className="relative">
                             <input

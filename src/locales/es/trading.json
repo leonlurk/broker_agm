@@ -787,7 +787,14 @@
       "tradingInstruments": "Instrumentos de Trading",
       "status": "Estado",
       "noTradingActivity": "Sin actividad de trading",
-      "willAppearWhenTrading": "Los instrumentos aparecerán cuando realice operaciones"
+      "willAppearWhenTrading": "Los instrumentos aparecerán cuando realice operaciones",
+      "categories": {
+        "forex": "Forex",
+        "stocks": "Acciones",
+        "crypto": "Cripto",
+        "metals": "Metales",
+        "indices": "Índices"
+      }
     },
     "general": {
       "performance": "Rendimiento",

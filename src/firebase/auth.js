@@ -125,7 +125,7 @@ export const loginUser = async (identifier, password) => {
     logger.error("Login process error", error);
     let friendlyMessage = "Error al iniciar sesión. Verifique sus credenciales.";
     if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        friendlyMessage = "Email/Usuario o contraseña incorrectos.";
+        friendlyMessage = "Email o contraseña incorrectos.";
     } else if (error.message) {
         // friendlyMessage = error.message;
     }

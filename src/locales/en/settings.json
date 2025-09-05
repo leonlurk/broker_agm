@@ -269,6 +269,26 @@
     "simple": "Simple",
     "noAppRequired": "No app",
     "moreSecure": "More secure",
+    "activateMethod": "Activate Method",
+    "activateMethods": "Activate Methods",
+    "deactivateMethod": "Deactivate Method",
+    "deactivateMethods": "Deactivate Methods",
+    "confirmEmail": {
+      "title": "Email Verification Required",
+      "activateMessage": "To activate two-factor authentication, we need to verify your identity. We'll send a code to your email.",
+      "deactivateMessage": "To deactivate two-factor authentication, we need to verify your identity. We'll send a code to your email.",
+      "sendCode": "Send Code",
+      "resendCode": "Resend Code",
+      "enterCode": "Enter verification code",
+      "verify": "Verify",
+      "cancel": "Cancel"
+    },
+    "confirmDeactivation": {
+      "title": "Confirm Deactivation",
+      "message": "Are you sure you want to deactivate two-factor authentication? This will reduce your account security.",
+      "confirm": "Yes, Deactivate",
+      "cancel": "Cancel"
+    },
     "offline": "Offline",
     "setupEmailTitle": "Set Up Email 2FA",
     "verifyEmailTitle": "Email Verification",

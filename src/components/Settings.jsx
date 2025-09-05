@@ -9,7 +9,7 @@ import emailServiceProxy from '../services/emailServiceProxy';
 import toast from 'react-hot-toast';
 import { AuthAdapter, DatabaseAdapter } from '../services/database.adapter';
 import PasswordChangeModal from './PasswordChangeModal';
-import TwoFactorDualModal from './TwoFactorDualModal';
+import TwoFactorDualModalImproved from './TwoFactorDualModalImproved';
 import EmailChangeModal from './EmailChangeModal';
 import twoFactorService from '../services/twoFactorService';
 
@@ -423,7 +423,7 @@ const Settings = ({ onBack, openKYC = false, fromHome = false }) => {
       />
 
       {/* 2FA Dual Modal */}
-      <TwoFactorDualModal
+      <TwoFactorDualModalImproved
         isOpen={show2FAModal}
         onClose={() => setShow2FAModal(false)}
         onSuccess={handle2FASuccess}

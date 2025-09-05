@@ -140,22 +140,13 @@ export const registerUser = async (username, email, password, refId = null) => {
     const user = authData.user;
     logger.auth(`[Supabase] Auth user created successfully`, { uid: user.id });
     
-    // Auto-confirm email in Supabase to allow immediate login
-    // This is needed because we handle email verification ourselves with Brevo
-    try {
-      const { error: confirmError } = await supabase.auth.admin.updateUserById(
-        user.id,
-        { email_confirmed_at: new Date().toISOString() }
-      );
-      
-      if (confirmError) {
-        logger.warn('[Supabase] Could not auto-confirm email, will try alternative method:', confirmError);
-      } else {
-        logger.auth('[Supabase] Email auto-confirmed in Supabase Auth');
-      }
-    } catch (adminError) {
-      logger.warn('[Supabase] Admin API not available, user will need manual confirmation:', adminError.message);
-    }
+    // NOTA: No intentamos auto-confirmar el email con admin API porque:
+    // 1. Requiere permisos de service_role que el cliente no tiene (error 403)
+    // 2. Supabase maneja la verificación automáticamente con el token
+    // 3. El usuario recibe el email de verificación de Supabase
+    
+    // El código anterior causaba error 403 "User not allowed"
+    // Se comentó para evitar logs de error innecesarios
     
     // Step 2: Create profile manually (trigger doesn't work for collaborators)
     // First try to create profile using RPC function
@@ -358,7 +349,7 @@ export const loginUser = async (identifier, password) => {
       let friendlyMessage = 'Error al iniciar sesión. Verifique sus credenciales.';
       
       if (authError.message.includes('Invalid login credentials')) {
-        friendlyMessage = 'Email/Usuario o contraseña incorrectos.';
+        friendlyMessage = 'Email o contraseña incorrectos.';
       }
       
       return { user: null, error: { message: friendlyMessage } };
@@ -768,19 +759,19 @@ export const verifyEmailWithToken = async (token) => {
       };
     }
     
-    // Also update the Supabase auth metadata to confirm the email
+    // NOTA: Comentado porque causa error 403 "User not allowed"
+    // No es necesario ya que Supabase maneja la confirmación automáticamente
+    // cuando el usuario hace clic en el link de verificación
+    /*
     try {
       const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
         profile.id,
         { email_confirmed_at: new Date().toISOString() }
       );
-      
-      if (authUpdateError) {
-        logger.warn('[Supabase] Could not update auth email confirmation:', authUpdateError);
-      }
     } catch (authError) {
       logger.warn('[Supabase] Auth update skipped:', authError.message);
     }
+    */
     
     logger.auth('[Supabase] Email verified successfully for user:', profile.id);
     return { 

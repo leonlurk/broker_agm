@@ -475,8 +475,15 @@ const Wallet = () => {
 
   // Procesar operación
   const handleProcessOperation = async () => {
-    if (!selectedAccount || !currentUser) {
+    // Para depósitos, no necesitamos cuenta seleccionada porque va directo a la wallet
+    // Para transferencias y retiros, sí necesitamos cuenta seleccionada
+    if ((activeTab === 'transferir' || activeTab === 'retirar') && !selectedAccount) {
       toast.error(t('common.errors.selectAccount'));
+      return;
+    }
+    
+    if (!currentUser) {
+      toast.error(t('common.errors.notAuthenticated'));
       return;
     }
 
@@ -967,10 +974,10 @@ const Wallet = () => {
     // Modal de retiro mejorado con selector de métodos
     if (activeTab === 'retirar') {
       return (
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-[#232323] rounded-xl border-2 border-[#06b6d4] p-6">
-            <h3 className="text-lg font-semibold mb-2 text-white">{t('withdraw.title')}</h3>
-            <p className="text-[#9ca3af] mb-6 text-sm">{t('withdraw.enterAmount')}</p>
+        <div className="max-w-2xl mx-auto px-4 sm:px-0">
+          <div className="bg-[#232323] rounded-xl border-2 border-[#06b6d4] p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold mb-2 text-white">{t('withdraw.title')}</h3>
+            <p className="text-[#9ca3af] mb-4 sm:mb-6 text-xs sm:text-sm">{t('withdraw.enterAmount')}</p>
             
             <div className="space-y-6">
               {/* Selector de Método de Retiro */}
@@ -1231,11 +1238,11 @@ const Wallet = () => {
 
     // Para depósitos, mantener el flujo original con los pasos
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 px-4 sm:px-0">
         {/* Paso 1: Seleccionar método */}
-        <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 1 ? 'border-[#06b6d4]' : 'border-[#334155]'}`}>
-          <h3 className="text-lg font-semibold mb-2 text-white">{t('common.steps.step1')}</h3>
-          <p className="text-[#9ca3af] mb-6 text-sm">{t('common.selectMethod')}</p>
+        <div className={`bg-[#232323] rounded-xl border-2 p-4 sm:p-6 ${currentStep === 1 ? 'border-[#06b6d4]' : 'border-[#334155]'}`}>
+          <h3 className="text-base sm:text-lg font-semibold mb-2 text-white">{t('common.steps.step1')}</h3>
+          <p className="text-[#9ca3af] mb-4 sm:mb-6 text-xs sm:text-sm">{t('common.selectMethod')}</p>
           
           <div className="space-y-3">
             {methods.map((method) => (
@@ -1258,9 +1265,9 @@ const Wallet = () => {
         </div>
         
         {/* Paso 2: Seleccionar moneda (solo para crypto) */}
-        <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 2 ? 'border-[#06b6d4]' : 'border-[#334155]'} ${currentStep < 2 ? 'opacity-60' : ''}`}>
-          <h3 className="text-lg font-semibold mb-2 text-white">{t('common.steps.step2')}</h3>
-          <p className="text-[#9ca3af] mb-6 text-sm">
+        <div className={`bg-[#232323] rounded-xl border-2 p-4 sm:p-6 ${currentStep === 2 ? 'border-[#06b6d4]' : 'border-[#334155]'} ${currentStep < 2 ? 'opacity-60' : ''}`}>
+          <h3 className="text-base sm:text-lg font-semibold mb-2 text-white">{t('common.steps.step2')}</h3>
+          <p className="text-[#9ca3af] mb-4 sm:mb-6 text-xs sm:text-sm">
             {selectedMethod?.id === 'crypto' ? t('deposit.selectCoin') : t('common.methodDetails')}
           </p>
           
@@ -1307,9 +1314,9 @@ const Wallet = () => {
         </div>
         
         {/* Paso 3: Monto y confirmación */}
-        <div className={`bg-[#232323] rounded-xl border-2 p-6 ${currentStep === 3 ? 'border-[#06b6d4]' : 'border-[#334155]'} ${currentStep < 3 ? 'opacity-60' : ''}`}>
-          <h3 className="text-lg font-semibold mb-2 text-white">{t('common.steps.step3')}</h3>
-          <p className="text-[#9ca3af] mb-6 text-sm">{t('common.completeOperation')}</p>
+        <div className={`bg-[#232323] rounded-xl border-2 p-4 sm:p-6 ${currentStep === 3 ? 'border-[#06b6d4]' : 'border-[#334155]'} ${currentStep < 3 ? 'opacity-60' : ''} md:col-span-2 xl:col-span-1`}>
+          <h3 className="text-base sm:text-lg font-semibold mb-2 text-white">{t('common.steps.step3')}</h3>
+          <p className="text-[#9ca3af] mb-4 sm:mb-6 text-xs sm:text-sm">{t('common.completeOperation')}</p>
           
           {currentStep >= 3 && (
             <div>
@@ -1603,63 +1610,63 @@ const Wallet = () => {
             </div>
           </div>
           
-          {/* Botones de Acción */}
-          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-            {/* Botones Principales */}
-            <div className="flex gap-3">
+          {/* Botones de Acción - Mejorado para móvil */}
+          <div className="flex flex-col items-center justify-center gap-4 w-full px-4 sm:px-0">
+            {/* Botones Principales - Responsive */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <button
                 onClick={() => {
                   setActiveTab('depositar');
                   resetForm();
                 }}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 ${
+                className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 w-full sm:w-auto ${
                   activeTab === 'depositar'
                     ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/20'
                     : 'bg-[#374151] text-gray-300 hover:bg-[#4b5563] hover:text-white'
                 }`}
               >
                 <ArrowDown className="w-5 h-5" />
-                {t('tabs.deposit')}
+                <span className="text-sm sm:text-base">{t('tabs.deposit')}</span>
               </button>
               <button
                 onClick={() => {
                   setActiveTab('retirar');
                   resetForm();
                 }}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 ${
+                className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 w-full sm:w-auto ${
                   activeTab === 'retirar'
                     ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-500/20'
                     : 'bg-[#374151] text-gray-300 hover:bg-[#4b5563] hover:text-white'
                 }`}
               >
                 <ArrowUp className="w-5 h-5" />
-                {t('tabs.withdraw')}
+                <span className="text-sm sm:text-base">{t('tabs.withdraw')}</span>
               </button>
               <button
                 onClick={() => {
                   setActiveTab('transferir');
                   resetForm();
                 }}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 ${
+                className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105 w-full sm:w-auto ${
                   activeTab === 'transferir'
                     ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/20'
                     : 'bg-[#374151] text-gray-300 hover:bg-[#4b5563] hover:text-white'
                 }`}
               >
                 <RefreshCw className="w-5 h-5" />
-                {t('tabs.transfer')}
+                <span className="text-sm sm:text-base">{t('tabs.transfer')}</span>
               </button>
             </div>
             
-            {/* Botón Historial */}
+            {/* Botón Historial - Responsive */}
             <button
               onClick={() => setShowHistorialModal(true)}
-              className="flex items-center gap-2 px-4 py-3 bg-[#2a2a2a] hover:bg-[#333] border border-[#444] rounded-xl text-gray-300 hover:text-white transition-all transform hover:scale-105"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-[#2a2a2a] hover:bg-[#333] border border-[#444] rounded-xl text-gray-300 hover:text-white transition-all transform hover:scale-105 w-full sm:w-auto"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>{t('tabs.history')}</span>
+              <span className="text-sm sm:text-base">{t('tabs.history')}</span>
             </button>
           </div>
         </div>

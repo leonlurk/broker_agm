@@ -803,7 +803,14 @@
       "tradingInstruments": "Trading Instruments",
       "status": "Status",
       "noTradingActivity": "No trading activity",
-      "willAppearWhenTrading": "Instruments will appear when you make trades"
+      "willAppearWhenTrading": "Instruments will appear when you make trades",
+      "categories": {
+        "forex": "Forex",
+        "stocks": "Stocks",
+        "crypto": "Crypto",
+        "metals": "Metals",
+        "indices": "Indices"
+      }
     },
     "general": {
       "performance": "Performance",

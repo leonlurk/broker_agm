@@ -1,19 +1,33 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronDown, Calendar, Clock, AlertTriangle, Loader, Globe } from 'lucide-react';
+import useTranslation from '../hooks/useTranslation';
+import newsEs from '../locales/es/news.json';
+import newsEn from '../locales/en/news.json';
 
 const Noticias = () => {
+    const { currentLanguage } = useTranslation();
+    const newsTranslations = currentLanguage === 'es' ? newsEs : newsEn;
+    const t = (key) => {
+      const keys = key.split('.');
+      let value = newsTranslations;
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
+    
     // Fecha actual y rango
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
 
-  // Días de la semana en español (sin traducción)
+  // Días de la semana con traducción
   const days = useMemo(() => [
-    'Lunes',
-    'Martes',
-    'Miércoles',
-    'Jueves',
-    'Viernes'
-  ], []); // Sin dependencia de idioma
+    t('days.monday'),
+    t('days.tuesday'),
+    t('days.wednesday'),
+    t('days.thursday'),
+    t('days.friday')
+  ], [currentLanguage]); // Dependencia de idioma
 
   const isWeekend = today.getDay() === 0 || today.getDay() === 6; // 0 es domingo, 6 es sábado
 
@@ -65,6 +79,29 @@ const Noticias = () => {
   const [visibilityFilters, setVisibilityFilters] = useState({
     ocultarNoticias: false,
     mostrarRestringidos: false
+  });
+
+  // Currency filter state
+  const [currencyFilters, setCurrencyFilters] = useState({
+    USD: true,
+    EUR: true,
+    GBP: true,
+    JPY: true,
+    AUD: true,
+    CAD: true,
+    CHF: true,
+    NZD: true,
+    CNY: true,
+    MXN: true,
+    BRL: true,
+    INR: true,
+    RUB: true,
+    KRW: true,
+    TRY: true,
+    ZAR: true,
+    SGD: true,
+    HKD: true,
+    Global: true
   });
 
   // Estado para controlar la zona horaria
@@ -309,9 +346,22 @@ const Noticias = () => {
 
   // Función para obtener el nombre del mes
   const getMonthName = (monthIndex) => {
-    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    return months[monthIndex];
+    const monthKeys = [
+      'months.january', 'months.february', 'months.march', 'months.april', 
+      'months.may', 'months.june', 'months.july', 'months.august', 
+      'months.september', 'months.october', 'months.november', 'months.december'
+    ];
+    return t(monthKeys[monthIndex]);
   };
+
+  // Calcular conteo de eventos por moneda
+  const eventCountByCurrency = useMemo(() => {
+    const counts = {};
+    Object.keys(currencyFilters).forEach(currency => {
+      counts[currency] = events.filter(event => event.instrument === currency).length;
+    });
+    return counts;
+  }, [events, currencyFilters]);
 
   // Filtrar eventos según criterios
   const filteredEvents = events.filter(event => {
@@ -325,13 +375,19 @@ const Noticias = () => {
     // Si ningún filtro de impacto está activo, mostrar todos
     const showAllImpacts = !impactFilters.alto && !impactFilters.medio && !impactFilters.bajo && !impactFilters.feriados;
     
+    // Filtro de moneda
+    const currencyMatches = currencyFilters[event.instrument] || false;
+    
+    // Si ningún filtro de moneda está activo, mostrar todos
+    const showAllCurrencies = !Object.values(currencyFilters).some(v => v);
+    
     // Filtro de noticias pasadas
     const pastFilter = !visibilityFilters.ocultarNoticias || !event.isPast;
     
     // Filtro de eventos restringidos
     const restrictedFilter = !visibilityFilters.mostrarRestringidos || event.highlighted;
     
-    return (impactMatches || showAllImpacts) && pastFilter && restrictedFilter;
+    return (impactMatches || showAllImpacts) && (currencyMatches || showAllCurrencies) && pastFilter && restrictedFilter;
   });
 
   console.log("Eventos filtrados:", filteredEvents.length);
@@ -351,6 +407,30 @@ const Noticias = () => {
       ...visibilityFilters,
       [filter]: !visibilityFilters[filter]
     });
+  };
+
+  const toggleCurrencyFilter = (currency) => {
+    console.log("Toggling filtro de moneda:", currency);
+    setCurrencyFilters({
+      ...currencyFilters,
+      [currency]: !currencyFilters[currency]
+    });
+  };
+
+  const selectAllCurrencies = () => {
+    const newFilters = {};
+    Object.keys(currencyFilters).forEach(currency => {
+      newFilters[currency] = true;
+    });
+    setCurrencyFilters(newFilters);
+  };
+
+  const selectNoCurrencies = () => {
+    const newFilters = {};
+    Object.keys(currencyFilters).forEach(currency => {
+      newFilters[currency] = false;
+    });
+    setCurrencyFilters(newFilters);
   };
 
   const getImpactColor = (color) => {
@@ -435,7 +515,7 @@ const Noticias = () => {
       <div className="flex flex-col space-y-2">
         {isWeekend && (
           <div className="text-amber-500 text-sm text-center bg-amber-500/10 py-2 px-4 rounded-lg">
-            Mercado Cerrado
+            {t('marketClosed')}
           </div>
         )}
         <div className="flex space-x-1 xs:space-x-2 overflow-x-auto pb-2 scrollbar-thin">
@@ -462,16 +542,16 @@ const Noticias = () => {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center mb-4 sm:mb-6 gap-2 sm:gap-3">
         <div className="p-2 text-sm xs:text-base sm:text-xl bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-lg sm:rounded-full border border-[#333] text-white text-center sm:text-left mr-0 sm:mr-2">
           {isWeekend ? (
-            <span className="text-gray-400">Mercado Cerrado</span>
+            <span className="text-gray-400">{t('marketClosed')}</span>
           ) : (
-            activeDay === days[initialDayIndexResolved] ? 'El día de hoy' : activeDay
+            activeDay === days[initialDayIndexResolved] ? t('today') : activeDay
           )}
         </div>
         <div className="p-2 text-sm xs:text-base sm:text-xl bg-transparent text-white text-center sm:text-left mr-0 sm:mr-auto whitespace-nowrap">
           {getMonthName(selectedFullDate.getMonth())} <span className="text-[#a0a0a0]">{selectedFullDate.getDate()}</span>, {selectedFullDate.getFullYear()}
           {isWeekend && (
             <div className="text-xs text-amber-500 mt-1">
-              Mostrando datos del último viernes ({getLastFriday().getDate()} {getMonthName(getLastFriday().getMonth())})
+              {t('showingLastFriday')} ({getLastFriday().getDate()} {getMonthName(getLastFriday().getMonth())})
             </div>
           )}
         </div>
@@ -518,9 +598,60 @@ const Noticias = () => {
 
       {/* Filters - Stack on mobile */}
       <div className="flex flex-col mb-4 sm:mb-6 gap-3 sm:gap-4">
+        {/* Currency filter */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+            <h3 className="text-gray-400 text-base sm:text-xl">{t('filters.currencyCountry')}</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={selectAllCurrencies}
+                className="px-2 py-1 text-xs sm:text-sm bg-[#2d2d2d] hover:bg-[#3a3a3a] text-cyan-400 rounded-md border border-[#444] transition-colors"
+              >
+                {t('filters.all')}
+              </button>
+              <button
+                onClick={selectNoCurrencies}
+                className="px-2 py-1 text-xs sm:text-sm bg-[#2d2d2d] hover:bg-[#3a3a3a] text-cyan-400 rounded-md border border-[#444] transition-colors"
+              >
+                {t('filters.none')}
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
+            {Object.keys(currencyFilters).map(currency => (
+              <label 
+                key={currency}
+                className="flex items-center space-x-1 sm:space-x-1.5 cursor-pointer text-xs sm:text-sm bg-[#2d2d2d] hover:bg-[#3a3a3a] rounded-lg p-1.5 sm:p-2 border border-[#444] transition-all"
+              >
+                <input 
+                  type="checkbox" 
+                  className="form-checkbox h-3 w-3 sm:h-3.5 sm:w-3.5 text-cyan-500 rounded bg-[#333] border-[#444] focus:ring-cyan-500"
+                  checked={currencyFilters[currency]}
+                  onChange={() => toggleCurrencyFilter(currency)}
+                />
+                <img 
+                  src={getCountryFlag(currency)} 
+                  alt={currency} 
+                  className="w-4 h-3 sm:w-5 sm:h-4 rounded object-contain"
+                  onError={(e) => {
+                    e.target.onerror = null; 
+                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 16'%3E%3Crect width='24' height='16' fill='%233C3B6E'/%3E%3C/svg%3E";
+                  }}
+                />
+                <span className="flex items-center">
+                  <span className={currencyFilters[currency] ? 'text-white' : 'text-gray-500'}>{currency}</span>
+                  {eventCountByCurrency[currency] > 0 && (
+                    <span className="ml-1 text-[10px] sm:text-xs text-gray-400">({eventCountByCurrency[currency]})</span>
+                  )}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
         {/* Impact filter */}
         <div>
-          <h3 className="text-gray-400 mb-1.5 sm:mb-2 text-base sm:text-xl">Filtro de Impacto</h3>
+          <h3 className="text-gray-400 mb-1.5 sm:mb-2 text-base sm:text-xl">{t('filters.impact')}</h3>
           <div className="grid grid-cols-2 xs:grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-x-3 sm:gap-y-1.5">
             <label className="flex items-center space-x-1.5 sm:space-x-2 cursor-pointer text-sm sm:text-base">
               <input 
@@ -529,7 +660,7 @@ const Noticias = () => {
                 checked={impactFilters.feriados}
                 onChange={() => toggleImpactFilter('feriados')}
               />
-              <span>Feriados</span>
+              <span>{t('filters.holidays')}</span>
             </label>
             <label className="flex items-center space-x-1.5 sm:space-x-2 cursor-pointer text-sm sm:text-base">
               <input 
@@ -538,7 +669,7 @@ const Noticias = () => {
                 checked={impactFilters.bajo}
                 onChange={() => toggleImpactFilter('bajo')}
               />
-              <span>Bajo</span>
+              <span>{t('filters.low')}</span>
             </label>
             <label className="flex items-center space-x-1.5 sm:space-x-2 cursor-pointer text-sm sm:text-base">
               <input 
@@ -547,7 +678,7 @@ const Noticias = () => {
                 checked={impactFilters.medio}
                 onChange={() => toggleImpactFilter('medio')}
               />
-              <span>Medio</span>
+              <span>{t('filters.medium')}</span>
             </label>
             <label className="flex items-center space-x-1.5 sm:space-x-2 cursor-pointer text-sm sm:text-base">
               <input 
@@ -556,14 +687,14 @@ const Noticias = () => {
                 checked={impactFilters.alto}
                 onChange={() => toggleImpactFilter('alto')}
               />
-              <span>Alto</span>
+              <span>{t('filters.high')}</span>
             </label>
           </div>
         </div>
 
         {/* Visibility filter */}
         <div>
-          <h3 className="text-gray-400 mb-1.5 sm:mb-2 text-base sm:text-xl">Filtro de Visibilidad</h3>
+          <h3 className="text-gray-400 mb-1.5 sm:mb-2 text-base sm:text-xl">{t('filters.visibility')}</h3>
           <div className="flex flex-col space-y-1.5 sm:space-y-0 sm:flex-row sm:space-x-3">
             <label className="flex items-center space-x-1.5 sm:space-x-2 cursor-pointer text-sm sm:text-base">
               <input 
@@ -572,7 +703,7 @@ const Noticias = () => {
                 checked={visibilityFilters.ocultarNoticias}
                 onChange={() => toggleVisibilityFilter('ocultarNoticias')}
               />
-              <span>Ocultar noticias pasadas</span>
+              <span>{t('filters.hidePastNews')}</span>
             </label>
             <label className="flex items-center space-x-1.5 sm:space-x-2 cursor-pointer text-sm sm:text-base">
               <input 
@@ -581,7 +712,7 @@ const Noticias = () => {
                 checked={visibilityFilters.mostrarRestringidos}
                 onChange={() => toggleVisibilityFilter('mostrarRestringidos')}
               />
-              <span>Mostrar solo eventos restringidos</span>
+              <span>{t('filters.showRestrictedOnly')}</span>
             </label>
           </div>
         </div>
@@ -597,12 +728,12 @@ const Noticias = () => {
         ) : error ? (
             <div className="p-2 xs:p-3 sm:p-4 md:p-6 flex flex-col justify-center items-center h-48 sm:h-64 text-center">
               <AlertTriangle size={24} smSize={30} className="mr-0 mb-2 sm:mr-2 sm:mb-0 text-red-400" />
-              <span className="text-red-400 text-sm sm:text-base">Error al cargar las noticias</span>
+              <span className="text-red-400 text-sm sm:text-base">{t('errors.loadingError')}</span>
             </div>
         ) : filteredEvents.length === 0 ? (
             <div className="p-2 xs:p-3 sm:p-4 md:p-6 flex justify-center items-center h-48 sm:h-64">
               <div className="text-gray-400 text-center text-sm sm:text-base">
-                No hay eventos económicos para mostrar
+                {t('errors.noEvents')}
             </div>
           </div>
         ) : (
@@ -612,13 +743,13 @@ const Noticias = () => {
           <table className="w-full border-collapse">
                   <thead className="sticky top-0 bg-[#2d2d2d] shadow-lg">
               <tr className="text-left border-b border-gray-700">
-                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">Descripcion</th>
-                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">Instrumento</th>
-                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">Fecha</th>
-                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">Actual</th>
-                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">Pronostico</th>
-                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">Previo</th>
-                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">Accion</th>
+                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">{t('table.description')}</th>
+                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">{t('table.instrument')}</th>
+                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">{t('table.date')}</th>
+                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">{t('table.actual')}</th>
+                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">{t('table.forecast')}</th>
+                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">{t('table.previous')}</th>
+                      <th className="p-6 font-medium text-sm lg:text-base whitespace-nowrap">{t('table.action')}</th>
               </tr>
             </thead>
             <tbody>
@@ -636,7 +767,7 @@ const Noticias = () => {
                       {event.highlighted && (
                               <div className="flex items-center text-red-500 text-xs mt-1 ml-4 lg:ml-6">
                                 <AlertTriangle className="h-3.5 w-3.5 lg:h-4 lg:w-4 mr-1 flex-shrink-0" />
-                          Evento Restringido
+                          {t('table.restrictedEvent')}
                         </div>
                       )}
                     </div>
@@ -668,18 +799,18 @@ const Noticias = () => {
                         </div>
                       )}
                           {event.isPast && (
-                        <div className="text-xs text-cyan-500 mt-1">Expirado</div>
+                        <div className="text-xs text-cyan-500 mt-1">{t('table.expired')}</div>
                       )}
                     </div>
                   </td>
-                        <td className="p-6 text-sm lg:text-base whitespace-nowrap">Actual: {event.actual}</td>
-                        <td className="p-6 text-sm lg:text-base whitespace-nowrap">Pronóstico: {event.forecast}</td>
-                        <td className="p-6 text-sm lg:text-base whitespace-nowrap">Previo: {event.previous}</td>
+                        <td className="p-6 text-sm lg:text-base whitespace-nowrap">{t('table.actual')}: {event.actual}</td>
+                        <td className="p-6 text-sm lg:text-base whitespace-nowrap">{t('table.forecast')}: {event.forecast}</td>
+                        <td className="p-6 text-sm lg:text-base whitespace-nowrap">{t('table.previous')}: {event.previous}</td>
                         <td className="p-6 text-sm lg:text-base">
                         <button 
                             className="p-1.5 lg:p-2 bg-transparent hover:bg-[#333] rounded-full transition-colors focus:outline-none"
                           onClick={() => addEventToCalendar(event)}
-                          title="Añadir al calendario"
+                          title={t('table.addToCalendar')}
                         >
                             <Calendar className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400" />
                     </button>
@@ -720,17 +851,17 @@ const Noticias = () => {
 
                     <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:gap-y-2 text-xs sm:text-sm pl-4.5">
                 <div>
-                        <div className="text-gray-400">Actual</div>
+                        <div className="text-gray-400">{t('table.actual')}</div>
                         <div className="whitespace-nowrap">{event.actual}</div>
                     </div>
 
                       <div>
-                        <div className="text-gray-400">Pronóstico</div>
+                        <div className="text-gray-400">{t('table.forecast')}</div>
                         <div className="whitespace-nowrap">{event.forecast}</div>
                 </div>
 
                 <div>
-                        <div className="text-gray-400">Previo</div>
+                        <div className="text-gray-400">{t('table.previous')}</div>
                         <div className="whitespace-nowrap">{event.previous}</div>
                       </div>
                   </div>

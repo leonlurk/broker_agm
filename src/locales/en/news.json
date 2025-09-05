@@ -1,0 +1,56 @@
+{
+  "title": "Economic News",
+  "marketClosed": "Market Closed",
+  "today": "Today",
+  "showingLastFriday": "Showing data from last Friday",
+  "filters": {
+    "currencyCountry": "Currency/Country Filter",
+    "all": "All",
+    "none": "None",
+    "impact": "Impact Filter",
+    "visibility": "Visibility Filter",
+    "holidays": "Holidays",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "hidePastNews": "Hide past news",
+    "showRestrictedOnly": "Show restricted events only"
+  },
+  "table": {
+    "description": "Description",
+    "instrument": "Instrument",
+    "date": "Date",
+    "actual": "Actual",
+    "forecast": "Forecast",
+    "previous": "Previous",
+    "action": "Action",
+    "restrictedEvent": "Restricted Event",
+    "expired": "Expired",
+    "addToCalendar": "Add to calendar"
+  },
+  "errors": {
+    "loadingError": "Error loading news",
+    "noEvents": "No economic events to display"
+  },
+  "days": {
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday"
+  },
+  "months": {
+    "january": "January",
+    "february": "February",
+    "march": "March",
+    "april": "April",
+    "may": "May",
+    "june": "June",
+    "july": "July",
+    "august": "August",
+    "september": "September",
+    "october": "October",
+    "november": "November",
+    "december": "December"
+  }
+}

@@ -3,7 +3,6 @@ import { QrCodeIcon, CopyIcon, CheckCircleIcon, XCircleIcon, Loader2Icon, InfoIc
 import { useTranslation } from 'react-i18next';
 import cryptoPaymentService from '../services/cryptoPaymentService';
 import { supabase } from '../supabase/config';
-import CustomTooltip from './utils/CustomTooltip';
 import toast from 'react-hot-toast';
 
 const CryptoDepositModal = ({ 
@@ -166,7 +165,8 @@ const CryptoDepositModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
-      <div className="bg-[#1e1e1e] rounded-2xl p-6 max-w-lg w-full mx-auto border border-[#334155] max-h-[85vh] overflow-y-auto">
+      <div className="bg-[#1e1e1e] rounded-2xl p-6 max-w-lg w-full mx-auto border border-[#334155] max-h-[85vh] relative">
+        <div className="overflow-y-auto max-h-[calc(85vh-3rem)]">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">{t('cryptoModal.title')}</h2>
@@ -198,24 +198,30 @@ const CryptoDepositModal = ({
           <div className="space-y-4">
             {/* Network Info */}
             <div className="bg-[#2a2a2a] rounded-lg p-4">
-              <CustomTooltip content={t('cryptoModal.tooltips.network')}>
-                <div className="flex items-center space-x-2">
-                  <p className="text-sm text-gray-400 mb-1">{t('cryptoModal.network')}</p>
-                  <InfoIcon className="w-4 h-4 text-cyan-400" />
+              <div className="flex items-center space-x-2">
+                <p className="text-sm text-gray-400 mb-1">{t('cryptoModal.network')}</p>
+                <div className="relative group">
+                  <InfoIcon className="w-4 h-4 text-cyan-400 cursor-help" />
+                  <div className="absolute left-6 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] border border-gray-700">
+                    Red blockchain
+                  </div>
                 </div>
-              </CustomTooltip>
+              </div>
               <p className="text-white font-semibold">{getNetworkName()}</p>
             </div>
 
             {/* Amount Info */}
             <div className="bg-[#2a2a2a] rounded-lg p-4">
-              <CustomTooltip content={t('cryptoModal.tooltips.amount')}>
-                <div className="flex items-center space-x-2 mb-1">
-                  <p className="text-sm text-gray-400">{t('cryptoModal.amountToDeposit')}</p>
-                  <InfoIcon className="w-4 h-4 text-cyan-400" />
+              <div className="flex items-center space-x-2 mb-1">
+                <p className="text-sm text-gray-400">{t('cryptoModal.amountToDeposit')}</p>
+                <div className="relative group">
+                  <InfoIcon className="w-4 h-4 text-cyan-400 cursor-help" />
+                  <div className="absolute left-6 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] border border-gray-700">
+                    Transferir monto exacto
+                  </div>
                 </div>
-              </CustomTooltip>
-              <p className="text-2xl font-bold text-cyan-500">${amount} USD</p>
+              </div>
+              <p className="text-2xl font-bold text-white">${amount} USD</p>
               <p className="text-xs text-gray-500 mt-1">
                 {t('cryptoModal.minimum')}: ${getMinimumDeposit()} USD
               </p>
@@ -223,12 +229,15 @@ const CryptoDepositModal = ({
 
             {/* QR Code */}
             <div className="bg-[#2a2a2a] rounded-lg p-6 flex flex-col items-center">
-              <CustomTooltip content={t('cryptoModal.tooltips.qrCode')}>
-                <div className="flex items-center space-x-2 mb-3">
-                  <p className="text-sm text-gray-400">{t('cryptoModal.scanQR')}</p>
-                  <InfoIcon className="w-4 h-4 text-cyan-400" />
+              <div className="flex items-center space-x-2 mb-3">
+                <p className="text-sm text-gray-400">{t('cryptoModal.scanQR')}</p>
+                <div className="relative group">
+                  <InfoIcon className="w-4 h-4 text-cyan-400 cursor-help" />
+                  <div className="absolute left-6 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] border border-gray-700">
+                    Escanee QR
+                  </div>
                 </div>
-              </CustomTooltip>
+              </div>
               <div className="bg-white p-2 rounded-lg">
                 <img 
                   src={relevantWallet.qrCode} 
@@ -240,12 +249,15 @@ const CryptoDepositModal = ({
 
             {/* Wallet Address */}
             <div className="bg-[#2a2a2a] rounded-lg p-4">
-              <CustomTooltip content={t('cryptoModal.tooltips.address')}>
-                <div className="flex items-center space-x-2 mb-2">
-                  <p className="text-sm text-gray-400">{t('cryptoModal.copyAddress')}</p>
-                  <InfoIcon className="w-4 h-4 text-cyan-400" />
+              <div className="flex items-center space-x-2 mb-2">
+                <p className="text-sm text-gray-400">{t('cryptoModal.copyAddress')}</p>
+                <div className="relative group">
+                  <InfoIcon className="w-4 h-4 text-cyan-400 cursor-help" />
+                  <div className="absolute left-6 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-[9999] border border-gray-700">
+                    Copiar dirección
+                  </div>
                 </div>
-              </CustomTooltip>
+              </div>
               <div className="flex items-center space-x-2">
                 <input
                   type="text"
@@ -321,6 +333,7 @@ const CryptoDepositModal = ({
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

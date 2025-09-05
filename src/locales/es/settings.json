@@ -320,6 +320,26 @@
       "description": "Usa Google Authenticator, Authy u otra aplicación para generar códigos de verificación."
     },
     "simple": "Simple",
+    "activateMethod": "Activar Método",
+    "activateMethods": "Activar Métodos",
+    "deactivateMethod": "Desactivar Método",
+    "deactivateMethods": "Desactivar Métodos",
+    "confirmEmail": {
+      "title": "Verificación de Email Requerida",
+      "activateMessage": "Para activar la autenticación de dos factores, necesitamos verificar tu identidad. Te enviaremos un código a tu correo electrónico.",
+      "deactivateMessage": "Para desactivar la autenticación de dos factores, necesitamos verificar tu identidad. Te enviaremos un código a tu correo electrónico.",
+      "sendCode": "Enviar Código",
+      "resendCode": "Reenviar Código",
+      "enterCode": "Ingresa el código de verificación",
+      "verify": "Verificar",
+      "cancel": "Cancelar"
+    },
+    "confirmDeactivation": {
+      "title": "Confirmar Desactivación",
+      "message": "¿Estás seguro de que quieres desactivar la autenticación de dos factores? Esto reducirá la seguridad de tu cuenta.",
+      "confirm": "Sí, Desactivar",
+      "cancel": "Cancelar"
+    },
     "noAppRequired": "Sin app",
     "moreSecure": "Más seguro",
     "offline": "Sin conexión",

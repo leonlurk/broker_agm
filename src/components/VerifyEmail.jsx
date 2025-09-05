@@ -22,10 +22,10 @@ const VerifyEmail = () => {
       }
 
       try {
-        // Use the backend API endpoint
+        // Intentar primero con el backend que maneja los emails bonitos
         const API_URL = import.meta.env.VITE_CRYPTO_API_URL || 'https://whapy.apekapital.com:446/api';
         
-        console.log('[VerifyEmail] Attempting to verify token:', token);
+        console.log('[VerifyEmail] Attempting to verify token via backend:', token);
         
         const response = await fetch(`${API_URL}/auth/verify-email`, {
           method: 'POST',
@@ -33,12 +33,11 @@ const VerifyEmail = () => {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          mode: 'cors', // Explicitly set CORS mode
-          credentials: 'omit', // Don't send cookies
+          mode: 'cors',
+          credentials: 'omit',
           body: JSON.stringify({ token: token })
         });
         
-        // Check if response is ok BEFORE trying to parse JSON
         if (!response.ok) {
           console.log('[VerifyEmail] Backend returned error:', response.status);
           throw new Error(`Backend error: ${response.status}`);
@@ -50,7 +49,6 @@ const VerifyEmail = () => {
           setStatus('success');
           setMessage('¡Tu email ha sido verificado exitosamente! Redirigiendo al login...');
           
-          // Redirect to login after 3 seconds
           setTimeout(() => {
             navigate('/login', { 
               state: { 
@@ -59,14 +57,13 @@ const VerifyEmail = () => {
             });
           }, 3000);
         } else {
-          // Backend responded but verification failed
           throw new Error(data.message || 'Verification failed');
         }
       } catch (error) {
-        console.error('Error verifying email:', error);
-        console.log('[VerifyEmail] Backend failed, trying direct Supabase verification as fallback');
+        console.error('[VerifyEmail] Backend verification failed:', error);
+        console.log('[VerifyEmail] Trying direct Supabase verification as fallback');
         
-        // Always try the fallback when backend fails
+        // Si el backend falla, intentar con Supabase directamente como fallback
         try {
           const { verifyEmailWithToken } = await import('../supabase/auth');
           const result = await verifyEmailWithToken(token);
@@ -87,7 +84,7 @@ const VerifyEmail = () => {
             setMessage(result.error || 'Error al verificar el email');
           }
         } catch (fallbackError) {
-          console.error('Fallback verification also failed:', fallbackError);
+          console.error('[VerifyEmail] Fallback also failed:', fallbackError);
           setStatus('error');
           setMessage('Error al verificar el email. Por favor contacta soporte.');
         }
