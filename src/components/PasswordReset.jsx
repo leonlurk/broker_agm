@@ -29,43 +29,59 @@ const PasswordReset = () => {
         // Debug logs
         console.log('Full URL:', window.location.href);
         console.log('Hash:', window.location.hash);
-        console.log('Pathname:', window.location.pathname);
+        console.log('Search params:', window.location.search);
         
-        // Verificar si viene del email con tokens en el hash
+        // Primero verificar si viene del email con tokens en el hash
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
         const type = hashParams.get('type');
         
-        // También verificar si ya hay una sesión activa (Supabase puede haber procesado el token)
+        // También verificar parámetros de query (Supabase puede usar query params)
+        const queryParams = new URLSearchParams(window.location.search);
+        const tokenParam = queryParams.get('token');
+        const typeParam = queryParams.get('type');
+        
+        // Verificar sesión activa de Supabase
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('Current session:', session);
-        console.log('Session error:', error);
+        console.log('Has recovery token:', !!accessToken || !!tokenParam);
+        console.log('Type:', type || typeParam);
         
         // Verificar si estamos en la ruta de reset password
         const isOnResetRoute = window.location.pathname.includes('reset-password');
         
-        // Si hay token de recuperación O sesión activa Y estamos en la página de reset
-        if ((type === 'recovery' && accessToken) || (session && isOnResetRoute)) {
-          console.log('Email recovery flow detected!');
+        // IMPORTANTE: Si hay CUALQUIER indicio de que viene del email, activar el modo email
+        if (
+          (type === 'recovery' && accessToken) || // Token en hash
+          (typeParam === 'recovery' && tokenParam) || // Token en query params
+          (session && session.user && isOnResetRoute) || // Sesión activa en reset route
+          (window.location.hash.includes('recovery')) || // Cualquier mención de recovery en hash
+          (!searchParams.get('code') && isOnResetRoute && !localStorage.getItem('passwordResetCode')) // En reset route sin código
+        ) {
+          console.log('🔐 Email recovery flow detected!');
           setIsEmailRecovery(true);
           setIsValidSession(true);
-          setValidCode(true); // Para habilitar el formulario
+          setValidCode(true); // Para habilitar el formulario de contraseña
         } else {
-          // Flujo normal con código de verificación
-          console.log('Normal verification code flow');
+          // Solo usar flujo con código si EXPLÍCITAMENTE hay un código
           const urlCode = searchParams.get('code');
           if (urlCode) {
+            console.log('📧 Code verification flow');
             setCode(urlCode);
             validateCode(urlCode);
           } else {
-            setIsEmailRecovery(false);
-            setIsValidSession(false);
+            // Por defecto, si no hay código, asumir que es desde email
+            console.log('🔑 Defaulting to email recovery flow');
+            setIsEmailRecovery(true);
+            setIsValidSession(true);
+            setValidCode(true);
           }
         }
       } catch (error) {
         console.error('Error checking email recovery:', error);
-        setIsEmailRecovery(false);
-        setIsValidSession(false);
+        // En caso de error, asumir flujo de email para mejor UX
+        setIsEmailRecovery(true);
+        setIsValidSession(true);
       } finally {
         setCheckingSession(false);
       }
