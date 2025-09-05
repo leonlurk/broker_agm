@@ -20,20 +20,33 @@
     },
     "commissionLevels": {
       "title": "Commission Levels",
+      "systemTitle": "Commission System by Account Type",
+      "marketDirect": "Market Direct",
+      "institucional": "Institutional",
+      "allInstruments": "Commissions on ALL instruments",
+      "forexMetalsOnly": "Commissions ONLY on Forex and Metals",
+      "instrumentsNote": "Forex, Metals, Indices, Crypto, Stocks",
+      "metaquotesRestriction": "MetaQuotes Restriction",
+      "perLot": "per lot",
+      "requirement": "Requirement",
+      "referrals": "referrals",
       "tier1": {
         "name": "Tier 1",
-        "commission": "Commission Per Lot $3.00 USD",
-        "requirement": "Up to {{count}} Affiliates"
+        "marketDirectAmount": "$3.00 USD",
+        "institucionalAmount": "$1.50 USD",
+        "requirement": "0-99 referrals"
       },
       "tier2": {
         "name": "Tier 2",
-        "commission": "Commission Per Lot $3.50 USD",
-        "requirement": "Up to {{count}} Affiliates"
+        "marketDirectAmount": "$3.50 USD",
+        "institucionalAmount": "$1.75 USD",
+        "requirement": "100-199 referrals"
       },
       "tier3": {
         "name": "Tier 3",
-        "commission": "Commission Per Lot $4.00 USD",
-        "requirement": "{{count}}+ Affiliates"
+        "marketDirectAmount": "$4.00 USD",
+        "institucionalAmount": "$2.00 USD",
+        "requirement": "200+ referrals"
       }
     },
     "activeAccounts": {

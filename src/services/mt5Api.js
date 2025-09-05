@@ -119,7 +119,8 @@ export const createMT5Account = async (userId, accountData) => {
       name: accountData.accountName,
       email: accountData.email || '',
       group: group,
-      leverage: parseInt(accountData.leverage) || 100,
+      // Extract leverage number from format "1:100" -> 100
+      leverage: parseInt(accountData.leverage?.split(':')[1]) || parseInt(accountData.leverage) || 100,
       account_type: accountData.accountType?.toLowerCase() === 'demo' ? 'demo' : 'real',
       // Set initial deposit - only add deposit if specifically provided
       ...(accountData.initialBalance && { deposit: parseFloat(accountData.initialBalance) })

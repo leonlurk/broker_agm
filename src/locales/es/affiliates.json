@@ -20,20 +20,33 @@
     },
     "commissionLevels": {
       "title": "Niveles de Comisión",
+      "systemTitle": "Sistema de Comisiones por Tipo de Cuenta",
+      "marketDirect": "Market Direct",
+      "institucional": "Institucional",
+      "allInstruments": "Comisiones en TODOS los instrumentos",
+      "forexMetalsOnly": "Comisiones SOLO en Forex y Metales",
+      "instrumentsNote": "Forex, Metales, Índices, Cripto, Acciones",
+      "metaquotesRestriction": "Restricción de MetaQuotes",
+      "perLot": "por lote",
+      "requirement": "Requisito",
+      "referrals": "referidos",
       "tier1": {
-        "name": "Tier 1",
-        "commission": "Comision Por Lote $3,00 USD",
-        "requirement": "Hasta {{count}} Afiliados"
+        "name": "Nivel 1",
+        "marketDirectAmount": "$3.00 USD",
+        "institucionalAmount": "$1.50 USD",
+        "requirement": "0-99 referidos"
       },
       "tier2": {
-        "name": "Tier 2",
-        "commission": "Comision Por Lote $3,50 USD",
-        "requirement": "Hasta {{count}} Afiliados"
+        "name": "Nivel 2",
+        "marketDirectAmount": "$3.50 USD",
+        "institucionalAmount": "$1.75 USD",
+        "requirement": "100-199 referidos"
       },
       "tier3": {
-        "name": "Tier 3",
-        "commission": "Comision Por Lote $4,00 USD",
-        "requirement": "{{count}}+ Afiliados"
+        "name": "Nivel 3",
+        "marketDirectAmount": "$4.00 USD",
+        "institucionalAmount": "$2.00 USD",
+        "requirement": "200+ referidos"
       }
     },
     "activeAccounts": {

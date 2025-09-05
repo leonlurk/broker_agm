@@ -193,30 +193,133 @@ class AffiliatesService {
   }
 
   /**
-   * Get tier benefits
+   * Get tier benefits with account type consideration
    * @param {number} tier - Tier level
+   * @param {string} accountType - Account type (Market Direct or Institucional)
    * @returns {Object} Tier benefits
    */
-  getTierBenefits(tier) {
+  getTierBenefits(tier, accountType = 'Market Direct') {
+    // Fixed commission amounts in USD per lot
+    const marketDirectAmounts = {
+      1: 3.00,  // $3.00 USD
+      2: 3.50,  // $3.50 USD
+      3: 4.00   // $4.00 USD
+    };
+    
+    // Calculate commission amount based on account type
+    const baseAmount = marketDirectAmounts[tier] || marketDirectAmounts[1];
+    const commissionAmount = accountType === 'Institucional' 
+      ? baseAmount / 2  // Half commission for Institucional
+      : baseAmount;     // Full commission for Market Direct
+    
     const benefits = {
       1: {
-        commissionRate: 0.10, // 10%
+        commissionAmount,
+        commissionRate: 0, // Deprecated - using fixed amounts now
         bonuses: [],
         minPayout: 50
       },
       2: {
-        commissionRate: 0.15, // 15%
+        commissionAmount,
+        commissionRate: 0, // Deprecated - using fixed amounts now
         bonuses: ['priority_support'],
         minPayout: 25
       },
       3: {
-        commissionRate: 0.20, // 20%
+        commissionAmount,
+        commissionRate: 0, // Deprecated - using fixed amounts now
         bonuses: ['priority_support', 'exclusive_materials'],
         minPayout: 10
       }
     };
 
     return benefits[tier] || benefits[1];
+  }
+
+  /**
+   * Get commission amount based on tier and account type
+   * @param {number} tier - Tier level
+   * @param {string} accountType - Account type (Market Direct or Institucional)
+   * @returns {number} Commission amount in USD per lot
+   */
+  getCommissionAmount(tier, accountType = 'Market Direct') {
+    const benefits = this.getTierBenefits(tier, accountType);
+    return benefits.commissionAmount;
+  }
+
+  /**
+   * Calculate commission rate based on tier and account type
+   * @param {number} tier - Tier level
+   * @param {string} accountType - Account type (Market Direct or Institucional)
+   * @returns {number} Commission rate as decimal
+   * @deprecated Use getCommissionAmount instead
+   */
+  getCommissionRate(tier, accountType = 'Market Direct') {
+    const benefits = this.getTierBenefits(tier, accountType);
+    return benefits.commissionRate;
+  }
+
+  /**
+   * Check if instrument is eligible for commission based on account type
+   * @param {string} instrument - Trading instrument symbol
+   * @param {string} accountType - Account type (Market Direct or Institucional)
+   * @returns {boolean} True if eligible for commission
+   */
+  isEligibleInstrument(instrument, accountType = 'Market Direct') {
+    if (!instrument) return false;
+    
+    // Market Direct: ALL instruments generate commission
+    if (accountType === 'Market Direct') {
+      return true;
+    }
+    
+    // Institucional: ONLY Forex and Metals generate commission
+    const upperInstrument = instrument.toUpperCase();
+    
+    // Forex pairs (contains currency codes)
+    const forexPairs = [
+      'EUR', 'USD', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'NZD',
+      'SEK', 'NOK', 'DKK', 'PLN', 'HUF', 'CZK', 'TRY', 'MXN',
+      'ZAR', 'RUB', 'INR', 'BRL', 'CNY', 'CNH', 'SGD', 'HKD'
+    ];
+    
+    // Metals symbols
+    const metals = [
+      'XAU', 'XAG', 'GOLD', 'SILVER', 'PLATINUM', 'PALLADIUM',
+      'XPT', 'XPD', 'COPPER', 'ALUMINUM'
+    ];
+    
+    // Check if it's a forex pair (contains at least one currency code)
+    const isForex = forexPairs.some(currency => upperInstrument.includes(currency));
+    
+    // Check if it's a metal
+    const isMetal = metals.some(metal => upperInstrument.includes(metal));
+    
+    return isForex || isMetal;
+  }
+
+  /**
+   * Calculate commission for a trade
+   * @param {Object} trade - Trade details (should include lots/volume)
+   * @param {number} tier - Affiliate tier
+   * @param {string} accountType - Account type
+   * @returns {number} Commission amount in USD
+   */
+  calculateTradeCommission(trade, tier, accountType = 'Market Direct') {
+    // Check if instrument is eligible based on account type
+    if (!this.isEligibleInstrument(trade.symbol, accountType)) {
+      return 0;
+    }
+    
+    // Get fixed commission amount per lot based on tier and account type
+    const commissionPerLot = this.getCommissionAmount(tier, accountType);
+    
+    // Calculate total commission based on lots traded
+    // Assuming trade.lots contains the number of lots traded
+    const lots = trade.lots || trade.volume || 0;
+    const totalCommission = lots * commissionPerLot;
+    
+    return Math.max(0, totalCommission); // Ensure non-negative
   }
 
   /**

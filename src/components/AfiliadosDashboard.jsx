@@ -277,14 +277,52 @@ const AfiliadosDashboard = () => {
         {/* Tiers Section */}
             <div className="space-y-4">
               <h2 className="text-2xl md:text-3xl font-medium">{t('dashboard.commissionLevels.title')}</h2>
+              
+              {/* Commission Info Box */}
+              <div className="bg-gradient-to-br from-blue-900/20 to-blue-800/10 border border-blue-500/30 rounded-xl p-4 mb-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-blue-400 mt-1">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-blue-400 font-semibold mb-2">{t('dashboard.commissionLevels.systemTitle')}</h4>
+                    <div className="space-y-2">
+                      <div className="border-l-2 border-cyan-400 pl-3">
+                        <p className="text-cyan-400 font-medium">{t('dashboard.commissionLevels.marketDirect')}</p>
+                        <p className="text-gray-300 text-sm">{t('dashboard.commissionLevels.allInstruments')}</p>
+                        <p className="text-gray-400 text-xs">{t('dashboard.commissionLevels.instrumentsNote')}</p>
+                      </div>
+                      <div className="border-l-2 border-yellow-400 pl-3">
+                        <p className="text-yellow-400 font-medium">{t('dashboard.commissionLevels.institucional')}</p>
+                        <p className="text-gray-300 text-sm">{t('dashboard.commissionLevels.forexMetalsOnly')}</p>
+                        <p className="text-gray-400 text-xs">{t('dashboard.commissionLevels.metaquotesRestriction')}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Tier 1 */}
           <div className={`p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2d2d2d] rounded-xl border ${
             currentTier >= 1 ? 'border-cyan-500' : 'border-[#333]'
           } space-y-2`}>
                   <h3 className="text-lg md:text-xl font-semibold mb-1">{t('dashboard.commissionLevels.tier1.name')}</h3>
-                  <p className="text-gray-400 text-sm md:text-base">{t('dashboard.commissionLevels.tier1.commission')}</p>
-                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.tier1.requirement', { count: 100 })}</p> 
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1">
+                      <span className="text-cyan-400 text-sm">{t('dashboard.commissionLevels.marketDirect')}:</span>
+                      <span className="text-white font-bold">{t('dashboard.commissionLevels.tier1.marketDirectAmount')}</span>
+                      <span className="text-gray-500 text-xs">{t('dashboard.commissionLevels.perLot')}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-yellow-400 text-sm">{t('dashboard.commissionLevels.institucional')}:</span>
+                      <span className="text-white font-bold">{t('dashboard.commissionLevels.tier1.institucionalAmount')}</span>
+                      <span className="text-gray-500 text-xs">{t('dashboard.commissionLevels.perLot')}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.requirement')}: {t('dashboard.commissionLevels.tier1.requirement')}</p> 
           </div>
 
           {/* Tier 2 */}
@@ -297,8 +335,19 @@ const AfiliadosDashboard = () => {
               </div>
             ) : null}
                   <h3 className="text-lg md:text-xl font-semibold mb-1">{t('dashboard.commissionLevels.tier2.name')}</h3>
-                  <p className="text-gray-400 text-sm md:text-base">{t('dashboard.commissionLevels.tier2.commission')}</p>
-                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.tier2.requirement', { count: 200 })}</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1">
+                      <span className="text-cyan-400 text-sm">{t('dashboard.commissionLevels.marketDirect')}:</span>
+                      <span className="text-white font-bold">{t('dashboard.commissionLevels.tier2.marketDirectAmount')}</span>
+                      <span className="text-gray-500 text-xs">{t('dashboard.commissionLevels.perLot')}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-yellow-400 text-sm">{t('dashboard.commissionLevels.institucional')}:</span>
+                      <span className="text-white font-bold">{t('dashboard.commissionLevels.tier2.institucionalAmount')}</span>
+                      <span className="text-gray-500 text-xs">{t('dashboard.commissionLevels.perLot')}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.requirement')}: {t('dashboard.commissionLevels.tier2.requirement')}</p>
           </div>
 
           {/* Tier 3 */}
@@ -311,8 +360,19 @@ const AfiliadosDashboard = () => {
               </div>
             ) : null}
                   <h3 className="text-lg md:text-xl font-semibold mb-1">{t('dashboard.commissionLevels.tier3.name')}</h3>
-                  <p className="text-gray-400 text-sm md:text-base">{t('dashboard.commissionLevels.tier3.commission')}</p>
-                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.tier3.requirement', { count: 200 })}</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1">
+                      <span className="text-cyan-400 text-sm">{t('dashboard.commissionLevels.marketDirect')}:</span>
+                      <span className="text-white font-bold">{t('dashboard.commissionLevels.tier3.marketDirectAmount')}</span>
+                      <span className="text-gray-500 text-xs">{t('dashboard.commissionLevels.perLot')}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-yellow-400 text-sm">{t('dashboard.commissionLevels.institucional')}:</span>
+                      <span className="text-white font-bold">{t('dashboard.commissionLevels.tier3.institucionalAmount')}</span>
+                      <span className="text-gray-500 text-xs">{t('dashboard.commissionLevels.perLot')}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs md:text-sm text-gray-500">{t('dashboard.commissionLevels.requirement')}: {t('dashboard.commissionLevels.tier3.requirement')}</p>
                 </div>
           </div>
         </div>

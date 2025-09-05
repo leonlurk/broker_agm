@@ -2697,7 +2697,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">{t('accounts.fields.leverage')}: 1:{selectedAccount.leverage || '500'}</span>
+                          <span className="text-gray-400">{t('accounts.fields.leverage')}: {selectedAccount.leverage?.includes(':') ? selectedAccount.leverage : `1:${selectedAccount.leverage || '500'}`}</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
