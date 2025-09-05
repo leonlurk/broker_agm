@@ -180,9 +180,9 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   };
 
   return (
-    <div className="w-[330px] h-[700px] sm:w-full md:w-[490px] p-5 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">
-      <div className="flex justify-center mb-6">
-        <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-16" />
+    <div className="w-full max-w-[400px] md:max-w-[490px] min-h-[500px] p-6 sm:p-8 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">
+      <div className="flex justify-center mb-4 sm:mb-6">
+        <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-12 sm:h-16" />
       </div>
       
 
@@ -201,7 +201,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
       )}
       
       {!show2FA ? (
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         <div className="space-y-3">
           <div className="relative">
             <input
@@ -239,7 +239,7 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 text-sm">
           <div className="flex items-center">
             <input
               id="remember_me"
@@ -248,14 +248,14 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
               onChange={(e) => setRememberMe(e.target.checked)}
               className="h-4 w-4 bg-gray-800 border-gray-700 rounded focus:ring-blue-500"
             />
-            <label htmlFor="remember_me" className="ml-2 block text-gray-300">
+            <label htmlFor="remember_me" className="ml-2 block text-gray-300 whitespace-nowrap">
               {t('login.rememberMe')}
             </label>
           </div>
           <button
             type="button"
             onClick={onForgotClick}
-            className="text-white hover:text-blue-500 bg-transparent whitespace-nowrap"
+            className="text-white hover:text-blue-500 bg-transparent text-left sm:text-right"
           >
             {t('login.forgotPassword')}
           </button>

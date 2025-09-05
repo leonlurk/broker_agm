@@ -238,9 +238,9 @@ const Register = ({ onLoginClick }) => {
   };
 
   return (
-    <div className="w-[330px] h-[700px] sm:w-full md:w-[490px] p-5 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">
-      <div className="flex justify-center mb-6">
-        <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-16" />
+    <div className="w-full max-w-[400px] md:max-w-[490px] p-4 sm:p-6 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl overflow-y-auto max-h-[90vh] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+      <div className="flex justify-center mb-4 sm:mb-6 sticky top-0 bg-black bg-opacity-60 z-10 pb-2">
+        <img src="/Capa_x0020_1.svg" alt="Broker Logo" className="h-12 sm:h-14" />
       </div>
       
       
@@ -250,10 +250,10 @@ const Register = ({ onLoginClick }) => {
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+        <div className="space-y-2 sm:space-y-3">
           {/* Nombre y Apellido en una fila */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div className="relative">
               <input
                 type="text"
@@ -277,7 +277,7 @@ const Register = ({ onLoginClick }) => {
           </div>
 
           {/* Usuario y Email en una fila */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
           <div className="relative">
             <input
               type="text"
@@ -370,7 +370,7 @@ const Register = ({ onLoginClick }) => {
           </div>
 
           {/* Número de Teléfono */}
-          <div className="flex gap-1.5">
+          <div className="flex gap-1 sm:gap-1.5">
             <div className="relative">
               <input
                 type="text"
@@ -417,10 +417,10 @@ const Register = ({ onLoginClick }) => {
 
           {/* Password Requirements */}
           {(showPasswordRequirements || password) && (
-            <div className="bg-gray-900 bg-opacity-30 border border-gray-700 rounded-xl p-3 space-y-1">
-              <p className="text-xs text-gray-400 mb-2">Requisitos de la contraseña:</p>
+            <div className="bg-gray-900 bg-opacity-30 border border-gray-700 rounded-xl p-2 sm:p-3 space-y-1 text-xs">
+              <p className="text-xs text-gray-400 mb-1 sm:mb-2">Requisitos de la contraseña:</p>
               {Object.entries(passwordRequirements).map(([key, req]) => (
-                <div key={key} className="flex items-center gap-2 text-xs">
+                <div key={key} className="flex items-center gap-1 sm:gap-2 text-xs">
                   {req.test(password) ? (
                     <Check className="w-3 h-3 text-green-500" />
                   ) : (
