@@ -34,7 +34,7 @@
       "investorPassword": "Contraseña de Inversor",
       "masterPassword": "Contraseña Master",
       "accountNumber": "Número de Cuenta",
-      "serverMT5": "Servidor MT5",
+      "serverMT5": "Servidor MetaTrader 5",
       "investorPasswordReadOnly": "Contraseña Investor (Solo Lectura)",
       "currentBalance": "Balance actual",
       "createdAt": "Creada",
@@ -61,7 +61,7 @@
       "creating": "Creando Cuenta...",
       "createButton": "+ Crear Cuenta",
       "success": "¡Cuenta creada exitosamente! Número de cuenta: {{accountNumber}}",
-      "mt5Credentials": "Credenciales MT5:",
+      "mt5Credentials": "Credenciales MetaTrader 5:",
       "loginLabel": "Login:",
       "passwordLabel": "Contraseña:",
       "investorPasswordLabel": "Contraseña Investor:",
@@ -108,7 +108,7 @@
     "details": {
       "title": "Detalles de la Cuenta",
       "subtitle": "Información completa de la cuenta seleccionada",
-      "credentials": "Credenciales MT5"
+      "credentials": "Credenciales MetaTrader 5"
     },
     "messages": {
       "created": "Cuenta creada exitosamente",
