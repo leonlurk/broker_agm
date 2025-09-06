@@ -34,7 +34,7 @@ export default function TradingChallengeUI() {
   const [showInvestorPassword, setShowInvestorPassword] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
 
-  const leverageOptions = ['1:50', '1:100', '1:200'];
+  const leverageOptions = ['1:30', '1:50', '1:100', '1:200'];
 
   const handleCopy = async (text, field) => {
     try {
