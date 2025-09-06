@@ -410,13 +410,37 @@ export const loginUser = async (identifier, password) => {
  */
 export const logoutUser = async () => {
   try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    logger.auth('[Supabase] Starting logout process');
+    
+    // Clear all session data
+    const { error } = await supabase.auth.signOut({
+      scope: 'global' // This ensures all sessions are cleared
+    });
+    
+    if (error) {
+      logger.error('[Supabase] Logout error:', error);
+      // Even if there's an error, try to clear local session
+      await supabase.auth.signOut({ scope: 'local' });
+    }
+    
+    // Clear any cached data
+    localStorage.removeItem('supabase.auth.token');
+    sessionStorage.clear();
     
     logger.auth('[Supabase] User signed out successfully');
     return { success: true, error: null };
   } catch (error) {
     logger.error('[Supabase] Logout error', error);
+    
+    // Force clear session even on error
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (e) {
+      logger.error('[Supabase] Force logout error', e);
+    }
+    
     return { success: false, error };
   }
 };

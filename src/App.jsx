@@ -29,10 +29,26 @@ function App() {
   
   const handleLogout = async () => {
     try {
-      await AuthAdapter.logoutUser();
-      navigate('/login');
+      console.log("Starting logout process...");
+      
+      // Clear any local storage items that might persist
+      localStorage.removeItem("isAuthenticated");
+      localStorage.removeItem("sb-ukngiipxprielwdfuvln-auth-token"); // Supabase token key
+      
+      // Call the logout function
+      const result = await AuthAdapter.logoutUser();
+      
+      if (result.error) {
+        console.error("Logout error:", result.error);
+      }
+      
+      // Force a page reload to clear all state
+      window.location.href = '/login';
+      
     } catch (error) {
       console.error("Logout failed", error);
+      // Even if logout fails, redirect to login
+      window.location.href = '/login';
     }
   };
 

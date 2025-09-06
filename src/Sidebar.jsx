@@ -98,9 +98,14 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem("isAuthenticated");
-        onLogout();
+    const handleLogout = async () => {
+        try {
+            // Solo llamar a onLogout que ya maneja todo
+            await onLogout();
+        } catch (error) {
+            console.error("Error during logout:", error);
+            toast.error("Error al cerrar sesión");
+        }
     };
 
     const toggleMobileMenu = () => {
