@@ -131,17 +131,17 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
 
     setLoading(true);
     try {
-      // Verify email code (simplified for demo)
-      const storedCode = localStorage.getItem('temp2FAEmailCode');
-      if (emailCode !== storedCode) {
-        toast.error(t('twoFactor.errors.incorrectCode'));
+      // Verify email code using the service
+      const result = await twoFactorService.verifyEmailCode(currentUser.id, emailCode);
+      
+      if (!result.success) {
+        toast.error(result.message || t('twoFactor.errors.incorrectCode'));
         setLoading(false);
         return;
       }
 
       // Enable all selected methods
       await enableSelectedMethods();
-      localStorage.removeItem('temp2FAEmailCode');
     } catch (error) {
       console.error('Error verifying email code:', error);
       toast.error(t('twoFactor.errors.verifyFailed'));
