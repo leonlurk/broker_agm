@@ -28,6 +28,7 @@
     "view": "Ver",
     "submit": "Enviar",
     "reset": "Restablecer",
+    "processing": "Procesando...",
     "logout": "Cerrar sesión",
     "all": "Todas"
   },

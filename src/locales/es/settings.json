@@ -73,7 +73,25 @@
       "enable": "Activar 2FA",
       "disable": "Desactivar 2FA",
       "backup": "Códigos de Respaldo",
-      "generateBackup": "Generar Códigos de Respaldo"
+      "generateBackup": "Generar Códigos de Respaldo",
+      "disableTitle": "Desactivar Autenticación 2FA",
+      "disableWarningTitle": "⚠️ Advertencia de Seguridad",
+      "disableWarningText": "Desactivar la autenticación de dos factores reducirá significativamente la seguridad de tu cuenta. Te recomendamos mantenerla activada.",
+      "disableVerificationRequired": "Para desactivar 2FA, debes verificar tu identidad usando uno de tus métodos configurados:",
+      "continueDisable": "Continuar",
+      "verifyToDisable": "Verifica tu identidad para desactivar 2FA:",
+      "chooseVerificationMethod": "Elige un método de verificación:",
+      "enterAppCode": "Ingresa el código de tu aplicación autenticadora:",
+      "enterEmailCode": "Ingresa el código enviado a tu email:",
+      "disableConfirm": "Desactivar 2FA",
+      "methods": {
+        "app": "Aplicación Autenticadora",
+        "email": "Código por Email"
+      },
+      "errors": {
+        "selectMethod": "Selecciona un método de verificación",
+        "disableFailed": "Error al desactivar 2FA"
+      }
     },
     "sessions": {
       "title": "Sesiones Activas",
