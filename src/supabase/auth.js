@@ -750,9 +750,33 @@ export const verifyEmailWithToken = async (token) => {
     
     if (!profiles || profiles.length === 0) {
       logger.error('[Supabase] No user found with token:', token);
+      
+      // For debugging, let's also try to use the existing verify_user_email RPC function
+      // which might handle token mismatches better
+      try {
+        logger.info('[Supabase] Trying existing verify_user_email RPC as fallback');
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('verify_user_email', {
+          token: token
+        });
+        
+        if (!rpcError && rpcResult && rpcResult.success) {
+          logger.auth('[Supabase] Email verified via RPC fallback for user:', rpcResult.user_id);
+          return { 
+            success: true, 
+            user: {
+              id: rpcResult.user_id,
+              email: rpcResult.email
+            },
+            message: 'Email verificado exitosamente'
+          };
+        }
+      } catch (rpcException) {
+        logger.warn('[Supabase] RPC fallback also failed:', rpcException.message);
+      }
+      
       return { 
         success: false, 
-        error: 'Token de verificación no encontrado' 
+        error: 'Token de verificación no encontrado. Es posible que haya expirado o ya se haya usado.' 
       };
     }
     
