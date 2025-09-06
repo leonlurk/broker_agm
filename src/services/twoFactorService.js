@@ -7,7 +7,7 @@ import * as OTPAuth from 'otpauth';
 import QRCode from 'qrcode';
 import { supabase } from '../supabase/config';
 import { logger } from '../utils/logger';
-import emailService from './emailService';
+import emailServiceProxy from './emailServiceProxy';
 
 class TwoFactorService {
   constructor() {
@@ -218,7 +218,9 @@ class TwoFactorService {
       
       const { error } = await supabase
         .from('user_2fa')
-        .upsert(dataToInsert);
+        .upsert(dataToInsert, {
+          onConflict: 'user_id'
+        });
 
       if (error) {
         logger.error('[2FA] Error enabling dual 2FA:', error);
@@ -409,10 +411,18 @@ class TwoFactorService {
       this.emailCodes.set(userId, { code, expiration, attempts: 0 });
       
       // Send email
-      const result = await emailService.send2FACode(
+      logger.info('[2FA] About to call emailServiceProxy.send2FACode', {
+        email: userEmail,
+        name: userName,
+        code: code
+      });
+      
+      const result = await emailServiceProxy.send2FACode(
         { email: userEmail, name: userName },
         code
       );
+      
+      logger.info('[2FA] emailServiceProxy.send2FACode result:', result);
       
       if (result.success) {
         logger.info('[2FA] Email code sent to:', userEmail);

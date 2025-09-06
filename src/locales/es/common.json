@@ -31,6 +31,8 @@
     "logout": "Cerrar sesión",
     "all": "Todas"
   },
+  "cancel": "Cancelar",
+  "close": "Cerrar",
   "navigation": {
     "home": "Inicio",
     "dashboard": "Panel",

@@ -71,12 +71,12 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
     
     setLoading(true);
     try {
-      // Generate and send email code
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      // Here you would call your email service to send the code
-      // For now, we'll simulate it
-      localStorage.setItem('temp2FAEmailCode', code);
-      console.log('Email verification code:', code); // For testing
+      // Send email code using twoFactorService (it generates its own code)
+      const result = await twoFactorService.sendEmailCode(currentUser.id, userData.email, userData.email.split('@')[0]);
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Error al enviar código por email');
+      }
       
       setEmailCodeSent(true);
       setResendCooldown(60); // 60 seconds cooldown
