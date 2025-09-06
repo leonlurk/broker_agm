@@ -115,15 +115,27 @@ const TwoFactorDisableModal = ({ isOpen, onClose, onSuccess, userMethods }) => {
           userMethods?.userId,
           emailCode
         );
+        console.log('[TwoFactorDisableModal] Email result:', verificationResult);
       }
 
-      if (!verificationResult.success) {
-        toast.error(verificationResult.message || t('twoFactor.errors.incorrectCode', { ns: 'settings' }));
+      console.log('[TwoFactorDisableModal] Final verification result:', verificationResult);
+
+      // Handle both formats: boolean (TOTP) and object with success property (Email)
+      const isVerified = typeof verificationResult === 'boolean' ? verificationResult : verificationResult.success;
+      
+      if (!isVerified) {
+        const errorMessage = verificationResult.message || t('twoFactor.errors.incorrectCode', { ns: 'settings' });
+        console.log('[TwoFactorDisableModal] Verification failed:', errorMessage);
+        toast.error(errorMessage);
         return;
       }
 
+      console.log('[TwoFactorDisableModal] Verification successful, calling disable2FA...');
+      
       // If verification successful, disable 2FA
       const disableResult = await twoFactorService.disable2FA(userMethods?.userId);
+      
+      console.log('[TwoFactorDisableModal] Disable2FA result:', disableResult);
       
       if (disableResult.success) {
         toast.success(t('notifications.twoFactorDisabled', { ns: 'settings' }));
