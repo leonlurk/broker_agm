@@ -406,9 +406,32 @@ class TwoFactorService {
       // Generate a 6-digit code
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // Store code with expiration (10 minutes)
-      const expiration = Date.now() + 10 * 60 * 1000;
-      this.emailCodes.set(userId, { code, expiration, attempts: 0 });
+      // Store code in database with expiration (10 minutes)
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      
+      // Delete any existing code for this user first
+      await supabase
+        .from('temp_email_codes')
+        .delete()
+        .eq('user_id', userId);
+      
+      // Store new code in database
+      const { error: storeError } = await supabase
+        .from('temp_email_codes')
+        .insert({
+          user_id: userId,
+          code: code,
+          expires_at: expiresAt,
+          attempts: 0,
+          created_at: new Date().toISOString()
+        });
+      
+      if (storeError) {
+        // Fallback to memory storage if database fails
+        logger.warn('[2FA] Failed to store code in database, using memory:', storeError.message);
+        const expiration = Date.now() + 10 * 60 * 1000;
+        this.emailCodes.set(userId, { code, expiration, attempts: 0 });
+      }
       
       // Send email
       logger.info('[2FA] About to call emailServiceProxy.send2FACode', {
@@ -445,27 +468,60 @@ class TwoFactorService {
    */
   async verifyEmailCode(userId, code) {
     try {
-      const storedData = this.emailCodes.get(userId);
+      // First try to get from database
+      const { data: storedData, error } = await supabase
+        .from('temp_email_codes')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
       
-      if (!storedData) {
-        return { success: false, message: 'No hay código pendiente de verificación' };
+      let codeData;
+      let isFromDatabase = true;
+      
+      if (error || !storedData) {
+        // Fallback to memory storage
+        codeData = this.emailCodes.get(userId);
+        isFromDatabase = false;
+        
+        if (!codeData) {
+          return { success: false, message: 'No hay código pendiente de verificación' };
+        }
+      } else {
+        codeData = {
+          code: storedData.code,
+          expiration: new Date(storedData.expires_at).getTime(),
+          attempts: storedData.attempts
+        };
       }
       
       // Check expiration
-      if (Date.now() > storedData.expiration) {
-        this.emailCodes.delete(userId);
+      if (Date.now() > codeData.expiration) {
+        if (isFromDatabase) {
+          await supabase.from('temp_email_codes').delete().eq('user_id', userId);
+        } else {
+          this.emailCodes.delete(userId);
+        }
         return { success: false, message: 'El código ha expirado' };
       }
       
       // Check attempts (max 3)
-      if (storedData.attempts >= 3) {
-        this.emailCodes.delete(userId);
+      if (codeData.attempts >= 3) {
+        if (isFromDatabase) {
+          await supabase.from('temp_email_codes').delete().eq('user_id', userId);
+        } else {
+          this.emailCodes.delete(userId);
+        }
         return { success: false, message: 'Demasiados intentos fallidos' };
       }
       
       // Verify code
-      if (storedData.code === code) {
-        this.emailCodes.delete(userId);
+      if (codeData.code === code) {
+        // Delete code after successful verification
+        if (isFromDatabase) {
+          await supabase.from('temp_email_codes').delete().eq('user_id', userId);
+        } else {
+          this.emailCodes.delete(userId);
+        }
         
         // Update last used timestamp
         await this.checkTableStructure();
@@ -482,9 +538,19 @@ class TwoFactorService {
         return { success: true, message: 'Código verificado correctamente' };
       } else {
         // Increment attempts
-        storedData.attempts++;
-        this.emailCodes.set(userId, storedData);
-        return { success: false, message: `Código incorrecto. Intentos restantes: ${3 - storedData.attempts}` };
+        const newAttempts = codeData.attempts + 1;
+        
+        if (isFromDatabase) {
+          await supabase
+            .from('temp_email_codes')
+            .update({ attempts: newAttempts })
+            .eq('user_id', userId);
+        } else {
+          codeData.attempts = newAttempts;
+          this.emailCodes.set(userId, codeData);
+        }
+        
+        return { success: false, message: `Código incorrecto. Intentos restantes: ${3 - newAttempts}` };
       }
     } catch (error) {
       logger.error('[2FA] Error verifying email code:', error);
