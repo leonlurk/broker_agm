@@ -792,15 +792,38 @@ export const verifyEmailWithToken = async (token) => {
       };
     }
     
-    // Update user as verified
-    const { error: updateError } = await supabase
-      .from(USERS_TABLE)
-      .update({
-        email_verified: true,
-        verification_token: null,
-        verified_at: new Date().toISOString()
-      })
-      .eq('id', profile.id);
+    // Use RPC instead of direct UPDATE to avoid CORS/RLS issues
+    const { data: updateResult, error: updateError } = await supabase.rpc('verify_user_email', {
+      token: token
+    });
+    
+    // If RPC fails, fallback to direct update
+    if (updateError) {
+      logger.warn('[Supabase] RPC verify_user_email failed, trying direct update:', updateError.message);
+      const { error: directUpdateError } = await supabase
+        .from(USERS_TABLE)
+        .update({
+          email_verified: true,
+          verification_token: null,
+          verified_at: new Date().toISOString()
+        })
+        .eq('id', profile.id);
+      
+      if (directUpdateError) {
+        logger.error('[Supabase] Both RPC and direct update failed:', directUpdateError);
+        updateError = directUpdateError; // Keep the direct update error for downstream handling
+      } else {
+        logger.auth('[Supabase] Direct update succeeded as fallback');
+      }
+    } else if (updateResult && !updateResult.success) {
+      logger.error('[Supabase] RPC returned error:', updateResult.error);
+      return {
+        success: false,
+        error: updateResult.error
+      };
+    } else {
+      logger.auth('[Supabase] RPC verify_user_email succeeded');
+    }
     
     if (updateError) {
       logger.error('[Supabase] Error updating verification status:', updateError);
@@ -890,26 +913,49 @@ export const resendVerificationEmail = async (email) => {
     // Generate new verification token
     const verificationToken = crypto.randomUUID();
     
-    // Update user with new verification token
-    const { error: updateError } = await supabase
-      .from(USERS_TABLE) // Usar la constante USERS_TABLE que es 'profiles'
-      .update({ 
-        verification_token: verificationToken,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userData.id);
+    // Use RPC to update verification token to avoid CORS/RLS issues
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('request_email_verification', {
+      user_email: email
+    });
     
-    if (updateError) {
-      logger.error('[Supabase] Error updating verification token:', updateError);
+    let finalToken = verificationToken;
+    
+    if (rpcError) {
+      logger.warn('[Supabase] RPC request_email_verification failed, trying direct update:', rpcError.message);
+      
+      // Fallback to direct update
+      const { error: updateError } = await supabase
+        .from(USERS_TABLE)
+        .update({ 
+          verification_token: verificationToken,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userData.id);
+      
+      if (updateError) {
+        logger.error('[Supabase] Error updating verification token:', updateError);
+        return { 
+          success: false, 
+          error: 'Error al actualizar token de verificación' 
+        };
+      }
+      
+      logger.auth('[Supabase] Direct update succeeded as fallback');
+    } else if (rpcResult && rpcResult.success) {
+      // Use the token from RPC result if available
+      finalToken = rpcResult.token || verificationToken;
+      logger.auth('[Supabase] RPC request_email_verification succeeded');
+    } else {
+      logger.error('[Supabase] RPC returned error:', rpcResult?.error);
       return { 
         success: false, 
-        error: 'Error al actualizar token de verificación' 
+        error: rpcResult?.error || 'Error al generar token de verificación' 
       };
     }
     
     // Use the same endpoint as registration (through emailServiceProxy)
     const API_URL = import.meta.env.VITE_CRYPTO_API_URL || 'https://whapy.apekapital.com:446/api';
-    const verificationUrl = `${window.location.origin}/verify-email?token=${verificationToken}`;
+    const verificationUrl = `${window.location.origin}/verify-email?token=${finalToken}`;
     
     const response = await fetch(`${API_URL}/email/verification`, {
       method: 'POST',

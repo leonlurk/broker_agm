@@ -34,7 +34,10 @@ const EmailVerificationPending = () => {
       setPendingUser(newPendingUser);
       console.log('EmailVerificationPending - pendingUser set to:', newPendingUser);
       
-      // Store in localStorage as well to persist across navigation
+      // Clear any old cached email data first
+      localStorage.removeItem('pending_verification_user');
+      
+      // Store fresh email data
       localStorage.setItem('pending_verification_user', JSON.stringify({
         ...newPendingUser,
         timestamp: Date.now()
