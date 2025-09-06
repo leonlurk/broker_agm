@@ -7,11 +7,13 @@ import { Shield, Mail, Eye, EyeOff } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { resendVerificationEmail } from '../supabase/auth';
 import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const { t } = useTranslation('auth');
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, refreshUserData } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -41,6 +43,14 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
       navigate(location.pathname, { replace: true });
     }
   }, [location.state, navigate, location.pathname]);
+  
+  // Auto-navigate when authentication state changes
+  useEffect(() => {
+    if (isAuthenticated && !show2FA && !showEmail2FA) {
+      // User is authenticated and not in 2FA flow, navigate to dashboard
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate, show2FA, showEmail2FA]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,7 +104,19 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
         } else {
           // Email verified or old user, proceed to dashboard
           console.log('Email verified, proceeding to dashboard');
-          onLoginSuccess();
+          
+          // Force refresh user data in AuthContext
+          if (refreshUserData) {
+            await refreshUserData();
+          }
+          
+          // The useEffect will handle navigation when isAuthenticated becomes true
+          // But also call onLoginSuccess as fallback
+          setTimeout(() => {
+            if (!isAuthenticated) {
+              onLoginSuccess();
+            }
+          }, 100);
         }
       }
     } catch (err) {
@@ -143,7 +165,19 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
       } else {
         // Email verified or old user, proceed to dashboard
         console.log('Email verified, proceeding to dashboard');
-        onLoginSuccess();
+        
+        // Force refresh user data in AuthContext
+        if (refreshUserData) {
+          await refreshUserData();
+        }
+        
+        // The useEffect will handle navigation when isAuthenticated becomes true
+        // But also call onLoginSuccess as fallback
+        setTimeout(() => {
+          if (!isAuthenticated) {
+            onLoginSuccess();
+          }
+        }, 100);
       }
     } catch (err) {
       console.error('2FA verification error:', err);
@@ -343,7 +377,19 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
             } else {
               // Email verified or old user, proceed to dashboard
               console.log('Email verified, proceeding to dashboard');
-              onLoginSuccess();
+              
+              // Force refresh user data in AuthContext
+              if (refreshUserData) {
+                await refreshUserData();
+              }
+              
+              // The useEffect will handle navigation when isAuthenticated becomes true
+              // But also call onLoginSuccess as fallback
+              setTimeout(() => {
+                if (!isAuthenticated) {
+                  onLoginSuccess();
+                }
+              }, 100);
             }
           }}
           isSetup={false}
