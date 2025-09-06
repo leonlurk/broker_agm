@@ -91,24 +91,36 @@ const UserInformationContent = ({ onBack }) => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!currentUser) return;
+      if (!currentUser) {
+        console.log("No currentUser found in UserInformationContent");
+        return;
+      }
+      console.log("currentUser in UserInformationContent:", currentUser);
       setLoading(true);
       try {
         const userId = currentUser.id;
+        console.log("Using userId:", userId);
         const { data: userData, error } = await DatabaseAdapter.users.getById(userId);
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching user data from database:", error);
+          throw error;
+        }
+        
+        console.log("Raw userData from database:", userData);
         
         const fullData = {
-          nombre: userData.nombre || '',
-          apellido: userData.apellido || '',
-          pais: userData.pais || '',
-          ciudad: userData.ciudad || '',
-          phonecode: userData.phonecode || '+54',
-          phonenumber: userData.phonenumber || '',
-          photourl: userData.photourl || currentUser.photoURL || '/IconoPerfil.svg',
-          fechanacimiento: userData.fechanacimiento || '',
-          gender: userData.gender || ''
+          nombre: userData?.nombre || '',
+          apellido: userData?.apellido || '',
+          pais: userData?.pais || '',
+          ciudad: userData?.ciudad || '',
+          phonecode: userData?.phonecode || '+54',
+          phonenumber: userData?.phonenumber || '',
+          photourl: userData?.photourl || currentUser?.photoURL || '/IconoPerfil.svg',
+          fechanacimiento: userData?.fechanacimiento || '',
+          gender: userData?.gender || ''
         };
+        
+        console.log("Processed fullData:", fullData);
 
         setFormData(fullData);
         setInitialData(fullData);

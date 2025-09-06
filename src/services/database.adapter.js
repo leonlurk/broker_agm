@@ -33,11 +33,11 @@ export const AuthAdapter = {
   isSupabase: () => DATABASE_PROVIDER === 'supabase',
 
   // Register user
-  registerUser: async (username, email, password, refId = null) => {
+  registerUser: async (username, email, password, refId = null, additionalData = {}) => {
     if (DATABASE_PROVIDER === 'supabase') {
-      return supabaseAuth.registerUser(username, email, password, refId);
+      return supabaseAuth.registerUser(username, email, password, refId, additionalData);
     }
-    return firebaseAuth.registerUser(username, email, password, refId);
+    return firebaseAuth.registerUser(username, email, password, refId, additionalData);
   },
 
   // Login user

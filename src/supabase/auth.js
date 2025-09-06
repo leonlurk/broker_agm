@@ -58,7 +58,7 @@ export const checkUsernameAvailable = async (username) => {
  * Register a new broker user
  * Mirrors Firebase registerUser function
  */
-export const registerUser = async (username, email, password, refId = null) => {
+export const registerUser = async (username, email, password, refId = null, additionalData = {}) => {
   logger.auth(`[Supabase] Attempting registration for user`, { username, email: '[REDACTED]', refId });
   
   try {
@@ -165,12 +165,18 @@ export const registerUser = async (username, email, password, refId = null) => {
       if (rpcError) {
         logger.warn('[Supabase] RPC profile creation failed:', rpcError);
         
-        // Fallback: Direct insert with verification token
+        // Fallback: Direct insert with verification token and additional profile data
         const userData = {
           id: user.id,
           email: email,
           username: username || user.id,
           full_name: username || email.split('@')[0],
+          // Include additional profile fields from Register component
+          nombre: additionalData.nombre || null,
+          apellido: additionalData.apellido || null,
+          pais: additionalData.pais || null,
+          phonecode: additionalData.phonecode || null,
+          phonenumber: additionalData.phonenumber || null,
           role: 'user',
           kyc_status: 'not_started',
           status: 'active',
@@ -210,20 +216,28 @@ export const registerUser = async (username, email, password, refId = null) => {
       } else {
         logger.auth('[Supabase] Profile created via RPC:', rpcResult);
         
-        // Update profile with verification token (in case RPC didn't save it)
-        const { error: tokenUpdateError } = await supabase
+        // Update profile with verification token AND additional profile data
+        const profileUpdates = {
+          verification_token: verificationToken,
+          email_verified: false,
+          verification_sent_at: new Date().toISOString(),
+          // Include additional profile fields from Register component
+          ...(additionalData.nombre && { nombre: additionalData.nombre }),
+          ...(additionalData.apellido && { apellido: additionalData.apellido }),
+          ...(additionalData.pais && { pais: additionalData.pais }),
+          ...(additionalData.phonecode && { phonecode: additionalData.phonecode }),
+          ...(additionalData.phonenumber && { phonenumber: additionalData.phonenumber })
+        };
+        
+        const { error: profileUpdateError } = await supabase
           .from(USERS_TABLE)
-          .update({
-            verification_token: verificationToken,
-            email_verified: false,
-            verification_sent_at: new Date().toISOString()
-          })
+          .update(profileUpdates)
           .eq('id', user.id);
           
-        if (tokenUpdateError) {
-          logger.warn('[Supabase] Could not update verification token:', tokenUpdateError);
+        if (profileUpdateError) {
+          logger.warn('[Supabase] Could not update profile data:', profileUpdateError);
         } else {
-          logger.auth('[Supabase] Verification token saved successfully');
+          logger.auth('[Supabase] Profile data and verification token saved successfully');
         }
       }
     } catch (profileError) {
@@ -797,6 +811,8 @@ export const verifyEmailWithToken = async (token) => {
       token: token
     });
     
+    let finalError = updateError; // Use a mutable variable for error tracking
+    
     // If RPC fails, fallback to direct update
     if (updateError) {
       logger.warn('[Supabase] RPC verify_user_email failed, trying direct update:', updateError.message);
@@ -811,9 +827,10 @@ export const verifyEmailWithToken = async (token) => {
       
       if (directUpdateError) {
         logger.error('[Supabase] Both RPC and direct update failed:', directUpdateError);
-        updateError = directUpdateError; // Keep the direct update error for downstream handling
+        finalError = directUpdateError; // Keep the direct update error for downstream handling
       } else {
         logger.auth('[Supabase] Direct update succeeded as fallback');
+        finalError = null; // Clear error since direct update succeeded
       }
     } else if (updateResult && !updateResult.success) {
       logger.error('[Supabase] RPC returned error:', updateResult.error);
@@ -825,8 +842,8 @@ export const verifyEmailWithToken = async (token) => {
       logger.auth('[Supabase] RPC verify_user_email succeeded');
     }
     
-    if (updateError) {
-      logger.error('[Supabase] Error updating verification status:', updateError);
+    if (finalError) {
+      logger.error('[Supabase] Error updating verification status:', finalError);
       return { 
         success: false, 
         error: 'Error al actualizar el estado de verificación' 
