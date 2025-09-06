@@ -90,7 +90,8 @@
       },
       "errors": {
         "selectMethod": "Selecciona un método de verificación",
-        "disableFailed": "Error al desactivar 2FA"
+        "disableFailed": "Error al desactivar 2FA",
+        "emailFailed": "Error al enviar el código por email"
       }
     },
     "sessions": {

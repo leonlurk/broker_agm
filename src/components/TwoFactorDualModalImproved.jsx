@@ -24,8 +24,8 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
   const getActivateButtonText = () => {
     const count = [selectedMethods.app, selectedMethods.email].filter(Boolean).length;
     if (count === 0) return '';
-    if (count === 1) return t('twoFactor.activateMethod') || 'Activar Método';
-    return t('twoFactor.activateMethods') || 'Activar Métodos';
+    if (count === 1) return t('twoFactor.activateMethod', { ns: 'settings' });
+    return t('twoFactor.activateMethods', { ns: 'settings' });
   };
   
   // Calculate total steps based on selected methods
@@ -59,7 +59,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
       setSecret(result.secret);
     } catch (error) {
       console.error('Error generating 2FA secret:', error);
-      toast.error(t('twoFactor.errors.generateFailed'));
+      toast.error(t('twoFactor.errors.generateFailed', { ns: 'settings' }));
       onClose();
     } finally {
       setLoading(false);
@@ -80,10 +80,10 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
       
       setEmailCodeSent(true);
       setResendCooldown(60); // 60 seconds cooldown
-      toast.success(t('twoFactor.emailCodeSent') || 'Código enviado a tu email');
+      toast.success(t('twoFactor.emailCodeSent', { ns: 'settings' }));
     } catch (error) {
       console.error('Error sending email code:', error);
-      toast.error(t('twoFactor.errors.emailSendFailed'));
+      toast.error(t('twoFactor.errors.emailSendFailed', { ns: 'settings' }));
     } finally {
       setLoading(false);
     }
@@ -91,7 +91,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
 
   const handleVerifyAppCode = async () => {
     if (verificationCode.length !== 6) {
-      toast.error(t('twoFactor.errors.invalidCode'));
+      toast.error(t('twoFactor.errors.invalidCode', { ns: 'settings' }));
       return;
     }
 
@@ -101,7 +101,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
       const isValid = await twoFactorService.verifyToken(verificationCode, secret, userId);
       
       if (!isValid) {
-        toast.error(t('twoFactor.errors.incorrectCode'));
+        toast.error(t('twoFactor.errors.incorrectCode', { ns: 'settings' }));
         setLoading(false);
         return;
       }
@@ -117,7 +117,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
       setVerificationCode('');
     } catch (error) {
       console.error('Error verifying app code:', error);
-      toast.error(t('twoFactor.errors.verifyFailed'));
+      toast.error(t('twoFactor.errors.verifyFailed', { ns: 'settings' }));
     } finally {
       setLoading(false);
     }
@@ -125,7 +125,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
 
   const handleVerifyEmailCode = async () => {
     if (emailCode.length !== 6) {
-      toast.error(t('twoFactor.errors.invalidCode'));
+      toast.error(t('twoFactor.errors.invalidCode', { ns: 'settings' }));
       return;
     }
 
@@ -135,7 +135,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
       const result = await twoFactorService.verifyEmailCode(currentUser.id, emailCode);
       
       if (!result.success) {
-        toast.error(result.message || t('twoFactor.errors.incorrectCode'));
+        toast.error(result.message || t('twoFactor.errors.incorrectCode', { ns: 'settings' }));
         setLoading(false);
         return;
       }
@@ -144,7 +144,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
       await enableSelectedMethods();
     } catch (error) {
       console.error('Error verifying email code:', error);
-      toast.error(t('twoFactor.errors.verifyFailed'));
+      toast.error(t('twoFactor.errors.verifyFailed', { ns: 'settings' }));
     } finally {
       setLoading(false);
     }
@@ -160,7 +160,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
         const appResult = await twoFactorService.enable2FA(userId, secret, []);
         if (!appResult.success) {
           success = false;
-          toast.error(t('twoFactor.errors.enableAppFailed'));
+          toast.error(t('twoFactor.errors.enableAppFailed', { ns: 'settings' }));
         }
       }
       
@@ -168,7 +168,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
         const emailResult = await twoFactorService.enableEmail2FA(userId);
         if (!emailResult.success) {
           success = false;
-          toast.error(t('twoFactor.errors.enableEmailFailed'));
+          toast.error(t('twoFactor.errors.enableEmailFailed', { ns: 'settings' }));
         }
       }
       
@@ -178,7 +178,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
       }
     } catch (error) {
       console.error('Error enabling 2FA:', error);
-      toast.error(t('twoFactor.errors.enableFailed'));
+      toast.error(t('twoFactor.errors.enableFailed', { ns: 'settings' }));
     } finally {
       setLoading(false);
     }
@@ -196,7 +196,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
   const handleCopySecret = () => {
     navigator.clipboard.writeText(secret);
     setCopiedSecret(true);
-    toast.success(t('twoFactor.secretCopied'));
+    toast.success(t('twoFactor.secretCopied', { ns: 'settings' }));
     setTimeout(() => setCopiedSecret(false), 3000);
   };
 
@@ -238,7 +238,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
             <div className="flex items-center gap-3">
               <Shield className="w-6 h-6 text-cyan-500" />
               <h2 className="text-xl font-semibold text-white">
-                {t('twoFactor.title') || 'Configurar 2FA'}
+                {t('twoFactor.title', { ns: 'settings' })}
               </h2>
             </div>
             <button
@@ -272,10 +272,10 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
               <div className="space-y-6">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold text-white mb-4">
-                    {t('twoFactor.selectMethods') || 'Selecciona tus métodos de seguridad'}
+                    {t('twoFactor.selectMethods', { ns: 'settings' })}
                   </h3>
                   <p className="text-gray-300 mb-6">
-                    {t('twoFactor.selectDescription') || 'Elige uno o ambos métodos para proteger tu cuenta:'}
+                    {t('twoFactor.selectDescription', { ns: 'settings' })}
                   </p>
                   
                   <div className="space-y-3">
@@ -294,10 +294,10 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
                       <Smartphone className="w-5 h-5 text-cyan-500 flex-shrink-0" />
                       <div className="text-left flex-1">
                         <p className="text-white font-medium">
-                          {t('twoFactor.appMethod') || 'Aplicación Autenticadora'}
+                          {t('twoFactor.appMethod', { ns: 'settings' })}
                         </p>
                         <p className="text-gray-400 text-sm">
-                          {t('twoFactor.appDescription') || 'Google Authenticator, Authy, etc.'}
+                          {t('twoFactor.appDescription', { ns: 'settings' })}
                         </p>
                       </div>
                     </div>
@@ -317,10 +317,10 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
                       <Mail className="w-5 h-5 text-cyan-500 flex-shrink-0" />
                       <div className="text-left flex-1">
                         <p className="text-white font-medium">
-                          {t('twoFactor.emailMethod') || 'Verificación por Email'}
+                          {t('twoFactor.emailMethod', { ns: 'settings' })}
                         </p>
                         <p className="text-gray-400 text-sm">
-                          {t('twoFactor.emailDescription') || 'Código de verificación a tu correo'}
+                          {t('twoFactor.emailDescription', { ns: 'settings' })}
                         </p>
                       </div>
                     </div>
@@ -338,7 +338,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
                 
                 {!selectedMethods.app && !selectedMethods.email && (
                   <div className="text-center text-amber-400 text-sm">
-                    {t('twoFactor.selectAtLeastOne') || 'Selecciona al menos un método para continuar'}
+                    {t('twoFactor.selectAtLeastOne', { ns: 'settings' })}
                   </div>
                 )}
               </div>
@@ -349,10 +349,10 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
               <div className="space-y-6">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold text-white mb-4">
-                    {t('twoFactor.scanQRTitle') || 'Escanea el código QR'}
+                    {t('twoFactor.scanQRTitle', { ns: 'settings' })}
                   </h3>
                   <p className="text-gray-300 mb-6">
-                    {t('twoFactor.scanQR')}
+                    {t('twoFactor.scanQR', { ns: 'settings' })}
                   </p>
                   
                   {loading ? (
@@ -366,7 +366,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
                       </div>
                       
                       <div className="bg-[#1a1a1a] p-4 rounded-lg">
-                        <p className="text-xs text-gray-400 mb-2">{t('twoFactor.manualEntry')}</p>
+                        <p className="text-xs text-gray-400 mb-2">{t('twoFactor.manualEntry', { ns: 'settings' })}</p>
                         <div className="flex items-center justify-center gap-2">
                           <p className="font-mono text-sm text-white break-all">{secret}</p>
                           <button
@@ -390,7 +390,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
                   disabled={loading}
                   className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
                 >
-                  {t('twoFactor.next') || 'Siguiente'}
+                  {t('twoFactor.next', { ns: 'settings' })}
                 </button>
               </div>
             )}
@@ -400,10 +400,10 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-4 text-center">
-                    {t('twoFactor.verifyAppTitle') || 'Verificar Aplicación'}
+                    {t('twoFactor.verifyAppTitle', { ns: 'settings' })}
                   </h3>
                   <p className="text-gray-300 mb-6 text-center">
-                    {t('twoFactor.enterCode')}
+                    {t('twoFactor.enterCode', { ns: 'settings' })}
                   </p>
                   
                   <div className="flex justify-center mb-6">
@@ -423,14 +423,14 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
                     onClick={() => setStep(2)}
                     className="flex-1 py-3 bg-[#333] hover:bg-[#444] text-white rounded-lg font-medium transition-colors"
                   >
-                    {t('twoFactor.back') || 'Atrás'}
+                    {t('twoFactor.back', { ns: 'settings' })}
                   </button>
                   <button
                     onClick={handleVerifyAppCode}
                     disabled={loading || verificationCode.length !== 6}
                     className="flex-1 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
                   >
-                    {loading ? t('twoFactor.verifying') : t('twoFactor.verify')}
+                    {loading ? t('twoFactor.verifying', { ns: 'settings' }) : t('twoFactor.verify', { ns: 'settings' })}
                   </button>
                 </div>
               </div>
@@ -441,10 +441,10 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-4 text-center">
-                    {t('twoFactor.verifyEmailTitle') || 'Verificar Email'}
+                    {t('twoFactor.verifyEmailTitle', { ns: 'settings' })}
                   </h3>
                   <p className="text-gray-300 mb-2 text-center">
-                    {t('twoFactor.emailCodeSentTo') || 'Código enviado a:'}
+                    {t('twoFactor.emailCodeSentTo', { ns: 'settings' })}
                   </p>
                   <p className="text-white font-medium text-center mb-6">{currentUser?.email}</p>
                   
@@ -465,12 +465,12 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
                       disabled={loading}
                       className="w-full py-2 text-cyan-500 hover:text-cyan-400 text-sm transition-colors"
                     >
-                      {t('twoFactor.resendCode') || 'Reenviar código'}
+                      {t('twoFactor.resendCode', { ns: 'settings' })}
                     </button>
                   )}
                   {resendCooldown > 0 && (
                     <p className="text-center text-gray-400 text-sm">
-                      {t('twoFactor.resendIn', { seconds: resendCooldown }) || `Reenviar en ${resendCooldown}s`}
+                      {t('twoFactor.resendIn', { seconds: resendCooldown, ns: 'settings' }) || `Reenviar en ${resendCooldown}s`}
                     </p>
                   )}
                 </div>
@@ -480,7 +480,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
                   disabled={loading || emailCode.length !== 6}
                   className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
                 >
-                  {loading ? t('twoFactor.verifying') : t('twoFactor.activate')}
+                  {loading ? t('twoFactor.verifying', { ns: 'settings' }) : t('activate', { ns: 'common' })}
                 </button>
               </div>
             )}
@@ -493,10 +493,10 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
                     <Check className="w-8 h-8 text-green-500" />
                   </div>
                   <h3 className="text-lg font-semibold text-white mb-2">
-                    {t('twoFactor.successTitle') || '¡2FA Activado!'}
+                    {t('twoFactor.successTitle', { ns: 'settings' })}
                   </h3>
                   <p className="text-gray-300 text-sm">
-                    {t('twoFactor.successMessage') || 'Tu cuenta ahora está protegida con autenticación de dos factores'}
+                    {t('twoFactor.successMessage', { ns: 'settings' })}
                   </p>
                 </div>
 
@@ -504,7 +504,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
                   onClick={handleComplete}
                   className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  {t('twoFactor.complete') || 'Finalizar'}
+                  {t('twoFactor.complete', { ns: 'settings' })}
                 </button>
               </div>
             )}
@@ -519,18 +519,18 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="w-6 h-6 text-amber-500" />
               <h3 className="text-lg font-semibold text-white">
-                {t('twoFactor.confirmCloseTitle') || 'Confirmar cierre'}
+                {t('twoFactor.confirmCloseTitle', { ns: 'settings' })}
               </h3>
             </div>
             <p className="text-gray-300 mb-6">
-              {t('twoFactor.confirmCloseMessage') || '¿Estás seguro de que deseas cerrar? El progreso actual se perderá.'}
+              {t('twoFactor.confirmCloseMessage', { ns: 'settings' })}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirmClose(false)}
                 className="flex-1 py-2 bg-[#333] hover:bg-[#444] text-white rounded-lg font-medium transition-colors"
               >
-                {t('common.cancel') || 'Cancelar'}
+                {t('cancel', { ns: 'common' })}
               </button>
               <button
                 onClick={() => {
@@ -540,7 +540,7 @@ const TwoFactorDualModalImproved = ({ isOpen, onClose, onSuccess }) => {
                 }}
                 className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
               >
-                {t('common.close') || 'Cerrar'}
+                {t('close', { ns: 'common' })}
               </button>
             </div>
           </div>
