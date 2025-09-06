@@ -8,7 +8,8 @@
       "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\agm\\flofy-crm/**)",
       "Bash(cat:*)",
       "Bash(find:*)",
-      "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\AGM\\broker\\broker_agm\\src/**)"
+      "Read(/C:\\Users\\LURK\\Desktop\\PROYECTOS\\AGM\\broker\\broker_agm\\src/**)",
+      "Read(//c/Users/Administrator/Desktop/broker/payroll-crypto-api/**)"
     ],
     "deny": [],
     "ask": [],

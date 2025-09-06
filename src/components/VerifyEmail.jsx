@@ -22,30 +22,13 @@ const VerifyEmail = () => {
       }
 
       try {
-        // Intentar primero con el backend que maneja los emails bonitos
-        const API_URL = import.meta.env.VITE_CRYPTO_API_URL || 'https://whapy.apekapital.com:446/api';
+        console.log('[VerifyEmail] Using direct Supabase verification for token:', token);
         
-        console.log('[VerifyEmail] Attempting to verify token via backend:', token);
+        // Usar Supabase directamente - backend API no está funcionando correctamente
+        const { verifyEmailWithToken } = await import('../supabase/auth');
+        const result = await verifyEmailWithToken(token);
         
-        const response = await fetch(`${API_URL}/auth/verify-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          mode: 'cors',
-          credentials: 'omit',
-          body: JSON.stringify({ token: token })
-        });
-        
-        if (!response.ok) {
-          console.log('[VerifyEmail] Backend returned error:', response.status);
-          throw new Error(`Backend error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.success) {
+        if (result.success) {
           setStatus('success');
           setMessage('¡Tu email ha sido verificado exitosamente! Redirigiendo al login...');
           
@@ -57,37 +40,13 @@ const VerifyEmail = () => {
             });
           }, 3000);
         } else {
-          throw new Error(data.message || 'Verification failed');
+          setStatus('error');
+          setMessage(result.error || 'Error al verificar el email');
         }
       } catch (error) {
-        console.error('[VerifyEmail] Backend verification failed:', error);
-        console.log('[VerifyEmail] Trying direct Supabase verification as fallback');
-        
-        // Si el backend falla, intentar con Supabase directamente como fallback
-        try {
-          const { verifyEmailWithToken } = await import('../supabase/auth');
-          const result = await verifyEmailWithToken(token);
-          
-          if (result.success) {
-            setStatus('success');
-            setMessage('¡Tu email ha sido verificado exitosamente! Redirigiendo al login...');
-            
-            setTimeout(() => {
-              navigate('/login', { 
-                state: { 
-                  message: 'Email verificado exitosamente. Ya puedes iniciar sesión.' 
-                }
-              });
-            }, 3000);
-          } else {
-            setStatus('error');
-            setMessage(result.error || 'Error al verificar el email');
-          }
-        } catch (fallbackError) {
-          console.error('[VerifyEmail] Fallback also failed:', fallbackError);
-          setStatus('error');
-          setMessage('Error al verificar el email. Por favor contacta soporte.');
-        }
+        console.error('[VerifyEmail] Direct Supabase verification failed:', error);
+        setStatus('error');
+        setMessage('Error al verificar el email. Por favor contacta soporte.');
       } finally {
         setLoading(false);
       }

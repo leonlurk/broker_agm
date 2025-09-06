@@ -253,6 +253,39 @@ export const DatabaseAdapter = {
       }
     },
 
+    // Get user by email
+    getByEmail: async (email) => {
+      if (DATABASE_PROVIDER === 'supabase') {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', email)
+          .single();
+        
+        if (error) {
+          logger.error('[DB Adapter] Error getting user by email', error);
+          return { data: null, error };
+        }
+        
+        return { data, error: null };
+      } else {
+        // Firebase implementation
+        const { collection, query, where, getDocs } = await import('firebase/firestore');
+        try {
+          const q = query(collection(firebaseDb, 'users'), where('email', '==', email));
+          const querySnapshot = await getDocs(q);
+          
+          if (!querySnapshot.empty) {
+            const doc = querySnapshot.docs[0];
+            return { data: { id: doc.id, ...doc.data() }, error: null };
+          }
+          return { data: null, error: { message: 'User not found' } };
+        } catch (error) {
+          return { data: null, error };
+        }
+      }
+    },
+
     // Create user
     create: async (userData) => {
       if (DATABASE_PROVIDER === 'supabase') {

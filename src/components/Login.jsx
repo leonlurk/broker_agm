@@ -3,9 +3,8 @@ import { AuthAdapter, DatabaseAdapter } from '../services/database.adapter';
 import { useTranslation } from 'react-i18next';
 import twoFactorService from '../services/twoFactorService';
 import TwoFactorEmailModal from './TwoFactorEmailModal';
-import { Shield, Mail, Eye, EyeOff } from 'lucide-react';
+import { Shield, Eye, EyeOff } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { resendVerificationEmail } from '../supabase/auth';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -24,8 +23,6 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
   const [tempUser, setTempUser] = useState(null);
   const [twoFactorMethod, setTwoFactorMethod] = useState(null);
   const [showEmail2FA, setShowEmail2FA] = useState(false);
-  const [showVerificationNeeded, setShowVerificationNeeded] = useState(false);
-  const [verificationEmail, setVerificationEmail] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const toastShownRef = useRef(false);
 
@@ -60,15 +57,44 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
       const { user, error } = await AuthAdapter.loginUser(username, password);
       
       if (error) {
-        // Check if error is due to unverified email
-        if (error.message?.includes('email not confirmed') || error.message?.includes('Email not verified')) {
-          setShowVerificationNeeded(true);
-          setVerificationEmail(username.includes('@') ? username : user?.email || '');
-          toast.error('Tu email no está verificado. Por favor verifica tu email antes de iniciar sesión.');
+        // ✅ ARREGLADO: Check if error is due to unverified email (case-insensitive)
+        const errorMessage = error.message?.toLowerCase() || '';
+        if (errorMessage.includes('email not confirmed') || errorMessage.includes('email not verified')) {
+          console.log('Email not confirmed error detected:', error.message);
+          toast.error('Tu email no está verificado. Redirigiendo a página de verificación...');
+          // Redirect to existing EmailVerificationPending page
+          navigate('/verify-email-pending', { 
+            state: { 
+              email: username.includes('@') ? username : user?.email || '',
+              fromLogin: true 
+            } 
+          });
           setLoading(false);
           return;
         }
         throw new Error(error.message || t('errors.loginFailed'));
+      }
+      
+      // Check email verification for successful login (fallback)
+      if (user) {
+        // Check if email is verified in the user object or database
+        let userEmailVerified = user.email_verified;
+        
+        if (userEmailVerified === undefined || userEmailVerified === null) {
+          // Fallback: Check in database
+          const userId = user.id || user.uid;
+          const { data: userData } = await DatabaseAdapter.users.getById(userId);
+          userEmailVerified = userData?.email_verified !== false;
+        }
+        
+        if (userEmailVerified === false) {
+          console.log('Email not verified, showing verification options');
+          setShowVerificationNeeded(true);
+          setVerificationEmail(username.includes('@') ? username : user.email || '');
+          toast.error('Tu email no está verificado. Por favor verifica tu email antes de iniciar sesión.');
+          setLoading(false);
+          return;
+        }
       }
       
       // Check if user has 2FA enabled
@@ -186,32 +212,6 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
     }
   };
 
-  const handleResendVerification = async () => {
-    if (!verificationEmail) {
-      toast.error('Por favor ingresa tu email primero');
-      return;
-    }
-    
-    setLoading(true);
-    setError('');
-    setMessage('');
-    
-    try {
-      const result = await resendVerificationEmail(verificationEmail);
-      
-      if (result.success) {
-        setMessage('Email de verificación reenviado exitosamente. Por favor revisa tu correo.');
-        setShowVerificationNeeded(false);
-      } else {
-        toast.error(result.error || 'Error al reenviar el email de verificación');
-      }
-    } catch (err) {
-      console.error('Error resending verification:', err);
-      toast.error('Error al reenviar el email de verificación');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="w-full max-w-[400px] md:max-w-[490px] min-h-[500px] p-6 sm:p-8 rounded-3xl bg-black bg-opacity-60 border border-gray-800 shadow-xl flex flex-col justify-center">
@@ -220,19 +220,6 @@ const Login = ({ onRegisterClick, onForgotClick, onLoginSuccess }) => {
       </div>
       
 
-      {showVerificationNeeded && (
-        <div className="bg-yellow-500 bg-opacity-20 border border-yellow-600 text-white px-4 py-2 rounded-lg mb-4">
-          <div className="text-sm mb-2">Email no verificado</div>
-          <button
-              onClick={handleResendVerification}
-              disabled={loading}
-              className="mt-2 w-full py-2 px-4 bg-cyan-600 text-white rounded-full hover:bg-cyan-700 transition flex items-center justify-center gap-2"
-            >
-              <Mail className="w-4 h-4" />
-              {loading ? 'Enviando...' : 'Reenviar email de verificación'}
-            </button>
-        </div>
-      )}
       
       {!show2FA ? (
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">

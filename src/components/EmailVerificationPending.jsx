@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, CheckCircle, ArrowRight, RefreshCw } from 'lucide-react';
 import { resendVerificationEmail } from '../supabase/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 const EmailVerificationPending = () => {
   const { t, ready, i18n } = useTranslation('auth');
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser } = useAuth();
   const [resending, setResending] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -23,8 +24,31 @@ const EmailVerificationPending = () => {
     console.log('EmailVerificationPending - test translation:', t('emailPending.title'));
   }, [ready, i18n.language, t]);
   
+  // Handle email from login redirect
+  useEffect(() => {
+    console.log('EmailVerificationPending - Location state:', location.state);
+    
+    if (location.state?.email && location.state?.fromLogin) {
+      console.log('EmailVerificationPending - Processing email from login:', location.state.email);
+      const newPendingUser = { email: location.state.email };
+      setPendingUser(newPendingUser);
+      console.log('EmailVerificationPending - pendingUser set to:', newPendingUser);
+      
+      // Store in localStorage as well to persist across navigation
+      localStorage.setItem('pending_verification_user', JSON.stringify({
+        ...newPendingUser,
+        timestamp: Date.now()
+      }));
+      
+      // Clear the location state to prevent reprocessing
+      window.history.replaceState({}, document.title);
+    } else {
+      console.log('EmailVerificationPending - No email from login state');
+    }
+  }, [location.state]);
+  
   // Rate limit configuration
-  const userEmail = currentUser?.email || pendingUser?.email;
+  const userEmail = currentUser?.email || pendingUser?.email || location.state?.email;
   const RATE_LIMIT_KEY = `email_verification_${userEmail}`;
   const MAX_ATTEMPTS = 3; // Máximo 3 intentos
   const COOLDOWN_TIME = 60; // 60 segundos entre intentos
@@ -89,13 +113,37 @@ const EmailVerificationPending = () => {
 
   // Redirigir al login si no hay usuario ni datos temporales
   useEffect(() => {
-    // Solo redirigir si NO hay usuario autenticado Y NO hay datos temporales
-    // Pero hay que esperar a que los datos temporales se hayan cargado primero
-    const tempUserData = localStorage.getItem('pending_verification_user');
-    if (!currentUser && !tempUserData) {
-      navigate('/login');
-    }
-  }, [currentUser, navigate]);
+    // Add a small delay to allow pendingUser state to be set
+    const checkRedirect = () => {
+      const tempUserData = localStorage.getItem('pending_verification_user');
+      
+      // DEBUG: Log all conditions with more detail
+      console.log('EmailVerificationPending - Checking redirect conditions:', {
+        hasCurrentUser: !!currentUser,
+        hasTempUserData: !!tempUserData,
+        hasPendingUser: !!pendingUser,
+        currentUserEmail: currentUser?.email,
+        tempUserData: tempUserData ? JSON.parse(tempUserData) : null,
+        pendingUserEmail: pendingUser?.email,
+        locationStateEmail: location.state?.email,
+        locationFromLogin: location.state?.fromLogin,
+        shouldRedirect: !currentUser && !tempUserData && !pendingUser && !location.state?.fromLogin
+      });
+      
+      // Don't redirect if we're coming from login or have any user data
+      if (!currentUser && !tempUserData && !pendingUser && !location.state?.fromLogin) {
+        console.log('EmailVerificationPending - REDIRECTING TO LOGIN - No user data found');
+        navigate('/login');
+      } else {
+        console.log('EmailVerificationPending - STAYING ON PAGE - User data found or coming from login');
+      }
+    };
+    
+    // Small delay to ensure all state updates have completed
+    const timeoutId = setTimeout(checkRedirect, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [currentUser, navigate, pendingUser, location.state]);
   
   // Countdown timer para rate limiting visual
   useEffect(() => {

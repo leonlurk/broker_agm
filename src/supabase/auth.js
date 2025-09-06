@@ -350,6 +350,9 @@ export const loginUser = async (identifier, password) => {
       
       if (authError.message.includes('Invalid login credentials')) {
         friendlyMessage = 'Email o contraseña incorrectos.';
+      } else if (authError.message.includes('Email not confirmed')) {
+        // ✅ PRESERVE the original error message for email verification
+        friendlyMessage = authError.message;
       }
       
       return { user: null, error: { message: friendlyMessage } };
@@ -731,12 +734,11 @@ export const verifyEmailWithToken = async (token) => {
   try {
     logger.auth('[Supabase] Verifying email with token:', token);
     
-    // Find user with this token
-    const { data: profile, error: findError } = await supabase
+    // Find user with this token (don't use .single() to avoid 406 error)
+    const { data: profiles, error: findError } = await supabase
       .from(USERS_TABLE)
       .select('id, email, username, email_verified')
-      .eq('verification_token', token)
-      .single();
+      .eq('verification_token', token);
     
     if (findError) {
       logger.error('[Supabase] Error finding user with token:', findError);
@@ -746,13 +748,15 @@ export const verifyEmailWithToken = async (token) => {
       };
     }
     
-    if (!profile) {
+    if (!profiles || profiles.length === 0) {
       logger.error('[Supabase] No user found with token:', token);
       return { 
         success: false, 
         error: 'Token de verificación no encontrado' 
       };
     }
+    
+    const profile = profiles[0]; // Get the first (should be only) result
     
     // Check if already verified
     if (profile.email_verified === true) {
@@ -782,19 +786,22 @@ export const verifyEmailWithToken = async (token) => {
       };
     }
     
-    // NOTA: Comentado porque causa error 403 "User not allowed"
-    // No es necesario ya que Supabase maneja la confirmación automáticamente
-    // cuando el usuario hace clic en el link de verificación
-    /*
+    // Ahora también actualizar auth.users usando nuestra función RPC simple
     try {
-      const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
-        profile.id,
-        { email_confirmed_at: new Date().toISOString() }
-      );
+      const { data: authResult, error: authError } = await supabase.rpc('confirm_email_in_auth_users', {
+        user_email: profile.email
+      });
+      
+      if (authError) {
+        logger.warn('[Supabase] Could not confirm email in auth.users:', authError.message);
+      } else if (authResult && authResult.success) {
+        logger.auth('[Supabase] Email confirmed in both profiles and auth.users');
+      } else {
+        logger.warn('[Supabase] Auth confirmation failed:', authResult?.message);
+      }
     } catch (authError) {
-      logger.warn('[Supabase] Auth update skipped:', authError.message);
+      logger.warn('[Supabase] Exception confirming email in auth.users:', authError.message);
     }
-    */
     
     logger.auth('[Supabase] Email verified successfully for user:', profile.id);
     return { 
