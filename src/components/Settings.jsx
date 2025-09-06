@@ -111,6 +111,8 @@ const Settings = ({ onBack, openKYC = false, fromHome = false }) => {
       const userId = currentUser.id || currentUser.uid;
       const twoFAStatus = await twoFactorService.get2FAStatus(userId);
       
+      console.log('[Settings] 2FA Status for disable:', twoFAStatus);
+      
       if (twoFAStatus.enabled) {
         // Prepare data for disable modal
         const userData = {
@@ -119,6 +121,11 @@ const Settings = ({ onBack, openKYC = false, fromHome = false }) => {
           name: currentUser.displayName || currentUser.email?.split('@')[0] || 'Usuario',
           secret: twoFAStatus.secret
         };
+        
+        console.log('[Settings] User data for disable modal:', {
+          ...userData,
+          secret: userData.secret ? '[REDACTED]' : 'null'
+        });
         
         // Determine what methods the user has
         const methods = [];

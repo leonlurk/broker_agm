@@ -97,11 +97,19 @@ const TwoFactorDisableModal = ({ isOpen, onClose, onSuccess, userMethods }) => {
       let verificationResult;
       
       if (verificationMethod === 'totp') {
+        console.log('[TwoFactorDisableModal] TOTP verification:', {
+          code: totpCode,
+          hasSecret: !!userMethods?.secret,
+          userId: userMethods?.userId
+        });
+        
         verificationResult = await twoFactorService.verifyToken(
           totpCode,
           userMethods?.secret,
           userMethods?.userId
         );
+        
+        console.log('[TwoFactorDisableModal] TOTP result:', verificationResult);
       } else if (verificationMethod === 'email') {
         verificationResult = await twoFactorService.verifyEmailCode(
           userMethods?.userId,
@@ -118,7 +126,7 @@ const TwoFactorDisableModal = ({ isOpen, onClose, onSuccess, userMethods }) => {
       const disableResult = await twoFactorService.disable2FA(userMethods?.userId);
       
       if (disableResult.success) {
-        toast.success(t('notifications.twoFactorDisabled'));
+        toast.success(t('notifications.twoFactorDisabled', { ns: 'settings' }));
         onSuccess();
         onClose();
       } else {
