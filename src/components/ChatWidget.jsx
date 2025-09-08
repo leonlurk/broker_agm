@@ -30,8 +30,23 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   
-  // Get messages for current conversation
-  const messages = conversations.get(currentConversationId) || [];
+  // Get messages for current conversation - handle both Map and Array cases
+  const messages = React.useMemo(() => {
+    if (!conversations) return [];
+    
+    // If conversations is a Map
+    if (conversations instanceof Map) {
+      return conversations.get(currentConversationId) || [];
+    }
+    
+    // If conversations is an Array (legacy)
+    if (Array.isArray(conversations)) {
+      return conversations;
+    }
+    
+    // Default fallback
+    return [];
+  }, [conversations, currentConversationId]);
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {

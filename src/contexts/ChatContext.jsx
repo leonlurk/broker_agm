@@ -157,16 +157,19 @@ export const ChatProvider = ({ children }) => {
     try {
       const result = await activeChatService.getConversationHistory(userId);
       
-      if (result.success) {
+      if (result && result.success) {
         const conversationId = `conversation_${userId}`;
+        const messages = result.messages || [];
+        
         setConversations(prev => {
-          const newConversations = new Map(prev);
-          newConversations.set(conversationId, result.messages);
+          // Ensure prev is a Map
+          const newConversations = prev instanceof Map ? new Map(prev) : new Map();
+          newConversations.set(conversationId, messages);
           return newConversations;
         });
         
         // Count unread messages (this is a simplified version)
-        const unread = result.messages.filter(msg => 
+        const unread = messages.filter(msg => 
           msg.sender !== 'user' && !msg.isRead
         ).length;
         setUnreadCount(unread);
