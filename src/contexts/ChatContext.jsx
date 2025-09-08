@@ -447,7 +447,7 @@ export const ChatProvider = ({ children }) => {
 
   const value = {
     // State
-    conversations: getCurrentMessages(),
+    conversations, // Pass the full Map, not just current messages
     isHumanControlled,
     connectionStatus,
     unreadCount,
