@@ -175,8 +175,8 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
 
   const renderMessage = (message) => {
     const isUser = message.sender === 'user';
-    const isAI = message.sender === 'flofy' || message.sender === 'alpha';
-    const isAsesor = message.sender === 'asesor';
+    const isAI = message.sender === 'flofy' || message.sender === 'alpha' || message.sender === 'ai';
+    const isAsesor = message.sender === 'asesor' || message.sender === 'human';
     const isSystem = message.sender === 'system';
 
     return (

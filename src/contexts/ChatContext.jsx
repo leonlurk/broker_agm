@@ -55,21 +55,25 @@ export const ChatProvider = ({ children }) => {
         setCurrentConversationId(localConvId);
         
         // Get or create actual conversation in DB
+        let dbConversationId = null;
         if (activeChatService.getOrCreateConversation) {
           logger.info('[CHAT_CONTEXT] Calling getOrCreateConversation...');
-          const dbConversationId = await activeChatService.getOrCreateConversation(userId);
+          dbConversationId = await activeChatService.getOrCreateConversation(userId);
           logger.info('[CHAT_CONTEXT] Got conversation ID:', dbConversationId);
           setActualConversationId(dbConversationId);
           
           // Subscribe to real-time messages for this conversation
           if (dbConversationId) {
             subscribeToRealtimeMessages(dbConversationId, localConvId);
+            
+            // Load existing messages from DB
+            await loadMessagesFromDB(dbConversationId, localConvId);
           }
         } else {
           logger.warn('[CHAT_CONTEXT] getOrCreateConversation method not found in service');
         }
         
-        // Load conversation history
+        // Load conversation history from local service
         await loadConversationHistory(userId);
         
         // Check human control status
@@ -274,6 +278,65 @@ export const ChatProvider = ({ children }) => {
       
     } catch (error) {
       logger.error('[CHAT_CONTEXT] Error subscribing to realtime:', error);
+    }
+  };
+  
+  const loadMessagesFromDB = async (conversationId, localConvId) => {
+    try {
+      logger.info('[CHAT_CONTEXT] Loading messages from DB for conversation:', conversationId);
+      
+      const { data: messages, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+      
+      if (error) {
+        logger.error('[CHAT_CONTEXT] Error loading messages from DB:', error);
+        return;
+      }
+      
+      if (messages && messages.length > 0) {
+        logger.info('[CHAT_CONTEXT] Found', messages.length, 'messages in DB');
+        
+        // Convert DB messages to local format
+        const formattedMessages = messages.map(msg => ({
+          id: msg.id,
+          sender: msg.sender_type === 'user' ? 'user' : 
+                  msg.sender_type === 'ai' ? 'flofy' : 
+                  msg.sender_type === 'human' ? 'human' : 
+                  msg.sender_type,
+          message: msg.message,
+          timestamp: msg.created_at,
+          sender_name: msg.sender_name
+        }));
+        
+        // Add to conversations
+        setConversations(prev => {
+          const newConversations = new Map(prev);
+          const existingMessages = newConversations.get(localConvId) || [];
+          
+          // Merge and deduplicate
+          const mergedMessages = [...existingMessages];
+          formattedMessages.forEach(newMsg => {
+            if (!mergedMessages.some(m => m.id === newMsg.id || 
+                (m.message === newMsg.message && 
+                 Math.abs(new Date(m.timestamp) - new Date(newMsg.timestamp)) < 1000))) {
+              mergedMessages.push(newMsg);
+            }
+          });
+          
+          // Sort by timestamp
+          mergedMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+          
+          newConversations.set(localConvId, mergedMessages);
+          return newConversations;
+        });
+        
+        logger.info('[CHAT_CONTEXT] Successfully loaded and merged messages from DB');
+      }
+    } catch (error) {
+      logger.error('[CHAT_CONTEXT] Error in loadMessagesFromDB:', error);
     }
   };
   
