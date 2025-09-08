@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { AuthAdapter, DatabaseAdapter } from '../services/database.adapter';
 import { logger } from '../utils/logger';
 
@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const previousUserRef = useRef(null);
 
   const fetchUserData = async (user) => {
     if (!user) {
@@ -80,19 +81,23 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = AuthAdapter.onAuthStateChange(async (user) => {
       logger.auth("onAuthStateChange callback received", { userPresent: !!user });
       
-      // Only update if user actually changed (not just token refresh)
-      const userChanged = (!currentUser && user) || 
-                         (currentUser && !user) || 
-                         (currentUser?.id !== user?.id) ||
-                         (currentUser?.email !== user?.email);
+      // Check if user actually changed (not just token refresh)
+      const previousUser = previousUserRef.current;
+      const userChanged = (!previousUser && user) || 
+                         (previousUser && !user) || 
+                         (previousUser?.id !== user?.id) ||
+                         (previousUser?.email !== user?.email);
       
-      if (!userChanged && currentUser && user) {
-        logger.auth("User hasn't changed, skipping userData reload");
+      if (!userChanged && previousUser && user) {
+        logger.auth("User hasn't changed (token refresh), keeping existing userData");
         setCurrentUser(user); // Update user object but keep userData
+        previousUserRef.current = user; // Update ref
         return;
       }
       
+      logger.auth("User changed, reloading userData");
       setCurrentUser(user);
+      previousUserRef.current = user; // Update ref
       setUserData(null);
       
       if (user) {
