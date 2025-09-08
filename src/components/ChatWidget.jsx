@@ -39,6 +39,10 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
     
     // If conversations is a Map
     if (conversations instanceof Map) {
+      // Log all available conversation IDs
+      logger.info('[CHAT_WIDGET] Available conversation IDs in Map:', Array.from(conversations.keys()));
+      logger.info('[CHAT_WIDGET] Trying to get messages for ID:', currentConversationId);
+      
       const msgs = conversations.get(currentConversationId) || [];
       
       // Log detailed info about messages
@@ -229,7 +233,9 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
       isUser,
       isAI,
       isAsesor,
-      messagePreview: message.message?.substring(0, 50)
+      isSystem,
+      messagePreview: message.message?.substring(0, 50),
+      willRender: true
     });
     
     return (
@@ -380,6 +386,15 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
           </div>
         ) : (
           <>
+            {/* Debug: Log messages before rendering */}
+            {(() => {
+              logger.info('[CHAT_WIDGET] About to render messages:', {
+                totalMessages: messages.length,
+                humanMessages: messages.filter(m => m.sender === 'human').length,
+                messageTypes: messages.map(m => ({ id: m.id, sender: m.sender })).slice(0, 5)
+              });
+              return null;
+            })()}
             {messages.map(renderMessage)}
             
             {/* Typing Indicator */}

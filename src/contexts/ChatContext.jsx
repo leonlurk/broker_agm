@@ -171,16 +171,28 @@ export const ChatProvider = ({ children }) => {
   };
 
   const loadConversationHistory = async (userId) => {
-    try {
+    try {      
       const result = await activeChatService.getConversationHistory(userId);
       
       if (result && result.success) {
-        const conversationId = `conversation_${userId}`;
+        // Use DB conversation ID if available, otherwise use local ID
+        const conversationId = actualConversationId || `conversation_${userId}`;
         const messages = result.messages || [];
+        
+        logger.info('[CHAT_CONTEXT] Loading conversation history with ID:', conversationId);
         
         setConversations(prev => {
           // Ensure prev is a Map
           const newConversations = prev instanceof Map ? new Map(prev) : new Map();
+          
+          // If we already have messages from DB, merge them
+          const existingMessages = newConversations.get(conversationId) || [];
+          if (existingMessages.length > 0) {
+            logger.info('[CHAT_CONTEXT] Merging local history with existing DB messages');
+            // Don't overwrite, just return existing
+            return newConversations;
+          }
+          
           newConversations.set(conversationId, messages);
           return newConversations;
         });
