@@ -89,10 +89,11 @@ export const ChatProvider = ({ children }) => {
           last: formattedMessages[formattedMessages.length - 1]
         });
         
-        // Add to conversations
+        // Add to conversations - use the DB conversation ID as key
         setConversations(prev => {
-          const newConversations = new Map(prev);
-          const existingMessages = newConversations.get(localConvId) || [];
+          const newConversations = prev instanceof Map ? new Map(prev) : new Map();
+          // Store messages using the DB conversation ID
+          const existingMessages = newConversations.get(conversationId) || [];
           
           // Merge and deduplicate
           const mergedMessages = [...existingMessages];
@@ -107,7 +108,9 @@ export const ChatProvider = ({ children }) => {
           // Sort by timestamp
           mergedMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
           
-          newConversations.set(localConvId, mergedMessages);
+          // Store using the DB conversation ID
+          newConversations.set(conversationId, mergedMessages);
+          logger.info('[CHAT_CONTEXT] Stored messages in Map with key:', conversationId, 'count:', mergedMessages.length);
           return newConversations;
         });
         
@@ -140,11 +143,11 @@ export const ChatProvider = ({ children }) => {
           
           // Subscribe to real-time messages for this conversation
           if (dbConversationId) {
-            subscribeToRealtimeMessages(dbConversationId, localConvId);
+            subscribeToRealtimeMessages(dbConversationId);
             
             // Load existing messages from DB
             logger.info('[CHAT_CONTEXT] About to load messages from DB...');
-            await loadMessagesFromDB(dbConversationId, localConvId);
+            await loadMessagesFromDB(dbConversationId, dbConversationId); // Use DB ID for both params
           }
         } else {
           logger.warn('[CHAT_CONTEXT] getOrCreateConversation method not found in service');
@@ -290,7 +293,7 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  const subscribeToRealtimeMessages = (conversationId, localConvId) => {
+  const subscribeToRealtimeMessages = (conversationId) => {
     try {
       logger.info('[CHAT_CONTEXT] Subscribing to realtime messages for:', conversationId);
       
@@ -316,15 +319,15 @@ export const ChatProvider = ({ children }) => {
                 sender_name: payload.new.sender_name || 'Operador'
               };
               
-              // Add to conversation
+              // Add to conversation using DB conversation ID
               setConversations(prev => {
                 const newConversations = new Map(prev);
-                const currentMessages = newConversations.get(localConvId) || [];
+                const currentMessages = newConversations.get(conversationId) || [];
                 
                 // Check if message already exists
                 const exists = currentMessages.some(msg => msg.id === newMessage.id);
                 if (!exists) {
-                  newConversations.set(localConvId, [...currentMessages, newMessage]);
+                  newConversations.set(conversationId, [...currentMessages, newMessage]);
                 }
                 
                 return newConversations;
