@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { getUserTradingAccounts, cleanInactiveDemoAccounts } from '../services/tradingAccounts';
 
@@ -30,6 +30,7 @@ export const useAccounts = () => {
 
 export const AccountsProvider = ({ children }) => {
   const { currentUser } = useAuth();
+  const previousUserIdRef = useRef(null);
   
   // Estados principales
   const [accounts, setAccounts] = useState({
@@ -137,7 +138,29 @@ export const AccountsProvider = ({ children }) => {
 
   // Efecto para cargar cuentas cuando cambia el usuario
   useEffect(() => {
-    loadAccounts();
+    // Solo cargar si el ID del usuario realmente cambió
+    const currentUserId = currentUser?.id;
+    const previousUserId = previousUserIdRef.current;
+    
+    if (currentUserId && currentUserId !== previousUserId) {
+      console.log('Debug AccountsContext - User ID changed, loading accounts', {
+        previousUserId,
+        currentUserId
+      });
+      previousUserIdRef.current = currentUserId;
+      loadAccounts();
+    } else if (!currentUserId && previousUserId) {
+      // Usuario cerró sesión
+      console.log('Debug AccountsContext - User logged out, clearing accounts');
+      previousUserIdRef.current = null;
+      setAccounts({
+        [ACCOUNT_CATEGORIES.REAL]: [],
+        [ACCOUNT_CATEGORIES.DEMO]: [],
+        [ACCOUNT_CATEGORIES.COPYTRADING]: [],
+        [ACCOUNT_CATEGORIES.PAMM]: []
+      });
+      setSelectedAccount(null);
+    }
   }, [currentUser]);
 
   // Polling automático para actualizar cuentas cada 30 segundos
