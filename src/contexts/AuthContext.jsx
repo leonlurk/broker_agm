@@ -79,6 +79,19 @@ export const AuthProvider = ({ children }) => {
     
     const unsubscribe = AuthAdapter.onAuthStateChange(async (user) => {
       logger.auth("onAuthStateChange callback received", { userPresent: !!user });
+      
+      // Only update if user actually changed (not just token refresh)
+      const userChanged = (!currentUser && user) || 
+                         (currentUser && !user) || 
+                         (currentUser?.id !== user?.id) ||
+                         (currentUser?.email !== user?.email);
+      
+      if (!userChanged && currentUser && user) {
+        logger.auth("User hasn't changed, skipping userData reload");
+        setCurrentUser(user); // Update user object but keep userData
+        return;
+      }
+      
       setCurrentUser(user);
       setUserData(null);
       
