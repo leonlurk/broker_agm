@@ -139,8 +139,19 @@ const Register = ({ onLoginClick }) => {
     setLoading(true);
     console.log("[Register] Calling registerUser function...");
     try {
-      // Pass refId to registerUser
-      const { user, error } = await AuthAdapter.registerUser(username, email, password, refId); 
+      // Prepare additional data for profile creation
+      const additionalData = {
+        nombre: firstName,
+        apellido: lastName,
+        pais: country,
+        phonecode: countryCode,
+        phonenumber: phoneNumber,
+        username: username,
+        email: email
+      };
+      
+      // Pass refId and additional data to registerUser
+      const { user, error } = await AuthAdapter.registerUser(username, email, password, refId, additionalData); 
       
       if (error) {
         console.error("[Register] registerUser returned error:", error);
@@ -161,29 +172,8 @@ const Register = ({ onLoginClick }) => {
         throw new Error(friendlyError);
       }
       
-      // Success
-      console.log('[Register] Registration successful, user object:', user);
-      
-      // Save additional user data to database
-      if (user && user.id) {
-        try {
-          const additionalData = {
-            nombre: firstName,
-            apellido: lastName,
-            pais: country,
-            phonecode: countryCode,
-            phonenumber: phoneNumber,
-            username: username,
-            email: email
-          };
-          
-          await DatabaseAdapter.users.update(user.id, additionalData);
-          console.log('[Register] Additional user data saved successfully');
-        } catch (dbError) {
-          console.error('[Register] Error saving additional user data:', dbError);
-          // Don't block registration if this fails
-        }
-      }
+      // Success - additional profile data was already saved during registration
+      console.log('[Register] Registration successful with all profile data, user object:', user);
       
       // NO auto-login - redirect to email verification page
       console.log('[Register] Registration successful, redirecting to email verification page');

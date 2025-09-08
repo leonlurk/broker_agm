@@ -171,9 +171,9 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
             )}
 
             <div 
-                className={`${isMobile ? 'fixed left-0 top-0 z-50' : 'relative'} h-screen ${isMobile ? (isMobileMenuOpen ? 'w-[80%] max-w-[300px]' : 'w-0') : 'w-[300px]'} 
+                className={`${isMobile ? 'fixed left-0 top-0 z-50' : 'relative'} ${isMobile ? 'h-full min-h-screen' : 'h-screen'} ${isMobile ? (isMobileMenuOpen ? 'w-[80%] max-w-[300px]' : 'w-0') : 'w-[300px]'} 
                 bg-[#232323] text-white border-r border-[#333] flex flex-col
-                transition-all duration-300 ease-in-out overflow-hidden`}
+                transition-all duration-300 ease-in-out ${isMobile ? 'overflow-y-auto' : 'overflow-hidden'}`}
             >
                 {/* Logo section - fixed */}
                 <div className={`flex justify-center px-4 ${isMobile ? 'pt-6 pb-4' : 'pt-8 pb-6'}`}>
@@ -192,7 +192,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                 <div className={`h-px w-full bg-[#333] ${isMobile ? 'mb-4' : 'mb-6'}`}></div>
                 
                 {/* Scrollable menu section with dynamic spacing */}
-                <div className="flex-1 overflow-y-auto transition-all duration-500 ease-in-out flex flex-col" style={{ scrollbarWidth: 'thin', scrollbarColor: '#555 #333' }}>
+                <div className={`${isMobile ? 'flex-1 min-h-0' : 'flex-1'} overflow-y-auto transition-all duration-500 ease-in-out flex flex-col`} style={{ scrollbarWidth: 'thin', scrollbarColor: '#555 #333' }}>
                     <nav className={`flex flex-col h-full ${isMobile ? 'px-2' : 'px-4'} justify-center gap-4`}>
                         {menuItems.map((item) => (
                             <div key={item.name} className="flex flex-col">
@@ -291,7 +291,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                 </div>
                 
                 {/* Bottom section - fixed */}
-                <div className={`mt-auto ${isMobile ? 'px-2' : 'px-4'}`}>
+                <div className={`${isMobile ? 'mt-2 flex-shrink-0 px-2' : 'mt-auto px-4'}`}>
                     <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : 'my-4'}`}></div>
                     <button
                         onClick={() => {

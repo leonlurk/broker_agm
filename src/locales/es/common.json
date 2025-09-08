@@ -28,9 +28,13 @@
     "view": "Ver",
     "submit": "Enviar",
     "reset": "Restablecer",
+    "processing": "Procesando...",
+    "activate": "Activar",
     "logout": "Cerrar sesión",
     "all": "Todas"
   },
+  "cancel": "Cancelar",
+  "close": "Cerrar",
   "navigation": {
     "home": "Inicio",
     "dashboard": "Panel",

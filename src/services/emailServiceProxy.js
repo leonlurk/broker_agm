@@ -21,13 +21,10 @@ class EmailServiceProxy {
    */
   async sendEmailThroughBackend(endpoint, data) {
     try {
-      const token = localStorage.getItem('crypto_token');
-      
       const response = await fetch(`${this.apiUrl}/${endpoint}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'x-auth-token': token })
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(data)
       });
@@ -133,6 +130,27 @@ class EmailServiceProxy {
         date: paymentDetails.date || new Date().toISOString()
       }
     });
+  }
+
+  /**
+   * Send 2FA verification code
+   */
+  async send2FACode(userData, verificationCode) {
+    console.log('[EmailServiceProxy] send2FACode called with:', {
+      email: userData.email,
+      name: userData.name,
+      code: verificationCode,
+      apiUrl: this.apiUrl
+    });
+    
+    const result = await this.sendEmailThroughBackend('2fa-code', {
+      email: userData.email,
+      name: userData.name,
+      code: verificationCode
+    });
+    
+    console.log('[EmailServiceProxy] send2FACode result:', result);
+    return result;
   }
 
   /**

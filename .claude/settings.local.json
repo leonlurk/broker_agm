@@ -14,7 +14,8 @@
       "Bash(npm install:*)",
       "Bash(npx tailwindcss init:*)",
       "Bash(npm run dev:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Read(//c/Users/Administrator/Desktop/broker/payroll-crypto-api/**)"
     ],
     "deny": [],
     "ask": [],

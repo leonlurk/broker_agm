@@ -529,7 +529,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
               {showAccountSelector && (
                   <div className="absolute top-full left-0 z-10 mt-1 w-full max-w-xs bg-[#232323] border border-[#444] rounded-md shadow-lg text-sm py-1 overflow-y-auto max-h-60">
                     {isLoading ? (
-                      <div className="px-4 py-2 text-gray-500">{t('common.loading')}</div>
+                      <div className="px-4 py-2 text-gray-500">{t('messages.loading', { ns: 'common' })}</div>
                     ) : error ? (
                       <div className="px-4 py-2 text-red-400">{t('common.error')}: {error}</div>
                     ) : realAccountsOnly.length > 0 ? (
@@ -668,7 +668,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
          {isLoading ? (
            <div className="text-center py-8">
              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500 mx-auto mb-2"></div>
-             <p className="text-gray-400">{t('common.loading')}</p>
+             <p className="text-gray-400">{t('messages.loading', { ns: 'common' })}</p>
            </div>
          ) : error ? (
            <div className="text-center py-8">

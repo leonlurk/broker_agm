@@ -33,11 +33,11 @@ export const AuthAdapter = {
   isSupabase: () => DATABASE_PROVIDER === 'supabase',
 
   // Register user
-  registerUser: async (username, email, password, refId = null) => {
+  registerUser: async (username, email, password, refId = null, additionalData = {}) => {
     if (DATABASE_PROVIDER === 'supabase') {
-      return supabaseAuth.registerUser(username, email, password, refId);
+      return supabaseAuth.registerUser(username, email, password, refId, additionalData);
     }
-    return firebaseAuth.registerUser(username, email, password, refId);
+    return firebaseAuth.registerUser(username, email, password, refId, additionalData);
   },
 
   // Login user
@@ -245,6 +245,39 @@ export const DatabaseAdapter = {
           
           if (docSnap.exists()) {
             return { data: { id: userId, ...docSnap.data() }, error: null };
+          }
+          return { data: null, error: { message: 'User not found' } };
+        } catch (error) {
+          return { data: null, error };
+        }
+      }
+    },
+
+    // Get user by email
+    getByEmail: async (email) => {
+      if (DATABASE_PROVIDER === 'supabase') {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', email)
+          .single();
+        
+        if (error) {
+          logger.error('[DB Adapter] Error getting user by email', error);
+          return { data: null, error };
+        }
+        
+        return { data, error: null };
+      } else {
+        // Firebase implementation
+        const { collection, query, where, getDocs } = await import('firebase/firestore');
+        try {
+          const q = query(collection(firebaseDb, 'users'), where('email', '==', email));
+          const querySnapshot = await getDocs(q);
+          
+          if (!querySnapshot.empty) {
+            const doc = querySnapshot.docs[0];
+            return { data: { id: doc.id, ...doc.data() }, error: null };
           }
           return { data: null, error: { message: 'User not found' } };
         } catch (error) {

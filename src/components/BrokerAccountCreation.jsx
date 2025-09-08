@@ -338,19 +338,10 @@ const BrokerAccountCreation = ({ onAccountCreated, onCancel }) => {
                 errors.leverage ? 'border-red-500' : 'border-gray-600'
               }`}
             >
-              <option value={10}>1:10</option>
-              <option value={20}>1:20</option>
+              {/* Opciones de apalancamiento actualizadas - incluyendo 1:30 */}
               <option value={30}>1:30</option>
-              <option value={40}>1:40</option>
               <option value={50}>1:50</option>
-              <option value={60}>1:60</option>
-              <option value={70}>1:70</option>
-              <option value={80}>1:80</option>
-              <option value={90}>1:90</option>
               <option value={100}>1:100</option>
-              <option value={125}>1:125</option>
-              <option value={150}>1:150</option>
-              <option value={175}>1:175</option>
               <option value={200}>1:200</option>
             </select>
             {errors.leverage && (
