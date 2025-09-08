@@ -38,9 +38,13 @@ export const ChatProvider = ({ children }) => {
       if (document.visibilityState === 'visible' && actualConversationId) {
         logger.info('[CHAT_CONTEXT] Page became visible, checking subscription');
         // Check if subscription is still alive, reconnect if needed
-        if (!realtimeSubscription || realtimeSubscription._state === 'closed') {
+        if (!realtimeSubscription || realtimeSubscription._state === 'closed' || realtimeSubscription._state === 'CLOSED') {
           logger.info('[CHAT_CONTEXT] Subscription is closed, reconnecting...');
           subscribeToRealtimeMessages(actualConversationId);
+        } else {
+          // Even if subscription exists, fetch recent messages in case we missed any
+          logger.info('[CHAT_CONTEXT] Fetching any missed messages on visibility change');
+          fetchRecentMessages(actualConversationId);
         }
       }
     };
@@ -49,7 +53,7 @@ export const ChatProvider = ({ children }) => {
     
     // Also handle focus event as backup
     const handleFocus = () => {
-      if (actualConversationId && (!realtimeSubscription || realtimeSubscription._state === 'closed')) {
+      if (actualConversationId && (!realtimeSubscription || realtimeSubscription._state === 'closed' || realtimeSubscription._state === 'CLOSED')) {
         logger.info('[CHAT_CONTEXT] Window focused, reconnecting subscription');
         subscribeToRealtimeMessages(actualConversationId);
       }
@@ -61,6 +65,31 @@ export const ChatProvider = ({ children }) => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
+  }, [actualConversationId, realtimeSubscription]);
+
+  // Periodic subscription health check
+  useEffect(() => {
+    if (!actualConversationId) return;
+
+    const checkSubscriptionHealth = () => {
+      if (realtimeSubscription) {
+        const state = realtimeSubscription._state || realtimeSubscription.state;
+        logger.info('[CHAT_CONTEXT] Subscription health check:', state);
+        
+        if (state === 'closed' || state === 'CLOSED' || state === 'error' || state === 'ERROR') {
+          logger.info('[CHAT_CONTEXT] Subscription unhealthy, reconnecting...');
+          subscribeToRealtimeMessages(actualConversationId);
+        }
+      } else {
+        logger.info('[CHAT_CONTEXT] No subscription found, creating...');
+        subscribeToRealtimeMessages(actualConversationId);
+      }
+    };
+
+    // Check every 10 seconds
+    const interval = setInterval(checkSubscriptionHealth, 10000);
+
+    return () => clearInterval(interval);
   }, [actualConversationId, realtimeSubscription]);
 
   // Initialize chat service when user is authenticated
@@ -327,6 +356,14 @@ export const ChatProvider = ({ children }) => {
           setIsHumanControlled(result.isHumanControlled);
         }
 
+        // If subscription is closed, fetch recent messages to ensure we get the response
+        if (!realtimeSubscription || realtimeSubscription._state === 'closed' || realtimeSubscription._state === 'CLOSED') {
+          logger.info('[CHAT_CONTEXT] Subscription is closed, fetching recent messages');
+          setTimeout(() => {
+            fetchRecentMessages(result.conversationId || actualConversationId || conversationId);
+          }, 1500); // Small delay to allow message processing
+        }
+
         return { success: true, response: result.response };
       } else {
         // Remove temporary message on error
@@ -345,6 +382,66 @@ export const ChatProvider = ({ children }) => {
     } catch (error) {
       logger.error('[CHAT_CONTEXT] Error sending message:', error);
       return { success: false, error: error.message };
+    }
+  };
+
+  // Fetch recent messages that might have been missed
+  const fetchRecentMessages = async (conversationId) => {
+    try {
+      // Get the timestamp of the last message we have
+      const currentMessages = conversations.get(conversationId) || [];
+      const lastMessage = currentMessages[currentMessages.length - 1];
+      const lastTimestamp = lastMessage?.timestamp || new Date(Date.now() - 5000).toISOString(); // Default to 5 seconds ago
+      
+      logger.info('[CHAT_CONTEXT] Fetching messages after:', lastTimestamp);
+      
+      // Fetch messages newer than our last message
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .gt('created_at', lastTimestamp)
+        .order('created_at', { ascending: true });
+      
+      if (error) {
+        logger.error('[CHAT_CONTEXT] Error fetching recent messages:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        logger.info('[CHAT_CONTEXT] Found', data.length, 'missed messages');
+        
+        // Add missed messages to conversation
+        const missedMessages = data.map(msg => ({
+          id: msg.id,
+          sender: msg.sender_type === 'user' ? 'user' : 
+                  msg.sender_type === 'ai' ? 'flofy' : 
+                  msg.sender_type === 'human' ? 'human' : 
+                  msg.sender_type,
+          message: msg.message,
+          timestamp: msg.created_at,
+          sender_name: msg.sender_name
+        }));
+        
+        setConversations(prev => {
+          const newConversations = new Map();
+          for (const [key, value] of prev) {
+            if (key === conversationId) {
+              // Merge missed messages, avoiding duplicates
+              const existingIds = new Set(value.map(m => m.id));
+              const newMessages = missedMessages.filter(m => !existingIds.has(m.id));
+              newConversations.set(key, [...value, ...newMessages]);
+            } else {
+              newConversations.set(key, value);
+            }
+          }
+          return newConversations;
+        });
+        
+        setUpdateVersion(v => v + 1); // Force re-render
+      }
+    } catch (error) {
+      logger.error('[CHAT_CONTEXT] Exception fetching recent messages:', error);
     }
   };
 
@@ -515,6 +612,8 @@ export const ChatProvider = ({ children }) => {
           logger.info('[CHAT_CONTEXT] Subscription status:', status);
           if (status === 'SUBSCRIBED') {
             logger.info('[CHAT_CONTEXT] Successfully subscribed to realtime updates');
+            // After reconnection, fetch any messages we might have missed
+            fetchRecentMessages(conversationId);
           } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
             logger.error('[CHAT_CONTEXT] Channel error/closed - attempting to reconnect');
             // Retry subscription after a delay
@@ -522,14 +621,14 @@ export const ChatProvider = ({ children }) => {
               if (conversationId === actualConversationId) { // Only reconnect if still the active conversation
                 subscribeToRealtimeMessages(conversationId);
               }
-            }, 2000);
+            }, 1000); // Reduced delay for faster reconnection
           } else if (status === 'TIMED_OUT') {
             logger.error('[CHAT_CONTEXT] Subscription timed out - attempting to reconnect');
             setTimeout(() => {
               if (conversationId === actualConversationId) {
                 subscribeToRealtimeMessages(conversationId);
               }
-            }, 2000);
+            }, 1000); // Reduced delay for faster reconnection
           }
         });
       

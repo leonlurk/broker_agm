@@ -3412,10 +3412,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         ? t('trading:accounts.fields.balance')
                         : t('trading:charts.drawdown')
                     }
-                    stroke="#06b6d4" 
+                    stroke={benefitChartTab === 'drawdown' ? '#ef4444' : '#06b6d4'} 
                     strokeWidth={isMobile ? 2 : 3}
-                    dot={isMobile ? false : { fill: '#06b6d4', strokeWidth: 0, r: 4 }}
-                    activeDot={{ r: isMobile ? 4 : 6, fill: '#06b6d4' }}
+                    dot={isMobile ? false : { fill: benefitChartTab === 'drawdown' ? '#ef4444' : '#06b6d4', strokeWidth: 0, r: 4 }}
+                    activeDot={{ r: isMobile ? 4 : 6, fill: benefitChartTab === 'drawdown' ? '#ef4444' : '#06b6d4' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
