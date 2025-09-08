@@ -32,19 +32,31 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   
   // Get messages for current conversation - handle both Map and Array cases
   const messages = React.useMemo(() => {
-    if (!conversations) return [];
+    if (!conversations) {
+      logger.warn('[CHAT_WIDGET] conversations is null/undefined');
+      return [];
+    }
     
     // If conversations is a Map
     if (conversations instanceof Map) {
-      return conversations.get(currentConversationId) || [];
+      const msgs = conversations.get(currentConversationId) || [];
+      logger.info('[CHAT_WIDGET] Got messages from Map:', { 
+        conversationId: currentConversationId, 
+        messageCount: msgs.length,
+        firstMessage: msgs[0],
+        lastMessage: msgs[msgs.length - 1]
+      });
+      return msgs;
     }
     
     // If conversations is an Array (legacy)
     if (Array.isArray(conversations)) {
+      logger.info('[CHAT_WIDGET] Using legacy array mode, messages:', conversations.length);
       return conversations;
     }
     
     // Default fallback
+    logger.warn('[CHAT_WIDGET] conversations is neither Map nor Array:', typeof conversations);
     return [];
   }, [conversations, currentConversationId]);
 
@@ -197,20 +209,15 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
     const isAsesor = message.sender === 'asesor' || message.sender === 'human';
     const isSystem = message.sender === 'system';
 
+    // NUEVO UX: Usuario a la izquierda, Bot/Humano a la derecha
     return (
       <React.Fragment key={message.id}>
-        <div className={`flex mb-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
-        {/* Avatar */}
-        {!isUser && (
+        <div className={`flex mb-4 ${isUser ? 'justify-start' : 'justify-end'}`}>
+        {/* Avatar para Usuario (izquierda) */}
+        {isUser && (
           <div className="flex-shrink-0 mr-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              isAI ? 'bg-gradient-to-r from-cyan-500 to-blue-600' :
-              isAsesor ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
-              'bg-gradient-to-r from-gray-500 to-gray-600'
-            }`}>
-              {isAI ? <Bot size={16} className="text-white" /> :
-               isAsesor ? <User size={16} className="text-white" /> :
-               <AlertCircle size={16} className="text-white" />}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center">
+              <User size={16} className="text-white" />
             </div>
           </div>
         )}
@@ -244,11 +251,17 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
           </div>
         </div>
 
-        {/* User Avatar */}
-        {isUser && (
+        {/* Avatar para Bot/Humano (derecha) */}
+        {!isUser && (
           <div className="flex-shrink-0 ml-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center">
-              <User size={16} className="text-white" />
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              isAI ? 'bg-gradient-to-r from-cyan-500 to-blue-600' :
+              isAsesor ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
+              'bg-gradient-to-r from-gray-500 to-gray-600'
+            }`}>
+              {isAI ? <Bot size={16} className="text-white" /> :
+               isAsesor ? <User size={16} className="text-white" /> :
+               <AlertCircle size={16} className="text-white" />}
             </div>
           </div>
         )}

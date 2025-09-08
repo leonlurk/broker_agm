@@ -63,6 +63,13 @@ export const ChatProvider = ({ children }) => {
       if (messages && messages.length > 0) {
         logger.info('[CHAT_CONTEXT] Found', messages.length, 'messages in DB');
         
+        // Log tipos de mensajes encontrados
+        const messageCounts = messages.reduce((acc, msg) => {
+          acc[msg.sender_type] = (acc[msg.sender_type] || 0) + 1;
+          return acc;
+        }, {});
+        logger.info('[CHAT_CONTEXT] Message types found:', messageCounts);
+        
         // Convert DB messages to local format
         const formattedMessages = messages.map(msg => ({
           id: msg.id,
@@ -74,6 +81,13 @@ export const ChatProvider = ({ children }) => {
           timestamp: msg.created_at,
           sender_name: msg.sender_name
         }));
+        
+        // Log muestra de mensajes
+        logger.info('[CHAT_CONTEXT] Sample messages:', {
+          first: formattedMessages[0],
+          humanMessages: formattedMessages.filter(m => m.sender === 'human').slice(0, 3),
+          last: formattedMessages[formattedMessages.length - 1]
+        });
         
         // Add to conversations
         setConversations(prev => {
