@@ -212,10 +212,13 @@ export const ChatProvider = ({ children }) => {
     if (!currentUser || !message.trim()) return { success: false };
 
     const userId = currentUser.id || currentUser.uid;
-    const conversationId = `conversation_${userId}`;
+    // Use DB conversation ID if available, otherwise use local ID
+    const conversationId = actualConversationId || `conversation_${userId}`;
+    
+    logger.info('[CHAT_CONTEXT] Sending message with conversation ID:', conversationId);
     
     try {
-      // Add user message immediately to UI
+      // Add user message immediately to UI (optimistic update)
       const userMessage = {
         id: `temp_${Date.now()}`,
         sender: 'user',
@@ -238,46 +241,34 @@ export const ChatProvider = ({ children }) => {
         // Update actual conversation ID if returned from service
         if (result.conversationId) {
           setActualConversationId(result.conversationId);
+          
+          // If conversation ID changed, subscribe to the new one
+          if (result.conversationId !== actualConversationId) {
+            logger.info('[CHAT_CONTEXT] New conversation ID received, subscribing to realtime');
+            subscribeToRealtimeMessages(result.conversationId);
+          }
         }
         
-        // Update conversation with real message IDs and AI response
+        // Just remove the temporary message
+        // The real messages will come through the realtime subscription
         setConversations(prev => {
           const newConversations = new Map(prev);
-          let currentMessages = newConversations.get(conversationId) || [];
+          const currentMessages = newConversations.get(conversationId) || [];
           
-          // Remove temporary message and add real messages
-          currentMessages = currentMessages.filter(msg => !msg.isTemporary);
+          // Remove temporary message only
+          const filteredMessages = currentMessages.filter(msg => !msg.isTemporary);
+          newConversations.set(conversationId, filteredMessages);
           
-          // Add user message
-          const realUserMessage = {
-            id: `msg_${Date.now()}_user`,
-            sender: 'user',
-            message: message.trim(),
-            timestamp: new Date().toISOString()
-          };
-          currentMessages.push(realUserMessage);
-
-          // Add AI response if available
-          if (result.response && !result.isHumanControlled) {
-            const aiMessage = {
-              id: result.messageId || `msg_${Date.now()}_ai`,
-              sender: 'flofy',
-              message: result.response,
-              timestamp: new Date().toISOString(),
-              intent: result.intent,
-              confidence: result.confidence
-            };
-            currentMessages.push(aiMessage);
-            
-            // Store the DB message ID mapping
-            if (result.messageId) {
-              setMessageIdMap(prev => new Map(prev).set(aiMessage.id, result.messageId));
-            }
+          // If conversation ID changed, also update the new ID's messages
+          if (result.conversationId && result.conversationId !== conversationId) {
+            const existingMessages = newConversations.get(result.conversationId) || [];
+            newConversations.set(result.conversationId, existingMessages);
           }
-
-          newConversations.set(conversationId, currentMessages);
+          
           return newConversations;
         });
+        
+        logger.info('[CHAT_CONTEXT] Message sent successfully, waiting for realtime updates');
 
         // Update human control status
         if (result.isHumanControlled !== undefined) {
@@ -321,15 +312,25 @@ export const ChatProvider = ({ children }) => {
           (payload) => {
             logger.info('[CHAT_CONTEXT] New message received from realtime:', payload);
             
-            // Only process messages from human operators (sent from CRM)
-            if (payload.new && payload.new.sender_type === 'human') {
+            // Process ALL message types for real-time updates
+            if (payload.new) {
+              const msg = payload.new;
               const newMessage = {
-                id: payload.new.id,
-                sender: 'human',
-                message: payload.new.message,
-                timestamp: payload.new.created_at,
-                sender_name: payload.new.sender_name || 'Operador'
+                id: msg.id,
+                sender: msg.sender_type === 'user' ? 'user' : 
+                        msg.sender_type === 'ai' ? 'flofy' : 
+                        msg.sender_type === 'human' ? 'human' : 
+                        msg.sender_type,
+                message: msg.message,
+                timestamp: msg.created_at,
+                sender_name: msg.sender_name
               };
+              
+              logger.info('[CHAT_CONTEXT] Processing realtime message:', {
+                id: newMessage.id,
+                sender: newMessage.sender,
+                preview: newMessage.message?.substring(0, 50)
+              });
               
               // Add to conversation using DB conversation ID
               setConversations(prev => {
@@ -337,16 +338,27 @@ export const ChatProvider = ({ children }) => {
                 const currentMessages = newConversations.get(conversationId) || [];
                 
                 // Check if message already exists
-                const exists = currentMessages.some(msg => msg.id === newMessage.id);
+                const exists = currentMessages.some(m => 
+                  m.id === newMessage.id || 
+                  (m.message === newMessage.message && 
+                   m.sender === newMessage.sender &&
+                   Math.abs(new Date(m.timestamp) - new Date(newMessage.timestamp)) < 1000)
+                );
+                
                 if (!exists) {
+                  logger.info('[CHAT_CONTEXT] Adding new realtime message to conversation');
                   newConversations.set(conversationId, [...currentMessages, newMessage]);
+                } else {
+                  logger.info('[CHAT_CONTEXT] Message already exists, skipping');
                 }
                 
                 return newConversations;
               });
               
-              // Update control status if changed
-              checkHumanControlStatus();
+              // Update control status if message is from human
+              if (msg.sender_type === 'human') {
+                checkHumanControlStatus();
+              }
             }
           }
         )
