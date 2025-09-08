@@ -32,6 +32,37 @@ export const ChatProvider = ({ children }) => {
   const [updateVersion, setUpdateVersion] = useState(0); // Force re-renders on updates
   const previousUserIdRef = useRef(null);
 
+  // Add visibility change handler to reconnect subscription
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && actualConversationId) {
+        logger.info('[CHAT_CONTEXT] Page became visible, checking subscription');
+        // Check if subscription is still alive, reconnect if needed
+        if (!realtimeSubscription || realtimeSubscription._state === 'closed') {
+          logger.info('[CHAT_CONTEXT] Subscription is closed, reconnecting...');
+          subscribeToRealtimeMessages(actualConversationId);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Also handle focus event as backup
+    const handleFocus = () => {
+      if (actualConversationId && (!realtimeSubscription || realtimeSubscription._state === 'closed')) {
+        logger.info('[CHAT_CONTEXT] Window focused, reconnecting subscription');
+        subscribeToRealtimeMessages(actualConversationId);
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [actualConversationId, realtimeSubscription]);
+
   // Initialize chat service when user is authenticated
   useEffect(() => {
     // Only initialize if user ID actually changed
@@ -323,11 +354,14 @@ export const ChatProvider = ({ children }) => {
       
       // Unsubscribe from previous subscription if exists
       if (realtimeSubscription) {
+        logger.info('[CHAT_CONTEXT] Cleaning up previous subscription');
         realtimeSubscription.unsubscribe();
+        setRealtimeSubscription(null);
       }
       
+      // Use timestamp to ensure unique channel name
       const subscription = supabase
-        .channel(`messages-${conversationId}`)
+        .channel(`messages-${conversationId}-${Date.now()}`)
         .on('postgres_changes', 
           {
             event: 'INSERT',
@@ -481,16 +515,20 @@ export const ChatProvider = ({ children }) => {
           logger.info('[CHAT_CONTEXT] Subscription status:', status);
           if (status === 'SUBSCRIBED') {
             logger.info('[CHAT_CONTEXT] Successfully subscribed to realtime updates');
-          } else if (status === 'CHANNEL_ERROR') {
-            logger.error('[CHAT_CONTEXT] Channel error - attempting to reconnect');
+          } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+            logger.error('[CHAT_CONTEXT] Channel error/closed - attempting to reconnect');
             // Retry subscription after a delay
             setTimeout(() => {
-              subscribeToRealtimeMessages(conversationId);
+              if (conversationId === actualConversationId) { // Only reconnect if still the active conversation
+                subscribeToRealtimeMessages(conversationId);
+              }
             }, 2000);
           } else if (status === 'TIMED_OUT') {
             logger.error('[CHAT_CONTEXT] Subscription timed out - attempting to reconnect');
             setTimeout(() => {
-              subscribeToRealtimeMessages(conversationId);
+              if (conversationId === actualConversationId) {
+                subscribeToRealtimeMessages(conversationId);
+              }
             }, 2000);
           }
         });

@@ -42,11 +42,18 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
     // If conversations is a Map
     if (conversations instanceof Map) {
       const msgs = conversations.get(currentConversationId) || [];
+      logger.info('[CHAT_WIDGET] Retrieved messages from Map:', {
+        conversationId: currentConversationId,
+        messageCount: msgs.length,
+        updateVersion,
+        lastMessage: msgs[msgs.length - 1]?.message?.substring(0, 50)
+      });
       return msgs;
     }
     
     // If conversations is an Array (legacy)
     if (Array.isArray(conversations)) {
+      logger.info('[CHAT_WIDGET] Using legacy array format');
       return conversations;
     }
     
@@ -61,11 +68,13 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   };
 
   useEffect(() => {
+    logger.info('[CHAT_WIDGET] Messages updated, scrolling to bottom. Count:', messages.length);
     scrollToBottom();
   }, [messages]);
 
   // Force component update when messages are updated via WebSocket
   useEffect(() => {
+    logger.info('[CHAT_WIDGET] UpdateVersion changed, forcing re-render:', updateVersion);
     // This will cause the component to re-render when updateVersion changes
     // The messages will be recalculated from the updated conversations Map
   }, [updateVersion]);
