@@ -565,12 +565,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       setViewMode('details');
       setSelectedAccountId(navigationParams.accountId);
       scrollToTopManual(scrollContainerRef);
-    } else {
-        // Si no hay parámetros de navegación, volver a la vista general.
-        setViewMode('overview');
-        setSelectedAccountId(null);
     }
-  }, [navigationParams, getAllAccounts]);
+    // IMPORTANTE: NO resetear a overview si no hay navigationParams
+    // Esto mantiene el estado actual cuando el componente se re-renderiza
+    // Solo resetear si explícitamente se navega a otra sección
+  }, [navigationParams?.accountId]); // Solo re-ejecutar si el accountId cambia específicamente
   
   const handleCreateAccount = () => {
     if (userData?.kyc_status !== 'approved') {

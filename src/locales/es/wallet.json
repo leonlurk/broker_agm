@@ -140,7 +140,10 @@
       "invalidAddress": "Dirección inválida",
       "dailyLimit": "Límite diario excedido",
       "processingError": "Error al crear solicitud de retiro"
-    }
+    },
+    "require2FA": "Debe activar la autenticación de dos factores (2FA) en Configuración para poder realizar retiros",
+    "requestSent": "Solicitud de retiro enviada. Será procesada pronto.",
+    "error": "Error al procesar el retiro. Por favor intente nuevamente."
   },
   "transfer": {
     "title": "Transferir Entre Cuentas",

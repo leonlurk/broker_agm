@@ -10,6 +10,7 @@ import { DatabaseAdapter } from '../services/database.adapter';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import LanguageSelector from './LanguageSelector';
+import accountMetricsOptimized from '../services/accountMetricsOptimized';
 
 const fondoTarjetaUrl = "/fondoTarjeta.png";
 
@@ -51,6 +52,8 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   const [kycCardDismissed, setKycCardDismissed] = useState(() => {
     return localStorage.getItem('kycCardDismissed') === 'true';
   });
+  const [accountsMetrics, setAccountsMetrics] = useState({});
+  const [metricsLoading, setMetricsLoading] = useState({});
   const dropdownRef = useRef(null);
 
   // Función para cerrar permanentemente el cartel KYC aprobado
@@ -362,6 +365,43 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     };
   }, [dropdownRef]);
 
+  // Función para calcular PNL por períodos
+  const calculatePnlByPeriod = (balanceHistory, days) => {
+    if (!balanceHistory || balanceHistory.length === 0) {
+      return { percentage: 0, amount: 0 };
+    }
+
+    const now = new Date();
+    const periodStart = new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
+    
+    // Encontrar el balance más cercano al inicio del período
+    const sortedHistory = [...balanceHistory].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    let startBalance = null;
+    let endBalance = sortedHistory[sortedHistory.length - 1]; // Último balance (más reciente)
+
+    for (let i = 0; i < sortedHistory.length; i++) {
+      const recordDate = new Date(sortedHistory[i].timestamp);
+      if (recordDate >= periodStart) {
+        startBalance = i > 0 ? sortedHistory[i - 1] : sortedHistory[i];
+        break;
+      }
+    }
+
+    if (!startBalance) {
+      startBalance = sortedHistory[0]; // Si no hay datos antiguos, usar el más antiguo disponible
+    }
+
+    const initialBalance = startBalance.balance || 0;
+    const currentBalance = endBalance.balance || 0;
+    const profit = currentBalance - initialBalance;
+    const percentage = initialBalance > 0 ? (profit / initialBalance) * 100 : 0;
+
+    return {
+      percentage: percentage,
+      amount: profit
+    };
+  };
+
   // Obtener cuentas dinámicamente
   const accountsToShow = getAccountsByCategory(activeCategory);
   const allAccountsForSelector = getAllAccounts();
@@ -391,6 +431,60 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
       })
       .slice(0, 3);
   };
+
+  // Efecto para cargar métricas de las cuentas cuando cambien
+  useEffect(() => {
+    const loadAccountMetrics = async () => {
+      const accountsToLoad = getFilteredAccounts();
+      
+      for (const account of accountsToLoad) {
+        // Evitar recargar si ya tenemos datos
+        if (accountsMetrics[account.account_number] && !isLoading) {
+          continue;
+        }
+        
+        setMetricsLoading(prev => ({ ...prev, [account.account_number]: true }));
+        
+        try {
+          // Obtener datos del dashboard
+          const dashboardData = await accountMetricsOptimized.getDashboardData(
+            account.account_number,
+            'month'
+          );
+          
+          // Obtener historial de balance para calcular PNL por períodos
+          const balanceHistory = await accountMetricsOptimized.getBalanceHistory(
+            account.account_number,
+            'month'
+          );
+          
+          // Calcular PNL por períodos
+          const pnlToday = calculatePnlByPeriod(balanceHistory, 1);
+          const pnl7Days = calculatePnlByPeriod(balanceHistory, 7);
+          const pnl30Days = calculatePnlByPeriod(balanceHistory, 30);
+          
+          setAccountsMetrics(prev => ({
+            ...prev,
+            [account.account_number]: {
+              ...dashboardData,
+              balanceHistory,
+              pnlToday,
+              pnl7Days,
+              pnl30Days
+            }
+          }));
+        } catch (error) {
+          console.error('Error loading metrics for account:', account.account_number, error);
+        } finally {
+          setMetricsLoading(prev => ({ ...prev, [account.account_number]: false }));
+        }
+      }
+    };
+    
+    if (!isLoading && accounts.length > 0) {
+      loadAccountMetrics();
+    }
+  }, [accountFilter, accounts, isLoading]);
 
   if (showUserInfo) {
     return (

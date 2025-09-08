@@ -139,7 +139,10 @@
       "invalidAddress": "Invalid address",
       "dailyLimit": "Daily limit exceeded",
       "processingError": "Error creating withdrawal request"
-    }
+    },
+    "require2FA": "Two-factor authentication (2FA) must be enabled in Settings to make withdrawals",
+    "requestSent": "Withdrawal request sent. It will be processed soon.",
+    "error": "Error processing withdrawal. Please try again."
   },
   "transfer": {
     "title": "Transfer Between Accounts",

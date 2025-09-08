@@ -300,8 +300,9 @@ export const ChatProvider = ({ children }) => {
     
     try {
       // Add user message immediately to UI (optimistic update)
+      const tempId = `temp_${Date.now()}`;
       const userMessage = {
-        id: `temp_${Date.now()}`,
+        id: tempId,
         sender: 'user',
         message: message.trim(),
         timestamp: new Date().toISOString(),
@@ -312,6 +313,7 @@ export const ChatProvider = ({ children }) => {
         const newConversations = new Map(prev);
         const currentMessages = newConversations.get(conversationId) || [];
         newConversations.set(conversationId, [...currentMessages, userMessage]);
+        setUpdateVersion(v => v + 1); // Force immediate re-render
         return newConversations;
       });
 
@@ -330,39 +332,50 @@ export const ChatProvider = ({ children }) => {
           }
         }
         
-        // Just remove the temporary message
-        // The real messages will come through the realtime subscription
-        setConversations(prev => {
-          const newConversations = new Map(prev);
-          const currentMessages = newConversations.get(conversationId) || [];
-          
-          // Remove temporary message only
-          const filteredMessages = currentMessages.filter(msg => !msg.isTemporary);
-          newConversations.set(conversationId, filteredMessages);
-          
-          // If conversation ID changed, also update the new ID's messages
-          if (result.conversationId && result.conversationId !== conversationId) {
-            const existingMessages = newConversations.get(result.conversationId) || [];
-            newConversations.set(result.conversationId, existingMessages);
-          }
-          
-          return newConversations;
-        });
+        const targetConversationId = result.conversationId || actualConversationId || conversationId;
         
-        logger.info('[CHAT_CONTEXT] Message sent successfully, waiting for realtime updates');
-
+        // Don't remove the temporary message - keep it visible
+        // The real message from DB will replace it when it arrives via WebSocket
+        logger.info('[CHAT_CONTEXT] Message sent, keeping temporary message visible');
+        
         // Update human control status
         if (result.isHumanControlled !== undefined) {
           setIsHumanControlled(result.isHumanControlled);
         }
 
-        // If subscription is closed, fetch recent messages to ensure we get the response
-        if (!realtimeSubscription || realtimeSubscription._state === 'closed' || realtimeSubscription._state === 'CLOSED') {
-          logger.info('[CHAT_CONTEXT] Subscription is closed, fetching recent messages');
-          setTimeout(() => {
-            fetchRecentMessages(result.conversationId || actualConversationId || conversationId);
-          }, 1500); // Small delay to allow message processing
-        }
+        // Add a loading message for the bot response
+        const loadingMessage = {
+          id: `bot_loading_${Date.now()}`,
+          sender: 'flofy',
+          message: '...',
+          timestamp: new Date().toISOString(),
+          isLoading: true
+        };
+        
+        setConversations(prev => {
+          const newConversations = new Map(prev);
+          
+          // Keep the temp message and add loading indicator
+          let currentMessages = newConversations.get(targetConversationId) || [];
+          
+          // If conversation ID changed, copy messages to new ID
+          if (targetConversationId !== conversationId) {
+            const oldMessages = newConversations.get(conversationId) || [];
+            currentMessages = [...oldMessages];
+            newConversations.set(targetConversationId, currentMessages);
+          }
+          
+          // Add loading message
+          newConversations.set(targetConversationId, [...currentMessages, loadingMessage]);
+          setUpdateVersion(v => v + 1);
+          return newConversations;
+        });
+        
+        // Always fetch recent messages after a delay to ensure we get the response
+        // This handles cases where WebSocket might miss the message
+        setTimeout(() => {
+          fetchRecentMessages(targetConversationId);
+        }, 2000); // 2 second delay to allow message processing
 
         return { success: true, response: result.response };
       } else {
@@ -371,13 +384,13 @@ export const ChatProvider = ({ children }) => {
           const newConversations = new Map(prev);
           const currentMessages = newConversations.get(conversationId) || [];
           newConversations.set(conversationId, 
-            currentMessages.filter(msg => !msg.isTemporary)
+            currentMessages.filter(msg => msg.id !== tempId)
           );
+          setUpdateVersion(v => v + 1);
           return newConversations;
         });
 
         return { success: false, error: result.error };
-      }
 
     } catch (error) {
       logger.error('[CHAT_CONTEXT] Error sending message:', error);
@@ -388,19 +401,17 @@ export const ChatProvider = ({ children }) => {
   // Fetch recent messages that might have been missed
   const fetchRecentMessages = async (conversationId) => {
     try {
-      // Get the timestamp of the last message we have
-      const currentMessages = conversations.get(conversationId) || [];
-      const lastMessage = currentMessages[currentMessages.length - 1];
-      const lastTimestamp = lastMessage?.timestamp || new Date(Date.now() - 5000).toISOString(); // Default to 5 seconds ago
+      // Get the timestamp from 10 seconds ago to fetch recent messages
+      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
       
-      logger.info('[CHAT_CONTEXT] Fetching messages after:', lastTimestamp);
+      logger.info('[CHAT_CONTEXT] Fetching recent messages from last 10 seconds');
       
-      // Fetch messages newer than our last message
+      // Fetch messages from the last 10 seconds
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
         .eq('conversation_id', conversationId)
-        .gt('created_at', lastTimestamp)
+        .gt('created_at', tenSecondsAgo)
         .order('created_at', { ascending: true });
       
       if (error) {
@@ -409,10 +420,10 @@ export const ChatProvider = ({ children }) => {
       }
       
       if (data && data.length > 0) {
-        logger.info('[CHAT_CONTEXT] Found', data.length, 'missed messages');
+        logger.info('[CHAT_CONTEXT] Found', data.length, 'recent messages');
         
-        // Add missed messages to conversation
-        const missedMessages = data.map(msg => ({
+        // Process fetched messages
+        const fetchedMessages = data.map(msg => ({
           id: msg.id,
           sender: msg.sender_type === 'user' ? 'user' : 
                   msg.sender_type === 'ai' ? 'flofy' : 
@@ -424,21 +435,63 @@ export const ChatProvider = ({ children }) => {
         }));
         
         setConversations(prev => {
-          const newConversations = new Map();
-          for (const [key, value] of prev) {
-            if (key === conversationId) {
-              // Merge missed messages, avoiding duplicates
-              const existingIds = new Set(value.map(m => m.id));
-              const newMessages = missedMessages.filter(m => !existingIds.has(m.id));
-              newConversations.set(key, [...value, ...newMessages]);
-            } else {
-              newConversations.set(key, value);
+          const newConversations = new Map(prev);
+          const currentMessages = newConversations.get(conversationId) || [];
+          
+          // Create a map of existing message IDs for quick lookup
+          const existingIds = new Set(currentMessages.filter(m => !m.isTemporary && !m.isLoading).map(m => m.id));
+          
+          // Process each fetched message
+          let updatedMessages = [...currentMessages];
+          
+          fetchedMessages.forEach(fetchedMsg => {
+            // Skip if we already have this message (by ID)
+            if (existingIds.has(fetchedMsg.id)) {
+              return;
             }
-          }
+            
+            // Check if this should replace a temporary or loading message
+            if (fetchedMsg.sender === 'user') {
+              // Find and replace temporary user message (within 5 seconds)
+              const tempIndex = updatedMessages.findIndex(m => {
+                return m.isTemporary && 
+                       m.sender === 'user' && 
+                       Math.abs(new Date(fetchedMsg.timestamp) - new Date(m.timestamp)) < 5000;
+              });
+              
+              if (tempIndex !== -1) {
+                // Replace temporary message with real one
+                updatedMessages[tempIndex] = fetchedMsg;
+                logger.info('[CHAT_CONTEXT] Replaced temporary user message with real message');
+              } else {
+                // Add as new message
+                updatedMessages.push(fetchedMsg);
+              }
+            } else if (fetchedMsg.sender === 'flofy' || fetchedMsg.sender === 'human') {
+              // Find and replace loading message
+              const loadingIndex = updatedMessages.findIndex(m => m.isLoading && m.sender === 'flofy');
+              
+              if (loadingIndex !== -1) {
+                // Replace loading message with real response
+                updatedMessages[loadingIndex] = fetchedMsg;
+                logger.info('[CHAT_CONTEXT] Replaced loading message with real response');
+              } else {
+                // Add as new message
+                updatedMessages.push(fetchedMsg);
+              }
+            } else {
+              // Add any other message type
+              updatedMessages.push(fetchedMsg);
+            }
+          });
+          
+          // Sort messages by timestamp to maintain order
+          updatedMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+          
+          newConversations.set(conversationId, updatedMessages);
+          setUpdateVersion(v => v + 1); // Force re-render
           return newConversations;
         });
-        
-        setUpdateVersion(v => v + 1); // Force re-render
       }
     } catch (error) {
       logger.error('[CHAT_CONTEXT] Exception fetching recent messages:', error);
@@ -498,15 +551,55 @@ export const ChatProvider = ({ children }) => {
                 );
                 
                 if (!exists) {
-                  // Message added
+                  // Check if this is a message that might replace a temporary/loading one
+                  let shouldReplaceTempMessage = false;
+                  if (msg.sender_type === 'user') {
+                    // Check if there's a recent temporary user message (within last 5 seconds)
+                    const recentTempMessage = currentMessages.find(m => {
+                      const isUserMessage = m.sender === 'user';
+                      const isRecent = new Date(newMessage.timestamp) - new Date(m.timestamp) < 5000;
+                      const hasUserPrefix = m.id && m.id.startsWith('user_');
+                      return isUserMessage && isRecent && hasUserPrefix;
+                    });
+                    shouldReplaceTempMessage = !!recentTempMessage;
+                  } else if (msg.sender_type === 'ai') {
+                    // Check if there's a loading message from the bot
+                    const loadingMessage = currentMessages.find(m => 
+                      m.isLoading && m.sender === 'flofy'
+                    );
+                    shouldReplaceTempMessage = !!loadingMessage;
+                  }
                   
                   // Create completely new Map
                   const newConversations = new Map();
                   for (const [key, value] of prev) {
                     if (key === conversationId) {
-                      const updatedMessages = [...value, newMessage];
+                      let updatedMessages;
+                      if (shouldReplaceTempMessage) {
+                        // Replace the temporary/loading message with the real one
+                        updatedMessages = value.map(m => {
+                          // Replace temporary user message
+                          if (msg.sender_type === 'user' && m.id && m.id.startsWith('user_') && m.sender === 'user') {
+                            const isRecent = new Date(newMessage.timestamp) - new Date(m.timestamp) < 5000;
+                            if (isRecent) {
+                              return newMessage; // Replace with real message
+                            }
+                          }
+                          // Replace loading bot message
+                          if (msg.sender_type === 'ai' && m.isLoading && m.sender === 'flofy') {
+                            return newMessage; // Replace loading message with real response
+                          }
+                          return m;
+                        });
+                        // If no replacement happened, add as new
+                        if (!updatedMessages.some(m => m.id === newMessage.id)) {
+                          updatedMessages = [...updatedMessages, newMessage];
+                        }
+                      } else {
+                        // Just add the new message
+                        updatedMessages = [...value, newMessage];
+                      }
                       newConversations.set(key, updatedMessages);
-                      // Updated messages count
                     } else {
                       newConversations.set(key, value);
                     }
@@ -517,7 +610,6 @@ export const ChatProvider = ({ children }) => {
                     newConversations.set(conversationId, [newMessage]);
                   }
                   
-                  // New Map created
                   setUpdateVersion(v => v + 1); // Force re-render
                   return newConversations;
                 } else {

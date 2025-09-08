@@ -35,6 +35,8 @@
   },
   "cancel": "Cancelar",
   "close": "Cerrar",
+  "verify": "Verificar",
+  "verifying": "Verificando...",
   "navigation": {
     "home": "Inicio",
     "dashboard": "Panel",
@@ -80,6 +82,10 @@
     "confirmData": "Entiendo y quiero continuar",
     "welcome": "Bienvenido",
     "goodbye": "Hasta pronto"
+  },
+  "errors": {
+    "userNotFound": "Usuario no encontrado",
+    "genericError": "Ha ocurrido un error. Por favor intenta nuevamente."
   },
   "forms": {
     "required": "Este campo es requerido",

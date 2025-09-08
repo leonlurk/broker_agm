@@ -410,6 +410,22 @@
     "methods": {
       "app": "Aplicación Autenticadora",
       "email": "Código por Email"
+    },
+    "verifyTitle": "Verificación de Seguridad",
+    "verifyForWithdraw": "Verificación 2FA para Retiro",
+    "selectVerificationMethod": "Selecciona el método de verificación",
+    "useApp": "Usar Aplicación Autenticadora",
+    "useEmail": "Usar Código por Email",
+    "enterAppCode": "Ingresa el código de 6 dígitos de tu aplicación autenticadora",
+    "sendingEmailCode": "Enviando código a tu email...",
+    "emailCodeSentTo": "Código enviado a {{email}}",
+    "resendCode": "Reenviar código",
+    "resendIn": "Reenviar en {{seconds}}s",
+    "useAnotherMethod": "Usar otro método",
+    "verificationSuccess": "Verificación exitosa",
+    "errors": {
+      "loadFailed": "Error al cargar métodos de verificación",
+      "verificationFailed": "Error en la verificación. Por favor intenta nuevamente."
     }
   },
   "paymentMethods": {

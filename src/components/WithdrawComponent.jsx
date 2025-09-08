@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
+import twoFactorService from '../services/twoFactorService';
+import TwoFactorVerifyModal from './TwoFactorVerifyModal';
+import { DatabaseAdapter } from '../services/database.adapter';
 
 const WithdrawComponent = () => {
   const { t } = useTranslation(['wallet', 'common', 'paymentMethods']);
@@ -11,6 +16,12 @@ const WithdrawComponent = () => {
   const [selectedAccount, setSelectedAccount] = useState({ id: 3452, name: 'Cuenta 1', balance: 5620 });
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  
+  // 2FA states
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [has2FAEnabled, setHas2FAEnabled] = useState(false);
+  const [withdrawRequest, setWithdrawRequest] = useState(null);
+  const { currentUser } = useAuth();
 
   // Lista de cuentas disponibles
   const availableAccounts = [
@@ -30,12 +41,95 @@ const WithdrawComponent = () => {
     setCurrentStep(3);
   };
   
-  const handleWithdraw = () => {
-    console.log("Procesando retiro:", {
+  const handleWithdraw = async () => {
+    // Store withdraw request details
+    const request = {
       método: selectedMethod,
       moneda: selectedCoin,
-      acceptTerms
-    });
+      acceptTerms,
+      cuenta: selectedAccount,
+      timestamp: new Date().toISOString()
+    };
+    setWithdrawRequest(request);
+    
+    // Check if user has 2FA enabled
+    const userId = currentUser?.id || currentUser?.uid;
+    if (!userId) {
+      toast.error(t('errors.userNotFound', { ns: 'common' }));
+      return;
+    }
+    
+    try {
+      const twoFAStatus = await twoFactorService.get2FAStatus(userId);
+      setHas2FAEnabled(twoFAStatus.enabled);
+      
+      if (!twoFAStatus.enabled) {
+        // Show error toast if 2FA is not enabled
+        toast.error(
+          t('wallet:withdraw.require2FA') || 'Debe activar la autenticación de dos factores (2FA) en Configuración para poder realizar retiros',
+          {
+            duration: 6000,
+            icon: '🔒',
+            style: {
+              background: '#dc2626',
+              color: '#fff',
+            },
+          }
+        );
+        return;
+      }
+      
+      // If 2FA is enabled, show verification modal
+      setShow2FAModal(true);
+    } catch (error) {
+      console.error('Error checking 2FA status:', error);
+      toast.error(t('errors.genericError', { ns: 'common' }));
+    }
+  };
+  
+  const handle2FASuccess = async () => {
+    // Process the withdrawal after successful 2FA verification
+    try {
+      console.log("Procesando retiro con 2FA verificado:", withdrawRequest);
+      
+      // Send withdrawal request to database as pending
+      const userId = currentUser?.id || currentUser?.uid;
+      const withdrawalData = {
+        user_id: userId,
+        amount: withdrawRequest.cuenta.balance, // You should add an amount input field
+        method: withdrawRequest.método,
+        currency: withdrawRequest.moneda,
+        account_id: withdrawRequest.cuenta.id,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        two_fa_verified: true
+      };
+      
+      // Save to database (you'll need to create this table/collection)
+      const result = await DatabaseAdapter.execute(
+        'INSERT INTO withdrawal_requests (user_id, amount, method, currency, account_id, status, created_at, two_fa_verified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+        [withdrawalData.user_id, withdrawalData.amount, withdrawalData.method, withdrawalData.currency, withdrawalData.account_id, withdrawalData.status, withdrawalData.created_at, withdrawalData.two_fa_verified]
+      );
+      
+      toast.success(
+        t('wallet:withdraw.requestSent') || 'Solicitud de retiro enviada. Será procesada pronto.',
+        {
+          duration: 5000,
+          icon: '✅',
+        }
+      );
+      
+      // Reset form
+      setCurrentStep(1);
+      setSelectedMethod(null);
+      setSelectedCoin(null);
+      setAcceptTerms(false);
+      setWithdrawRequest(null);
+      
+    } catch (error) {
+      console.error('Error processing withdrawal:', error);
+      toast.error(t('wallet:withdraw.error') || 'Error al procesar el retiro. Por favor intente nuevamente.');
+    }
   };
   
   const handleBack = () => {
@@ -76,7 +170,8 @@ const WithdrawComponent = () => {
   ];
   
   return (
-    <div className="p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white border border-[#334155] rounded-3xl">
+    <>
+      <div className="p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white border border-[#334155] rounded-3xl">
       {/* Header con selección de cuenta */}
       <div className="flex justify-between items-center mb-8">
         <div className="relative" ref={dropdownRef}>
@@ -363,6 +458,15 @@ const WithdrawComponent = () => {
           </div>
         </div>
     </div>
+    
+    {/* 2FA Verification Modal */}
+    <TwoFactorVerifyModal
+      isOpen={show2FAModal}
+      onClose={() => setShow2FAModal(false)}
+      onSuccess={handle2FASuccess}
+      purpose="withdraw"
+    />
+  </>
   );
 };
 
