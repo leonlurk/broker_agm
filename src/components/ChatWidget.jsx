@@ -31,7 +31,8 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   const inputRef = useRef(null);
   
   // Get messages for current conversation - handle both Map and Array cases
-  const messages = React.useMemo(() => {
+  // Remove useMemo to ensure updates are always reflected
+  const messages = (() => {
     if (!conversations) {
       logger.warn('[CHAT_WIDGET] conversations is null/undefined');
       return [];
@@ -75,7 +76,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
     // Default fallback
     logger.warn('[CHAT_WIDGET] conversations is neither Map nor Array:', typeof conversations);
     return [];
-  }, [conversations, currentConversationId]);
+  })();
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {

@@ -340,8 +340,7 @@ export const ChatProvider = ({ children }) => {
               
               // Add to conversation using DB conversation ID
               setConversations(prev => {
-                const newConversations = new Map(prev);
-                const currentMessages = newConversations.get(conversationId) || [];
+                const currentMessages = prev.get(conversationId) || [];
                 
                 // Check if message already exists
                 const exists = currentMessages.some(m => 
@@ -350,12 +349,26 @@ export const ChatProvider = ({ children }) => {
                 
                 if (!exists) {
                   logger.info('[CHAT_CONTEXT] Adding new realtime message to conversation');
-                  const updatedMessages = [...currentMessages, newMessage];
-                  newConversations.set(conversationId, updatedMessages);
-                  logger.info('[CHAT_CONTEXT] Updated conversation now has', updatedMessages.length, 'messages');
                   
-                  // Force React to detect the change by creating a completely new Map
-                  return new Map(newConversations);
+                  // Create completely new Map
+                  const newConversations = new Map();
+                  for (const [key, value] of prev) {
+                    if (key === conversationId) {
+                      const updatedMessages = [...value, newMessage];
+                      newConversations.set(key, updatedMessages);
+                      logger.info('[CHAT_CONTEXT] Updated conversation now has', updatedMessages.length, 'messages');
+                    } else {
+                      newConversations.set(key, value);
+                    }
+                  }
+                  
+                  // Handle case where conversation doesn't exist yet
+                  if (!prev.has(conversationId)) {
+                    newConversations.set(conversationId, [newMessage]);
+                  }
+                  
+                  logger.info('[CHAT_CONTEXT] Returning completely new Map after INSERT');
+                  return newConversations;
                 } else {
                   logger.info('[CHAT_CONTEXT] Message already exists, skipping');
                   return prev;
@@ -400,27 +413,33 @@ export const ChatProvider = ({ children }) => {
               
               // Update existing message in conversation
               setConversations(prev => {
-                const newConversations = new Map(prev);
-                const currentMessages = newConversations.get(conversationId) || [];
+                const newConversations = new Map();
                 
-                // Find and update the message
-                const updatedMessages = currentMessages.map(m => 
-                  m.id === updatedMessage.id ? updatedMessage : m
-                );
-                
-                // Check if message was actually found and updated
-                const wasUpdated = currentMessages.some(m => m.id === updatedMessage.id);
-                
-                if (wasUpdated) {
-                  logger.info('[CHAT_CONTEXT] Updated existing message in conversation');
-                  newConversations.set(conversationId, updatedMessages);
-                  return new Map(newConversations);
-                } else {
-                  // If message doesn't exist yet, add it
-                  logger.info('[CHAT_CONTEXT] Message not found, adding as new');
-                  newConversations.set(conversationId, [...currentMessages, updatedMessage]);
-                  return new Map(newConversations);
+                // Copy all conversations to new Map
+                for (const [key, value] of prev) {
+                  if (key === conversationId) {
+                    // Find and update the message for this conversation
+                    const currentMessages = value || [];
+                    const wasUpdated = currentMessages.some(m => m.id === updatedMessage.id);
+                    
+                    if (wasUpdated) {
+                      logger.info('[CHAT_CONTEXT] Updated existing message in conversation');
+                      const updatedMessages = currentMessages.map(m => 
+                        m.id === updatedMessage.id ? updatedMessage : m
+                      );
+                      newConversations.set(key, updatedMessages);
+                    } else {
+                      // If message doesn't exist yet, add it
+                      logger.info('[CHAT_CONTEXT] Message not found, adding as new');
+                      newConversations.set(key, [...currentMessages, updatedMessage]);
+                    }
+                  } else {
+                    newConversations.set(key, value);
+                  }
                 }
+                
+                logger.info('[CHAT_CONTEXT] Returning completely new Map after UPDATE');
+                return newConversations;
               });
             }
           }
