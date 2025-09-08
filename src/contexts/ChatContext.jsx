@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import enhancedChatService from '../services/enhancedChatService';
 import chatService from '../services/chatService';
 import { logger } from '../utils/logger';
+import { supabase } from '../supabase/config';
 
 // Decidir qué servicio usar
 const activeChatService = enhancedChatService || chatService;
@@ -27,12 +28,20 @@ export const ChatProvider = ({ children }) => {
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [unreadCount, setUnreadCount] = useState(0);
   const [messageIdMap, setMessageIdMap] = useState(new Map()); // Map de mensajes locales a IDs de DB
+  const [realtimeSubscription, setRealtimeSubscription] = useState(null);
 
   // Initialize chat service when user is authenticated
   useEffect(() => {
     if (currentUser) {
       initializeChatService();
     }
+    
+    // Cleanup on unmount
+    return () => {
+      if (realtimeSubscription) {
+        realtimeSubscription.unsubscribe();
+      }
+    };
   }, [currentUser]);
 
   const initializeChatService = async () => {
@@ -51,6 +60,11 @@ export const ChatProvider = ({ children }) => {
           const dbConversationId = await activeChatService.getOrCreateConversation(userId);
           logger.info('[CHAT_CONTEXT] Got conversation ID:', dbConversationId);
           setActualConversationId(dbConversationId);
+          
+          // Subscribe to real-time messages for this conversation
+          if (dbConversationId) {
+            subscribeToRealtimeMessages(dbConversationId, localConvId);
+          }
         } else {
           logger.warn('[CHAT_CONTEXT] getOrCreateConversation method not found in service');
         }
@@ -189,6 +203,85 @@ export const ChatProvider = ({ children }) => {
     } catch (error) {
       logger.error('[CHAT_CONTEXT] Error sending message:', error);
       return { success: false, error: error.message };
+    }
+  };
+
+  const subscribeToRealtimeMessages = (conversationId, localConvId) => {
+    try {
+      logger.info('[CHAT_CONTEXT] Subscribing to realtime messages for:', conversationId);
+      
+      const subscription = supabase
+        .channel(`messages-${conversationId}`)
+        .on('postgres_changes', 
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'chat_messages',
+            filter: `conversation_id=eq.${conversationId}`
+          },
+          (payload) => {
+            logger.info('[CHAT_CONTEXT] New message received from realtime:', payload);
+            
+            // Only process messages from human operators (sent from CRM)
+            if (payload.new && payload.new.sender_type === 'human') {
+              const newMessage = {
+                id: payload.new.id,
+                sender: 'human',
+                message: payload.new.message,
+                timestamp: payload.new.created_at,
+                sender_name: payload.new.sender_name || 'Operador'
+              };
+              
+              // Add to conversation
+              setConversations(prev => {
+                const newConversations = new Map(prev);
+                const currentMessages = newConversations.get(localConvId) || [];
+                
+                // Check if message already exists
+                const exists = currentMessages.some(msg => msg.id === newMessage.id);
+                if (!exists) {
+                  newConversations.set(localConvId, [...currentMessages, newMessage]);
+                }
+                
+                return newConversations;
+              });
+              
+              // Update control status if changed
+              checkHumanControlStatus();
+            }
+          }
+        )
+        .on('postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'chat_conversations',
+            filter: `id=eq.${conversationId}`
+          },
+          (payload) => {
+            logger.info('[CHAT_CONTEXT] Conversation updated:', payload);
+            
+            // Update human control status
+            if (payload.new && payload.new.is_human_controlled !== undefined) {
+              setIsHumanControlled(payload.new.is_human_controlled);
+            }
+          }
+        )
+        .subscribe();
+      
+      setRealtimeSubscription(subscription);
+      logger.info('[CHAT_CONTEXT] Realtime subscription established');
+      
+    } catch (error) {
+      logger.error('[CHAT_CONTEXT] Error subscribing to realtime:', error);
+    }
+  };
+  
+  const checkHumanControlStatus = async () => {
+    if (currentUser) {
+      const userId = currentUser.id || currentUser.uid;
+      const status = await activeChatService.checkHumanControl(userId);
+      setIsHumanControlled(status);
     }
   };
 
