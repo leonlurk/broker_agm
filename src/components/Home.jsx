@@ -28,20 +28,17 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     startWalletOperation,
     getAllAccounts,
     getAccountsByCategory,
-    getTotalBalance,
     WALLET_OPERATIONS: WOP,
     ACCOUNT_CATEGORIES: ACC_CAT
   } = useAccounts();
   
   const { 
-    notifications, 
     unreadCount, 
     markAllAsRead 
   } = useNotifications();
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMonthMenu, setShowMonthMenu] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState('currentMonth');
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [userProfileData, setUserProfileData] = useState({
     photoURL: '/Perfil.png',
@@ -239,15 +236,6 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     }
   }, [showUserInfo, currentUser]);
 
-  const toggleLanguageMenu = () => {
-    setShowLanguageMenu(!showLanguageMenu);
-  };
-
-  const changeLanguage = (lang) => {
-    setCurrentLanguage(lang);
-    setShowLanguageMenu(false);
-  };
-  
   const toggleUserInfo = () => {
     setShowUserInfo(!showUserInfo);
   };
@@ -267,15 +255,6 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
 
   const handleBackFromUserInfo = () => {
     setShowUserInfo(false);
-  };
-
-  const handleAccountTabChange = (tabName) => {
-    setActiveCategory(tabName);
-  };
-
-  const toggleAccountSelector = () => {
-    setShowAccountSelector(prev => !prev);
-    console.log("Toggle account selector. New state:", !showAccountSelector);
   };
 
   const handleDeposit = () => {
@@ -402,10 +381,6 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     };
   };
 
-  // Obtener cuentas dinámicamente
-  const accountsToShow = getAccountsByCategory(activeCategory);
-  const allAccountsForSelector = getAllAccounts();
-  
   // Filtrar solo cuentas reales para el tablero principal
   const realAccountsOnly = getAccountsByCategory(ACC_CAT.REAL);
   
@@ -484,6 +459,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     if (!isLoading && accounts.length > 0) {
       loadAccountMetrics();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountFilter, accounts, isLoading]);
 
   if (showUserInfo) {
@@ -771,6 +747,10 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
          ) : (
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
              {getFilteredAccounts().length > 0 ? getFilteredAccounts().map((account) => {
+               const metrics = accountsMetrics[account.account_number];
+               const isLoadingMetrics = metricsLoading[account.account_number];
+               const totalPnlPercentage = metrics?.kpis?.profit_loss_percentage || 0;
+               
                return (
                  <div
                      key={account.id}
@@ -785,23 +765,82 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                        <p className="text-2xl text-white">
                          {(account.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
                        </p>
-                       <span className="text-sm font-semibold text-green-500">+0.5%</span>
+                       {isLoadingMetrics ? (
+                         <div className="animate-pulse h-4 w-12 bg-gray-700 rounded"></div>
+                       ) : (
+                         <span className={`text-sm font-semibold ${
+                           totalPnlPercentage >= 0 ? 'text-green-500' : 'text-red-500'
+                         }`}>
+                           {totalPnlPercentage >= 0 ? '+' : ''}{totalPnlPercentage.toFixed(2)}%
+                         </span>
+                       )}
                      </div>
                      <div className="grid grid-cols-3 gap-2 text-center mb-4">
                        <div>
                          <p className="text-xs text-gray-300 mb-1">{t('dashboard:accountSummary.pnlToday')}</p>
-                         <p className="text-sm font-semibold text-green-500">+0.91%</p>
-                         <p className="text-xs text-gray-200">+$7.07</p>
+                         {isLoadingMetrics ? (
+                           <>
+                             <div className="animate-pulse h-4 w-12 bg-gray-700 rounded mx-auto mb-1"></div>
+                             <div className="animate-pulse h-3 w-10 bg-gray-700 rounded mx-auto"></div>
+                           </>
+                         ) : (
+                           <>
+                             <p className={`text-sm font-semibold ${
+                               metrics?.pnlToday?.percentage >= 0 ? 'text-green-500' : 'text-red-500'
+                             }`}>
+                               {metrics?.pnlToday?.percentage >= 0 ? '+' : ''}
+                               {(metrics?.pnlToday?.percentage || 0).toFixed(2)}%
+                             </p>
+                             <p className="text-xs text-gray-200">
+                               {metrics?.pnlToday?.amount >= 0 ? '+' : ''}
+                               ${Math.abs(metrics?.pnlToday?.amount || 0).toFixed(2)}
+                             </p>
+                           </>
+                         )}
                        </div>
                        <div>
                          <p className="text-xs text-gray-300 mb-1">{t('dashboard:accountSummary.pnl7Days')}</p>
-                         <p className="text-sm font-semibold text-green-500">+8.95%</p>
-                         <p className="text-xs text-gray-200">+$64.39</p>
+                         {isLoadingMetrics ? (
+                           <>
+                             <div className="animate-pulse h-4 w-12 bg-gray-700 rounded mx-auto mb-1"></div>
+                             <div className="animate-pulse h-3 w-10 bg-gray-700 rounded mx-auto"></div>
+                           </>
+                         ) : (
+                           <>
+                             <p className={`text-sm font-semibold ${
+                               metrics?.pnl7Days?.percentage >= 0 ? 'text-green-500' : 'text-red-500'
+                             }`}>
+                               {metrics?.pnl7Days?.percentage >= 0 ? '+' : ''}
+                               {(metrics?.pnl7Days?.percentage || 0).toFixed(2)}%
+                             </p>
+                             <p className="text-xs text-gray-200">
+                               {metrics?.pnl7Days?.amount >= 0 ? '+' : ''}
+                               ${Math.abs(metrics?.pnl7Days?.amount || 0).toFixed(2)}
+                             </p>
+                           </>
+                         )}
                        </div>
                        <div>
                          <p className="text-xs text-gray-300 mb-1">{t('dashboard:accountSummary.pnl30Days')}</p>
-                         <p className="text-sm font-semibold text-green-500">+2.91%</p>
-                         <p className="text-xs text-gray-200">+$38.51</p>
+                         {isLoadingMetrics ? (
+                           <>
+                             <div className="animate-pulse h-4 w-12 bg-gray-700 rounded mx-auto mb-1"></div>
+                             <div className="animate-pulse h-3 w-10 bg-gray-700 rounded mx-auto"></div>
+                           </>
+                         ) : (
+                           <>
+                             <p className={`text-sm font-semibold ${
+                               metrics?.pnl30Days?.percentage >= 0 ? 'text-green-500' : 'text-red-500'
+                             }`}>
+                               {metrics?.pnl30Days?.percentage >= 0 ? '+' : ''}
+                               {(metrics?.pnl30Days?.percentage || 0).toFixed(2)}%
+                             </p>
+                             <p className="text-xs text-gray-200">
+                               {metrics?.pnl30Days?.amount >= 0 ? '+' : ''}
+                               ${Math.abs(metrics?.pnl30Days?.amount || 0).toFixed(2)}
+                             </p>
+                           </>
+                         )}
                        </div>
                      </div>
                    </div>
