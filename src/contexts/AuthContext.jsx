@@ -79,7 +79,13 @@ export const AuthProvider = ({ children }) => {
     }, 5000); // 5 second timeout
     
     const unsubscribe = AuthAdapter.onAuthStateChange(async (user) => {
-      logger.auth("onAuthStateChange callback received", { userPresent: !!user });
+      logger.auth("onAuthStateChange callback received", { 
+        userPresent: !!user,
+        userId: user?.id,
+        email: user?.email,
+        previousUserId: previousUserRef.current?.id,
+        previousEmail: previousUserRef.current?.email
+      });
       
       // Check if user actually changed (not just token refresh)
       const previousUser = previousUserRef.current;
@@ -88,6 +94,14 @@ export const AuthProvider = ({ children }) => {
                          (previousUser?.id !== user?.id) ||
                          (previousUser?.email !== user?.email);
       
+      logger.auth("User change detection", {
+        userChanged,
+        previousExists: !!previousUser,
+        currentExists: !!user,
+        idMatch: previousUser?.id === user?.id,
+        emailMatch: previousUser?.email === user?.email
+      });
+      
       if (!userChanged && previousUser && user) {
         logger.auth("User hasn't changed (token refresh), keeping existing userData");
         setCurrentUser(user); // Update user object but keep userData
@@ -95,10 +109,15 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       
-      logger.auth("User changed, reloading userData");
+      logger.auth("User changed or first load, reloading userData");
       setCurrentUser(user);
       previousUserRef.current = user; // Update ref
-      setUserData(null);
+      
+      // Only null userData if we have a previous user (not on first load)
+      if (previousUser) {
+        logger.auth("Nulling userData because user changed");
+        setUserData(null);
+      }
       
       if (user) {
         logger.auth("User is authenticated. Fetching data...");

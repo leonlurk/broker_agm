@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 // Usar el servicio mejorado si está disponible, si no usar el original
 import enhancedChatService from '../services/enhancedChatService';
@@ -30,11 +30,31 @@ export const ChatProvider = ({ children }) => {
   const [messageIdMap, setMessageIdMap] = useState(new Map()); // Map de mensajes locales a IDs de DB
   const [realtimeSubscription, setRealtimeSubscription] = useState(null);
   const [updateVersion, setUpdateVersion] = useState(0); // Force re-renders on updates
+  const previousUserIdRef = useRef(null);
 
   // Initialize chat service when user is authenticated
   useEffect(() => {
-    if (currentUser) {
+    // Only initialize if user ID actually changed
+    const currentUserId = currentUser?.id || currentUser?.uid;
+    const previousUserId = previousUserIdRef.current;
+    
+    if (currentUserId && currentUserId !== previousUserId) {
+      logger.info('[CHAT_CONTEXT] User ID changed, initializing chat service', {
+        previousUserId,
+        currentUserId
+      });
+      previousUserIdRef.current = currentUserId;
       initializeChatService();
+    } else if (!currentUserId && previousUserId) {
+      // User logged out
+      logger.info('[CHAT_CONTEXT] User logged out, cleaning up');
+      previousUserIdRef.current = null;
+      if (realtimeSubscription) {
+        realtimeSubscription.unsubscribe();
+      }
+      setConversations(new Map());
+      setCurrentConversationId(null);
+      setActualConversationId(null);
     }
     
     // Cleanup on unmount
