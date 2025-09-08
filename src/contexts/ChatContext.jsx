@@ -300,6 +300,11 @@ export const ChatProvider = ({ children }) => {
     try {
       logger.info('[CHAT_CONTEXT] Subscribing to realtime messages for:', conversationId);
       
+      // Unsubscribe from previous subscription if exists
+      if (realtimeSubscription) {
+        realtimeSubscription.unsubscribe();
+      }
+      
       const subscription = supabase
         .channel(`messages-${conversationId}`)
         .on('postgres_changes', 
@@ -329,6 +334,7 @@ export const ChatProvider = ({ children }) => {
               logger.info('[CHAT_CONTEXT] Processing realtime message:', {
                 id: newMessage.id,
                 sender: newMessage.sender,
+                sender_type: msg.sender_type,
                 preview: newMessage.message?.substring(0, 50)
               });
               
@@ -339,20 +345,21 @@ export const ChatProvider = ({ children }) => {
                 
                 // Check if message already exists
                 const exists = currentMessages.some(m => 
-                  m.id === newMessage.id || 
-                  (m.message === newMessage.message && 
-                   m.sender === newMessage.sender &&
-                   Math.abs(new Date(m.timestamp) - new Date(newMessage.timestamp)) < 1000)
+                  m.id === newMessage.id
                 );
                 
                 if (!exists) {
                   logger.info('[CHAT_CONTEXT] Adding new realtime message to conversation');
-                  newConversations.set(conversationId, [...currentMessages, newMessage]);
+                  const updatedMessages = [...currentMessages, newMessage];
+                  newConversations.set(conversationId, updatedMessages);
+                  logger.info('[CHAT_CONTEXT] Updated conversation now has', updatedMessages.length, 'messages');
+                  
+                  // Force React to detect the change by creating a completely new Map
+                  return new Map(newConversations);
                 } else {
                   logger.info('[CHAT_CONTEXT] Message already exists, skipping');
+                  return prev;
                 }
-                
-                return newConversations;
               });
               
               // Update control status if message is from human
@@ -378,10 +385,26 @@ export const ChatProvider = ({ children }) => {
             }
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          logger.info('[CHAT_CONTEXT] Subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            logger.info('[CHAT_CONTEXT] Successfully subscribed to realtime updates');
+          } else if (status === 'CHANNEL_ERROR') {
+            logger.error('[CHAT_CONTEXT] Channel error - attempting to reconnect');
+            // Retry subscription after a delay
+            setTimeout(() => {
+              subscribeToRealtimeMessages(conversationId);
+            }, 2000);
+          } else if (status === 'TIMED_OUT') {
+            logger.error('[CHAT_CONTEXT] Subscription timed out - attempting to reconnect');
+            setTimeout(() => {
+              subscribeToRealtimeMessages(conversationId);
+            }, 2000);
+          }
+        });
       
       setRealtimeSubscription(subscription);
-      logger.info('[CHAT_CONTEXT] Realtime subscription established');
+      logger.info('[CHAT_CONTEXT] Realtime subscription initiated');
       
     } catch (error) {
       logger.error('[CHAT_CONTEXT] Error subscribing to realtime:', error);

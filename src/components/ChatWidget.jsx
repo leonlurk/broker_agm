@@ -25,6 +25,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentSection, setCurrentSection] = useState('messages'); // 'messages', 'help'
   const [messageFeedback, setMessageFeedback] = useState({});
+  const [, forceUpdate] = useState({});
   const currentConversationId = useChat().currentConversationId;
   
   const messagesEndRef = useRef(null);
@@ -85,6 +86,12 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+  
+  // Force update when conversations change
+  useEffect(() => {
+    logger.info('[CHAT_WIDGET] Conversations updated, forcing re-render');
+    forceUpdate({});
+  }, [conversations]);
 
   // Focus input on open and mark messages as read
   useEffect(() => {
