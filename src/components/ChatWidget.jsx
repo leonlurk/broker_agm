@@ -29,6 +29,9 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  
+  // Get messages for current conversation
+  const messages = conversations.get(currentConversationId) || [];
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -37,7 +40,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [conversations]);
+  }, [messages]);
 
   // Focus input on open and mark messages as read
   useEffect(() => {
@@ -91,7 +94,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
     
     try {
       // Buscar el mensaje en la conversación actual
-      const message = conversations.find(msg => msg.id === messageId);
+      const message = messages.find(msg => msg.id === messageId);
       if (!message || !currentUser) {
         logger.warn('[CHAT] No se pudo guardar feedback: mensaje o usuario no encontrado');
         return;
@@ -309,11 +312,11 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
 
       {/* Messages Area */}
       <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
-        {contextLoading && conversations.length === 0 ? (
+        {contextLoading && messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-gray-500 text-sm">Cargando conversación...</div>
           </div>
-        ) : conversations.length === 0 ? (
+        ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <Bot size={48} className="mx-auto text-cyan-500 mb-4" />
@@ -327,7 +330,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
           </div>
         ) : (
           <>
-            {conversations.map(renderMessage)}
+            {messages.map(renderMessage)}
             
             {/* Typing Indicator */}
             {isTyping && (
