@@ -3,6 +3,8 @@ import { Send, Minimize2, X, Bot, User, Clock, CheckCircle, AlertCircle, ThumbsU
 import { useTranslation } from 'react-i18next';
 import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../supabase/config';
+import { logger } from '../utils/logger';
 import toast from 'react-hot-toast';
 
 const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
@@ -14,7 +16,8 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
     isHumanControlled, 
     connectionStatus, 
     markMessagesAsRead,
-    isLoading: contextLoading
+    isLoading: contextLoading,
+    getDBMessageId
   } = useChat();
   
   const [inputMessage, setInputMessage] = useState('');
@@ -22,6 +25,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentSection, setCurrentSection] = useState('messages'); // 'messages', 'help'
   const [messageFeedback, setMessageFeedback] = useState({});
+  const currentConversationId = useChat().currentConversationId;
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -77,29 +81,95 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
     }
   };
 
-  // Manejar feedback de mensajes
-  const handleFeedback = (messageId, isHelpful) => {
+  // Manejar feedback de mensajes - Ahora con persistencia en DB
+  const handleFeedback = async (messageId, isHelpful) => {
+    // Actualizar UI inmediatamente
     setMessageFeedback(prev => ({
       ...prev,
       [messageId]: isHelpful
     }));
     
-    // Guardar feedback en localStorage
-    const feedbackData = {
-      messageId,
-      isHelpful,
-      timestamp: new Date().toISOString()
-    };
+    try {
+      // Buscar el mensaje en la conversación actual
+      const message = conversations.find(msg => msg.id === messageId);
+      if (!message || !currentUser) {
+        logger.warn('[CHAT] No se pudo guardar feedback: mensaje o usuario no encontrado');
+        return;
+      }
+
+      // Obtener conversation_id real desde el contexto (debe ser un UUID de la DB)
+      let conversationId = currentConversationId;
+      
+      // Obtener el ID real del mensaje en la DB
+      const dbMessageId = getDBMessageId ? getDBMessageId(messageId) : messageId;
+      
+      // Si no hay conversationId o empieza con 'local_', no podemos guardar en DB
+      if (!conversationId || conversationId.startsWith('local_') || conversationId.startsWith('conversation_')) {
+        logger.warn('[CHAT] No hay conversation_id válida de DB, guardando solo en localStorage');
+        // Fallback a localStorage
+        const feedbackData = {
+          messageId,
+          isHelpful,
+          timestamp: new Date().toISOString(),
+          userId: currentUser.uid
+        };
+        
+        const existingFeedback = JSON.parse(localStorage.getItem('agm_chat_feedback') || '[]');
+        existingFeedback.push(feedbackData);
+        localStorage.setItem('agm_chat_feedback', JSON.stringify(existingFeedback));
+        
+        if (!isHelpful) {
+          toast('Gracias por tu feedback. Estamos mejorando constantemente. ¿Necesitas hablar con un asesor humano?', { duration: 4000 });
+        } else {
+          toast.success('¡Gracias por tu feedback! Nos ayuda a mejorar.');
+        }
+        return;
+      }
+      
+      // Guardar en Supabase con el ID real del mensaje
+      const { data, error } = await supabase
+        .from('chat_message_feedback')
+        .upsert({
+          message_id: dbMessageId, // Usar el ID real de la DB
+          conversation_id: conversationId,
+          user_id: currentUser.uid,
+          is_helpful: isHelpful,
+          message_intent: message.intent || 'general',
+          ai_confidence: message.confidence || 0.5,
+          response_time_ms: message.responseTime || null
+        }, {
+          onConflict: 'message_id,user_id', // Si ya existe feedback, actualizarlo
+          ignoreDuplicates: false
+        });
+
+      if (error) {
+        logger.error('[CHAT] Error guardando feedback en DB:', error);
+        // Fallback a localStorage si falla DB
+        const feedbackData = {
+          messageId,
+          isHelpful,
+          timestamp: new Date().toISOString(),
+          userId: currentUser.uid
+        };
+        
+        const existingFeedback = JSON.parse(localStorage.getItem('agm_chat_feedback') || '[]');
+        existingFeedback.push(feedbackData);
+        localStorage.setItem('agm_chat_feedback', JSON.stringify(existingFeedback));
+      } else {
+        logger.info('[CHAT] Feedback guardado en DB:', { messageId, isHelpful });
+      }
+    } catch (error) {
+      logger.error('[CHAT] Error procesando feedback:', error);
+    }
     
-    const existingFeedback = JSON.parse(localStorage.getItem('agm_chat_feedback') || '[]');
-    existingFeedback.push(feedbackData);
-    localStorage.setItem('agm_chat_feedback', JSON.stringify(existingFeedback));
-    
-    // Si no fue útil, ofrecer alternativas
+    // Mensajes de toast
     if (!isHelpful) {
-      toast.info('Gracias por tu feedback. ¿Necesitas hablar con un asesor humano?');
+      toast('Gracias por tu feedback. Estamos mejorando constantemente. ¿Necesitas hablar con un asesor humano?', { 
+        duration: 4000,
+        icon: '💭'
+      });
     } else {
-      toast.success('¡Gracias por tu feedback!');
+      toast.success('¡Gracias por tu feedback! Nos ayuda a mejorar.');
     }
   };
 
@@ -128,7 +198,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
         )}
 
         {/* Message Bubble */}
-        <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+        <div className={`max-w-[70%] px-4 py-2 rounded-2xl break-words ${
           isUser 
             ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white' 
             : isSystem
@@ -166,8 +236,8 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
         )}
       </div>
       
-      {/* Feedback buttons para mensajes de IA */}
-      {isAI && !messageFeedback[message.id] && (
+      {/* Feedback buttons para mensajes de IA - Solo mostrar si el usuario está autenticado */}
+      {isAI && !messageFeedback[message.id] && currentUser && (
         <div className="flex gap-2 ml-11 mt-1 mb-2">
           <button
             onClick={() => handleFeedback(message.id, true)}
@@ -189,7 +259,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
       )}
       
       {/* Mostrar feedback dado */}
-      {messageFeedback[message.id] !== undefined && (
+      {messageFeedback[message.id] !== undefined && currentUser && (
         <div className="flex items-center gap-1 ml-11 mt-1 mb-2 text-xs text-gray-500">
           {messageFeedback[message.id] ? (
             <><ThumbsUp size={12} className="text-green-500" /> Marcaste como útil</>
@@ -203,7 +273,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   };
 
   return (
-    <div className="w-80 h-[500px] max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
+    <div className="w-96 h-[600px] max-h-[80vh] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-4 text-white">
         <div className="flex items-center justify-between">

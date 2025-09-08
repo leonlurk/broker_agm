@@ -22,9 +22,11 @@ export const ChatProvider = ({ children }) => {
   const { currentUser, userData } = useAuth();
   const [conversations, setConversations] = useState(new Map());
   const [currentConversationId, setCurrentConversationId] = useState(null);
+  const [actualConversationId, setActualConversationId] = useState(null); // UUID real de DB
   const [isHumanControlled, setIsHumanControlled] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [messageIdMap, setMessageIdMap] = useState(new Map()); // Map de mensajes locales a IDs de DB
 
   // Initialize chat service when user is authenticated
   useEffect(() => {
@@ -40,7 +42,18 @@ export const ChatProvider = ({ children }) => {
       
       if (currentUser) {
         const userId = currentUser.id || currentUser.uid;
-        setCurrentConversationId(`conversation_${userId}`);
+        const localConvId = `conversation_${userId}`;
+        setCurrentConversationId(localConvId);
+        
+        // Get or create actual conversation in DB
+        if (activeChatService.getOrCreateConversation) {
+          logger.info('[CHAT_CONTEXT] Calling getOrCreateConversation...');
+          const dbConversationId = await activeChatService.getOrCreateConversation(userId);
+          logger.info('[CHAT_CONTEXT] Got conversation ID:', dbConversationId);
+          setActualConversationId(dbConversationId);
+        } else {
+          logger.warn('[CHAT_CONTEXT] getOrCreateConversation method not found in service');
+        }
         
         // Load conversation history
         await loadConversationHistory(userId);
@@ -109,6 +122,11 @@ export const ChatProvider = ({ children }) => {
       const result = await activeChatService.processUserMessage(userId, message, userData);
 
       if (result.success) {
+        // Update actual conversation ID if returned from service
+        if (result.conversationId) {
+          setActualConversationId(result.conversationId);
+        }
+        
         // Update conversation with real message IDs and AI response
         setConversations(prev => {
           const newConversations = new Map(prev);
@@ -129,12 +147,19 @@ export const ChatProvider = ({ children }) => {
           // Add AI response if available
           if (result.response && !result.isHumanControlled) {
             const aiMessage = {
-              id: `msg_${Date.now()}_ai`,
+              id: result.messageId || `msg_${Date.now()}_ai`,
               sender: 'flofy',
               message: result.response,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              intent: result.intent,
+              confidence: result.confidence
             };
             currentMessages.push(aiMessage);
+            
+            // Store the DB message ID mapping
+            if (result.messageId) {
+              setMessageIdMap(prev => new Map(prev).set(aiMessage.id, result.messageId));
+            }
           }
 
           newConversations.set(conversationId, currentMessages);
@@ -249,7 +274,7 @@ export const ChatProvider = ({ children }) => {
     isHumanControlled,
     connectionStatus,
     unreadCount,
-    currentConversationId,
+    currentConversationId: actualConversationId || currentConversationId, // Prefer DB ID
     
     // Actions
     sendMessage,
@@ -261,7 +286,8 @@ export const ChatProvider = ({ children }) => {
     
     // Utils
     isConnected: connectionStatus === 'connected',
-    isLoading: connectionStatus === 'connecting'
+    isLoading: connectionStatus === 'connecting',
+    getDBMessageId: (localId) => messageIdMap.get(localId) || localId // Helper to get DB ID
   };
 
   return (

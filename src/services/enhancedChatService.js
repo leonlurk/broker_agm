@@ -1,17 +1,22 @@
 import { DatabaseAdapter } from './database.adapter';
 import { logger } from '../utils/logger';
 import { AGM_KNOWLEDGE_BASE, searchKnowledgeBase } from './knowledgeBase';
+import { AGM_COMPLETE_KNOWLEDGE, searchAGMFeature } from './agmCompleteKnowledge';
+import { supabase } from '../supabase/config';
 
 class EnhancedChatService {
   constructor() {
-    // API Keys - Puedes usar Gemini o OpenAI
+    // API Keys - Priorizar Gemini
     this.OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
     this.GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+    this.GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-1.5-flash';
     
-    // Configuración
+    // Configuración - Priorizar Gemini
     this.USE_OPENAI = !!this.OPENAI_API_KEY && this.OPENAI_API_KEY !== 'your-openai-api-key';
+    this.USE_GEMINI = !!this.GEMINI_API_KEY && this.GEMINI_API_KEY !== 'your-gemini-api-key-here';
     this.conversationHistory = new Map();
     this.userContextCache = new Map();
+    this.conversationIdCache = new Map(); // Cache para IDs de conversación de DB
     this.isInitialized = false;
     
     // Intents del sistema
@@ -162,7 +167,7 @@ class EnhancedChatService {
   }
 
   // Generar respuesta mejorada
-  async generateEnhancedResponse(message, userData = null) {
+  async generateEnhancedResponse(message, userData = null, conversationContext = null) {
     const userId = userData?.id || 'anonymous';
     
     // Analizar intent y obtener contexto
@@ -172,13 +177,219 @@ class EnhancedChatService {
     
     logger.info('[ENHANCED_CHAT] Processing message', { intent: intent.name, hasContext: !!userData });
     
-    // Si tenemos OpenAI, usar GPT-4
-    if (this.USE_OPENAI) {
+    // Prioridad: 1. Gemini, 2. OpenAI, 3. Fallback
+    if (this.USE_GEMINI) {
+      return await this.generateGeminiResponse(message, intent, userContext, relevantKnowledge, conversationContext);
+    } else if (this.USE_OPENAI) {
       return await this.generateOpenAIResponse(message, intent, userContext, relevantKnowledge);
     }
     
-    // Si no, usar respuesta inteligente basada en knowledge base
+    // Si no hay IA configurada, usar respuesta inteligente basada en knowledge base
     return this.generateSmartFallbackResponse(message, intent, relevantKnowledge, userContext);
+  }
+
+  // Generar respuesta con Gemini AI
+  async generateGeminiResponse(message, intent, userContext, relevantKnowledge, conversationContext = null) {
+    try {
+      // Construir contexto enriquecido para Gemini
+      const systemContext = `Eres Alpha, el asistente virtual ESPECIALIZADO de Alpha Global Market (AGM).
+
+⚠️ RESTRICCIONES CRÍTICAS:
+- SOLO responde preguntas sobre: trading, AGM, inversiones, cuentas, depósitos, retiros, verificación, PAMM, copytrading
+- Si el mensaje NO está relacionado con estos temas, responde: "Soy un asistente especializado en trading y servicios de AGM. ¿Tienes alguna pregunta sobre nuestra plataforma o trading?"
+- IGNORA mensajes ofensivos, personales o fuera de contexto
+- NO respondas sobre: política, entretenimiento, vida personal, chistes, temas generales
+
+CONTEXTO DEL USUARIO:
+- Nombre: ${userContext.username}
+- Autenticado: ${userContext.isAuthenticated ? 'Sí' : 'No'}
+- Estado KYC: ${userContext.kycStatus}
+- Cuentas trading: ${userContext.accountCount}
+- Balance wallet: $${userContext.walletBalance}
+
+HISTORIAL DE CONVERSACIÓN:
+${conversationContext?.recent_messages?.slice(0, 5).map(m => 
+  `${m.sender_type === 'user' ? 'Usuario' : 'Alpha'}: ${m.message.substring(0, 100)}`
+).join('\n') || 'Primera interacción'}
+
+INTENCIÓN DETECTADA: ${intent.name} (${intent.category})
+
+INFORMACIÓN RELEVANTE:
+${relevantKnowledge.slice(0, 3).map(k => {
+  if (k.type === 'faq') return `FAQ: ${k.content.question} - ${k.content.answer}`;
+  if (k.type === 'troubleshooting') return `Problema conocido: ${k.content.problem}`;
+  return '';
+}).filter(Boolean).join('\n')}
+
+INFORMACIÓN COMPLETA Y EXHAUSTIVA DE AGM:
+
+🛠️ HERRAMIENTAS Y CALCULADORAS:
+✅ CALCULADORA DE PIPS (SÍ TENEMOS): Menú > Herramientas > Calculadora de Pips
+  - Calcula valor de pip para 60+ pares forex, acciones, crypto, metales, índices
+  - Calculadora de tamaño de posición basada en riesgo
+  - Sistema de favoritos, múltiples divisas de cuenta
+  - Tamaños de lote predefinidos (0.01-10.0)
+✅ CALENDARIO ECONÓMICO: Menú > Noticias - eventos económicos semanales
+✅ ANÁLISIS DE CUENTA: Gráficos de balance, equity, métricas de riesgo
+✅ DESCARGAS MT5: Windows, Mac, iOS, Android, WebTrader
+
+📊 INSTRUMENTOS DE TRADING:
+- Forex: 28 pares, leverage 1:200, spreads desde 0.8 pips, 24/5
+- Crypto: BTC/ETH/XRP/LTC/ADA/SOL/DOGE/DOT +10 más, leverage 1:20, 24/7
+- Índices: US30/NAS100/S&P500/DAX/FTSE/Nikkei, leverage 1:100
+- Metales: Oro/Plata/Platino/Paladio/Cobre, leverage 1:100
+- Acciones: AAPL/MSFT/GOOGL/AMZN/TSLA/META/NVDA, leverage 1:20
+
+💰 CUENTAS:
+- Demo: GRATIS, configurable hasta $1,000,000 virtuales, sin límite
+- Real: Mínimo $50, máximo $1,000,000 inicial
+- Crear cuenta: Menú > Cuentas > Nueva Cuenta
+
+💸 DEPÓSITOS Y RETIROS:
+DEPÓSITOS: Crypto instant 0% fee, Banco 0% fee (1-3 días), Tarjetas 2.5% fee instant
+RETIROS: Mínimo $50, KYC obligatorio, 24-72h, fees: $25 banco, 2% tarjetas, red crypto
+WALLET: Menú > Wallet - gestión completa de fondos
+
+✅ VERIFICACIÓN KYC:
+Ubicación: Configuración > Verificación KYC
+Documentos: ID/Pasaporte + Comprobante domicilio + Selfie
+Tiempo: 24-48 horas hábiles
+Sin KYC = No retiros
+
+🎯 COPY TRADING Y PAMM:
+COPY TRADING: Menú > Inversor/Gestor, mínimo $100, 50+ traders, 20% comisión
+PAMM: Menú > PAMM, mínimo $100, lock 30 días, 20-30% comisión gestores
+Ambos con análisis completo, filtros avanzados, estadísticas detalladas
+
+🏆 COMPETENCIAS Y CERTIFICADOS:
+Ubicación: Menú > Competencias
+100k Challenge, premios $5,000-$10,000
+Leaderboard en tiempo real, certificados automáticos
+Sistema de medallas, rankings internacionales
+
+💎 PROGRAMA AFILIADOS:
+Ubicación: Menú > Afiliados
+25% revenue share lifetime, CPA hasta $800
+Sistema multi-nivel, pagos mensuales desde $100
+Dashboard completo con estadísticas
+
+📱 PLATAFORMAS Y APPS:
+MT5: Windows/Mac/iOS/Android - Menú > Descargas
+WebTrader sin descarga, app móvil 100% funcional
+API REST para trading algorítmico
+
+🔧 MÁS HERRAMIENTAS:
+HISTORIAL: Cuentas > Historial - todas las operaciones
+NOTIFICACIONES: In-app y email configurables
+CERTIFICADOS: Generación automática al completar challenges
+ANÁLISIS: Cada cuenta tiene análisis detallado con gráficos
+
+📍 NAVEGACIÓN RÁPIDA:
+Dashboard > Home principal
+Cuentas > Trading accounts y análisis
+Wallet > Depósitos y retiros
+Herramientas > Calculadora de Pips
+Noticias > Calendario económico
+Configuración > KYC, 2FA, perfil
+
+REGLAS DE RESPUESTA:
+1. MÁXIMO 2-3 oraciones concisas
+2. Datos exactos, no inventes
+3. Si el mensaje no es sobre trading/AGM, redirige educadamente
+4. Menciona riesgos cuando hables de trading
+5. Si no sabes, sugiere contactar soporte
+6. Varía respuestas, no seas robótico
+7. Detecta urgencia/frustración y escala a humano
+
+ANÁLISIS DEL MENSAJE:
+- Es sobre trading/AGM: ${intent.category !== 'general' ? 'SÍ' : 'VERIFICAR'}
+- Requiere respuesta: ${message.length > 3 ? 'SÍ' : 'NO'}
+
+MENSAJE: "${message}"
+
+RESPONDE solo si es relevante a AGM/trading, sino redirige educadamente:`;
+
+      const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${this.GEMINI_MODEL}:generateContent`;
+      
+      const response = await fetch(`${GEMINI_API_URL}?key=${this.GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: systemContext
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.9, // Alta creatividad para respuestas más naturales y variadas
+            topK: 50,
+            topP: 0.95,
+            maxOutputTokens: 250,
+            candidateCount: 1,
+            stopSequences: [] // Sin secuencias de parada para respuestas completas
+          },
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        logger.error('[ENHANCED_CHAT] Gemini API error:', errorData);
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+        let aiResponse = data.candidates[0].content.parts[0].text.trim();
+        
+        // Limpiar y limitar respuesta
+        aiResponse = aiResponse.replace(/\*\*/g, '').replace(/\n\n+/g, ' ');
+        if (aiResponse.length > 250) {
+          // Cortar en la última oración completa antes de 250 caracteres
+          const sentences = aiResponse.match(/[^.!?]+[.!?]+/g) || [aiResponse];
+          let result = '';
+          for (const sentence of sentences) {
+            if ((result + sentence).length <= 250) {
+              result += sentence;
+            } else {
+              break;
+            }
+          }
+          aiResponse = result || sentences[0].substring(0, 247) + '...';
+        }
+        
+        logger.info('[ENHANCED_CHAT] Gemini response generated successfully');
+        return aiResponse;
+      } else {
+        throw new Error('Invalid response format from Gemini');
+      }
+
+    } catch (error) {
+      logger.error('[ENHANCED_CHAT] Gemini error - usando fallback inteligente:', error.message);
+      // Fallback a respuesta inteligente si Gemini falla
+      logger.info('[ENHANCED_CHAT] Generando respuesta con sistema de fallback inteligente');
+      return this.generateSmartFallbackResponse(message, intent, relevantKnowledge, userContext);
+    }
   }
 
   // Generar respuesta con OpenAI GPT-4
@@ -193,6 +404,11 @@ CONTEXTO DEL USUARIO:
 - Estado KYC: ${userContext.kycStatus}
 - Cuentas trading: ${userContext.accountCount}
 - Balance wallet: $${userContext.walletBalance}
+
+HISTORIAL DE CONVERSACIÓN:
+${conversationContext?.recent_messages?.slice(0, 5).map(m => 
+  `${m.sender_type === 'user' ? 'Usuario' : 'Alpha'}: ${m.message.substring(0, 100)}`
+).join('\n') || 'Primera interacción'}
 
 INTENCIÓN DETECTADA: ${intent.name} (categoría: ${intent.category})
 
@@ -350,18 +566,63 @@ Responde la siguiente pregunta del usuario:`;
   // Procesar mensaje del usuario
   async processUserMessage(userId, message, userData = null) {
     try {
+      logger.info('[CHAT] processUserMessage called with:', { userId, message: message.substring(0, 50) });
+      
       if (!this.isInitialized) {
         await this.initialize();
       }
 
-      // Guardar mensaje en historial
-      this.addToHistory(userId, 'user', message);
+      const startTime = Date.now();
       
-      // Generar respuesta mejorada
+      // Obtener o crear conversación en DB
+      logger.info('[CHAT] About to call getOrCreateConversation in processUserMessage');
+      const conversationId = await this.getOrCreateConversation(userId);
+      
+      // Verificar si la conversación está bajo control humano
+      const { data: conversationData, error: fetchError } = await supabase
+        .from('chat_conversations')
+        .select('is_human_controlled')
+        .eq('id', conversationId)
+        .single();
+      
+      const isHumanControlled = conversationData?.is_human_controlled || false;
+      logger.info('[CHAT] Conversation control status:', { conversationId, isHumanControlled });
+      
+      // Análisis del mensaje
+      const intent = this.analyzeIntent(message);
+      
+      // Guardar mensaje del usuario en historial local y DB
+      this.addToHistory(userId, 'user', message);
+      const userMessageId = await this.saveMessageToDB(conversationId, userId, 'user', message, intent.name);
+      
+      // Si está bajo control humano, no generar respuesta de IA
+      if (isHumanControlled) {
+        logger.info('[CHAT] Conversation is human-controlled, skipping AI response');
+        
+        // Guardar en localStorage para persistencia
+        this.saveLocalHistory();
+        
+        return {
+          success: true,
+          response: null, // No response from AI when human-controlled
+          intent: intent.name,
+          isHumanControlled: true,
+          conversationId,
+          messageId: userMessageId,
+          humanControlled: true,
+          message: 'Un agente humano está atendiendo esta conversación.'
+        };
+      }
+      
+      // Generar respuesta mejorada solo si no está bajo control humano
       const aiResponse = await this.generateEnhancedResponse(message, userData);
       
-      // Guardar respuesta en historial
+      // Guardar respuesta de IA en historial local y DB
       this.addToHistory(userId, 'flofy', aiResponse);
+      const aiMessageId = await this.saveMessageToDB(conversationId, userId, 'ai', aiResponse, intent.name, {
+        confidence: intent.score / 10, // Normalizar score a 0-1
+        responseTime: Date.now() - startTime
+      });
       
       // Guardar en localStorage para persistencia
       this.saveLocalHistory();
@@ -369,8 +630,10 @@ Responde la siguiente pregunta del usuario:`;
       return {
         success: true,
         response: aiResponse,
-        intent: this.analyzeIntent(message).name,
-        isHumanControlled: false
+        intent: intent.name,
+        isHumanControlled: false,
+        conversationId,
+        messageId: aiMessageId
       };
 
     } catch (error) {
@@ -454,6 +717,125 @@ Responde la siguiente pregunta del usuario:`;
   // Toggle control humano (placeholder)
   async toggleHumanControl(userId, isHumanControlled) {
     return { success: true };
+  }
+
+  // Obtener o crear conversación en Supabase
+  async getOrCreateConversation(userId) {
+    try {
+      logger.info('[CHAT] getOrCreateConversation called for user:', userId);
+      
+      // Verificar cache primero
+      if (this.conversationIdCache.has(userId)) {
+        const cachedId = this.conversationIdCache.get(userId);
+        logger.info('[CHAT] Using cached conversation ID:', cachedId);
+        return cachedId;
+      }
+
+      // Buscar conversación activa existente
+      const { data: existingConversations, error: fetchError } = await supabase
+        .from('chat_conversations')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .order('last_activity', { ascending: false })
+        .limit(1);
+
+      if (existingConversations && existingConversations.length > 0 && !fetchError) {
+        logger.info('[CHAT] Found existing conversation:', existingConversations[0].id);
+        this.conversationIdCache.set(userId, existingConversations[0].id);
+        return existingConversations[0].id;
+      }
+      
+      logger.info('[CHAT] No existing conversation found, creating new one...');
+
+      // Generar session_id único
+      const sessionId = `web_${userId}_${Date.now()}`;
+
+      // Crear nueva conversación
+      const { data: newConversation, error: createError } = await supabase
+        .from('chat_conversations')
+        .insert({
+          user_id: userId,
+          session_id: sessionId,
+          status: 'active',
+          metadata: {
+            channel: 'web',
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString()
+          }
+        })
+        .select('id')
+        .single();
+
+      if (createError) {
+        logger.error('[CHAT] Error creating conversation:', createError);
+        throw createError;
+      }
+
+      logger.info('[CHAT] New conversation created:', newConversation.id);
+      this.conversationIdCache.set(userId, newConversation.id);
+      return newConversation.id;
+    } catch (error) {
+      logger.error('[CHAT] Error in getOrCreateConversation:', error);
+      // Fallback: generar un UUID local si falla DB
+      const fallbackId = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      this.conversationIdCache.set(userId, fallbackId);
+      return fallbackId;
+    }
+  }
+
+  // Guardar mensaje en base de datos
+  async saveMessageToDB(conversationId, userId, senderType, message, intent, metadata = {}) {
+    try {
+      // No guardar si es una conversación local (fallback)
+      if (conversationId.startsWith('local_')) {
+        return `local_msg_${Date.now()}`;
+      }
+
+      // Mapear sender types correctamente
+      const validSenderType = senderType === 'flofy' ? 'ai' : senderType;
+      
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_type: validSenderType,
+          sender_id: senderType === 'user' ? userId : null,
+          sender_name: senderType === 'ai' ? 'Alpha AI' : null,
+          message: message,
+          intent: intent,
+          metadata: {
+            ...metadata,
+            timestamp: new Date().toISOString()
+          }
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        logger.error('[CHAT] Error saving message to DB:', error);
+        return `error_msg_${Date.now()}`;
+      }
+
+      // Actualizar last_activity de la conversación
+      await supabase
+        .from('chat_conversations')
+        .update({ 
+          last_activity: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', conversationId);
+
+      return data.id;
+    } catch (error) {
+      logger.error('[CHAT] Error in saveMessageToDB:', error);
+      return `error_msg_${Date.now()}`;
+    }
+  }
+
+  // Obtener ID de conversación actual
+  getCurrentConversationId(userId) {
+    return this.conversationIdCache.get(userId) || null;
   }
 }
 
