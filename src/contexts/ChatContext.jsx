@@ -373,6 +373,62 @@ export const ChatProvider = ({ children }) => {
           {
             event: 'UPDATE',
             schema: 'public',
+            table: 'chat_messages',
+            filter: `conversation_id=eq.${conversationId}`
+          },
+          (payload) => {
+            logger.info('[CHAT_CONTEXT] Message UPDATE received from realtime:', payload);
+            
+            if (payload.new) {
+              const msg = payload.new;
+              const updatedMessage = {
+                id: msg.id,
+                sender: msg.sender_type === 'user' ? 'user' : 
+                        msg.sender_type === 'ai' ? 'flofy' : 
+                        msg.sender_type === 'human' ? 'human' : 
+                        msg.sender_type,
+                message: msg.message,
+                timestamp: msg.created_at,
+                sender_name: msg.sender_name
+              };
+              
+              logger.info('[CHAT_CONTEXT] Processing message UPDATE:', {
+                id: updatedMessage.id,
+                sender: updatedMessage.sender,
+                preview: updatedMessage.message?.substring(0, 50)
+              });
+              
+              // Update existing message in conversation
+              setConversations(prev => {
+                const newConversations = new Map(prev);
+                const currentMessages = newConversations.get(conversationId) || [];
+                
+                // Find and update the message
+                const updatedMessages = currentMessages.map(m => 
+                  m.id === updatedMessage.id ? updatedMessage : m
+                );
+                
+                // Check if message was actually found and updated
+                const wasUpdated = currentMessages.some(m => m.id === updatedMessage.id);
+                
+                if (wasUpdated) {
+                  logger.info('[CHAT_CONTEXT] Updated existing message in conversation');
+                  newConversations.set(conversationId, updatedMessages);
+                  return new Map(newConversations);
+                } else {
+                  // If message doesn't exist yet, add it
+                  logger.info('[CHAT_CONTEXT] Message not found, adding as new');
+                  newConversations.set(conversationId, [...currentMessages, updatedMessage]);
+                  return new Map(newConversations);
+                }
+              });
+            }
+          }
+        )
+        .on('postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
             table: 'chat_conversations',
             filter: `id=eq.${conversationId}`
           },
