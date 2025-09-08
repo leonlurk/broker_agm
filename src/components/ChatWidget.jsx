@@ -17,7 +17,8 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
     connectionStatus, 
     markMessagesAsRead,
     isLoading: contextLoading,
-    getDBMessageId
+    getDBMessageId,
+    updateVersion
   } = useChat();
   
   const [inputMessage, setInputMessage] = useState('');
@@ -40,36 +41,12 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
     
     // If conversations is a Map
     if (conversations instanceof Map) {
-      // Log all available conversation IDs
-      logger.info('[CHAT_WIDGET] Available conversation IDs in Map:', Array.from(conversations.keys()));
-      logger.info('[CHAT_WIDGET] Trying to get messages for ID:', currentConversationId);
-      
       const msgs = conversations.get(currentConversationId) || [];
-      
-      // Log detailed info about messages
-      const humanMessages = msgs.filter(m => m.sender === 'human');
-      const aiMessages = msgs.filter(m => m.sender === 'ai' || m.sender === 'flofy');
-      const userMessages = msgs.filter(m => m.sender === 'user');
-      
-      logger.info('[CHAT_WIDGET] Got messages from Map:', { 
-        conversationId: currentConversationId, 
-        totalCount: msgs.length,
-        userCount: userMessages.length,
-        aiCount: aiMessages.length,
-        humanCount: humanMessages.length,
-        humanSamples: humanMessages.slice(0, 2).map(m => ({
-          id: m.id,
-          sender: m.sender,
-          message: m.message?.substring(0, 30)
-        })),
-        allSenders: [...new Set(msgs.map(m => m.sender))]
-      });
       return msgs;
     }
     
     // If conversations is an Array (legacy)
     if (Array.isArray(conversations)) {
-      logger.info('[CHAT_WIDGET] Using legacy array mode, messages:', conversations.length);
       return conversations;
     }
     
@@ -86,6 +63,12 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Force component update when messages are updated via WebSocket
+  useEffect(() => {
+    // This will cause the component to re-render when updateVersion changes
+    // The messages will be recalculated from the updated conversations Map
+  }, [updateVersion]);
 
   // Focus input on open and mark messages as read
   useEffect(() => {

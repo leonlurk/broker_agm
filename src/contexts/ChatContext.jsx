@@ -29,6 +29,7 @@ export const ChatProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [messageIdMap, setMessageIdMap] = useState(new Map()); // Map de mensajes locales a IDs de DB
   const [realtimeSubscription, setRealtimeSubscription] = useState(null);
+  const [updateVersion, setUpdateVersion] = useState(0); // Force re-renders on updates
 
   // Initialize chat service when user is authenticated
   useEffect(() => {
@@ -315,7 +316,7 @@ export const ChatProvider = ({ children }) => {
             filter: `conversation_id=eq.${conversationId}`
           },
           (payload) => {
-            logger.info('[CHAT_CONTEXT] New message received from realtime:', payload);
+            // Reduced logging - only log essential info
             
             // Process ALL message types for real-time updates
             if (payload.new) {
@@ -331,12 +332,10 @@ export const ChatProvider = ({ children }) => {
                 sender_name: msg.sender_name
               };
               
-              logger.info('[CHAT_CONTEXT] Processing realtime message:', {
-                id: newMessage.id,
-                sender: newMessage.sender,
-                sender_type: msg.sender_type,
-                preview: newMessage.message?.substring(0, 50)
-              });
+              // Log only when message is from human or ai for debugging
+              if (msg.sender_type === 'human' || msg.sender_type === 'ai') {
+                logger.info('[CHAT_CONTEXT] Realtime message:', msg.sender_type, newMessage.id);
+              }
               
               // Add to conversation using DB conversation ID
               setConversations(prev => {
@@ -348,7 +347,7 @@ export const ChatProvider = ({ children }) => {
                 );
                 
                 if (!exists) {
-                  logger.info('[CHAT_CONTEXT] Adding new realtime message to conversation');
+                  // Message added
                   
                   // Create completely new Map
                   const newConversations = new Map();
@@ -356,7 +355,7 @@ export const ChatProvider = ({ children }) => {
                     if (key === conversationId) {
                       const updatedMessages = [...value, newMessage];
                       newConversations.set(key, updatedMessages);
-                      logger.info('[CHAT_CONTEXT] Updated conversation now has', updatedMessages.length, 'messages');
+                      // Updated messages count
                     } else {
                       newConversations.set(key, value);
                     }
@@ -367,10 +366,11 @@ export const ChatProvider = ({ children }) => {
                     newConversations.set(conversationId, [newMessage]);
                   }
                   
-                  logger.info('[CHAT_CONTEXT] Returning completely new Map after INSERT');
+                  // New Map created
+                  setUpdateVersion(v => v + 1); // Force re-render
                   return newConversations;
                 } else {
-                  logger.info('[CHAT_CONTEXT] Message already exists, skipping');
+                  // Message exists
                   return prev;
                 }
               });
@@ -390,7 +390,7 @@ export const ChatProvider = ({ children }) => {
             filter: `conversation_id=eq.${conversationId}`
           },
           (payload) => {
-            logger.info('[CHAT_CONTEXT] Message UPDATE received from realtime:', payload);
+            // Message UPDATE received
             
             if (payload.new) {
               const msg = payload.new;
@@ -405,11 +405,7 @@ export const ChatProvider = ({ children }) => {
                 sender_name: msg.sender_name
               };
               
-              logger.info('[CHAT_CONTEXT] Processing message UPDATE:', {
-                id: updatedMessage.id,
-                sender: updatedMessage.sender,
-                preview: updatedMessage.message?.substring(0, 50)
-              });
+              logger.info('[CHAT_CONTEXT] Message UPDATE:', updatedMessage.sender, updatedMessage.id);
               
               // Update existing message in conversation
               setConversations(prev => {
@@ -423,14 +419,14 @@ export const ChatProvider = ({ children }) => {
                     const wasUpdated = currentMessages.some(m => m.id === updatedMessage.id);
                     
                     if (wasUpdated) {
-                      logger.info('[CHAT_CONTEXT] Updated existing message in conversation');
+                      // Message updated
                       const updatedMessages = currentMessages.map(m => 
                         m.id === updatedMessage.id ? updatedMessage : m
                       );
                       newConversations.set(key, updatedMessages);
                     } else {
                       // If message doesn't exist yet, add it
-                      logger.info('[CHAT_CONTEXT] Message not found, adding as new');
+                      // Message added as new
                       newConversations.set(key, [...currentMessages, updatedMessage]);
                     }
                   } else {
@@ -438,7 +434,8 @@ export const ChatProvider = ({ children }) => {
                   }
                 }
                 
-                logger.info('[CHAT_CONTEXT] Returning completely new Map after UPDATE');
+                // New Map created after UPDATE
+                setUpdateVersion(v => v + 1); // Force re-render
                 return newConversations;
               });
             }
@@ -577,6 +574,7 @@ export const ChatProvider = ({ children }) => {
     connectionStatus,
     unreadCount,
     currentConversationId: actualConversationId || currentConversationId, // Prefer DB ID
+    updateVersion, // Include version to trigger re-renders
     
     // Actions
     sendMessage,
