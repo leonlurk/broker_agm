@@ -42,12 +42,13 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
     // If conversations is a Map
     if (conversations instanceof Map) {
       const msgs = conversations.get(currentConversationId) || [];
-      logger.info('[CHAT_WIDGET] Retrieved messages from Map:', {
-        conversationId: currentConversationId,
-        messageCount: msgs.length,
-        updateVersion,
-        lastMessage: msgs[msgs.length - 1]?.message?.substring(0, 50)
-      });
+      // Comentado para reducir logs
+      // logger.info('[CHAT_WIDGET] Retrieved messages from Map:', {
+      //   conversationId: currentConversationId,
+      //   messageCount: msgs.length,
+      //   updateVersion,
+      //   lastMessage: msgs[msgs.length - 1]?.message?.substring(0, 50)
+      // });
       return msgs;
     }
     
@@ -68,13 +69,13 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
   };
 
   useEffect(() => {
-    logger.info('[CHAT_WIDGET] Messages updated, scrolling to bottom. Count:', messages.length);
+    // logger.info('[CHAT_WIDGET] Messages updated, scrolling to bottom. Count:', messages.length);
     scrollToBottom();
   }, [messages]);
 
   // Force component update when messages are updated via WebSocket
   useEffect(() => {
-    logger.info('[CHAT_WIDGET] UpdateVersion changed, forcing re-render:', updateVersion);
+    // logger.info('[CHAT_WIDGET] UpdateVersion changed, forcing re-render:', updateVersion);
     // This will cause the component to re-render when updateVersion changes
     // The messages will be recalculated from the updated conversations Map
   }, [updateVersion]);
@@ -220,16 +221,17 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
     const isSystem = message.sender === 'system';
 
     // UX ORIGINAL: Usuario a la derecha, Bot/Humano a la izquierda
-    logger.info('[CHAT_WIDGET] Rendering message:', {
-      id: message.id,
-      sender: message.sender,
-      isUser,
-      isAI,
-      isAsesor,
-      isSystem,
-      messagePreview: message.message?.substring(0, 50),
-      willRender: true
-    });
+    // Comentado para reducir logs excesivos
+    // logger.info('[CHAT_WIDGET] Rendering message:', {
+    //   id: message.id,
+    //   sender: message.sender,
+    //   isUser,
+    //   isAI,
+    //   isAsesor,
+    //   isSystem,
+    //   messagePreview: message.message?.substring(0, 50),
+    //   willRender: true
+    // });
     
     return (
       <React.Fragment key={message.id}>
@@ -381,11 +383,12 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
           <>
             {/* Debug: Log messages before rendering */}
             {(() => {
-              logger.info('[CHAT_WIDGET] About to render messages:', {
-                totalMessages: messages.length,
-                humanMessages: messages.filter(m => m.sender === 'human').length,
-                messageTypes: messages.map(m => ({ id: m.id, sender: m.sender })).slice(0, 5)
-              });
+              // Comentado para reducir logs
+              // logger.info('[CHAT_WIDGET] About to render messages:', {
+              //   totalMessages: messages.length,
+              //   humanMessages: messages.filter(m => m.sender === 'human').length,
+              //   messageTypes: messages.map(m => ({ id: m.id, sender: m.sender })).slice(0, 5)
+              // });
               return null;
             })()}
             {messages.map(renderMessage)}
