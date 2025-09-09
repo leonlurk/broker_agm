@@ -391,7 +391,7 @@ export const ChatProvider = ({ children }) => {
         });
 
         return { success: false, error: result.error };
-
+      }
     } catch (error) {
       logger.error('[CHAT_CONTEXT] Error sending message:', error);
       return { success: false, error: error.message };
