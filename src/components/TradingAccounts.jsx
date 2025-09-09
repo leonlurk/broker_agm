@@ -20,6 +20,8 @@ import {
   getPerformanceChartData 
 } from '../services/accountHistory';
 // Auto-sync ya manejado por el backend scheduler
+import { ListLoader, ChartLoader, useMinLoadingTime } from './WaveLoader';
+import { TradingAccountsLayoutLoader } from './ExactLayoutLoaders';
 
 // --- Instrument Lists (from PipCalculator) ---
 const forexInstruments = [
@@ -184,6 +186,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     return navigationParams?.viewMode === 'details' ? navigationParams.accountId : null;
   };
   
+  // Loading state
+  const [initialLoading, setInitialLoading] = useState(true);
+  const showLoader = useMinLoadingTime(initialLoading || isLoading, 2000);
+  
   // Usar la misma lógica que Home - estado simple para filtro
   const [activeTab, setActiveTab] = useState('all');
   const [selectedAccountId, setSelectedAccountId] = useState(getInitialSelectedAccountId());
@@ -270,6 +276,22 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const [barChartTooltip, setBarChartTooltip] = useState(null);
 
   // Detectar dispositivo móvil
+  // Initial data loading
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      try {
+        await getAllAccounts();
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    
+    if (currentUser) {
+      loadInitialData();
+    }
+  }, [currentUser, getAllAccounts]);
+
   useEffect(() => {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -1849,14 +1871,54 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     return chartData;
   };
 
-  // Función para generar datos de Retracción
+  // Función para generar datos de Retracción (Drawdown)
   const generateDrawdownChartData = () => {
     // Usar datos reales si están disponibles
     if (realBalanceHistory && realBalanceHistory.length > 0) {
-      let peakBalance = realBalanceHistory[0]?.value || 0;
+      // Aplicar filtros de fecha
+      const now = new Date();
+      let filteredData = [...realBalanceHistory];
       
-      return realBalanceHistory.map(point => {
+      if (benefitChartFilter === 'last7Days') {
+        const cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        filteredData = filteredData.filter(point => new Date(point.date || point.timestamp) >= cutoffDate);
+      } else if (benefitChartFilter === 'last30Days') {
+        const cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        filteredData = filteredData.filter(point => new Date(point.date || point.timestamp) >= cutoffDate);
+      } else if (benefitChartFilter === 'last90Days') {
+        const cutoffDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        filteredData = filteredData.filter(point => new Date(point.date || point.timestamp) >= cutoffDate);
+      } else if (benefitChartFilter === 'custom' && customDateFrom && customDateTo) {
+        const fromDate = new Date(customDateFrom);
+        const toDate = new Date(customDateTo);
+        filteredData = filteredData.filter(point => {
+          const pointDate = new Date(point.date || point.timestamp);
+          return pointDate >= fromDate && pointDate <= toDate;
+        });
+      }
+      
+      // Si no hay datos después del filtro, retornar array vacío
+      if (filteredData.length === 0) {
+        return [];
+      }
+      
+      // Calcular drawdown desde el máximo histórico
+      let peakBalance = 0;
+      
+      return filteredData.map((point, index) => {
         const currentBalance = point.value || point.balance || 0;
+        
+        // En el primer punto, establecer el pico y drawdown en 0
+        if (index === 0) {
+          peakBalance = currentBalance;
+          return {
+            date: new Date(point.date || point.timestamp).toLocaleDateString('es-ES', { 
+              day: '2-digit', 
+              month: 'short' 
+            }),
+            value: 0 // Comenzar desde 0% de drawdown
+          };
+        }
         
         // Actualizar el pico si el balance actual es mayor
         if (currentBalance > peakBalance) {
@@ -2286,6 +2348,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // VISTA GENERAL DE CUENTAS
   if (viewMode === 'overview') {
+  // Show loader during initial loading
+  if (showLoader) {
+    return <TradingAccountsLayoutLoader />;
+  }
+
   return (
       <div className="flex flex-col p-3 sm:p-4 text-white">
         {/* Header */}
@@ -2654,20 +2721,40 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 <div className="mb-3 sm:mb-4">
                   <div className="flex justify-between items-start mb-2">
                     <h2 className="text-lg sm:text-xl font-semibold">{t('accounts.details.title')}</h2>
-                    <p className="text-gray-500 text-xs">
-                      {(() => {
-                        const minutesAgo = getTimeAgoInMinutes(lastUpdated);
-                        if (minutesAgo === null) {
-                          return `${t('accounts.fields.lastUpdated')} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-                        } else if (minutesAgo === 0) {
-                          return `${t('accounts.fields.lastUpdated')} ${t('common:time.now')}`;
-                        } else if (minutesAgo === 1) {
-                          return `${t('accounts.fields.lastUpdated')} ${t('common:time.oneMinuteAgo')}`;
-                        } else {
-                          return `${t('accounts.fields.lastUpdated')} ${t('common:time.minutesAgo', { count: minutesAgo })}`;
-                        }
-                      })()}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <CustomTooltip content={t('accounts.fields.updateFrequencyTooltip')}>
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-md border border-gray-700/50 cursor-help">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <p className="text-gray-300 text-xs font-medium">
+                            {t('accounts.fields.updateFrequency')}
+                          </p>
+                        </div>
+                      </CustomTooltip>
+                      <button
+                        onClick={handleRefreshData}
+                        disabled={!canRefresh || isRefreshing}
+                        className={`p-1.5 rounded-md text-xs transition-colors ${
+                          canRefresh && !isRefreshing
+                            ? 'text-gray-400 hover:text-cyan-400 hover:bg-[#3a3a3a]'
+                            : 'text-gray-600 cursor-not-allowed'
+                        }`}
+                        title={t('accounts.fields.refresh')}
+                      >
+                        <svg
+                          className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                   <p className="text-gray-400 text-xs sm:text-sm">{t('accounts.details.subtitle')}</p>
                 </div>
@@ -2682,13 +2769,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
                       <span className="text-gray-400">{t('accounts.fields.currentBalance')}: ${(selectedAccount.balance || 0).toFixed(2)}</span>
                     </div>
-                  </div>
-                  <div className="flex items-center">
-                    <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                          <span className="text-gray-400">{t('accounts.fields.activeAccount')}: {(() => {
-                            const daysActive = getDaysFromCreation(selectedAccount.created_at || selectedAccount.createdAt);
-                            return daysActive !== null ? `${daysActive} ${t('common:time.days')}` : 'N/A';
-                          })()}</span>
                   </div>
                   <div className="flex items-center">
                     <img src="/lightning_ring.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
@@ -2874,20 +2954,40 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 <CustomTooltip content={t('tooltips.balance')}>
                   <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold cursor-help">{t('balance')}</h2>
                 </CustomTooltip>
-                <p className="text-gray-500 text-xs">
-                  {(() => {
-                    const minutesAgo = getTimeAgoInMinutes(lastUpdated);
-                    if (minutesAgo === null) {
-                      return `${t('accounts.fields.lastUpdated')} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-                    } else if (minutesAgo === 0) {
-                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.now')}`;
-                    } else if (minutesAgo === 1) {
-                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.oneMinuteAgo')}`;
-                    } else {
-                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.minutesAgo', { count: minutesAgo })}`;
-                    }
-                  })()}
-                </p>
+                <div className="flex items-center gap-2">
+                  <CustomTooltip content={t('accounts.fields.updateFrequencyTooltip')}>
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-md border border-gray-700/50 cursor-help">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <p className="text-gray-300 text-xs font-medium">
+                        {t('accounts.fields.updateFrequency')}
+                      </p>
+                    </div>
+                  </CustomTooltip>
+                  <button
+                    onClick={handleRefreshData}
+                    disabled={!canRefresh || isRefreshing}
+                    className={`p-1.5 rounded-md text-xs transition-colors ${
+                      canRefresh && !isRefreshing
+                        ? 'text-gray-400 hover:text-cyan-400 hover:bg-[#3a3a3a]'
+                        : 'text-gray-600 cursor-not-allowed'
+                    }`}
+                    title={t('accounts.fields.refresh')}
+                  >
+                    <svg
+                      className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <div className="flex items-center mb-4 sm:mb-6">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3 text-white">
@@ -3193,27 +3293,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             <div className="flex justify-between items-center mb-4">
               <div></div>
               <div className="flex items-center gap-3">
-                <p className="text-gray-500 text-xs">
-                  {(() => {
-                    if (!lastUpdated) {
-                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.now')}`;
-                    }
-                    const now = new Date();
-                    const updated = new Date(lastUpdated);
-                    const diffInMs = now - updated;
-                    const minutesAgo = Math.floor(diffInMs / 60000);
-                    
-                    if (diffInMs < 0) {
-                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.now')}`;
-                    } else if (minutesAgo === 0) {
-                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.now')}`;
-                    } else if (minutesAgo === 1) {
-                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.oneMinuteAgo')}`;
-                    } else {
-                      return `${t('accounts.fields.lastUpdated')} ${t('common:time.minutesAgo', { count: minutesAgo })}`;
-                    }
-                  })()}
-                </p>
+                <CustomTooltip content={t('accounts.fields.updateFrequencyTooltip')}>
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-md border border-gray-700/50 cursor-help">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <p className="text-gray-300 text-xs font-medium">
+                      {t('accounts.fields.updateFrequency')}
+                    </p>
+                  </div>
+                </CustomTooltip>
                 <button
                   onClick={handleRefreshData}
                   disabled={!canRefresh || isRefreshing}
@@ -3354,11 +3441,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     axisLine={false} 
                     tickLine={false} 
                     tick={{ fill: '#9CA3AF', fontSize: isMobile ? 9 : 11 }}
-                    domain={['dataMin - 100', 'dataMax + 100']}
+                    domain={benefitChartTab === 'drawdown' ? ['dataMin', 0] : ['dataMin - 100', 'dataMax + 100']}
                     width={isMobile ? 50 : 60}
                     tickFormatter={(value) => {
                       if (benefitChartTab === 'drawdown') {
-                        return `${typeof value === 'number' ? value.toFixed(1) : 0}%`;
+                        return `${typeof value === 'number' ? Math.abs(value).toFixed(1) : 0}%`;
                       }
                       if (typeof value === 'number' && Math.abs(value) >= 1000) {
                         return `${(value/1000).toFixed(1)}K`;

@@ -13,6 +13,8 @@ import TwoFactorDualModalImproved from './TwoFactorDualModalImproved';
 import TwoFactorDisableModal from './TwoFactorDisableModal';
 import EmailChangeModal from './EmailChangeModal';
 import twoFactorService from '../services/twoFactorService';
+import { FormLoader, KYCStatusLoader, useMinLoadingTime } from './WaveLoader';
+import { SettingsLayoutLoader } from './ExactLayoutLoaders';
 
 const Settings = ({ onBack, openKYC = false, fromHome = false }) => {
   const { t } = useTranslation('settings');
@@ -27,6 +29,10 @@ const Settings = ({ onBack, openKYC = false, fromHome = false }) => {
   const [showDisable2FAModal, setShowDisable2FAModal] = useState(false);
   const [twoFactorData, setTwoFactorData] = useState(null);
   const [twoFactorMethod, setTwoFactorMethod] = useState(null);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  
+  // Use minimum loading time of 2 seconds
+  const showLoader = useMinLoadingTime(isLoadingSettings, 2000);
   
   // Estados para el cambio de contraseña
   const [passwordResetStep, setPasswordResetStep] = useState('initial'); // 'initial', 'code-sent', 'verified'
@@ -44,8 +50,10 @@ const Settings = ({ onBack, openKYC = false, fromHome = false }) => {
   // Check KYC and 2FA status
   useEffect(() => {
     const checkStatus = async () => {
-      if (currentUser?.uid || currentUser?.id) {
-        const userId = currentUser.id || currentUser.uid;
+      setIsLoadingSettings(true);
+      try {
+        if (currentUser?.uid || currentUser?.id) {
+          const userId = currentUser.id || currentUser.uid;
         
         // Check KYC status - first in kyc_verifications
         const kycResult = await kycService.getKYCStatus(userId);
@@ -84,6 +92,9 @@ const Settings = ({ onBack, openKYC = false, fromHome = false }) => {
           const methodResult = await twoFactorService.get2FAMethod(userId);
           setTwoFactorMethod(methodResult.method);
         }
+      }
+      } finally {
+        setIsLoadingSettings(false);
       }
     };
     checkStatus();
@@ -293,6 +304,11 @@ const Settings = ({ onBack, openKYC = false, fromHome = false }) => {
   
   if (showPaymentSettings) {
     return <PaymentMethodSettings onBack={() => setShowPaymentSettings(false)} />;
+  }
+
+  // Show loader during initial loading
+  if (showLoader) {
+    return <SettingsLayoutLoader />;
   }
 
   return (

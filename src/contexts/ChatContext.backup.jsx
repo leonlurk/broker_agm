@@ -93,35 +93,11 @@ export const ChatProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [actualConversationId]); // Remove realtimeSubscription from dependencies to avoid recreating interval
 
-  // Función para limpiar mensajes antiguos de la memoria (mantener máximo 30 mensajes recientes)
-  const cleanupOldMessages = () => {
-    setConversations(prev => {
-      const newConversations = new Map(prev);
-      
-      for (const [convId, messages] of newConversations.entries()) {
-        // Mantener solo los últimos 30 mensajes
-        if (messages.length > 30) {
-          const trimmedMessages = messages.slice(-30);
-          logger.info('[CHAT_CONTEXT] Cleaned up old messages:', {
-            conversationId: convId,
-            before: messages.length,
-            after: trimmedMessages.length
-          });
-          newConversations.set(convId, trimmedMessages);
-        }
-      }
-      
-      return newConversations;
-    });
-  };
-
   // Initialize chat service when user is authenticated
   useEffect(() => {
     // Only initialize if user ID actually changed
     const currentUserId = currentUser?.id || currentUser?.uid;
     const previousUserId = previousUserIdRef.current;
-    
-    let cleanupInterval;
     
     if (currentUserId && currentUserId !== previousUserId) {
       logger.info('[CHAT_CONTEXT] User ID changed, initializing chat service', {
@@ -130,12 +106,6 @@ export const ChatProvider = ({ children }) => {
       });
       previousUserIdRef.current = currentUserId;
       initializeChatService();
-      
-      // Set up periodic cleanup every 5 minutes
-      cleanupInterval = setInterval(() => {
-        cleanupOldMessages();
-      }, 5 * 60 * 1000); // 5 minutes
-      
     } else if (!currentUserId && previousUserId) {
       // User logged out
       logger.info('[CHAT_CONTEXT] User logged out, cleaning up');
@@ -153,9 +123,6 @@ export const ChatProvider = ({ children }) => {
       if (realtimeSubscription) {
         realtimeSubscription.unsubscribe();
       }
-      if (cleanupInterval) {
-        clearInterval(cleanupInterval);
-      }
     };
   }, [currentUser]);
 
@@ -164,16 +131,11 @@ export const ChatProvider = ({ children }) => {
     try {
       logger.info('[CHAT_CONTEXT] Loading messages from DB for conversation:', conversationId);
       
-      // Solo cargar mensajes de las últimas 24 horas y limitar a 50 mensajes
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      
       const { data: messages, error } = await supabase
         .from('chat_messages')
         .select('*')
         .eq('conversation_id', conversationId)
-        .gte('created_at', twentyFourHoursAgo) // Solo mensajes de las últimas 24 horas
-        .order('created_at', { ascending: false })
-        .limit(50); // Máximo 50 mensajes
+        .order('created_at', { ascending: true });
       
       if (error) {
         logger.error('[CHAT_CONTEXT] Error loading messages from DB:', error);
@@ -181,20 +143,17 @@ export const ChatProvider = ({ children }) => {
       }
       
       if (messages && messages.length > 0) {
-        // Revertir el orden para mostrar cronológicamente
-        const chronologicalMessages = messages.reverse();
-        
-        logger.info('[CHAT_CONTEXT] Found', chronologicalMessages.length, 'messages in DB (limited to last 24h and max 50)');
+        logger.info('[CHAT_CONTEXT] Found', messages.length, 'messages in DB');
         
         // Log tipos de mensajes encontrados
-        const messageCounts = chronologicalMessages.reduce((acc, msg) => {
+        const messageCounts = messages.reduce((acc, msg) => {
           acc[msg.sender_type] = (acc[msg.sender_type] || 0) + 1;
           return acc;
         }, {});
         logger.info('[CHAT_CONTEXT] Message types found:', messageCounts);
         
         // Convert DB messages to local format
-        const formattedMessages = chronologicalMessages.map(msg => ({
+        const formattedMessages = messages.map(msg => ({
           id: msg.id,
           sender: msg.sender_type === 'user' ? 'user' : 
                   msg.sender_type === 'ai' ? 'flofy' : 

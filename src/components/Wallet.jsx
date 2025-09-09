@@ -11,6 +11,8 @@ import useTransactionMonitor from '../hooks/useTransactionMonitor';
 import { supabase } from '../supabase/config';
 import { Coins, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { WalletLoader, TableLoader, useMinLoadingTime } from './WaveLoader';
+import { WalletLayoutLoader } from './ExactLayoutLoaders';
 
 const Wallet = () => {
   const { t } = useTranslation('wallet');
@@ -48,8 +50,10 @@ const Wallet = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [selectedCoin, setSelectedCoin] = useState(null);
+  const [transferFromAccount, setTransferFromAccount] = useState(null);
   const [transferToAccount, setTransferToAccount] = useState(null);
   const [amount, setAmount] = useState('');
+  const [showFromAccountDropdown, setShowFromAccountDropdown] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,6 +84,10 @@ const Wallet = () => {
   // Estados para historial de transacciones
   const [transactions, setTransactions] = useState([]);
   const [historyFilter, setHistoryFilter] = useState('all');
+  const [initialLoading, setInitialLoading] = useState(true);
+  
+  // Use minimum loading time of 2 seconds
+  const showLoader = useMinLoadingTime(initialLoading, 2000);
   
   // Hook para monitoreo en tiempo real de transacciones
   const { refresh: refreshMonitor } = useTransactionMonitor(
@@ -114,10 +122,22 @@ const Wallet = () => {
 
   // Cargar transacciones iniciales y datos del broker
   useEffect(() => {
-    loadTransactions();
-    loadBrokerBalance();
-    loadMT5Accounts();
-    loadPaymentMethods();
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      try {
+        await Promise.all([
+          loadTransactions(),
+          loadBrokerBalance(),
+          loadMT5Accounts(),
+          loadPaymentMethods()
+        ]);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    
+    loadInitialData();
+    
     // Hacer supabase disponible globalmente para pruebas
     if (typeof window !== 'undefined') {
       window.supabase = supabase;
@@ -216,17 +236,33 @@ const Wallet = () => {
     if (!currentUser) return;
     
     try {
+      // Primero intentar con broker_accounts
       const { data, error } = await supabase
         .from('broker_accounts')
         .select('*')
         .eq('user_id', currentUser.id)
         .eq('status', 'active');
       
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         setMt5Accounts(data);
+      } else {
+        // Si no hay cuentas en broker_accounts, usar trading_accounts
+        const accounts = getAllAccounts();
+        setMt5Accounts(accounts);
+        
+        // Si estamos en transferir, preseleccionar cuenta con balance
+        if (activeTab === 'transferir') {
+          const accountsWithBalance = accounts.filter(acc => (acc.balance || 0) > 0);
+          if (accountsWithBalance.length > 0) {
+            setTransferFromAccount(accountsWithBalance[0]);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading MT5 accounts:', error);
+      // Fallback a getAllAccounts
+      const accounts = getAllAccounts();
+      setMt5Accounts(accounts);
     }
   };
   
@@ -665,6 +701,7 @@ const Wallet = () => {
     setCurrentStep(1);
     setSelectedMethod(null);
     setSelectedCoin(null);
+    setTransferFromAccount(null);
     setTransferToAccount(null);
     setAmount('');
     setWalletAddress('');
@@ -801,9 +838,21 @@ const Wallet = () => {
 
   // Contenido para transferencias
   const renderTransferContent = () => {
-    // Para transferencias, usamos el balance general como origen
-    const sourceBalance = brokerBalance;
-    const sourceName = t('common.generalBalance');
+    // Determinar origen y balance
+    const sourceBalance = transferFromAccount 
+      ? (transferFromAccount.balance || 0)
+      : brokerBalance;
+    const sourceName = transferFromAccount 
+      ? `${transferFromAccount.account_name} (${transferFromAccount.account_number})`
+      : t('common.generalBalance');
+    
+    // Cuentas con balance para origen
+    const accountsWithBalance = mt5Accounts.filter(acc => (acc.balance || 0) > 0);
+    
+    // Cuentas disponibles para destino (excluir origen)
+    const availableDestinationAccounts = mt5Accounts.filter(acc => 
+      !transferFromAccount || acc.id !== transferFromAccount.id
+    );
     
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1576,6 +1625,11 @@ const Wallet = () => {
       </div>
     );
   };
+
+  // Show loader during initial loading
+  if (showLoader) {
+    return <WalletLayoutLoader />;
+  }
 
   return (
     <div className="flex flex-col p-4 text-white min-h-screen">

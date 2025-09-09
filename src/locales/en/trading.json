@@ -40,6 +40,8 @@
       "currentBalance": "Current Balance",
       "createdAt": "Created",
       "lastUpdated": "Last updated:",
+      "updateFrequency": "Updates every 5 min",
+      "updateFrequencyTooltip": "Your account data syncs automatically every 5 minutes. If you don't see immediate changes, don't worry - the next update is on its way. No need to contact support for minor delays.",
       "refresh": "Refresh",
       "dataWillUpdate": "Data will update in approximately 5 minutes",
       "refreshing": "Refreshing...",

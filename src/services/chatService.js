@@ -191,6 +191,20 @@ Responde como Flofy de manera natural y útil:`;
     return 'Como asistente de AGM, puedo ayudarte con cuentas, depósitos, retiros, KYC, trading, PAMM y copytrading. ¿Sobre qué necesitas información?';
   }
 
+  // Obtener o crear conversación
+  async getOrCreateConversation(userId) {
+    try {
+      // Por ahora retornar un ID simple basado en el userId
+      // En el futuro esto debería buscar o crear en la tabla chat_conversations
+      const conversationId = `conv_${userId}`;
+      logger.info('[CHAT] Getting/creating conversation for user:', userId);
+      return conversationId;
+    } catch (error) {
+      logger.error('[CHAT] Error getting/creating conversation:', error);
+      return null;
+    }
+  }
+
   // Verificar si hay control humano activo
   async checkHumanControl(userId) {
     try {

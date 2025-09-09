@@ -39,6 +39,8 @@
       "currentBalance": "Balance actual",
       "createdAt": "Creada",
       "lastUpdated": "Actualizado:",
+      "updateFrequency": "Actualizaciones cada 5 min",
+      "updateFrequencyTooltip": "Los datos de tu cuenta se sincronizan automáticamente cada 5 minutos. Si no ves cambios inmediatos, no te preocupes - la próxima actualización está en camino. No es necesario contactar soporte por retrasos menores.",
       "refresh": "Actualizar",
       "dataWillUpdate": "Los datos se actualizarán en aproximadamente 5 minutos",
       "refreshing": "Actualizando...",

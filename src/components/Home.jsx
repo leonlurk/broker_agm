@@ -11,6 +11,8 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import LanguageSelector from './LanguageSelector';
 import accountMetricsOptimized from '../services/accountMetricsOptimized';
+import { DashboardCardLoader, UserInfoLoader, KYCStatusLoader, useMinLoadingTime } from './WaveLoader';
+import { HomeDashboardLoader } from './ExactLayoutLoaders';
 
 const fondoTarjetaUrl = "/fondoTarjeta.png";
 
@@ -51,7 +53,38 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   });
   const [accountsMetrics, setAccountsMetrics] = useState({});
   const [metricsLoading, setMetricsLoading] = useState({});
+  const [initialLoading, setInitialLoading] = useState(true);
   const dropdownRef = useRef(null);
+  
+  // Use minimum loading time of 2 seconds
+  const showLoader = useMinLoadingTime(initialLoading, 2000);
+
+  // Simular carga inicial de datos
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      try {
+        // Esperar a que los datos estén disponibles
+        await new Promise(resolve => {
+          const checkData = setInterval(() => {
+            if (user && accounts !== undefined) {
+              clearInterval(checkData);
+              resolve();
+            }
+          }, 100);
+          // Timeout después de 5 segundos
+          setTimeout(() => {
+            clearInterval(checkData);
+            resolve();
+          }, 5000);
+        });
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    
+    loadInitialData();
+  }, []);
 
   // Función para cerrar permanentemente el cartel KYC aprobado
   const dismissKycCard = () => {
@@ -344,8 +377,40 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     };
   }, [dropdownRef]);
 
-  // Función para calcular PNL por períodos
-  const calculatePnlByPeriod = (balanceHistory, days) => {
+  // Función para calcular PNL por períodos usando datos del servicio
+  const calculatePnlByPeriod = (statistics, period) => {
+    if (!statistics) {
+      return { percentage: 0, amount: 0 };
+    }
+
+    // Los datos ya vienen calculados del backend según el período
+    // Usar directamente los valores de statistics
+    switch(period) {
+      case 'today':
+        // Usar net_pnl para el día actual si está disponible
+        return {
+          percentage: statistics.net_pnl_percentage || 0,
+          amount: statistics.net_pnl || 0
+        };
+      case '7days':
+        // Para 7 días, usar profit_loss si está disponible
+        return {
+          percentage: statistics.profit_loss_percentage || 0,
+          amount: statistics.profit_loss || 0
+        };
+      case '30days':
+        // Para 30 días, usar los datos generales del período
+        return {
+          percentage: statistics.net_pnl_percentage || 0,
+          amount: statistics.net_pnl || 0
+        };
+      default:
+        return { percentage: 0, amount: 0 };
+    }
+  };
+  
+  // Función mejorada para calcular PNL desde historial de balance
+  const calculatePnlFromHistory = (balanceHistory, days) => {
     if (!balanceHistory || balanceHistory.length === 0) {
       return { percentage: 0, amount: 0 };
     }
@@ -353,28 +418,39 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     const now = new Date();
     const periodStart = new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
     
+    // Ordenar por timestamp (más antiguo primero)
+    const sortedHistory = [...balanceHistory].sort((a, b) => {
+      const dateA = new Date(a.timestamp || a.date);
+      const dateB = new Date(b.timestamp || b.date);
+      return dateA - dateB;
+    });
+    
     // Encontrar el balance más cercano al inicio del período
-    const sortedHistory = [...balanceHistory].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     let startBalance = null;
-    let endBalance = sortedHistory[sortedHistory.length - 1]; // Último balance (más reciente)
-
-    for (let i = 0; i < sortedHistory.length; i++) {
-      const recordDate = new Date(sortedHistory[i].timestamp);
-      if (recordDate >= periodStart) {
-        startBalance = i > 0 ? sortedHistory[i - 1] : sortedHistory[i];
+    let endBalance = sortedHistory[sortedHistory.length - 1]; // Último balance
+    
+    for (let i = sortedHistory.length - 1; i >= 0; i--) {
+      const recordDate = new Date(sortedHistory[i].timestamp || sortedHistory[i].date);
+      if (recordDate <= periodStart) {
+        startBalance = sortedHistory[i];
         break;
       }
     }
-
-    if (!startBalance) {
-      startBalance = sortedHistory[0]; // Si no hay datos antiguos, usar el más antiguo disponible
+    
+    // Si no hay datos del inicio del período, usar el primer registro disponible
+    if (!startBalance && sortedHistory.length > 0) {
+      startBalance = sortedHistory[0];
     }
-
-    const initialBalance = startBalance.balance || 0;
-    const currentBalance = endBalance.balance || 0;
+    
+    if (!startBalance || !endBalance) {
+      return { percentage: 0, amount: 0 };
+    }
+    
+    const initialBalance = startBalance.balance || startBalance.value || 0;
+    const currentBalance = endBalance.balance || endBalance.value || 0;
     const profit = currentBalance - initialBalance;
     const percentage = initialBalance > 0 ? (profit / initialBalance) * 100 : 0;
-
+    
     return {
       percentage: percentage,
       amount: profit
@@ -413,43 +489,83 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
       const accountsToLoad = getFilteredAccounts();
       
       for (const account of accountsToLoad) {
-        // Evitar recargar si ya tenemos datos
-        if (accountsMetrics[account.account_number] && !isLoading) {
+        // Evitar recargar si ya tenemos datos recientes (cache de 30 segundos)
+        const cachedMetrics = accountsMetrics[account.account_number];
+        if (cachedMetrics && cachedMetrics.lastUpdated && 
+            (Date.now() - cachedMetrics.lastUpdated) < 30000) {
           continue;
         }
         
         setMetricsLoading(prev => ({ ...prev, [account.account_number]: true }));
         
         try {
-          // Obtener datos del dashboard
+          // Obtener todos los datos del dashboard (incluye KPIs, statistics, balance history)
           const dashboardData = await accountMetricsOptimized.getDashboardData(
             account.account_number,
             'month'
           );
           
-          // Obtener historial de balance para calcular PNL por períodos
-          const balanceHistory = await accountMetricsOptimized.getBalanceHistory(
-            account.account_number,
-            'month'
-          );
-          
           // Calcular PNL por períodos
-          const pnlToday = calculatePnlByPeriod(balanceHistory, 1);
-          const pnl7Days = calculatePnlByPeriod(balanceHistory, 7);
-          const pnl30Days = calculatePnlByPeriod(balanceHistory, 30);
+          let pnlToday = { percentage: 0, amount: 0 };
+          let pnl7Days = { percentage: 0, amount: 0 };
+          let pnl30Days = { percentage: 0, amount: 0 };
+          
+          // Primero intentar usar los datos de statistics si están disponibles
+          if (dashboardData.statistics) {
+            // Para el día actual, calcular desde el historial si está disponible
+            if (dashboardData.balance_history && dashboardData.balance_history.length > 0) {
+              pnlToday = calculatePnlFromHistory(dashboardData.balance_history, 1);
+              pnl7Days = calculatePnlFromHistory(dashboardData.balance_history, 7);
+              pnl30Days = calculatePnlFromHistory(dashboardData.balance_history, 30);
+            } else {
+              // Fallback a usar statistics directamente
+              pnlToday = {
+                percentage: dashboardData.statistics.net_pnl_percentage || 0,
+                amount: dashboardData.statistics.net_pnl || 0
+              };
+              pnl7Days = pnlToday; // Usar los mismos datos si no hay historial
+              pnl30Days = pnlToday;
+            }
+          }
+          
+          // Si tenemos profit_loss en KPIs, usar eso para el total
+          const totalPnlPercentage = dashboardData.kpis?.profit_loss_percentage || 0;
+          const totalPnlAmount = dashboardData.kpis?.profit_loss || 0;
           
           setAccountsMetrics(prev => ({
             ...prev,
             [account.account_number]: {
               ...dashboardData,
-              balanceHistory,
               pnlToday,
               pnl7Days,
-              pnl30Days
+              pnl30Days,
+              totalPnl: {
+                percentage: totalPnlPercentage,
+                amount: totalPnlAmount
+              },
+              lastUpdated: Date.now()
             }
           }));
         } catch (error) {
           console.error('Error loading metrics for account:', account.account_number, error);
+          
+          // En caso de error, usar datos por defecto
+          setAccountsMetrics(prev => ({
+            ...prev,
+            [account.account_number]: {
+              kpis: {
+                balance: account.balance || 0,
+                profit_loss_percentage: 0,
+                profit_loss: 0
+              },
+              statistics: {},
+              pnlToday: { percentage: 0, amount: 0 },
+              pnl7Days: { percentage: 0, amount: 0 },
+              pnl30Days: { percentage: 0, amount: 0 },
+              totalPnl: { percentage: 0, amount: 0 },
+              lastUpdated: Date.now()
+            }
+          }));
         } finally {
           setMetricsLoading(prev => ({ ...prev, [account.account_number]: false }));
         }
@@ -466,6 +582,11 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     return (
       <UserInformationContent onBack={handleBackFromUserInfo} />
     );
+  }
+
+  // Show loader during initial loading
+  if (showLoader) {
+    return <HomeDashboardLoader />;
   }
 
   return (
@@ -749,7 +870,10 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
              {getFilteredAccounts().length > 0 ? getFilteredAccounts().map((account) => {
                const metrics = accountsMetrics[account.account_number];
                const isLoadingMetrics = metricsLoading[account.account_number];
-               const totalPnlPercentage = metrics?.kpis?.profit_loss_percentage || 0;
+               // Usar datos dinámicos del backend o fallback a valores de la cuenta
+              const currentBalance = metrics?.kpis?.balance || account.balance || 0;
+              const totalPnlPercentage = metrics?.totalPnl?.percentage || metrics?.kpis?.profit_loss_percentage || 0;
+              const totalPnlAmount = metrics?.totalPnl?.amount || metrics?.kpis?.profit_loss || 0;
                
                return (
                  <div
@@ -763,7 +887,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
                      <p className="text-sm text-gray-300">{t('dashboard:totalBalance')}</p>
                      <div className="flex items-baseline gap-2 mb-4">
                        <p className="text-2xl text-white">
-                         {(account.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
+                         ${currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                        </p>
                        {isLoadingMetrics ? (
                          <div className="animate-pulse h-4 w-12 bg-gray-700 rounded"></div>

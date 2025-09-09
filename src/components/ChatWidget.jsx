@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo, useCallback, useMemo } from 'react';
 import { Send, Minimize2, X, Bot, User, Clock, CheckCircle, AlertCircle, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChat } from '../contexts/ChatContext';
@@ -7,235 +7,11 @@ import { supabase } from '../supabase/config';
 import { logger } from '../utils/logger';
 import toast from 'react-hot-toast';
 
-const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
-  const { t } = useTranslation();
-  const { currentUser, userData } = useAuth();
-  const { 
-    conversations, 
-    sendMessage, 
-    isHumanControlled, 
-    connectionStatus, 
-    markMessagesAsRead,
-    isLoading: contextLoading,
-    getDBMessageId,
-    updateVersion
-  } = useChat();
-  
-  const [inputMessage, setInputMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentSection, setCurrentSection] = useState('messages'); // 'messages', 'help'
-  const [messageFeedback, setMessageFeedback] = useState({});
-  const currentConversationId = useChat().currentConversationId;
-  
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
-  
-  // Get messages for current conversation - handle both Map and Array cases
-  // Remove useMemo to ensure updates are always reflected
-  const messages = (() => {
-    if (!conversations) {
-      logger.warn('[CHAT_WIDGET] conversations is null/undefined');
-      return [];
-    }
-    
-    // If conversations is a Map
-    if (conversations instanceof Map) {
-      const msgs = conversations.get(currentConversationId) || [];
-      // Comentado para reducir logs
-      // logger.info('[CHAT_WIDGET] Retrieved messages from Map:', {
-      //   conversationId: currentConversationId,
-      //   messageCount: msgs.length,
-      //   updateVersion,
-      //   lastMessage: msgs[msgs.length - 1]?.message?.substring(0, 50)
-      // });
-      return msgs;
-    }
-    
-    // If conversations is an Array (legacy)
-    if (Array.isArray(conversations)) {
-      logger.info('[CHAT_WIDGET] Using legacy array format');
-      return conversations;
-    }
-    
-    // Default fallback
-    logger.warn('[CHAT_WIDGET] conversations is neither Map nor Array:', typeof conversations);
-    return [];
-  })();
-
-  // Scroll to bottom when new messages arrive
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    // logger.info('[CHAT_WIDGET] Messages updated, scrolling to bottom. Count:', messages.length);
-    scrollToBottom();
-  }, [messages]);
-
-  // Force component update when messages are updated via WebSocket
-  useEffect(() => {
-    // logger.info('[CHAT_WIDGET] UpdateVersion changed, forcing re-render:', updateVersion);
-    // This will cause the component to re-render when updateVersion changes
-    // The messages will be recalculated from the updated conversations Map
-  }, [updateVersion]);
-
-  // Focus input on open and mark messages as read
-  useEffect(() => {
-    if (currentUser) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-      markMessagesAsRead();
-    }
-  }, [currentUser, markMessagesAsRead]);
-
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading || contextLoading) return;
-
-    const messageText = inputMessage.trim();
-    setInputMessage('');
-    setIsLoading(true);
-    setIsTyping(true);
-
-    try {
-      const result = await sendMessage(messageText);
-      
-      if (result.success) {
-        if (onNewMessage && result.response) {
-          onNewMessage();
-        }
-      } else {
-        toast.error(result.error || 'Error al enviar mensaje. Inténtalo de nuevo.');
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast.error('Error al enviar mensaje. Inténtalo de nuevo.');
-    } finally {
-      setIsTyping(false);
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  // Manejar feedback de mensajes - Ahora con persistencia en DB
-  const handleFeedback = async (messageId, isHelpful) => {
-    // Actualizar UI inmediatamente
-    setMessageFeedback(prev => ({
-      ...prev,
-      [messageId]: isHelpful
-    }));
-    
-    try {
-      // Buscar el mensaje en la conversación actual
-      const message = messages.find(msg => msg.id === messageId);
-      if (!message || !currentUser) {
-        logger.warn('[CHAT] No se pudo guardar feedback: mensaje o usuario no encontrado');
-        return;
-      }
-
-      // Obtener conversation_id real desde el contexto (debe ser un UUID de la DB)
-      let conversationId = currentConversationId;
-      
-      // Obtener el ID real del mensaje en la DB
-      const dbMessageId = getDBMessageId ? getDBMessageId(messageId) : messageId;
-      
-      // Si no hay conversationId o empieza con 'local_', no podemos guardar en DB
-      if (!conversationId || conversationId.startsWith('local_') || conversationId.startsWith('conversation_')) {
-        logger.warn('[CHAT] No hay conversation_id válida de DB, guardando solo en localStorage');
-        // Fallback a localStorage
-        const feedbackData = {
-          messageId,
-          isHelpful,
-          timestamp: new Date().toISOString(),
-          userId: currentUser.uid
-        };
-        
-        const existingFeedback = JSON.parse(localStorage.getItem('agm_chat_feedback') || '[]');
-        existingFeedback.push(feedbackData);
-        localStorage.setItem('agm_chat_feedback', JSON.stringify(existingFeedback));
-        
-        if (!isHelpful) {
-          toast('Gracias por tu feedback. Estamos mejorando constantemente. ¿Necesitas hablar con un asesor humano?', { duration: 4000 });
-        } else {
-          toast.success('¡Gracias por tu feedback! Nos ayuda a mejorar.');
-        }
-        return;
-      }
-      
-      // Guardar en Supabase con el ID real del mensaje
-      const { data, error } = await supabase
-        .from('chat_message_feedback')
-        .upsert({
-          message_id: dbMessageId, // Usar el ID real de la DB
-          conversation_id: conversationId,
-          user_id: currentUser.uid,
-          is_helpful: isHelpful,
-          message_intent: message.intent || 'general',
-          ai_confidence: message.confidence || 0.5,
-          response_time_ms: message.responseTime || null
-        }, {
-          onConflict: 'message_id,user_id', // Si ya existe feedback, actualizarlo
-          ignoreDuplicates: false
-        });
-
-      if (error) {
-        logger.error('[CHAT] Error guardando feedback en DB:', error);
-        // Fallback a localStorage si falla DB
-        const feedbackData = {
-          messageId,
-          isHelpful,
-          timestamp: new Date().toISOString(),
-          userId: currentUser.uid
-        };
-        
-        const existingFeedback = JSON.parse(localStorage.getItem('agm_chat_feedback') || '[]');
-        existingFeedback.push(feedbackData);
-        localStorage.setItem('agm_chat_feedback', JSON.stringify(existingFeedback));
-      } else {
-        logger.info('[CHAT] Feedback guardado en DB:', { messageId, isHelpful });
-      }
-    } catch (error) {
-      logger.error('[CHAT] Error procesando feedback:', error);
-    }
-    
-    // Mensajes de toast
-    if (!isHelpful) {
-      toast('Gracias por tu feedback. Estamos mejorando constantemente. ¿Necesitas hablar con un asesor humano?', { 
-        duration: 4000,
-        icon: '💭'
-      });
-    } else {
-      toast.success('¡Gracias por tu feedback! Nos ayuda a mejorar.');
-    }
-  };
-
-  const renderMessage = (message) => {
-    const isUser = message.sender === 'user';
-    const isAI = message.sender === 'flofy' || message.sender === 'alpha' || message.sender === 'ai';
-    const isAsesor = message.sender === 'asesor' || message.sender === 'human';
-    const isSystem = message.sender === 'system';
-
-    // UX ORIGINAL: Usuario a la derecha, Bot/Humano a la izquierda
-    // Comentado para reducir logs excesivos
-    // logger.info('[CHAT_WIDGET] Rendering message:', {
-    //   id: message.id,
-    //   sender: message.sender,
-    //   isUser,
-    //   isAI,
-    //   isAsesor,
-    //   isSystem,
-    //   messagePreview: message.message?.substring(0, 50),
-    //   willRender: true
-    // });
-    
-    return (
-      <React.Fragment key={message.id}>
-        <div className={`flex mb-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
+// Componente Message memoizado para evitar re-renders innecesarios
+const Message = memo(({ message, isUser, isAI, isAsesor, isSystem, isTemp, isLoading, onFeedback, hasFeedback, currentUser }) => {
+  return (
+    <React.Fragment>
+      <div className={`flex mb-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
         {/* Avatar para Bot/Humano (izquierda) */}
         {!isUser && (
           <div className="flex-shrink-0 mr-3">
@@ -254,9 +30,13 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
         {/* Message Bubble */}
         <div className={`max-w-[70%] px-4 py-2 rounded-2xl break-words ${
           isUser 
-            ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white' 
+            ? isTemp 
+              ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white opacity-70' 
+              : 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
             : isSystem
             ? 'bg-red-100 border border-red-300 text-red-700'
+            : isLoading
+            ? 'bg-gray-100 text-gray-800 border border-gray-200 animate-pulse'
             : 'bg-gray-100 text-gray-800 border border-gray-200'
         }`}>
           {/* Sender Label */}
@@ -290,11 +70,11 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
         )}
       </div>
       
-      {/* Feedback buttons para mensajes de IA - Solo mostrar si el usuario está autenticado */}
-      {isAI && !messageFeedback[message.id] && currentUser && (
+      {/* Feedback buttons para mensajes de IA */}
+      {isAI && !hasFeedback && currentUser && (
         <div className="flex gap-2 ml-11 mt-1 mb-2">
           <button
-            onClick={() => handleFeedback(message.id, true)}
+            onClick={() => onFeedback(message.id, true)}
             className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-green-100 rounded-full text-gray-600 hover:text-green-600 transition-colors"
             title="Respuesta útil"
           >
@@ -302,7 +82,7 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
             <span>Útil</span>
           </button>
           <button
-            onClick={() => handleFeedback(message.id, false)}
+            onClick={() => onFeedback(message.id, false)}
             className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-red-100 rounded-full text-gray-600 hover:text-red-600 transition-colors"
             title="Respuesta no útil"
           >
@@ -311,20 +91,125 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
           </button>
         </div>
       )}
-      
-      {/* Mostrar feedback dado */}
-      {messageFeedback[message.id] !== undefined && currentUser && (
-        <div className="flex items-center gap-1 ml-11 mt-1 mb-2 text-xs text-gray-500">
-          {messageFeedback[message.id] ? (
-            <><ThumbsUp size={12} className="text-green-500" /> Marcaste como útil</>
-          ) : (
-            <><ThumbsDown size={12} className="text-red-500" /> Marcaste como no útil</>
-          )}
-        </div>
-      )}
-      </React.Fragment>
-    );
+    </React.Fragment>
+  );
+});
+
+Message.displayName = 'Message';
+
+const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
+  const { t } = useTranslation();
+  const { currentUser, userData } = useAuth();
+  const { 
+    conversations,
+    currentConversationId,
+    sendMessage, 
+    isHumanControlled, 
+    connectionStatus,
+    isLoading: contextLoading,
+    updateVersion
+  } = useChat();
+  
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentSection, setCurrentSection] = useState('messages'); // 'messages', 'help'
+  const [messageFeedback, setMessageFeedback] = useState({});
+  
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+  
+  // Get messages from conversations Map
+  const messages = currentConversationId && conversations instanceof Map 
+    ? conversations.get(currentConversationId) || []
+    : [];
+
+  // Scroll to bottom when new messages arrive
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    // logger.info('[CHAT_WIDGET] Messages updated, scrolling to bottom. Count:', messages.length);
+    scrollToBottom();
+  }, [messages, updateVersion]); // Add updateVersion to trigger on updates
+
+  // Focus input on open
+  useEffect(() => {
+    if (currentUser) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [currentUser]);
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
+
+    const messageText = inputMessage.trim();
+    setInputMessage('');
+    setIsLoading(true);
+    setIsTyping(true);
+
+    try {
+      const result = await sendMessage(messageText);
+      
+      if (result.success) {
+        if (onNewMessage && result.response) {
+          onNewMessage();
+        }
+      } else {
+        toast.error(result.error || 'Error al enviar mensaje. Inténtalo de nuevo.');
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Error al enviar mensaje. Inténtalo de nuevo.');
+    } finally {
+      setIsTyping(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  // Manejar feedback de mensajes simplificado
+  const handleFeedback = useCallback(async (messageId, isHelpful) => {
+    // Actualizar UI inmediatamente
+    setMessageFeedback(prev => ({
+      ...prev,
+      [messageId]: isHelpful
+    }));
+    
+    // Guardar en localStorage
+    try {
+      const feedbackData = {
+        messageId,
+        isHelpful,
+        timestamp: new Date().toISOString(),
+        userId: currentUser?.uid
+      };
+      
+      const storedFeedback = localStorage.getItem('chatFeedback') || '{}';
+      const feedbackMap = JSON.parse(storedFeedback);
+      feedbackMap[messageId] = feedbackData;
+      localStorage.setItem('chatFeedback', JSON.stringify(feedbackMap));
+    } catch (error) {
+      logger.error('[CHAT] Error guardando feedback:', error);
+    }
+    
+    // Mensajes de toast
+    if (!isHelpful) {
+      toast('Gracias por tu feedback. Estamos mejorando constantemente.', { 
+        duration: 4000,
+        icon: '💭'
+      });
+    } else {
+      toast.success('¡Gracias por tu feedback!');
+    }
+  }, [currentUser, messageFeedback]);
 
   return (
     <div className="w-96 h-[600px] max-h-[80vh] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
@@ -391,7 +276,21 @@ const ChatWidget = ({ onClose, onMinimize, onNewMessage }) => {
               // });
               return null;
             })()}
-            {messages.map(renderMessage)}
+            {messages.map(message => (
+              <Message
+                key={message.id}
+                message={message}
+                isUser={message.sender === 'user'}
+                isAI={message.sender === 'flofy' || message.sender === 'alpha' || message.sender === 'ai'}
+                isAsesor={message.sender === 'asesor' || message.sender === 'human'}
+                isSystem={message.sender === 'system'}
+                isTemp={message.isTemp}
+                isLoading={message.isLoading}
+                onFeedback={handleFeedback}
+                hasFeedback={messageFeedback[message.id]}
+                currentUser={currentUser}
+              />
+            ))}
             
             {/* Typing Indicator */}
             {isTyping && (

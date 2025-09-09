@@ -7,6 +7,8 @@ import { Camera, Mail, ArrowLeft, Loader, UploadCloud, Trash2, Search, ChevronDo
 import axios from 'axios';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
+import { UserInfoLoader, FormLoader, useMinLoadingTime } from './WaveLoader';
+import { UserInformationLayoutLoader } from './ExactLayoutLoaders';
 
 // Validation Schema with Zod - will be created inside component to use translations
 
@@ -80,6 +82,9 @@ const UserInformationContent = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [formSaving, setFormSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  
+  // Use minimum loading time of 2 seconds
+  const showLoader = useMinLoadingTime(loading, 2000);
   const [showGenderDropdown, setShowGenderDropdown] = useState(false);
   const genderDropdownRef = useRef(null);
   
@@ -329,8 +334,8 @@ const UserInformationContent = ({ onBack }) => {
 
   const hasChanges = JSON.stringify(formData) !== JSON.stringify(initialData) || profileImageFile !== null;
 
-  if (loading) {
-    return <SkeletonLoader />;
+  if (showLoader) {
+    return <UserInformationLayoutLoader />;
   }
 
   return (
