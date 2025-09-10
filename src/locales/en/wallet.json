@@ -138,11 +138,32 @@
       "maxAmount": "Amount exceeds maximum",
       "invalidAddress": "Invalid address",
       "dailyLimit": "Daily limit exceeded",
-      "processingError": "Error creating withdrawal request"
+      "processingError": "Error creating withdrawal request",
+      "twoFactorRequired": "You must enable two-factor authentication (2FA) in Settings to make withdrawals"
     },
     "require2FA": "Two-factor authentication (2FA) must be enabled in Settings to make withdrawals",
     "requestSent": "Withdrawal request sent. It will be processed soon.",
-    "error": "Error processing withdrawal. Please try again."
+    "error": "Error processing withdrawal. Please try again.",
+    "pendingSuccess": "Your withdrawal of ${{amount}} is pending. Processing may take {{days}} business days.",
+    "success": "Withdrawal of ${{amount}} processed successfully",
+    "twoFactor": {
+      "title": "Security Verification",
+      "confirmTitle": "Confirm Withdrawal",
+      "confirmMessage": "You are about to withdraw ${{amount}} USD",
+      "warning1": "This operation requires administrative approval",
+      "warning2": "Processing may take 1-3 business days",
+      "warning3": "Make sure the withdrawal address is correct",
+      "continue": "Continue with verification",
+      "verifyMessage": "Please verify your identity to confirm the withdrawal",
+      "selectVerificationMethod": "Select a verification method",
+      "confirmWithdraw": "Confirm Withdrawal",
+      "selectMethod": "Select a verification method",
+      "invalidCode": "Invalid code. Must be 6 digits",
+      "incorrectCode": "Incorrect code. Please try again",
+      "verified": "Verification successful",
+      "verificationError": "Verification error. Please try again",
+      "configError": "2FA configuration error. Contact support"
+    }
   },
   "transfer": {
     "title": "Transfer Between Accounts",

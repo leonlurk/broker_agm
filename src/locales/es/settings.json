@@ -409,7 +409,10 @@
     "disableConfirm": "Desactivar 2FA",
     "methods": {
       "app": "Aplicación Autenticadora",
-      "email": "Código por Email"
+      "email": "Código por Email",
+      "authenticator": "Aplicación Autenticadora",
+      "authenticatorDesc": "Usa Google Authenticator, Authy o similar",
+      "emailDesc": "Recibe un código de verificación en tu correo"
     },
     "verifyTitle": "Verificación de Seguridad",
     "verifyForWithdraw": "Verificación 2FA para Retiro",

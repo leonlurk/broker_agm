@@ -193,6 +193,35 @@ class TwoFactorService {
   }
 
   /**
+   * Verify TOTP code for a user (gets secret from database)
+   * @param {string} userId - User ID
+   * @param {string} token - TOTP token
+   * @returns {Promise<boolean>} Verification result
+   */
+  async verifyTOTP(userId, token) {
+    try {
+      // First get the user's secret from database
+      const { data, error } = await supabase
+        .from('user_2fa')
+        .select('secret_key, is_enabled')
+        .eq('user_id', userId)
+        .single();
+      
+      if (error || !data || !data.is_enabled || !data.secret_key) {
+        logger.error('[2FA] No 2FA data found for user or 2FA not enabled');
+        return false;
+      }
+      
+      // IMPORTANT: Use the correct parameter order (token, secret, userId)
+      // This matches how it's called in Settings which works correctly
+      return await this.verifyToken(token, data.secret_key, userId);
+    } catch (error) {
+      logger.error('[2FA] Error in verifyTOTP:', error);
+      return false;
+    }
+  }
+
+  /**
    * Enable 2FA for a user (both app and email)
    * @param {string} userId - User ID
    * @param {string} secret - The verified secret

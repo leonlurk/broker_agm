@@ -139,11 +139,32 @@
       "maxAmount": "El monto excede el máximo permitido",
       "invalidAddress": "Dirección inválida",
       "dailyLimit": "Límite diario excedido",
-      "processingError": "Error al crear solicitud de retiro"
+      "processingError": "Error al crear solicitud de retiro",
+      "twoFactorRequired": "Debes activar la autenticación de dos factores (2FA) en Ajustes para realizar retiros"
     },
     "require2FA": "Debe activar la autenticación de dos factores (2FA) en Configuración para poder realizar retiros",
     "requestSent": "Solicitud de retiro enviada. Será procesada pronto.",
-    "error": "Error al procesar el retiro. Por favor intente nuevamente."
+    "error": "Error al procesar el retiro. Por favor intente nuevamente.",
+    "pendingSuccess": "Tu retiro de ${{amount}} está en estado pendiente. Puede demorar entre {{days}} días hábiles en procesarse.",
+    "success": "Retiro de ${{amount}} procesado exitosamente",
+    "twoFactor": {
+      "title": "Verificación de Seguridad",
+      "confirmTitle": "Confirmar Retiro",
+      "confirmMessage": "Estás a punto de retirar ${{amount}} USD",
+      "warning1": "Esta operación requiere aprobación administrativa",
+      "warning2": "El proceso puede tomar de 1 a 3 días hábiles",
+      "warning3": "Asegúrate de que la dirección de retiro es correcta",
+      "continue": "Continuar con verificación",
+      "verifyMessage": "Por favor, verifica tu identidad para confirmar el retiro",
+      "selectVerificationMethod": "Selecciona un método de verificación",
+      "confirmWithdraw": "Confirmar Retiro",
+      "selectMethod": "Selecciona un método de verificación",
+      "invalidCode": "Código inválido. Debe ser de 6 dígitos",
+      "incorrectCode": "Código incorrecto. Por favor, intenta nuevamente",
+      "verified": "Verificación exitosa",
+      "verificationError": "Error en la verificación. Intenta nuevamente",
+      "configError": "Error de configuración 2FA. Contacta soporte"
+    }
   },
   "transfer": {
     "title": "Transferir Entre Cuentas",

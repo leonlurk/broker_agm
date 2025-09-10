@@ -270,17 +270,57 @@ export const detectTradingStrategies = async (accountLogin = null) => {
 };
 
 /**
- * Update MT5 account balance (for deposits/withdrawals)
+ * Transfer from Wallet to MT5 account
  */
-export const updateMT5Balance = async (login, amount, type = 'deposit') => {
+export const transferWalletToMT5 = async (walletBalance, destinationLogin, amount) => {
   try {
-    logger.info('[MT5 API] Updating account balance', { login, amount, type });
-
-    const endpoint = type === 'deposit' ? '/api/v1/accounts/deposit' : '/api/v1/accounts/withdraw';
+    // Validate inputs
+    const loginInt = parseInt(destinationLogin);
+    const amountFloat = parseFloat(amount);
+    const walletBalanceFloat = parseFloat(walletBalance);
     
-    const response = await mt5Api.post(endpoint, {
-      login: login,
-      amount: amount
+    if (isNaN(loginInt) || loginInt <= 0) {
+      logger.error('[MT5 API] Invalid login number:', destinationLogin);
+      return {
+        success: false,
+        error: 'Invalid MT5 login number'
+      };
+    }
+    
+    if (isNaN(amountFloat) || amountFloat <= 0) {
+      logger.error('[MT5 API] Invalid amount:', amount);
+      return {
+        success: false,
+        error: 'Invalid transfer amount'
+      };
+    }
+    
+    logger.info('[MT5 API] Wallet to MT5 transfer', { 
+      walletBalance: walletBalanceFloat,
+      destinationLogin: loginInt, 
+      amount: amountFloat
+    });
+
+    // Use new transfer endpoint
+    const endpoint = '/api/v1/transfers/wallet-to-mt5';
+    
+    const requestBody = {
+      wallet_balance: walletBalanceFloat,
+      destination_login: loginInt,
+      amount: amountFloat
+    };
+    
+    logger.info('[MT5 API] Request details:', {
+      url: `${baseURL}${endpoint}`,
+      method: 'POST',
+      data: requestBody
+    });
+    
+    const response = await mt5Api.post(endpoint, requestBody);
+
+    logger.info('[MT5 API] Transfer response:', {
+      status: response.status,
+      data: response.data
     });
 
     return {
@@ -288,16 +328,115 @@ export const updateMT5Balance = async (login, amount, type = 'deposit') => {
       data: response.data
     };
   } catch (error) {
-    logger.error('[MT5 API] Error updating balance', {
+    logger.error('[MT5 API] Error in wallet to MT5 transfer', {
       error: error.message,
-      response: error.response?.data
+      response: error.response?.data,
+      status: error.response?.status
     });
     
     return {
       success: false,
-      error: error.response?.data?.detail || error.message || 'Error updating balance'
+      error: error.response?.data?.detail || error.message || 'Error transferring to MT5'
     };
   }
+};
+
+/**
+ * Transfer between MT5 accounts
+ */
+export const transferMT5ToMT5 = async (sourceLogin, destinationLogin, amount) => {
+  try {
+    const sourceLoginInt = parseInt(sourceLogin);
+    const destLoginInt = parseInt(destinationLogin);
+    const amountFloat = parseFloat(amount);
+    
+    logger.info('[MT5 API] MT5 to MT5 transfer', { 
+      sourceLogin: sourceLoginInt,
+      destinationLogin: destLoginInt, 
+      amount: amountFloat
+    });
+
+    const endpoint = '/api/v1/transfers/mt5-to-mt5';
+    
+    const requestBody = {
+      source_login: sourceLoginInt,
+      destination_login: destLoginInt,
+      amount: amountFloat
+    };
+    
+    const response = await mt5Api.post(endpoint, requestBody);
+
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    logger.error('[MT5 API] Error in MT5 to MT5 transfer', error);
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message
+    };
+  }
+};
+
+/**
+ * Transfer from MT5 to Wallet
+ */
+export const transferMT5ToWallet = async (sourceLogin, currentWalletBalance, amount) => {
+  try {
+    const loginInt = parseInt(sourceLogin);
+    const amountFloat = parseFloat(amount);
+    const walletBalanceFloat = parseFloat(currentWalletBalance);
+    
+    logger.info('[MT5 API] MT5 to Wallet transfer', { 
+      sourceLogin: loginInt,
+      currentWalletBalance: walletBalanceFloat,
+      amount: amountFloat
+    });
+
+    const endpoint = '/api/v1/transfers/mt5-to-wallet';
+    
+    const requestBody = {
+      source_login: loginInt,
+      current_wallet_balance: walletBalanceFloat,
+      amount: amountFloat
+    };
+    
+    const response = await mt5Api.post(endpoint, requestBody);
+
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    logger.error('[MT5 API] Error in MT5 to wallet transfer', error);
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message
+    };
+  }
+};
+
+/**
+ * Legacy update balance function (kept for backwards compatibility)
+ */
+export const updateMT5Balance = async (login, amount, type = 'deposit') => {
+  logger.warn('[MT5 API] Using deprecated updateMT5Balance, please use transfer functions instead');
+  
+  // Redirect to new transfer function
+  if (type === 'deposit') {
+    // For deposits, we need wallet balance which we don't have here
+    // Return error suggesting to use new function
+    return {
+      success: false,
+      error: 'Please use transferWalletToMT5 function instead'
+    };
+  }
+  
+  return {
+    success: false,
+    error: 'Deprecated function - use transfer functions instead'
+  };
 };
 
 /**
@@ -322,6 +461,9 @@ export const checkMT5Health = async () => {
 export default {
   createMT5Account,
   getMT5AccountDetails,
-  updateMT5Balance,
-  checkMT5Health
+  updateMT5Balance, // Deprecated
+  checkMT5Health,
+  transferWalletToMT5,
+  transferMT5ToMT5,
+  transferMT5ToWallet
 };

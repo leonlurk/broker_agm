@@ -11,6 +11,9 @@ import useTransactionMonitor from '../hooks/useTransactionMonitor';
 import { supabase } from '../supabase/config';
 import { Coins, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import twoFactorService from '../services/twoFactorService';
+import TwoFactorWithdrawModal from './TwoFactorWithdrawModal';
+import { transferWalletToMT5, transferMT5ToMT5, transferMT5ToWallet } from '../services/mt5Api';
 import { WalletLoader, TableLoader, useMinLoadingTime } from './WaveLoader';
 import { WalletLayoutLoader } from './ExactLayoutLoaders';
 
@@ -85,6 +88,15 @@ const Wallet = () => {
   const [transactions, setTransactions] = useState([]);
   const [historyFilter, setHistoryFilter] = useState('all');
   const [initialLoading, setInitialLoading] = useState(true);
+  
+  // Estados para mensajes de error y éxito
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  
+  // Estados para 2FA
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [pending2FAOperation, setPending2FAOperation] = useState(null);
+  const [twoFactorData, setTwoFactorData] = useState(null);
   
   // Use minimum loading time of 2 seconds
   const showLoader = useMinLoadingTime(initialLoading, 2000);
@@ -583,11 +595,46 @@ const Wallet = () => {
 
       // Usar las funciones RPC según el tipo de operación
       if (activeTab === 'retirar') {
-        // Validar que se haya seleccionado un método de retiro
-        if (!selectedWithdrawMethod) {
-          toast.error(t('withdraw.selectMethod'));
+        // Primero verificar si tiene 2FA configurado
+        const twoFAStatus = await twoFactorService.get2FAStatus(currentUser?.id);
+        
+        if (!twoFAStatus.enabled) {
+          // Si NO tiene 2FA, mostrar notificación roja y detener
+          toast.error(t('withdraw.errors.twoFactorRequired'), {
+            duration: 6000,
+            style: {
+              background: '#ef4444',
+              color: 'white',
+            },
+            icon: '🔒'
+          });
+          setIsLoading(false);
           return;
         }
+        
+        // Preparar datos de 2FA con los métodos disponibles
+        const methods = [];
+        if (twoFAStatus.secret) methods.push('totp'); // Tiene autenticación por app
+        if (twoFAStatus.enabled) methods.push('email'); // Email siempre disponible si 2FA está activo
+        
+        const userData2FA = {
+          userId: currentUser?.id,
+          email: currentUser?.email,
+          name: currentUser?.displayName || userData?.nombre || 'Usuario',
+          secret: twoFAStatus.secret, // IMPORTANTE: Pasar el secret como en Settings
+          methods: methods
+        };
+        
+        // Guardar la operación pendiente y los datos de 2FA
+        setPending2FAOperation({
+          type: 'withdraw',
+          amount: amountNum,
+          method: selectedWithdrawMethod
+        });
+        setTwoFactorData(userData2FA);
+        setShow2FAModal(true);
+        setIsLoading(false);
+        return; // Detener aquí, continuará después de verificar 2FA
         
         // Crear solicitud de retiro desde el balance general usando el método seleccionado
         const withdrawalData = {
@@ -612,9 +659,10 @@ const Wallet = () => {
           throw new Error(result.error || t('withdraw.errors.processingError'));
         }
 
-        // Actualizar balance del broker (restar el monto)
-        const newBalance = brokerBalance - amountNum;
-        await updateBrokerBalance(newBalance);
+        // NO actualizar el balance aquí - los retiros están pendientes de aprobación
+        // El balance solo se actualiza cuando el admin aprueba el retiro
+        // const newBalance = brokerBalance - amountNum;
+        // await updateBrokerBalance(newBalance);
       } else if (activeTab === 'transferir') {
         // Crear solicitud de transferencia desde balance general a cuenta MT5
         result = await transactionService.createTransferRequest({
@@ -630,8 +678,77 @@ const Wallet = () => {
           const newBalance = brokerBalance - amountNum;
           await updateBrokerBalance(newBalance);
           
-          // TODO: Actualizar el balance de la cuenta MT5 destino
-          // Esto debería manejarse idealmente en el backend con una función RPC
+          // Actualizar el balance en el servidor MT5
+          console.log('[Wallet] Transfer to account data:', {
+            id: transferToAccount.id,
+            account_number: transferToAccount.account_number,
+            account_name: transferToAccount.account_name,
+            amount: amountNum,
+            type: 'deposit'
+          });
+          
+          if (transferToAccount.account_number) {
+            try {
+              console.log('[Wallet] Calling transferWalletToMT5 with:', {
+                walletBalance: brokerBalance,
+                destinationLogin: transferToAccount.account_number,
+                amount: amountNum
+              });
+              
+              // Usar el nuevo endpoint de transferencias
+              const mt5Result = await transferWalletToMT5(
+                brokerBalance, // Balance actual del wallet
+                transferToAccount.account_number, // Login de MT5 destino
+                amountNum // Monto a transferir
+              );
+              
+              console.log('[Wallet] MT5 Transfer Response:', mt5Result);
+              
+              if (mt5Result.success) {
+                console.log('[Wallet] MT5 transfer successful:', mt5Result.data);
+                
+                // Mostrar detalles de la transferencia si están disponibles
+                const details = mt5Result.data?.transfer_details;
+                if (details) {
+                  toast.success(
+                    `Transferencia exitosa a MT5\n` +
+                    `Nuevo balance MT5: $${details.destination_new_balance?.toFixed(2) || amountNum}`,
+                    {
+                      duration: 5000,
+                      style: { background: '#10b981', color: 'white' },
+                      icon: '✅'
+                    }
+                  );
+                } else {
+                  toast.success('Transferencia completada exitosamente en MT5', {
+                    duration: 4000,
+                    style: { background: '#10b981', color: 'white' },
+                    icon: '✅'
+                  });
+                }
+              } else {
+                console.error('[Wallet] Failed to transfer to MT5:', mt5Result.error);
+                // La transferencia ya se registró en la base de datos, solo notificar sobre MT5
+                toast.error(
+                  mt5Result.error || t('transfer.mt5UpdateWarning') || 
+                  'La transferencia se registró pero el balance en MT5 podría tardar en actualizarse', 
+                  {
+                    duration: 5000,
+                    icon: '⚠️'
+                  }
+                );
+              }
+            } catch (mt5Error) {
+              console.error('[Wallet] Error transferring to MT5:', mt5Error);
+              // No fallar la transferencia si MT5 falla, solo notificar
+              toast.error(t('transfer.mt5UpdateWarning') || 'La transferencia se registró pero el balance en MT5 podría tardar en actualizarse', {
+                duration: 5000,
+                icon: '⚠️'
+              });
+            }
+          } else {
+            console.warn('[Wallet] No account_number found for MT5 account:', transferToAccount);
+          }
         }
         
         if (!result.success) {
@@ -706,6 +823,84 @@ const Wallet = () => {
     setAmount('');
     setWalletAddress('');
     setAcceptTerms(false);
+  };
+
+  // Manejar verificación exitosa de 2FA para retiros
+  const handle2FAVerificationSuccess = async () => {
+    setShow2FAModal(false);
+    setTwoFactorData(null);
+    
+    if (!pending2FAOperation || pending2FAOperation.type !== 'withdraw') {
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const amountNum = pending2FAOperation.amount;
+      const selectedWithdrawMethod = pending2FAOperation.method;
+      
+      // Crear solicitud de retiro después de verificar 2FA
+      const withdrawalData = {
+        account_id: 'general',
+        account_name: t('common.generalBalance'),
+        amount: amountNum,
+        withdrawal_type: 'crypto',
+        user_email: currentUser?.email,
+        user_name: currentUser?.displayName || userData?.nombre || t('common:user'),
+        crypto_currency: 'USDT',
+        wallet_address: selectedWithdrawMethod.address,
+        network: selectedWithdrawMethod.network === 'tron_trc20' ? 'tron' : 'ethereum',
+        method_alias: selectedWithdrawMethod.alias
+      };
+
+      const result = await transactionService.createWithdrawalRequest(withdrawalData);
+      
+      if (!result.success) {
+        throw new Error(result.error || t('withdraw.errors.processingError'));
+      }
+
+      // Mostrar notificación de éxito estilo sistema
+      const withdrawAmount = amountNum;
+      toast.success(
+        t('withdraw.pendingSuccess', { 
+          amount: withdrawAmount,
+          days: '1-3'
+        }),
+        {
+          duration: 6000,
+          style: {
+            background: '#10b981',
+            color: 'white',
+          },
+          icon: '✅'
+        }
+      );
+      notifyWithdrawal(withdrawAmount, t('common.generalBalance'));
+      
+      // Enviar email de confirmación
+      try {
+        await emailServiceProxy.sendWithdrawalConfirmation(
+          { email: currentUser.email, name: currentUser.displayName || t('common:user') },
+          { amount: withdrawAmount, accountName: t('common.generalBalance'), currency: 'USD', method: selectedWithdrawMethod }
+        );
+        console.log('[Wallet] Withdrawal confirmation email sent');
+      } catch (emailError) {
+        console.error('[Wallet] Error sending withdrawal email:', emailError);
+      }
+
+      // Limpiar y recargar
+      resetForm();
+      setPending2FAOperation(null);
+      await loadAccounts();
+      await loadTransactions();
+      
+    } catch (error) {
+      console.error('Error processing withdrawal after 2FA:', error);
+      toast.error(error.message || t('withdraw.errors.processingError'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Manejar confirmación de depósito crypto
@@ -1926,6 +2121,19 @@ const Wallet = () => {
         amount={amount}
         onDepositConfirmed={handleCryptoDepositConfirmed}
         userEmail={currentUser?.email}
+      />
+      
+      {/* Modal de verificación 2FA para retiros */}
+      <TwoFactorWithdrawModal
+        isOpen={show2FAModal}
+        onClose={() => {
+          setShow2FAModal(false);
+          setPending2FAOperation(null);
+          setTwoFactorData(null);
+        }}
+        onSuccess={handle2FAVerificationSuccess}
+        userMethods={twoFactorData}
+        withdrawAmount={pending2FAOperation?.amount}
       />
     </div>
   );

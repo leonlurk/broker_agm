@@ -1718,26 +1718,35 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         );
       }
       
-      return filteredData.map(point => ({
-        date: new Date(point.date || point.timestamp).toLocaleDateString('es-ES', { 
-          day: '2-digit', 
-          month: 'short' 
-        }),
-        value: point.value || point.balance || 0
-      }));
+      return filteredData.map((point, index) => {
+        const currentValue = point.value || point.balance || 0;
+        const previousValue = index > 0 ? (filteredData[index - 1].value || filteredData[index - 1].balance || 0) : currentValue;
+        const isGain = currentValue >= previousValue;
+        
+        return {
+          date: new Date(point.date || point.timestamp).toLocaleDateString('es-ES', { 
+            day: '2-digit', 
+            month: 'short' 
+          }),
+          value: currentValue,
+          isGain: isGain
+        };
+      });
     }
     
     // Si no hay histórico pero hay balance actual, mostrar línea simple
     if (currentSelectedAccount && currentSelectedAccount.balance > 0) {
       const now = new Date();
+      const initialBalance = currentSelectedAccount.initialBalance || 0;
+      const isGain = currentSelectedAccount.balance >= initialBalance;
       return [
-        { date: t('trading:charts.start'), value: 0 },
-        { date: now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }), value: currentSelectedAccount.balance }
+        { date: t('trading:charts.start'), value: initialBalance, isGain: true },
+        { date: now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }), value: currentSelectedAccount.balance, isGain: isGain }
       ];
     }
     
     // Sin datos
-    return [{ date: t('trading:charts.noData'), value: 0 }];
+    return [{ date: t('trading:charts.noData'), value: 0, isGain: true }];
   };
   
   // Función anterior renombrada para no perder funcionalidad
@@ -3006,9 +3015,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={balanceData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                       <defs>
-                        <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                        <linearGradient id="colorBalanceGain" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="colorBalanceLoss" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
@@ -3087,8 +3100,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         }}
                       />
                       <Area
-                      type="monotone" dataKey="value" stroke="#06b6d4" strokeWidth={2}
-                      fillOpacity={1} fill="url(#colorBalance)"
+                        type="monotone" 
+                        dataKey="value" 
+                        stroke={(balanceData && balanceData.length > 0 && balanceData[balanceData.length - 1].isGain === false) ? "#ef4444" : "#06b6d4"}
+                        strokeWidth={2}
+                        fillOpacity={1} 
+                        fill={(balanceData && balanceData.length > 0 && balanceData[balanceData.length - 1].isGain === false) ? "url(#colorBalanceLoss)" : "url(#colorBalanceGain)"}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
