@@ -662,7 +662,26 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           // Actualizar métricas
           if (dashboardData.kpis) {
             console.log('[TradingAccounts] Usando métricas optimizadas:', dashboardData.kpis);
-            setRealMetrics(dashboardData.kpis);
+            // Hotfix: recalcular KPIs clave en frontend para asegurar consistencia
+            try {
+              const k = dashboardData.kpis;
+              const initial = parseFloat(k.initial_balance ?? 0) || 0;
+              const current = parseFloat(k.balance ?? 0) || 0;
+              const profit = current - initial;
+              const profitPct = initial > 0 ? (profit / initial) * 100 : 0;
+              const fixedKpis = {
+                ...k,
+                initial_balance: initial,
+                balance: current,
+                profit_loss: profit,
+                profit_loss_percentage: profitPct,
+                total_deposits: initial,
+                total_withdrawals: k.total_withdrawals ?? 0
+              };
+              setRealMetrics(fixedKpis);
+            } catch(e) {
+              setRealMetrics(dashboardData.kpis);
+            }
           }
           
           // Actualizar estadísticas
@@ -686,7 +705,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             console.log('[TradingAccounts] Balance history recibido:', balanceHistory.length, 'puntos');
             console.log('[TradingAccounts] Balance history muestra:', balanceHistory.slice(0, 2));
             // Formatear para el gráfico
-            const formattedBalance = balanceHistory.map(item => ({
+            let formattedBalance = balanceHistory.map(item => ({
               date: item.timestamp || item.date,
               timestamp: item.timestamp || item.date,
               // Preferir equity si existe; fallback a balance/value
@@ -694,6 +713,16 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               balance: (item.balance ?? item.value ?? 0),
               equity: (item.equity ?? null)
             }));
+            try {
+              if (dashboardData.kpis && formattedBalance.length > 0) {
+                const currentVal = parseFloat(dashboardData.kpis.balance ?? 0) || 0;
+                const li = formattedBalance.length - 1;
+                const lastVal = parseFloat(formattedBalance[li].value ?? 0) || 0;
+                if (currentVal > 0 && Math.abs(currentVal - lastVal) > 0.01) {
+                  formattedBalance[li] = { ...formattedBalance[li], value: currentVal, balance: currentVal };
+                }
+              }
+            } catch (e) {}
             console.log('[TradingAccounts] Balance formateado:', formattedBalance.slice(0, 2));
             setRealBalanceHistory(formattedBalance);
           } else {
@@ -3047,16 +3076,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       </defs>
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
                       <YAxis 
-                        domain={[yAxisConfig.min, yAxisConfig.max]}
-                        ticks={Array.from(
-                          {length: Math.floor((yAxisConfig.max - yAxisConfig.min) / yAxisConfig.step) + 1}, 
-                          (_, i) => yAxisConfig.min + (i * yAxisConfig.step)
-                        )}
+                        domain={[ 'dataMin', 'dataMax' ]}
                         tickFormatter={(value) => {
-                          if (value >= 1000) {
-                            return `${(value/1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
+                          if (typeof value === 'number' && Math.abs(value) >= 1000) {
+                            return `${(value/1000).toFixed(1)}k`;
                           }
-                          return value.toString();
+                          return typeof value === 'number' ? value.toFixed(0) : '0';
                         }}
                         axisLine={false} tickLine={false} 
                         tick={{ fill: '#9CA3AF', fontSize: 12 }}
