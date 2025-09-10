@@ -42,14 +42,16 @@ class ConfigService {
   }
 
   validateConfig() {
-    const requiredVars = [
+    const provider = import.meta.env.VITE_DATABASE_PROVIDER || 'firebase';
+    // Only require Firebase vars when provider is 'firebase'
+    const requiredVars = provider === 'firebase' ? [
       'FIREBASE_API_KEY',
       'FIREBASE_AUTH_DOMAIN',
       'FIREBASE_PROJECT_ID',
       'FIREBASE_STORAGE_BUCKET',
       'FIREBASE_MESSAGING_SENDER_ID',
       'FIREBASE_APP_ID'
-    ];
+    ] : [];
 
     const missingVars = requiredVars.filter(varName => !this.config[varName]);
 
@@ -65,11 +67,11 @@ class ConfigService {
     }
 
     // Validate Firebase config format
-    if (this.config.FIREBASE_API_KEY && !this.config.FIREBASE_API_KEY.startsWith('AIzaSy')) {
+    if (provider === 'firebase' && this.config.FIREBASE_API_KEY && !this.config.FIREBASE_API_KEY.startsWith('AIzaSy')) {
       logger.warn('Firebase API key format may be incorrect');
     }
 
-    if (this.config.FIREBASE_PROJECT_ID && this.config.FIREBASE_AUTH_DOMAIN) {
+    if (provider === 'firebase' && this.config.FIREBASE_PROJECT_ID && this.config.FIREBASE_AUTH_DOMAIN) {
       const expectedDomain = `${this.config.FIREBASE_PROJECT_ID}.firebaseapp.com`;
       if (this.config.FIREBASE_AUTH_DOMAIN !== expectedDomain) {
         logger.warn('Firebase auth domain may not match project ID');

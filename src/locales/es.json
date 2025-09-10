@@ -29,7 +29,7 @@
     "title": "Cuentas de Trading",
     "accountNumber": "Número de Cuenta",
     "balance": "Balance",
-    "equity": "Patrimonio",
+    "equity": "Equidad",
     "profit": "Ganancia",
     "status": "Estado",
     "active": "Activa",
@@ -139,7 +139,7 @@
   "trading": {
     "accounts": "Cuentas de Trading",
     "balance": "Balance",
-    "equity": "Equity",
+    "equity": "Equidad",
     "margin": "Margen",
     "freeMargin": "Margen Libre",
     "marginLevel": "Nivel de Margen",

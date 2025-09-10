@@ -19,6 +19,7 @@ import {
   getTradingOperations,
   getPerformanceChartData 
 } from '../services/accountHistory';
+import equityDirect from '../services/equityDirect';
 // Auto-sync ya manejado por el backend scheduler
 import { ListLoader, ChartLoader, useMinLoadingTime } from './WaveLoader';
 import { TradingAccountsLayoutLoader } from './ExactLayoutLoaders';
@@ -223,6 +224,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   
   // Estados para datos reales de MT5
   const [realMetrics, setRealMetrics] = useState(null);
+  // Equity directo desde API sin Supabase
+  const [directEquity, setDirectEquity] = useState(null);
   const [realStatistics, setRealStatistics] = useState(null);
   const [realInstruments, setRealInstruments] = useState(null);
   const [realPerformance, setRealPerformance] = useState(null);
@@ -625,6 +628,28 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Ref para prevenir llamadas duplicadas
   const loadingRef = useRef(false);
   const lastLoadedAccountRef = useRef(null);
+
+  // Cargar equity directo sin Supabase cuando cambia la cuenta seleccionada
+  useEffect(() => {
+    const account = getAllAccounts().find(acc => acc.id === selectedAccountId);
+    if (!account?.account_number) {
+      setDirectEquity(null);
+      return;
+    }
+    // Evitar llamada si ya tenemos equity desde dashboard
+    if (realMetrics?.equity != null && !Number.isNaN(realMetrics.equity)) {
+      setDirectEquity(null); // usar el de dashboard
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { equity } = await equityDirect.getEquityDirect(account.account_number);
+      if (!cancelled && equity !== null && !Number.isNaN(equity)) {
+        setDirectEquity(equity);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedAccountId, realMetrics?.equity]);
   
   // Función para cargar métricas de una cuenta
   const loadAccountMetrics = async (account) => {
@@ -666,13 +691,16 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             try {
               const k = dashboardData.kpis;
               const initial = parseFloat(k.initial_balance ?? 0) || 0;
-              const current = parseFloat(k.balance ?? 0) || 0;
+              // Usar equity como valor actual preferido para métricas en vivo; fallback a balance
+              const current = parseFloat((k.equity ?? k.balance) ?? 0) || 0;
               const profit = current - initial;
               const profitPct = initial > 0 ? (profit / initial) * 100 : 0;
               const fixedKpis = {
                 ...k,
                 initial_balance: initial,
-                balance: current,
+                // Mantener balance reportado, pero exponer equity como fuente del "current" para P&L
+                balance: parseFloat(k.balance ?? 0) || 0,
+                equity: parseFloat((k.equity ?? k.balance) ?? 0) || 0,
                 profit_loss: profit,
                 profit_loss_percentage: profitPct,
                 total_deposits: initial,
@@ -2649,6 +2677,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
   };
 
+  // Loader for details view to avoid flicker while fetching metrics
+  const detailsLoading = viewMode !== 'overview' && (
+    initialLoading || isLoading || isLoadingMetrics || !realMetrics || !realStatistics || !realBalanceHistory
+  );
+
+  if (detailsLoading) {
+    return <TradingAccountsLayoutLoader />;
+  }
+
   return (
     <div className="flex flex-col p-3 sm:p-4 text-white overflow-x-hidden">
       {/* Back Button */}
@@ -3014,14 +3051,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold cursor-help">{t('balance')}</h2>
                 </CustomTooltip>
                 <div className="flex items-center gap-2">
-                  <CustomTooltip content={t('accounts.fields.updateFrequencyTooltip')}>
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-md border border-gray-700/50 cursor-help">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <p className="text-gray-300 text-xs font-medium">
-                        {t('accounts.fields.updateFrequency')}
-                      </p>
-                    </div>
-                  </CustomTooltip>
                   <button
                     onClick={handleRefreshData}
                     disabled={!canRefresh || isRefreshing}
@@ -3048,9 +3077,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   </button>
                 </div>
               </div>
-              <div className="flex items-center mb-4 sm:mb-6">
+              <div className="flex items-center mb-2 sm:mb-3">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3 text-white">
-                  ${(realMetrics?.balance || balanceData[balanceData.length - 1]?.value || 0).toLocaleString()}
+                  ${(
+                    // Mostrar equity directo si está disponible; fallback a equity existente o valor del historial
+                    directEquity ?? realMetrics?.equity ?? balanceData[balanceData.length - 1]?.value ?? 0
+                  ).toLocaleString()}
                 </span>
                 <span className={`px-2 py-1 rounded text-xs sm:text-sm ${
                   (realMetrics?.profit_loss_percentage || 0) >= 0 
@@ -3059,6 +3091,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 }`}>
                   {(realMetrics?.profit_loss_percentage || 0) >= 0 ? '+' : ''}{(realMetrics?.profit_loss_percentage || 0).toFixed(1)}%
                 </span>
+              </div>
+              {/* Chips con Balance y Equity actuales */}
+              <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
+                <div className="px-2 py-1 bg-gray-800/50 border border-gray-700/50 rounded-md text-xs text-gray-300">
+                  {t('trading:balance')}: <span className="text-white font-semibold">${(realMetrics?.balance ?? balanceData[balanceData.length - 1]?.balance ?? 0).toLocaleString()}</span>
+                </div>
+                <div className="px-2 py-1 bg-cyan-900/30 border border-cyan-700/40 rounded-md text-xs text-cyan-300">
+                  {t('trading:equity')}: <span className="text-white font-semibold">${(directEquity ?? realMetrics?.equity ?? balanceData[balanceData.length - 1]?.equity ?? balanceData[balanceData.length - 1]?.value ?? 0).toLocaleString()}</span>
+                </div>
               </div>
               
               <div className={`w-full ${isMobile ? 'h-48' : 'h-64'}`}>
@@ -3198,9 +3239,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
                     ${(() => {
-                      const currentBalance = realMetrics?.balance || 0;
+                      // Calcular drawdown sobre equity actual cuando esté disponible
+                      const basis = (realMetrics?.equity ?? realMetrics?.balance ?? 0);
                       const maxDrawdownPercent = realMetrics?.max_drawdown || 0;
-                      const drawdownAmount = (currentBalance * maxDrawdownPercent) / 100;
+                      const drawdownAmount = (basis * maxDrawdownPercent) / 100;
                       return drawdownAmount.toFixed(2);
                     })()}
                   </span>
@@ -3212,9 +3254,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       : 'bg-red-900 bg-opacity-50 text-red-200'
                   }`}>
                     {t('metrics.current')}: ${(() => {
-                      const currentBalance = realMetrics?.balance || 0;
+                      const basis = (realMetrics?.equity ?? realMetrics?.balance ?? 0);
                       const currentDrawdownPercent = realMetrics?.current_drawdown || 0;
-                      const currentDrawdownAmount = (currentBalance * currentDrawdownPercent) / 100;
+                      const currentDrawdownAmount = (basis * currentDrawdownPercent) / 100;
                       return currentDrawdownAmount.toFixed(2);
                     })()}
                   </span>
@@ -3366,14 +3408,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             <div className="flex justify-between items-center mb-4">
               <div></div>
               <div className="flex items-center gap-3">
-                <CustomTooltip content={t('accounts.fields.updateFrequencyTooltip')}>
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-md border border-gray-700/50 cursor-help">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <p className="text-gray-300 text-xs font-medium">
-                      {t('accounts.fields.updateFrequency')}
-                    </p>
-                  </div>
-                </CustomTooltip>
                 <button
                   onClick={handleRefreshData}
                   disabled={!canRefresh || isRefreshing}

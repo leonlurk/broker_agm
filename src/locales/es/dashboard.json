@@ -64,7 +64,7 @@
   },
   "stats": {
     "balance": "Balance Total",
-    "equity": "Patrimonio",
+    "equity": "Equidad",
     "margin": "Margen",
     "freeMargin": "Margen Libre",
     "marginLevel": "Nivel de Margen",
@@ -88,7 +88,7 @@
   "charts": {
     "performance": "Rendimiento",
     "balance": "Balance",
-    "equity": "Patrimonio",
+    "equity": "Equidad",
     "profit": "Ganancias/Pérdidas",
     "daily": "Diario",
     "weekly": "Semanal",
