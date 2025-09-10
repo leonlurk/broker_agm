@@ -54,16 +54,51 @@ apiClient.interceptors.response.use(
  */
 export const getDashboardData = async (accountNumber, period = 'month') => {
   try {
-    logger.info('[API] Fetching dashboard data', { accountNumber, period });
-    
-    // Usar el endpoint correcto de Supabase
-    const response = await apiClient.get(
-      `/supabase/accounts/${accountNumber}/dashboard`,
-      { params: { period } }
-    );
-    
-    logger.info('[API] Dashboard data received', response.data);
-    return response.data; // Ya viene en el formato correcto desde el backend
+    // Simple in-memory cache + in-flight de-duplication to avoid 429 bursts
+    const key = `${accountNumber}:${period}`;
+    if (!getDashboardData._cache) {
+      getDashboardData._cache = new Map(); // key -> { data, ts }
+      getDashboardData._inflight = new Map(); // key -> Promise
+    }
+    const cacheTTL = 30000; // 30s
+    const cached = getDashboardData._cache.get(key);
+    if (cached && Date.now() - cached.ts < cacheTTL) {
+      return cached.data;
+    }
+    const inflight = getDashboardData._inflight.get(key);
+    if (inflight) return await inflight;
+
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    const promise = (async () => {
+      logger.info('[API] Fetching dashboard data', { accountNumber, period });
+      try {
+        const response = await apiClient.get(
+          `/supabase/accounts/${accountNumber}/dashboard`,
+          { params: { period } }
+        );
+        logger.info('[API] Dashboard data received', response.data);
+        getDashboardData._cache.set(key, { data: response.data, ts: Date.now() });
+        return response.data;
+      } catch (err) {
+        // Retry once on 429 with small backoff
+        if (err?.response?.status === 429) {
+          await sleep(1200);
+          const response = await apiClient.get(
+            `/supabase/accounts/${accountNumber}/dashboard`,
+            { params: { period } }
+          );
+          getDashboardData._cache.set(key, { data: response.data, ts: Date.now() });
+          return response.data;
+        }
+        throw err;
+      } finally {
+        getDashboardData._inflight.delete(key);
+      }
+    })();
+
+    getDashboardData._inflight.set(key, promise);
+    return await promise;
   } catch (error) {
     logger.error('[API] Error fetching dashboard data', error);
     
@@ -127,13 +162,49 @@ export const getAccountKPIs = async (accountNumber) => {
  */
 export const getBalanceHistory = async (accountNumber, period = 'month') => {
   try {
-    const response = await apiClient.get(
-      `/supabase/accounts/${accountNumber}/balance-history`,
-      { params: { period } }
-    );
-    
-    // Formatear para el componente de gráfico
-    return response.data.data || [];
+    // cache + inflight de-duplication
+    const key = `${accountNumber}:${period}`;
+    if (!getBalanceHistory._cache) {
+      getBalanceHistory._cache = new Map();
+      getBalanceHistory._inflight = new Map();
+    }
+    const cacheTTL = 60000; // 60s
+    const cached = getBalanceHistory._cache.get(key);
+    if (cached && Date.now() - cached.ts < cacheTTL) {
+      return cached.data;
+    }
+    const inflight = getBalanceHistory._inflight.get(key);
+    if (inflight) return await inflight;
+
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const promise = (async () => {
+      try {
+        const response = await apiClient.get(
+          `/supabase/accounts/${accountNumber}/balance-history`,
+          { params: { period } }
+        );
+        const data = response.data.data || [];
+        getBalanceHistory._cache.set(key, { data, ts: Date.now() });
+        return data;
+      } catch (err) {
+        if (err?.response?.status === 429) {
+          await sleep(1200);
+          const response = await apiClient.get(
+            `/supabase/accounts/${accountNumber}/balance-history`,
+            { params: { period } }
+          );
+          const data = response.data.data || [];
+          getBalanceHistory._cache.set(key, { data, ts: Date.now() });
+          return data;
+        }
+        throw err;
+      } finally {
+        getBalanceHistory._inflight.delete(key);
+      }
+    })();
+
+    getBalanceHistory._inflight.set(key, promise);
+    return await promise;
   } catch (error) {
     logger.error('[API] Error fetching balance history', error);
     return [];

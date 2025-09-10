@@ -971,14 +971,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
   };
   
-  // Función para color dinámico de barras
-  const getBarColor = (value) => {
-    const maxValue = 20; // El valor máximo en los datos es ~20%
-    const minLightness = 25; // Lightness para el valor más bajo
-    const maxLightness = 50; // Lightness para el valor más alto
-    const lightness = minLightness + (value / maxValue) * (maxLightness - minLightness);
-    return `hsl(191, 95%, ${lightness}%)`;
-  };
+  // Color fijo turquesa para barras de Rendimiento
+  const getBarColor = () => '#06b6d4';
   
   // Función para calcular escala del gráfico Y
   const calculateYAxisScale = (dataPoints) => {
@@ -1659,22 +1653,18 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     } else if (benefitChartFilter === 'last30Days') {
       startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       endDate = new Date(now);
-      dateFormat = isMobile ? 'week' : 'day';
+      // For drawdown, always use daily granularity
+      dateFormat = 'day';
     } else if (benefitChartFilter === 'last90Days') {
       startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
       endDate = new Date(now);
-      dateFormat = isMobile ? 'month' : 'week';
+      dateFormat = 'day';
     } else if (benefitChartFilter === 'custom' && customDateFrom && customDateTo) {
       startDate = new Date(customDateFrom);
       endDate = new Date(customDateTo);
       const daysDiff = (endDate - startDate) / (1000 * 60 * 60 * 24);
-      if (daysDiff <= 7) {
-        dateFormat = 'day';
-      } else if (daysDiff <= 30) {
-        dateFormat = isMobile ? 'week' : 'day';
-      } else {
-        dateFormat = isMobile ? 'month' : 'week';
-      }
+      // For drawdown, force daily always
+      dateFormat = 'day';
     } else {
       // Para "Último mes" por defecto, usar el rango de datos disponibles
       const dates = dataToProcess.map(item => new Date(item.fechaISO));
@@ -1733,7 +1723,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     
     // Calcular beneficio acumulado para cada fecha
     let cumulativeProfit = 0;
-    const chartData = dateArray.map(({ dateKey, formattedDate }) => {
+    let chartData = dateArray.map(({ dateKey, formattedDate }) => {
       // Para formato mensual y trimestral, sumar todas las ganancias del período
       if (dateFormat === 'month' || dateFormat === 'quarter') {
         const monthPrefix = dateKey.substring(0, 7); // YYYY-MM
@@ -1753,6 +1743,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       };
     });
     
+    // Limit maximum points to 10 (downsample evenly), keeping first and last
+    const MAX_POINTS = 10;
+    if (chartData.length > MAX_POINTS) {
+      const step = Math.ceil(chartData.length / MAX_POINTS);
+      const reduced = chartData.filter((_, idx) => idx === 0 || idx === chartData.length - 1 || idx % step === 0);
+      // Ensure no more than MAX_POINTS by slicing if filter kept more
+      chartData = reduced.slice(0, MAX_POINTS - 1).concat([chartData[chartData.length - 1]]);
+    }
     return chartData;
   };
 
@@ -1992,7 +1990,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       // Calcular drawdown desde el máximo histórico
       let peakBalance = 0;
       
-      return filteredData.map((point, index) => {
+      let result = filteredData.map((point, index) => {
         const currentBalance = (point.equity ?? point.value ?? point.balance ?? 0);
         
         // En el primer punto, establecer el pico y drawdown en 0
@@ -2023,6 +2021,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           value: parseFloat(drawdown.toFixed(2))
         };
       });
+
+      // Limitar a 10 puntos en total (downsample uniforme, mantener primero y último)
+      const MAX_POINTS = 10;
+      if (result.length > MAX_POINTS) {
+        const step = Math.ceil(result.length / MAX_POINTS);
+        const reduced = result.filter((_, idx) => idx === 0 || idx === result.length - 1 || idx % step === 0);
+        result = reduced.slice(0, MAX_POINTS - 1).concat([result[result.length - 1]]);
+      }
+      return result;
     }
     
     // Fallback al código anterior si no hay datos reales
