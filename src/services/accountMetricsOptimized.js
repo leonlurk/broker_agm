@@ -7,7 +7,7 @@ import axios from 'axios';
 import { supabase } from '../supabase/config';
 import { logger } from '../utils/logger';
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://62.171.177.212:8443'}/api/v1`;
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444'}/api/v1`;
 
 /**
  * Cliente axios configurado con auth y reintentos
