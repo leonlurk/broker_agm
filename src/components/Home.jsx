@@ -56,13 +56,13 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   const [initialLoading, setInitialLoading] = useState(true);
   const dropdownRef = useRef(null);
   
-  // Use minimum loading time of 2 seconds
-  const showLoader = useMinLoadingTime(initialLoading, 2000);
+  // Use minimum loading time of 2 seconds - DISABLED for refresh issues
+  const showLoader = false; // Disabled to prevent stuck loading on refresh
 
-  // Simular carga inicial de datos
+  // Simular carga inicial de datos - DISABLED
   useEffect(() => {
     const loadInitialData = async () => {
-      setInitialLoading(true);
+      // setInitialLoading(true); // Disabled to prevent stuck loading
       try {
         // Esperar a que los datos estén disponibles
         await new Promise(resolve => {
@@ -72,19 +72,22 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
               resolve();
             }
           }, 100);
-          // Timeout después de 5 segundos
+          // Timeout después de 2 segundos (reducido)
           setTimeout(() => {
             clearInterval(checkData);
             resolve();
-          }, 5000);
+          }, 2000);
         });
       } finally {
-        setInitialLoading(false);
+        // setInitialLoading(false); // Disabled to prevent stuck loading
       }
     };
     
-    loadInitialData();
-  }, []);
+    // Solo cargar si user y currentUser están disponibles
+    if (user && currentUser) {
+      loadInitialData();
+    }
+  }, [user, currentUser]);
 
   // Función para cerrar permanentemente el cartel KYC aprobado
   const dismissKycCard = () => {
@@ -410,7 +413,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   };
   
   // Función mejorada para calcular PNL desde historial de balance
-  const calculatePnlFromHistory = (balanceHistory, days) => {
+  const calculatePnlFromHistory = (balanceHistory, days, accountKpis = null) => {
     if (!balanceHistory || balanceHistory.length === 0) {
       return { percentage: 0, amount: 0 };
     }
@@ -449,8 +452,16 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     // Preferir equity para reflejar PnL con posiciones abiertas (fallback a balance/value)
     const initialValue = (startBalance.equity ?? startBalance.balance ?? startBalance.value ?? 0);
     const currentValue = (endBalance.equity ?? endBalance.balance ?? endBalance.value ?? 0);
-    const profit = currentValue - initialValue;
-    const percentage = initialValue > 0 ? (profit / initialValue) * 100 : 0;
+    
+    // Si tenemos KPIs de la cuenta, usar el balance inicial real para cálculos más precisos
+    let realInitialValue = initialValue;
+    if (accountKpis?.initial_balance && days >= 30) {
+      // Para períodos largos (30 días), usar el balance inicial real de la cuenta
+      realInitialValue = parseFloat(accountKpis.initial_balance) || initialValue;
+    }
+    
+    const profit = currentValue - realInitialValue;
+    const percentage = realInitialValue > 0 ? (profit / realInitialValue) * 100 : 0;
     
     return {
       percentage: percentage,
@@ -515,17 +526,30 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
           if (dashboardData.statistics) {
             // Para el día actual, calcular desde el historial si está disponible
             if (dashboardData.balance_history && dashboardData.balance_history.length > 0) {
-              pnlToday = calculatePnlFromHistory(dashboardData.balance_history, 1);
-              pnl7Days = calculatePnlFromHistory(dashboardData.balance_history, 7);
-              pnl30Days = calculatePnlFromHistory(dashboardData.balance_history, 30);
+              // Pasar los KPIs para cálculos más precisos
+              pnlToday = calculatePnlFromHistory(dashboardData.balance_history, 1, dashboardData.kpis);
+              pnl7Days = calculatePnlFromHistory(dashboardData.balance_history, 7, dashboardData.kpis);
+              pnl30Days = calculatePnlFromHistory(dashboardData.balance_history, 30, dashboardData.kpis);
             } else {
-              // Fallback a usar statistics directamente
-              pnlToday = {
-                percentage: dashboardData.statistics.net_pnl_percentage || 0,
-                amount: dashboardData.statistics.net_pnl || 0
-              };
-              pnl7Days = pnlToday; // Usar los mismos datos si no hay historial
-              pnl30Days = pnlToday;
+              // Fallback: calcular PNL usando balance inicial y actual de los KPIs
+              if (dashboardData.kpis) {
+                const initialBalance = parseFloat(dashboardData.kpis.initial_balance) || 0;
+                const currentBalance = parseFloat(dashboardData.kpis.equity || dashboardData.kpis.balance) || 0;
+                const profit = currentBalance - initialBalance;
+                const percentage = initialBalance > 0 ? (profit / initialBalance) * 100 : 0;
+                
+                pnlToday = { percentage, amount: profit };
+                pnl7Days = { percentage, amount: profit }; // Sin historial, usar los mismos datos
+                pnl30Days = { percentage, amount: profit };
+              } else {
+                // Último fallback a usar statistics directamente
+                pnlToday = {
+                  percentage: dashboardData.statistics.net_pnl_percentage || 0,
+                  amount: dashboardData.statistics.net_pnl || 0
+                };
+                pnl7Days = pnlToday;
+                pnl30Days = pnlToday;
+              }
             }
           }
           
@@ -550,20 +574,31 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
         } catch (error) {
           console.error('Error loading metrics for account:', account.account_number, error);
           
-          // En caso de error, usar datos por defecto
+          // En caso de error, intentar calcular PNL básico si tenemos balance inicial
+          let basicPnl = { percentage: 0, amount: 0 };
+          if (account.initial_balance && account.balance) {
+            const initialBalance = parseFloat(account.initial_balance) || 0;
+            const currentBalance = parseFloat(account.balance) || 0;
+            const profit = currentBalance - initialBalance;
+            const percentage = initialBalance > 0 ? (profit / initialBalance) * 100 : 0;
+            
+            basicPnl = { percentage, amount: profit };
+          }
+          
           setAccountsMetrics(prev => ({
             ...prev,
             [account.account_number]: {
               kpis: {
                 balance: account.balance || 0,
-                profit_loss_percentage: 0,
-                profit_loss: 0
+                initial_balance: account.initial_balance || 0,
+                profit_loss_percentage: basicPnl.percentage,
+                profit_loss: basicPnl.amount
               },
               statistics: {},
-              pnlToday: { percentage: 0, amount: 0 },
-              pnl7Days: { percentage: 0, amount: 0 },
-              pnl30Days: { percentage: 0, amount: 0 },
-              totalPnl: { percentage: 0, amount: 0 },
+              pnlToday: basicPnl,
+              pnl7Days: basicPnl,
+              pnl30Days: basicPnl,
+              totalPnl: basicPnl,
               lastUpdated: Date.now()
             }
           }));
@@ -585,10 +620,10 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
     );
   }
 
-  // Show loader during initial loading
-  if (showLoader) {
-    return <HomeDashboardLoader />;
-  }
+  // Show loader during initial loading - DISABLED to prevent stuck loading
+  // if (showLoader) {
+  //   return <HomeDashboardLoader />;
+  // }
 
   return (
     <div className="border border-[#333] rounded-3xl p-4 md:p-6 bg-gradient-to-br from-[#232323] to-[#2b2b2b] text-white min-h-screen flex flex-col">

@@ -188,8 +188,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   };
   
   // Loading state
-  const [initialLoading, setInitialLoading] = useState(true);
-  const showLoader = useMinLoadingTime(initialLoading || isLoading, 2000);
+  const [initialLoading, setInitialLoading] = useState(false);
+  const showLoader = false; // Disabled to prevent stuck loading on refresh
   
   // Usar la misma lógica que Home - estado simple para filtro
   const [activeTab, setActiveTab] = useState('all');
@@ -282,18 +282,19 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Initial data loading
   useEffect(() => {
     const loadInitialData = async () => {
-      setInitialLoading(true);
+      // setInitialLoading(true); // Disabled to prevent stuck loading
       try {
         await getAllAccounts();
       } finally {
-        setInitialLoading(false);
+        // setInitialLoading(false); // Disabled to prevent stuck loading
       }
     };
     
-    if (currentUser) {
+    // Solo cargar si currentUser está disponible y tiene ID
+    if (currentUser && currentUser.id) {
       loadInitialData();
     }
-  }, [currentUser, getAllAccounts]);
+  }, [currentUser, currentUser?.id, getAllAccounts]);
 
   useEffect(() => {
     const checkIfMobile = () => {
@@ -2442,10 +2443,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // VISTA GENERAL DE CUENTAS
   if (viewMode === 'overview') {
-  // Show loader during initial loading
-  if (showLoader) {
-    return <TradingAccountsLayoutLoader />;
-  }
+  // Show loader during initial loading - DISABLED to prevent stuck loading
+  // if (showLoader) {
+  //   return <TradingAccountsLayoutLoader />;
+  // }
 
   return (
       <div className="flex flex-col p-3 sm:p-4 text-white">
@@ -2684,14 +2685,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
   };
 
-  // Loader for details view to avoid flicker while fetching metrics
-  const detailsLoading = viewMode !== 'overview' && (
-    initialLoading || isLoading || isLoadingMetrics || !realMetrics || !realStatistics || !realBalanceHistory
-  );
+  // Loader for details view to avoid flicker while fetching metrics - DISABLED
+  // const detailsLoading = viewMode !== 'overview' && (
+  //   initialLoading || isLoading || isLoadingMetrics || !realMetrics || !realStatistics || !realBalanceHistory
+  // );
 
-  if (detailsLoading) {
-    return <TradingAccountsLayoutLoader />;
-  }
+  // if (detailsLoading) {
+  //   return <TradingAccountsLayoutLoader />;
+  // }
 
   return (
     <div className="flex flex-col p-3 sm:p-4 text-white overflow-x-hidden">

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from "./contexts/AuthContext";
 import Sidebar from "./Sidebar";
 import toast from 'react-hot-toast';
@@ -29,6 +30,8 @@ import BrokerAccountCreation from "./components/BrokerAccountCreation";
 const Dashboard = ({ onLogout }) => {
   const { currentUser, userData } = useAuth();
   const { t } = useTranslation('common');
+  const location = useLocation();
+  const navigate = useNavigate();
   const [selectedOption, setSelectedOption] = useState("Dashboard");
   const [navigationParams, setNavigationParams] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -64,6 +67,46 @@ const Dashboard = ({ onLogout }) => {
   useEffect(() => {
     console.log("[Dashboard - src] selectedOption state updated to:", selectedOption);
   }, [selectedOption]);
+
+  // Map between sidebar options and URL segments
+  const optionToPath = {
+    'Dashboard': '',
+    'Cuentas': 'accounts',
+    'Wallet': 'wallet',
+    'Afiliados': 'affiliates',
+    'Noticias': 'news',
+    'Descargas': 'downloads',
+    'Calculadora': 'calculator',
+    'Competicion': 'competition',
+    'PropFirm': 'propfirm',
+    'Broker': 'broker'
+  };
+  const pathToOption = {
+    '': 'Dashboard',
+    'accounts': 'Cuentas',
+    'wallet': 'Wallet',
+    'affiliates': 'Afiliados',
+    'news': 'Noticias',
+    'downloads': 'Descargas',
+    'calculator': 'Calculadora',
+    'competition': 'Competicion',
+    'propfirm': 'PropFirm',
+    'broker': 'Broker'
+  };
+
+  // Sync selectedOption from URL on load and when pathname changes
+  useEffect(() => {
+    const match = location.pathname.match(/^\/dashboard\/?(.*)$/);
+    if (match) {
+      const segment = (match[1] || '').replace(/\/$/, '');
+      const baseSegment = segment.split('/')[0];
+      const opt = pathToOption[baseSegment];
+      if (opt && opt !== selectedOption) {
+        setSelectedOption(opt);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
   
   // Efecto para hacer scroll hacia arriba cuando cambie la sección
   useEffect(() => {
@@ -99,6 +142,12 @@ const Dashboard = ({ onLogout }) => {
       setShowSettings(false); // Reset settings view
       setSelectedOption(option);
       setNavigationParams(null); // Limpiar parámetros al cambiar de sección
+      // Update URL to reflect the selected section
+      const segment = optionToPath[option];
+      if (segment !== undefined) {
+        const target = segment ? `/dashboard/${segment}` : '/dashboard';
+        if (location.pathname !== target) navigate(target, { replace: false });
+      }
     }
   };
 

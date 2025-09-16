@@ -20,7 +20,7 @@ const AfiliadosDashboard = () => {
   const [referralCount, setReferralCount] = useState(0);
   const [totalCommissions, setTotalCommissions] = useState(0);
   const [currentTier, setCurrentTier] = useState(1);
-  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(false);
   const [selectedTrader, setSelectedTrader] = useState(null);
   const [visibleAfiliados] = useState(3);
   const [isMobile, setIsMobile] = useState(false);
@@ -56,30 +56,35 @@ const AfiliadosDashboard = () => {
   // Load user data and affiliate statistics
   useEffect(() => {
     const fetchUserData = async () => {
-      setIsLoadingData(true);
+      // setIsLoadingData(true); // Disabled to prevent stuck loading
       try {
-        if (currentUser) {
+        // Verificar que currentUser esté disponible y tenga ID antes de cargar datos
+        if (currentUser && currentUser.id) {
           setUserId(currentUser.id);
+          setReferralLink(`https://agm-broker.com/register?ref=${currentUser.id}`);
           
-          // Get referral stats
-          const stats = await affiliatesService.getReferralStats(currentUser.id);
-          setReferralCount(stats.referralCount);
-          setTotalCommissions(stats.totalCommissions);
-          setCurrentTier(stats.tier);
-          
-        } else {
+          // Load affiliate statistics
+          await loadAffiliateStats();
+          await loadActiveAccounts();
+          await loadPaymentHistory();
+        } else if (currentUser === null) {
+          // Solo mostrar error si currentUser es explícitamente null (no autenticado)
           setError(t('dashboard.messages.notAuthenticated'));
         }
+        // Si currentUser es undefined, esperar a que se cargue
       } catch (err) {
         console.error('Error loading user data:', err);
         setError('Error al cargar los datos. Intente de nuevo más tarde.');
       } finally {
-        setIsLoadingData(false);
+        // setIsLoadingData(false); // Disabled to prevent stuck loading
       }
     };
 
-    fetchUserData();
-  }, [currentUser, t]);
+    // Solo ejecutar si currentUser está definido (no undefined)
+    if (currentUser !== undefined) {
+      fetchUserData();
+    }
+  }, [currentUser, currentUser?.id, t]);
   
   // Load active accounts data
   useEffect(() => {
@@ -202,13 +207,14 @@ const AfiliadosDashboard = () => {
 
   // Renderizar el contenido según la pestaña activa
   const renderContent = () => {
-    if (isLoadingData) {
-        return (
-          <div className="flex justify-center items-center h-60">
-            <Loader size={40} className="animate-spin text-cyan-500" />
-          </div>
-        );
-    }
+    // Loading animation disabled to prevent stuck loading
+    // if (isLoadingData) {
+    //     return (
+    //       <div className="flex justify-center items-center h-60">
+    //         <Loader size={40} className="animate-spin text-cyan-500" />
+    //       </div>
+    //     );
+    // }
       
     switch (activeTab) {
       case 'panel':

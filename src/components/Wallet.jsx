@@ -100,8 +100,8 @@ const Wallet = () => {
   const [pending2FAOperation, setPending2FAOperation] = useState(null);
   const [twoFactorData, setTwoFactorData] = useState(null);
   
-  // Use minimum loading time of 2 seconds
-  const showLoader = useMinLoadingTime(initialLoading, 2000);
+  // Use minimum loading time of 2 seconds - DISABLED to prevent stuck loading
+  const showLoader = false; // Disabled to prevent stuck loading on refresh
   
   // Hook para monitoreo en tiempo real de transacciones
   const { refresh: refreshMonitor } = useTransactionMonitor(
@@ -137,26 +137,34 @@ const Wallet = () => {
   // Cargar transacciones iniciales y datos del broker
   useEffect(() => {
     const loadInitialData = async () => {
-      setInitialLoading(true);
+      // setInitialLoading(true); // Disabled to prevent stuck loading
       try {
-        await Promise.all([
-          loadTransactions(),
-          loadBrokerBalance(),
-          loadMT5Accounts(),
-          loadPaymentMethods()
-        ]);
+        // Verificar que currentUser esté disponible antes de cargar datos
+        if (currentUser && currentUser.id) {
+          await Promise.all([
+            loadTransactions(),
+            loadBrokerBalance(),
+            loadMT5Accounts(),
+            loadPaymentMethods()
+          ]);
+        }
+      } catch (error) {
+        console.error('Error loading initial wallet data:', error);
       } finally {
-        setInitialLoading(false);
+        // setInitialLoading(false); // Disabled to prevent stuck loading
       }
     };
     
-    loadInitialData();
+    // Solo cargar si currentUser está disponible y tiene ID
+    if (currentUser && currentUser.id) {
+      loadInitialData();
+    }
     
     // Hacer supabase disponible globalmente para pruebas
     if (typeof window !== 'undefined') {
       window.supabase = supabase;
     }
-  }, [currentUser]);
+  }, [currentUser, currentUser?.id]);
 
   // Auto-seleccionar cuenta si viene del contexto
   useEffect(() => {
@@ -1963,10 +1971,10 @@ const Wallet = () => {
     );
   };
 
-  // Show loader during initial loading
-  if (showLoader) {
-    return <WalletLayoutLoader />;
-  }
+  // Show loader during initial loading - DISABLED to prevent stuck loading
+  // if (showLoader) {
+  //   return <WalletLayoutLoader />;
+  // }
 
   return (
     <div className="flex flex-col p-4 text-white min-h-screen">
