@@ -274,9 +274,9 @@ export default function TradingChallengeUI() {
                         <div className="flex justify-between items-center">
                           <span className="text-gray-400">{t('accounts.creation.serverLabel')}</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-white">{mt5Credentials.server || 'AlphaGlobalMarket-Server'}</span>
+                            <span className="text-white">{mt5Credentials.server || 'AlphaGlobalMarket-Live'}</span>
                             <button
-                              onClick={() => handleCopy(mt5Credentials.server || 'AlphaGlobalMarket-Server', 'server')}
+                              onClick={() => handleCopy(mt5Credentials.server || 'AlphaGlobalMarket-Live', 'server')}
                               className="p-1 hover:bg-gray-700 rounded transition-colors"
                               title="Copiar"
                             >

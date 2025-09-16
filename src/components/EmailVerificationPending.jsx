@@ -30,18 +30,24 @@ const EmailVerificationPending = () => {
     
     if (location.state?.email && location.state?.fromLogin) {
       console.log('EmailVerificationPending - Processing email from login:', location.state.email);
-      const newPendingUser = { email: location.state.email };
-      setPendingUser(newPendingUser);
-      console.log('EmailVerificationPending - pendingUser set to:', newPendingUser);
       
-      // Clear any old cached email data first
-      localStorage.removeItem('pending_verification_user');
+      // SECURITY FIX: Only use login state email if no pending user data exists
+      // This prevents referral bug where referrer's email overwrites registering user's email
+      const existingPendingUser = localStorage.getItem('pending_verification_user');
       
-      // Store fresh email data
-      localStorage.setItem('pending_verification_user', JSON.stringify({
-        ...newPendingUser,
-        timestamp: Date.now()
-      }));
+      if (!existingPendingUser) {
+        const newPendingUser = { email: location.state.email };
+        setPendingUser(newPendingUser);
+        console.log('EmailVerificationPending - pendingUser set to:', newPendingUser);
+        
+        // Store fresh email data only if none exists
+        localStorage.setItem('pending_verification_user', JSON.stringify({
+          ...newPendingUser,
+          timestamp: Date.now()
+        }));
+      } else {
+        console.log('EmailVerificationPending - Existing pending user found, not overwriting with login state');
+      }
       
       // Clear the location state to prevent reprocessing
       window.history.replaceState({}, document.title);
@@ -50,8 +56,10 @@ const EmailVerificationPending = () => {
     }
   }, [location.state]);
   
-  // Rate limit configuration
-  const userEmail = currentUser?.email || pendingUser?.email || location.state?.email;
+  // Rate limit configuration - Prioritize pending user email from registration
+  // Fix for referral bug: Always prioritize the email from localStorage (actual registering user)
+  // over location.state which might contain referrer's email
+  const userEmail = pendingUser?.email || currentUser?.email || location.state?.email;
   const RATE_LIMIT_KEY = `email_verification_${userEmail}`;
   const MAX_ATTEMPTS = 3; // Máximo 3 intentos
   const COOLDOWN_TIME = 60; // 60 segundos entre intentos

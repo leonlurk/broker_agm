@@ -197,8 +197,9 @@ const Register = ({ onLoginClick }) => {
       }
       
       // Store temporary user info for verification page (since Supabase doesn't keep unverified users authenticated)
+      // CRITICAL: Always use the email from the form input, not from user object which might be corrupted
       const tempUserInfo = {
-        email: user.email,
+        email: email, // Use form email directly to prevent referral bug
         id: user.id,
         timestamp: Date.now()
       };

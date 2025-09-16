@@ -142,7 +142,7 @@ export const createMT5Account = async (userId, accountData) => {
         login: response.data.account_login, // Backend retorna account_login
         password: response.data.account_password, // Backend retorna account_password
         investor_password: response.data.account_investor_password, // Backend retorna account_investor_password
-        server: response.data.server || 'AlphaGlobalMarket-Server',
+        server: response.data.server || 'AlphaGlobalMarket-Live',
         group: response.data.group,
         leverage: response.data.leverage,
         balance: response.data.balance

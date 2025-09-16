@@ -2384,7 +2384,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Función para renderizar las credenciales MT5 en móvil como tarjetas
   const renderMobileCredentials = (selectedAccount) => {
     const credentials = [
-      { label: t('trading:accounts.fields.server'), value: selectedAccount.server || 'AlphaGlobalMarket-Server', field: 'Server' },
+      { label: t('trading:accounts.fields.server'), value: selectedAccount.server || 'AlphaGlobalMarket-Live', field: 'Server' },
       { label: t('accounts.fields.masterPassword'), value: selectedAccount.master_password || selectedAccount.mt5_password || '••••••••', field: 'Contraseña Master', isPassword: true, showKey: 'master' },
       { label: t('accounts.fields.accountNumber'), value: selectedAccount.account_number, field: 'Número de Cuenta' },
       { label: t('accounts.fields.investorPasswordReadOnly'), value: selectedAccount.investor_password || selectedAccount.investorPassword, field: 'Contraseña Investor', isPassword: true, showKey: 'investor', canConfigure: true }
@@ -2918,9 +2918,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                     <div className="p-2 sm:p-3 bg-[#0f0f0f] rounded-lg relative group">
                       <span className="text-gray-400 text-xs block mb-1">{t('accounts.fields.serverMT5')}</span>
                       <div className="flex items-center justify-between">
-                        <div className="text-white font-medium text-sm">{selectedAccount.server || 'AlphaGlobalMarket-Server'}</div>
+                        <div className="text-white font-medium text-sm">{selectedAccount.server || 'AlphaGlobalMarket-Live'}</div>
                         <button
-                          onClick={() => copyToClipboard(selectedAccount.server || 'AlphaGlobalMarket-Server', 'Server')}
+                          onClick={() => copyToClipboard(selectedAccount.server || 'AlphaGlobalMarket-Live', 'Server')}
                           className={`${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity p-1 hover:bg-[#2a2a2a] rounded`}
                           title={t('trading:accounts.actions.copyServer')}
                         >
