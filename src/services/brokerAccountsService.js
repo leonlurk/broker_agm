@@ -19,23 +19,19 @@ const brokerApi = axios.create({
 // Request interceptor for authentication and logging
 brokerApi.interceptors.request.use(
   async (config) => {
-    // Add Firebase Bearer token to requests
+    // Add Supabase Bearer token to requests (Firebase disabled)
     try {
-      const { auth } = await import('../firebase/config');
-      const currentUser = auth.currentUser;
-      
-      if (currentUser) {
-        const token = await currentUser.getIdToken();
+      const { supabase } = await import('../supabase/config');
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        logger.info('Added Firebase token to request', { 
-          uid: currentUser.uid,
-          hasToken: !!token 
-        });
+        logger.info('Added Supabase token to request', { hasToken: !!token });
       } else {
-        logger.warn('No authenticated user found for API request');
+        logger.warn('No Supabase session token found for API request');
       }
     } catch (error) {
-      logger.error('Error adding Firebase token to request', error);
+      logger.error('Error adding Supabase token to request', error);
     }
 
     logger.info('Broker API Request', {

@@ -19,6 +19,7 @@ import {
   getTradingOperations,
   getPerformanceChartData 
 } from '../services/accountHistory';
+import equityDirect from '../services/equityDirect';
 // Auto-sync ya manejado por el backend scheduler
 import { ListLoader, ChartLoader, useMinLoadingTime } from './WaveLoader';
 import { TradingAccountsLayoutLoader } from './ExactLayoutLoaders';
@@ -223,6 +224,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   
   // Estados para datos reales de MT5
   const [realMetrics, setRealMetrics] = useState(null);
+  // Equity directo desde API sin Supabase
+  const [directEquity, setDirectEquity] = useState(null);
   const [realStatistics, setRealStatistics] = useState(null);
   const [realInstruments, setRealInstruments] = useState(null);
   const [realPerformance, setRealPerformance] = useState(null);
@@ -625,6 +628,28 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Ref para prevenir llamadas duplicadas
   const loadingRef = useRef(false);
   const lastLoadedAccountRef = useRef(null);
+
+  // Cargar equity directo sin Supabase cuando cambia la cuenta seleccionada
+  useEffect(() => {
+    const account = getAllAccounts().find(acc => acc.id === selectedAccountId);
+    if (!account?.account_number) {
+      setDirectEquity(null);
+      return;
+    }
+    // Evitar llamada si ya tenemos equity desde dashboard
+    if (realMetrics?.equity != null && !Number.isNaN(realMetrics.equity)) {
+      setDirectEquity(null); // usar el de dashboard
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { equity } = await equityDirect.getEquityDirect(account.account_number);
+      if (!cancelled && equity !== null && !Number.isNaN(equity)) {
+        setDirectEquity(equity);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedAccountId, realMetrics?.equity]);
   
   // Función para cargar métricas de una cuenta
   const loadAccountMetrics = async (account) => {
@@ -652,18 +677,39 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         'month'
       );
       
-      // También obtener el historial de balance para el gráfico
-      const balanceHistory = await accountMetricsOptimized.getBalanceHistory(
-        account.account_number,
-        'month'
-      );
+      // Historial de balance: preferir el que ya viene en el dashboard para evitar 429
+      const balanceHistory = Array.isArray(dashboardData?.balance_history) && dashboardData.balance_history.length > 0
+        ? dashboardData.balance_history
+        : await accountMetricsOptimized.getBalanceHistory(account.account_number, 'month');
       
       // Procesar datos del dashboard
         if (dashboardData) {
           // Actualizar métricas
           if (dashboardData.kpis) {
             console.log('[TradingAccounts] Usando métricas optimizadas:', dashboardData.kpis);
-            setRealMetrics(dashboardData.kpis);
+            // Hotfix: recalcular KPIs clave en frontend para asegurar consistencia
+            try {
+              const k = dashboardData.kpis;
+              const initial = parseFloat(k.initial_balance ?? 0) || 0;
+              // Usar equity como valor actual preferido para métricas en vivo; fallback a balance
+              const current = parseFloat((k.equity ?? k.balance) ?? 0) || 0;
+              const profit = current - initial;
+              const profitPct = initial > 0 ? (profit / initial) * 100 : 0;
+              const fixedKpis = {
+                ...k,
+                initial_balance: initial,
+                // Mantener balance reportado, pero exponer equity como fuente del "current" para P&L
+                balance: parseFloat(k.balance ?? 0) || 0,
+                equity: parseFloat((k.equity ?? k.balance) ?? 0) || 0,
+                profit_loss: profit,
+                profit_loss_percentage: profitPct,
+                total_deposits: initial,
+                total_withdrawals: k.total_withdrawals ?? 0
+              };
+              setRealMetrics(fixedKpis);
+            } catch(e) {
+              setRealMetrics(dashboardData.kpis);
+            }
           }
           
           // Actualizar estadísticas
@@ -687,12 +733,24 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             console.log('[TradingAccounts] Balance history recibido:', balanceHistory.length, 'puntos');
             console.log('[TradingAccounts] Balance history muestra:', balanceHistory.slice(0, 2));
             // Formatear para el gráfico
-            const formattedBalance = balanceHistory.map(item => ({
+            let formattedBalance = balanceHistory.map(item => ({
               date: item.timestamp || item.date,
               timestamp: item.timestamp || item.date,
-              value: item.value || item.balance || 0,
-              balance: item.balance || item.value || 0
+              // Preferir equity si existe; fallback a balance/value
+              value: (item.equity ?? item.balance ?? item.value ?? 0),
+              balance: (item.balance ?? item.value ?? 0),
+              equity: (item.equity ?? null)
             }));
+            try {
+              if (dashboardData.kpis && formattedBalance.length > 0) {
+                const currentVal = parseFloat(dashboardData.kpis.balance ?? 0) || 0;
+                const li = formattedBalance.length - 1;
+                const lastVal = parseFloat(formattedBalance[li].value ?? 0) || 0;
+                if (currentVal > 0 && Math.abs(currentVal - lastVal) > 0.01) {
+                  formattedBalance[li] = { ...formattedBalance[li], value: currentVal, balance: currentVal };
+                }
+              }
+            } catch (e) {}
             console.log('[TradingAccounts] Balance formateado:', formattedBalance.slice(0, 2));
             setRealBalanceHistory(formattedBalance);
           } else {
@@ -913,65 +971,56 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
   };
   
-  // Función para color dinámico de barras
-  const getBarColor = (value) => {
-    const maxValue = 20; // El valor máximo en los datos es ~20%
-    const minLightness = 25; // Lightness para el valor más bajo
-    const maxLightness = 50; // Lightness para el valor más alto
-    const lightness = minLightness + (value / maxValue) * (maxLightness - minLightness);
-    return `hsl(191, 95%, ${lightness}%)`;
-  };
+  // Color fijo turquesa para barras de Rendimiento
+  const getBarColor = () => '#06b6d4';
   
   // Función para calcular escala del gráfico Y
-  const calculateYAxisScale = (dataPoints, initialBalance) => {
-    if (!dataPoints || dataPoints.length === 0) return { min: 0, max: 100000, step: 10000 };
-    
-    const values = dataPoints.map(point => point.value);
-    const minValue = Math.min(initialBalance, ...values);
-    const maxValue = Math.max(initialBalance, ...values);
-    
-    // Calcular incrementos basados en el balance inicial
-    let increment;
-    if (initialBalance >= 10000) {
-      increment = 1000;
-    } else if (initialBalance >= 5000) {
-      increment = 500;
+  const calculateYAxisScale = (dataPoints) => {
+    if (!dataPoints || dataPoints.length === 0) return { min: 0, max: 1000, step: 100 };
+    const values = dataPoints.map(p => parseFloat(p.value) || 0);
+    let minValue = Math.min(...values);
+    let maxValue = Math.max(...values);
+    if (!isFinite(minValue) || !isFinite(maxValue)) return { min: 0, max: 1000, step: 100 };
+    // Añadir padding relativo para que pequeñas variaciones se vean
+    const rangeRaw = maxValue - minValue;
+    const pad = Math.max(1, Math.abs((minValue + maxValue) / 2) * 0.01, rangeRaw * 0.1);
+    if (rangeRaw === 0) {
+      minValue -= pad;
+      maxValue += pad;
     } else {
-      increment = 250;
+      minValue = minValue - pad;
+      maxValue = maxValue + pad;
     }
-    
-    // Ajustar min y max para que coincidan con los incrementos
-    const adjustedMin = Math.floor(minValue / increment) * increment;
-    const adjustedMax = Math.ceil(maxValue / increment) * increment;
-    
-    return {
-      min: adjustedMin,
-      max: adjustedMax,
-      step: increment
-    };
+    const range = maxValue - minValue;
+    const roughStep = range / 4;
+    // redondear step a 1/2/5*10^n
+    const pow10 = Math.pow(10, Math.floor(Math.log10(roughStep || 1)));
+    const candidates = [1, 2, 5].map(m => m * pow10);
+    const step = candidates.reduce((prev, curr) => Math.abs(curr - roughStep) < Math.abs(prev - roughStep) ? curr : prev, candidates[0]);
+    const adjustedMin = Math.floor(minValue / step) * step;
+    const adjustedMax = Math.ceil(maxValue / step) * step;
+    return { min: adjustedMin, max: adjustedMax, step };
   };
 
   // Obtener la cuenta seleccionada de forma segura
   const currentSelectedAccount = selectedAccountId ? 
     getAllAccounts().find(acc => acc.id === selectedAccountId) : null;
   
-  // Datos para el gráfico de balance - usar datos históricos de Supabase
+  // Datos para el gráfico de balance (superior) usando la misma lógica del tab de Balance
   const initialBalance = realMetrics?.initial_balance || 0;
-  const balanceData = realBalanceHistory && realBalanceHistory.length > 0 ? 
-    // Usar datos reales del histórico de balance
-    realBalanceHistory.slice(-9).map((point, index) => ({
-      name: point.date || `Día ${index + 1}`,
-      value: point.value || 0,
-      timestamp: point.timestamp || point.date || null,
-      fullDate: point.date || point.timestamp || null
-    })) : 
-    // Si no hay datos históricos pero hay balance actual, mostrar una línea desde 0
-    (currentSelectedAccount && currentSelectedAccount.balance > 0) ? [
-      { name: t('trading:charts.start'), value: 0 },
-      { name: t('trading:charts.current'), value: currentSelectedAccount.balance }
-    ] : 
-    // Si no hay datos, mostrar todo en 0
-    [
+  const balanceData = (() => {
+    const series = generateBalanceChartData();
+    if (series && series.length > 0) {
+      return series.map(item => ({ name: item.date, value: item.value, isGain: item.isGain }));
+    }
+    if (currentSelectedAccount && currentSelectedAccount.balance > 0) {
+      const now = new Date();
+      return [
+        { name: t('trading:charts.start'), value: currentSelectedAccount.initialBalance || 0 },
+        { name: now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }), value: currentSelectedAccount.balance }
+      ];
+    }
+    return [
       { name: t('months.jan'), value: 0 },
       { name: t('months.feb'), value: 0 },
       { name: t('months.mar'), value: 0 },
@@ -982,9 +1031,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       { name: t('months.aug'), value: 0 },
       { name: t('months.sep'), value: 0 },
     ];
+  })();
   
   // Calcular escala para el eje Y
-  const yAxisConfig = calculateYAxisScale(balanceData, initialBalance);
+  const yAxisConfig = calculateYAxisScale(balanceData);
 
   // Generar datos de beneficio basados en el historial de balance real
   const generateBeneficioData = () => {
@@ -1518,19 +1568,17 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const generateBenefitChartData = () => {
     // Usar datos del balance history si están disponibles para el gráfico de beneficio
     if (realBalanceHistory && realBalanceHistory.length > 0) {
-      // Calcular el beneficio acumulado desde el balance inicial
-      const initialBalance = realBalanceHistory[0]?.value || 0;
-      
-      // Tomar los últimos puntos según el filtro
+      // Calcular beneficio relativo tomando como base el PRIMER punto del periodo filtrado
+      // Así el trazo no depende del inicio absoluto de la serie completa
       let dataPoints = realBalanceHistory;
+      
       if (benefitChartFilter === 'last7Days') {
-        dataPoints = realBalanceHistory.slice(-7); // Últimos 7 días
+        dataPoints = realBalanceHistory.slice(-7);
       } else if (benefitChartFilter === 'last30Days') {
-        dataPoints = realBalanceHistory.slice(-30); // Últimos 30 días
+        dataPoints = realBalanceHistory.slice(-30);
       } else if (benefitChartFilter === 'last90Days') {
-        dataPoints = realBalanceHistory.slice(-90); // Últimos 90 días
+        dataPoints = realBalanceHistory.slice(-90);
       } else if (benefitChartFilter === 'custom' && customDateFrom && customDateTo) {
-        // Filtrar por rango personalizado
         const fromDate = new Date(customDateFrom).getTime();
         const toDate = new Date(customDateTo).getTime();
         dataPoints = realBalanceHistory.filter(point => {
@@ -1538,17 +1586,29 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           return pointDate >= fromDate && pointDate <= toDate;
         });
       }
-      
+
+      // Ordenar por fecha ascendente para trazo correcto
+      const sorted = [...dataPoints].sort((a, b) => {
+        const da = new Date(a.date || a.timestamp).getTime();
+        const db = new Date(b.date || b.timestamp).getTime();
+        return da - db;
+      });
+      const initialBalance = parseFloat(sorted[0]?.value ?? 0) || 0;
+
       // Reducir puntos para evitar aglomeración
-      const step = Math.ceil(dataPoints.length / (isMobile ? 6 : 12));
-      const reducedData = dataPoints.filter((_, index) => index % step === 0 || index === dataPoints.length - 1);
-      
+      const step = Math.ceil(sorted.length / (isMobile ? 6 : 12));
+      let reducedData = sorted.filter((_, index) => index % step === 0 || index === sorted.length - 1);
+      // Garantizar al menos primer y último punto
+      if (reducedData.length < 2 && sorted.length >= 2) {
+        reducedData = [sorted[0], sorted[sorted.length - 1]];
+      }
+
       return reducedData.map(point => ({
         date: new Date(point.date || point.timestamp).toLocaleDateString('es-ES', { 
           day: '2-digit', 
           month: 'short' 
         }),
-        value: (point.value || point.balance || 0) - initialBalance,
+        value: (parseFloat(point.value ?? point.balance ?? 0) || 0) - initialBalance,
         dateISO: point.date || point.timestamp
       }));
     }
@@ -1593,22 +1653,18 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     } else if (benefitChartFilter === 'last30Days') {
       startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       endDate = new Date(now);
-      dateFormat = isMobile ? 'week' : 'day';
+      // For drawdown, always use daily granularity
+      dateFormat = 'day';
     } else if (benefitChartFilter === 'last90Days') {
       startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
       endDate = new Date(now);
-      dateFormat = isMobile ? 'month' : 'week';
+      dateFormat = 'day';
     } else if (benefitChartFilter === 'custom' && customDateFrom && customDateTo) {
       startDate = new Date(customDateFrom);
       endDate = new Date(customDateTo);
       const daysDiff = (endDate - startDate) / (1000 * 60 * 60 * 24);
-      if (daysDiff <= 7) {
-        dateFormat = 'day';
-      } else if (daysDiff <= 30) {
-        dateFormat = isMobile ? 'week' : 'day';
-      } else {
-        dateFormat = isMobile ? 'month' : 'week';
-      }
+      // For drawdown, force daily always
+      dateFormat = 'day';
     } else {
       // Para "Último mes" por defecto, usar el rango de datos disponibles
       const dates = dataToProcess.map(item => new Date(item.fechaISO));
@@ -1667,7 +1723,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     
     // Calcular beneficio acumulado para cada fecha
     let cumulativeProfit = 0;
-    const chartData = dateArray.map(({ dateKey, formattedDate }) => {
+    let chartData = dateArray.map(({ dateKey, formattedDate }) => {
       // Para formato mensual y trimestral, sumar todas las ganancias del período
       if (dateFormat === 'month' || dateFormat === 'quarter') {
         const monthPrefix = dateKey.substring(0, 7); // YYYY-MM
@@ -1687,6 +1743,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       };
     });
     
+    // Limit maximum points to 10 (downsample evenly), keeping first and last
+    const MAX_POINTS = 10;
+    if (chartData.length > MAX_POINTS) {
+      const step = Math.ceil(chartData.length / MAX_POINTS);
+      const reduced = chartData.filter((_, idx) => idx === 0 || idx === chartData.length - 1 || idx % step === 0);
+      // Ensure no more than MAX_POINTS by slicing if filter kept more
+      chartData = reduced.slice(0, MAX_POINTS - 1).concat([chartData[chartData.length - 1]]);
+    }
     return chartData;
   };
 
@@ -1700,29 +1764,41 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   const benefitChartData = optimizeChartDataForMobile(generateBenefitChartData());
 
-  // Función para generar datos de Balance
-  const generateBalanceChartData = () => {
+  // Función para generar datos de Balance (declaración hoisted para poder usarla antes)
+  function generateBalanceChartData() {
     // Usar datos del histórico de balance de Supabase
     if (realBalanceHistory && realBalanceHistory.length > 0) {
-      // Reducir puntos para evitar superposición de fechas
-      const dataPoints = realBalanceHistory.length;
-      let filteredData = realBalanceHistory;
-      
+      // Ordenar por fecha ascendente para trazo consistente
+      let filteredData = [...realBalanceHistory].sort((a, b) => {
+        const da = new Date(a.date || a.timestamp).getTime();
+        const db = new Date(b.date || b.timestamp).getTime();
+        return da - db;
+      });
+      const dataPoints = filteredData.length;
+      // Calcular rango real para decidir si reducimos puntos
+      const vals = filteredData.map(p => parseFloat(p.value ?? p.balance ?? 0) || 0);
+      const vMin = Math.min(...vals);
+      const vMax = Math.max(...vals);
+      const vRange = vMax - vMin;
+
       // Si hay más de 10 puntos, tomar solo algunos representativos
-      if (dataPoints > 10) {
-        const step = Math.floor(dataPoints / 8); // Mostrar máximo 8 puntos
-        filteredData = realBalanceHistory.filter((_, index) => 
+      if (dataPoints > 12 && vRange > Math.max(5, Math.abs(vals[0]) * 0.001)) {
+        const step = Math.max(1, Math.floor(dataPoints / (isMobile ? 10 : 16))); // más puntos visibles
+        filteredData = filteredData.filter((_, index) => 
           index === 0 || // Primer punto
           index === dataPoints - 1 || // Último punto
           index % step === 0 // Puntos intermedios
         );
+        if (filteredData.length < 2) {
+          filteredData = [filteredData[0] ?? realBalanceHistory[0], filteredData[filteredData.length - 1] ?? realBalanceHistory[realBalanceHistory.length - 1]].filter(Boolean);
+        }
       }
-      
+
       return filteredData.map((point, index) => {
-        const currentValue = point.value || point.balance || 0;
-        const previousValue = index > 0 ? (filteredData[index - 1].value || filteredData[index - 1].balance || 0) : currentValue;
+        const currentValue = parseFloat(point.value ?? point.balance ?? 0) || 0;
+        const previousValue = index > 0 ? (parseFloat(filteredData[index - 1].value ?? filteredData[index - 1].balance ?? 0) || 0) : currentValue;
         const isGain = currentValue >= previousValue;
-        
+
         return {
           date: new Date(point.date || point.timestamp).toLocaleDateString('es-ES', { 
             day: '2-digit', 
@@ -1747,7 +1823,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     
     // Sin datos
     return [{ date: t('trading:charts.noData'), value: 0, isGain: true }];
-  };
+  }
   
   // Función anterior renombrada para no perder funcionalidad
   const generateBalanceChartDataOld = () => {
@@ -1914,8 +1990,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       // Calcular drawdown desde el máximo histórico
       let peakBalance = 0;
       
-      return filteredData.map((point, index) => {
-        const currentBalance = point.value || point.balance || 0;
+      let result = filteredData.map((point, index) => {
+        const currentBalance = (point.equity ?? point.value ?? point.balance ?? 0);
         
         // En el primer punto, establecer el pico y drawdown en 0
         if (index === 0) {
@@ -1945,6 +2021,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           value: parseFloat(drawdown.toFixed(2))
         };
       });
+
+      // Limitar a 10 puntos en total (downsample uniforme, mantener primero y último)
+      const MAX_POINTS = 10;
+      if (result.length > MAX_POINTS) {
+        const step = Math.ceil(result.length / MAX_POINTS);
+        const reduced = result.filter((_, idx) => idx === 0 || idx === result.length - 1 || idx % step === 0);
+        result = reduced.slice(0, MAX_POINTS - 1).concat([result[result.length - 1]]);
+      }
+      return result;
     }
     
     // Fallback al código anterior si no hay datos reales
@@ -2599,6 +2684,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
   };
 
+  // Loader for details view to avoid flicker while fetching metrics
+  const detailsLoading = viewMode !== 'overview' && (
+    initialLoading || isLoading || isLoadingMetrics || !realMetrics || !realStatistics || !realBalanceHistory
+  );
+
+  if (detailsLoading) {
+    return <TradingAccountsLayoutLoader />;
+  }
+
   return (
     <div className="flex flex-col p-3 sm:p-4 text-white overflow-x-hidden">
       {/* Back Button */}
@@ -2964,14 +3058,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold cursor-help">{t('balance')}</h2>
                 </CustomTooltip>
                 <div className="flex items-center gap-2">
-                  <CustomTooltip content={t('accounts.fields.updateFrequencyTooltip')}>
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-md border border-gray-700/50 cursor-help">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <p className="text-gray-300 text-xs font-medium">
-                        {t('accounts.fields.updateFrequency')}
-                      </p>
-                    </div>
-                  </CustomTooltip>
                   <button
                     onClick={handleRefreshData}
                     disabled={!canRefresh || isRefreshing}
@@ -2998,9 +3084,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   </button>
                 </div>
               </div>
-              <div className="flex items-center mb-4 sm:mb-6">
+              <div className="flex items-center mb-2 sm:mb-3">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3 text-white">
-                  ${(realMetrics?.balance || balanceData[balanceData.length - 1]?.value || 0).toLocaleString()}
+                  ${(
+                    // Mostrar equity directo si está disponible; fallback a equity existente o valor del historial
+                    directEquity ?? realMetrics?.equity ?? balanceData[balanceData.length - 1]?.value ?? 0
+                  ).toLocaleString()}
                 </span>
                 <span className={`px-2 py-1 rounded text-xs sm:text-sm ${
                   (realMetrics?.profit_loss_percentage || 0) >= 0 
@@ -3009,6 +3098,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 }`}>
                   {(realMetrics?.profit_loss_percentage || 0) >= 0 ? '+' : ''}{(realMetrics?.profit_loss_percentage || 0).toFixed(1)}%
                 </span>
+              </div>
+              {/* Chips con Balance y Equity actuales */}
+              <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
+                <div className="px-2 py-1 bg-gray-800/50 border border-gray-700/50 rounded-md text-xs text-gray-300">
+                  {t('trading:balance')}: <span className="text-white font-semibold">${(realMetrics?.balance ?? balanceData[balanceData.length - 1]?.balance ?? 0).toLocaleString()}</span>
+                </div>
+                <div className="px-2 py-1 bg-cyan-900/30 border border-cyan-700/40 rounded-md text-xs text-cyan-300">
+                  {t('trading:equity')}: <span className="text-white font-semibold">${(directEquity ?? realMetrics?.equity ?? balanceData[balanceData.length - 1]?.equity ?? balanceData[balanceData.length - 1]?.value ?? 0).toLocaleString()}</span>
+                </div>
               </div>
               
               <div className={`w-full ${isMobile ? 'h-48' : 'h-64'}`}>
@@ -3026,16 +3124,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       </defs>
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
                       <YAxis 
-                        domain={[yAxisConfig.min, yAxisConfig.max]}
-                        ticks={Array.from(
-                          {length: Math.floor((yAxisConfig.max - yAxisConfig.min) / yAxisConfig.step) + 1}, 
-                          (_, i) => yAxisConfig.min + (i * yAxisConfig.step)
-                        )}
+                        domain={[ 'dataMin', 'dataMax' ]}
                         tickFormatter={(value) => {
-                          if (value >= 1000) {
-                            return `${(value/1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
+                          if (typeof value === 'number' && Math.abs(value) >= 1000) {
+                            return `${(value/1000).toFixed(1)}k`;
                           }
-                          return value.toString();
+                          return typeof value === 'number' ? value.toFixed(0) : '0';
                         }}
                         axisLine={false} tickLine={false} 
                         tick={{ fill: '#9CA3AF', fontSize: 12 }}
@@ -3102,10 +3196,20 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       <Area
                         type="monotone" 
                         dataKey="value" 
-                        stroke={(balanceData && balanceData.length > 0 && balanceData[balanceData.length - 1].isGain === false) ? "#ef4444" : "#06b6d4"}
+                        stroke={(() => {
+                          if (!balanceData || balanceData.length < 2) return "#06b6d4";
+                          const first = parseFloat(balanceData[0].value) || 0;
+                          const last = parseFloat(balanceData[balanceData.length - 1].value) || 0;
+                          return last < first ? "#ef4444" : "#06b6d4";
+                        })()}
                         strokeWidth={2}
                         fillOpacity={1} 
-                        fill={(balanceData && balanceData.length > 0 && balanceData[balanceData.length - 1].isGain === false) ? "url(#colorBalanceLoss)" : "url(#colorBalanceGain)"}
+                        fill={(() => {
+                          if (!balanceData || balanceData.length < 2) return "url(#colorBalanceGain)";
+                          const first = parseFloat(balanceData[0].value) || 0;
+                          const last = parseFloat(balanceData[balanceData.length - 1].value) || 0;
+                          return last < first ? "url(#colorBalanceLoss)" : "url(#colorBalanceGain)";
+                        })()}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -3142,9 +3246,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
                     ${(() => {
-                      const currentBalance = realMetrics?.balance || 0;
+                      // Calcular drawdown sobre equity actual cuando esté disponible
+                      const basis = (realMetrics?.equity ?? realMetrics?.balance ?? 0);
                       const maxDrawdownPercent = realMetrics?.max_drawdown || 0;
-                      const drawdownAmount = (currentBalance * maxDrawdownPercent) / 100;
+                      const drawdownAmount = (basis * maxDrawdownPercent) / 100;
                       return drawdownAmount.toFixed(2);
                     })()}
                   </span>
@@ -3156,9 +3261,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       : 'bg-red-900 bg-opacity-50 text-red-200'
                   }`}>
                     {t('metrics.current')}: ${(() => {
-                      const currentBalance = realMetrics?.balance || 0;
+                      const basis = (realMetrics?.equity ?? realMetrics?.balance ?? 0);
                       const currentDrawdownPercent = realMetrics?.current_drawdown || 0;
-                      const currentDrawdownAmount = (currentBalance * currentDrawdownPercent) / 100;
+                      const currentDrawdownAmount = (basis * currentDrawdownPercent) / 100;
                       return currentDrawdownAmount.toFixed(2);
                     })()}
                   </span>
@@ -3310,14 +3415,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             <div className="flex justify-between items-center mb-4">
               <div></div>
               <div className="flex items-center gap-3">
-                <CustomTooltip content={t('accounts.fields.updateFrequencyTooltip')}>
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-md border border-gray-700/50 cursor-help">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <p className="text-gray-300 text-xs font-medium">
-                      {t('accounts.fields.updateFrequency')}
-                    </p>
-                  </div>
-                </CustomTooltip>
                 <button
                   onClick={handleRefreshData}
                   disabled={!canRefresh || isRefreshing}
@@ -3515,10 +3612,16 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                         ? t('trading:accounts.fields.balance')
                         : t('trading:charts.drawdown')
                     }
-                    stroke={benefitChartTab === 'drawdown' ? '#ef4444' : '#06b6d4'} 
+                    stroke={
+                      benefitChartTab === 'drawdown'
+                        ? '#ef4444'
+                        : (currentChartData && currentChartData.length > 1 && (currentChartData[currentChartData.length - 1].value < currentChartData[0].value)
+                            ? '#ef4444'
+                            : '#06b6d4')
+                    } 
                     strokeWidth={isMobile ? 2 : 3}
-                    dot={isMobile ? false : { fill: benefitChartTab === 'drawdown' ? '#ef4444' : '#06b6d4', strokeWidth: 0, r: 4 }}
-                    activeDot={{ r: isMobile ? 4 : 6, fill: benefitChartTab === 'drawdown' ? '#ef4444' : '#06b6d4' }}
+                    dot={isMobile ? false : { fill: (benefitChartTab === 'drawdown' || (currentChartData && currentChartData.length > 1 && currentChartData[currentChartData.length - 1].value < currentChartData[0].value)) ? '#ef4444' : '#06b6d4', strokeWidth: 0, r: 4 }}
+                    activeDot={{ r: isMobile ? 4 : 6, fill: (benefitChartTab === 'drawdown' || (currentChartData && currentChartData.length > 1 && currentChartData[currentChartData.length - 1].value < currentChartData[0].value)) ? '#ef4444' : '#06b6d4' }}
                   />
                 </LineChart>
               </ResponsiveContainer>

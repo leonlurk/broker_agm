@@ -7,9 +7,7 @@
 import { logger } from '../utils/logger';
 
 // Import both Firebase and Supabase implementations
-import * as firebaseAuth from '../firebase/auth';
 import * as supabaseAuth from '../supabase/auth';
-import { db as firebaseDb, storage as firebaseStorage } from '../firebase/config';
 import { supabase, supabaseDb } from '../supabase/config';
 import * as supabaseStorage from '../supabase/storage';
 
@@ -42,10 +40,9 @@ export const AuthAdapter = {
 
   // Login user
   loginUser: async (identifier, password) => {
-    if (DATABASE_PROVIDER === 'supabase') {
-      return supabaseAuth.loginUser(identifier, password);
-    }
-    return firebaseAuth.loginUser(identifier, password);
+    // Force Supabase for login regardless of provider selection
+    // The project requirement is to avoid Firebase for login
+    return supabaseAuth.loginUser(identifier, password);
   },
 
   // Logout user

@@ -64,7 +64,6 @@
   },
   "stats": {
     "balance": "Balance Total",
-    "equity": "Patrimonio",
     "margin": "Margen",
     "freeMargin": "Margen Libre",
     "marginLevel": "Nivel de Margen",

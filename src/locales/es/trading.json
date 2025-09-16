@@ -21,7 +21,6 @@
       "accountType": "Tipo de Cuenta",
       "leverage": "Apalancamiento",
       "balance": "Balance",
-      "equity": "Patrimonio",
       "margin": "Margen",
       "freeMargin": "Margen Libre",
       "marginLevel": "Nivel de Margen",

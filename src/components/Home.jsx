@@ -446,10 +446,11 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
       return { percentage: 0, amount: 0 };
     }
     
-    const initialBalance = startBalance.balance || startBalance.value || 0;
-    const currentBalance = endBalance.balance || endBalance.value || 0;
-    const profit = currentBalance - initialBalance;
-    const percentage = initialBalance > 0 ? (profit / initialBalance) * 100 : 0;
+    // Preferir equity para reflejar PnL con posiciones abiertas (fallback a balance/value)
+    const initialValue = (startBalance.equity ?? startBalance.balance ?? startBalance.value ?? 0);
+    const currentValue = (endBalance.equity ?? endBalance.balance ?? endBalance.value ?? 0);
+    const profit = currentValue - initialValue;
+    const percentage = initialValue > 0 ? (profit / initialValue) * 100 : 0;
     
     return {
       percentage: percentage,
