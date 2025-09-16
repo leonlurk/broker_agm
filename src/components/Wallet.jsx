@@ -62,6 +62,7 @@ const Wallet = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [showTransferAccountDropdown, setShowTransferAccountDropdown] = useState(false);
+  const [showTransferFromDropdown, setShowTransferFromDropdown] = useState(false);
   const [showHistorialModal, setShowHistorialModal] = useState(false);
   const [showTransactionDetail, setShowTransactionDetail] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -81,6 +82,7 @@ const Wallet = () => {
   const [addressError, setAddressError] = useState('');
   const dropdownRef = useRef(null);
   const transferDropdownRef = useRef(null);
+  const transferFromDropdownRef = useRef(null);
   const withdrawMethodDropdownRef = useRef(null);
   const networkDropdownRef = useRef(null);
 
@@ -178,6 +180,9 @@ const Wallet = () => {
       }
       if (transferDropdownRef.current && !transferDropdownRef.current.contains(event.target)) {
         setShowTransferAccountDropdown(false);
+      }
+      if (transferFromDropdownRef.current && !transferFromDropdownRef.current.contains(event.target)) {
+        setShowTransferFromDropdown(false);
       }
       if (withdrawMethodDropdownRef.current && !withdrawMethodDropdownRef.current.contains(event.target)) {
         setShowWithdrawMethodDropdown(false);
@@ -511,14 +516,18 @@ const Wallet = () => {
 
   // Manejar selección de cuenta para transferencia
   const handleSelectTransferAccount = (account) => {
-    if (account.id === selectedAccount?.id) {
-      toast.error(t('transfer.errors.sameAccount'));
-      return;
-    }
     setTransferToAccount(account);
     setShowTransferAccountDropdown(false);
-    goToStep(3);
-    setError('');
+  };
+
+  // Manejar selección de cuenta origen para transferencia MT5-to-MT5
+  const handleSelectTransferFromAccount = (account) => {
+    setTransferFromAccount(account);
+    setShowTransferFromDropdown(false);
+    // Reset destination account if it's the same as source
+    if (transferToAccount && account && transferToAccount.id === account.id) {
+      setTransferToAccount(null);
+    }
   };
 
   // Procesar operación
@@ -664,87 +673,146 @@ const Wallet = () => {
         // const newBalance = brokerBalance - amountNum;
         // await updateBrokerBalance(newBalance);
       } else if (activeTab === 'transferir') {
-        // Crear solicitud de transferencia desde balance general a cuenta MT5
-        result = await transactionService.createTransferRequest({
-          from_account_id: 'general', // Balance general como origen
-          from_account_name: t('common.generalBalance'),
-          to_account_id: transferToAccount.id,
-          to_account_name: transferToAccount.account_name,
-          amount: amountNum
-        });
+        if (!transferToAccount) {
+          toast.error(t('transfer.errors.selectAccount'));
+          return;
+        }
         
-        if (result.success) {
-          // Actualizar el balance del broker (restar el monto)
-          const newBalance = brokerBalance - amountNum;
-          await updateBrokerBalance(newBalance);
+        // Verificar si es transferencia MT5-to-MT5 o Wallet-to-MT5
+        if (transferFromAccount && transferFromAccount.account_number && transferToAccount.account_number) {
+          // MT5-to-MT5 Transfer
+          if (transferFromAccount.id === transferToAccount.id) {
+            toast.error(t('transfer.errors.sameAccount'));
+            return;
+          }
           
-          // Actualizar el balance en el servidor MT5
-          console.log('[Wallet] Transfer to account data:', {
-            id: transferToAccount.id,
-            account_number: transferToAccount.account_number,
-            account_name: transferToAccount.account_name,
-            amount: amountNum,
-            type: 'deposit'
+          // Validar balance suficiente en cuenta origen
+          const sourceBalance = transferFromAccount.balance || 0;
+          if (amountNum > sourceBalance) {
+            toast.error(t('common.errors.insufficientBalance'));
+            return;
+          }
+          
+          console.log('[Wallet] MT5-to-MT5 Transfer:', {
+            sourceLogin: transferFromAccount.account_number,
+            destinationLogin: transferToAccount.account_number,
+            amount: amountNum
           });
           
-          if (transferToAccount.account_number) {
-            try {
-              console.log('[Wallet] Calling transferWalletToMT5 with:', {
-                walletBalance: brokerBalance,
-                destinationLogin: transferToAccount.account_number,
-                amount: amountNum
-              });
-              
-              // Usar el nuevo endpoint de transferencias
-              const mt5Result = await transferWalletToMT5(
-                brokerBalance, // Balance actual del wallet
-                transferToAccount.account_number, // Login de MT5 destino
-                amountNum // Monto a transferir
-              );
-              
-              console.log('[Wallet] MT5 Transfer Response:', mt5Result);
-              
-              if (mt5Result.success) {
-                console.log('[Wallet] MT5 transfer successful:', mt5Result.data);
+          // Llamar al endpoint MT5-to-MT5
+          const mt5Result = await transferMT5ToMT5(
+            transferFromAccount.account_number,
+            transferToAccount.account_number,
+            amountNum
+          );
+          
+          if (mt5Result.success) {
+            console.log('[Wallet] MT5-to-MT5 transfer successful:', mt5Result.data);
+            
+            // Crear registro de transferencia en la base de datos
+            result = await transactionService.createTransferRequest({
+              from_account_id: transferFromAccount.id,
+              from_account_name: transferFromAccount.account_name,
+              to_account_id: transferToAccount.id,
+              to_account_name: transferToAccount.account_name,
+              amount: amountNum,
+              transfer_type: 'mt5_to_mt5'
+            });
+            
+            toast.success(
+              `Transferencia MT5-to-MT5 exitosa\n` +
+              `De: ${transferFromAccount.account_name}\n` +
+              `A: ${transferToAccount.account_name}\n` +
+              `Monto: $${amountNum.toFixed(2)}`,
+              {
+                duration: 6000,
+                style: { background: '#10b981', color: 'white' },
+                icon: '🔄'
+              }
+            );
+            
+            // Notificar transferencia
+            notifyTransfer(amountNum, transferFromAccount.account_name, transferToAccount.account_name);
+            
+          } else {
+            console.error('[Wallet] MT5-to-MT5 transfer failed:', mt5Result.error);
+            toast.error(mt5Result.error || 'Error en la transferencia MT5-to-MT5');
+            return;
+          }
+          
+        } else {
+          // Wallet-to-MT5 Transfer (existing logic)
+          result = await transactionService.createTransferRequest({
+            from_account_id: 'general',
+            from_account_name: t('common.generalBalance'),
+            to_account_id: transferToAccount.id,
+            to_account_name: transferToAccount.account_name,
+            amount: amountNum
+          });
+          
+          if (result.success) {
+            // Actualizar el balance del broker (restar el monto)
+            const newBalance = brokerBalance - amountNum;
+            await updateBrokerBalance(newBalance);
+            
+            if (transferToAccount.account_number) {
+              try {
+                console.log('[Wallet] Calling transferWalletToMT5 with:', {
+                  walletBalance: brokerBalance,
+                  destinationLogin: transferToAccount.account_number,
+                  amount: amountNum
+                });
                 
-                // Mostrar detalles de la transferencia si están disponibles
-                const details = mt5Result.data?.transfer_details;
-                if (details) {
-                  toast.success(
-                    `Transferencia exitosa a MT5\n` +
-                    `Nuevo balance MT5: $${details.destination_new_balance?.toFixed(2) || amountNum}`,
-                    {
-                      duration: 5000,
+                const mt5Result = await transferWalletToMT5(
+                  brokerBalance,
+                  transferToAccount.account_number,
+                  amountNum
+                );
+                
+                console.log('[Wallet] MT5 Transfer Response:', mt5Result);
+                
+                if (mt5Result.success) {
+                  console.log('[Wallet] MT5 transfer successful:', mt5Result.data);
+                  
+                  const details = mt5Result.data?.transfer_details;
+                  if (details) {
+                    toast.success(
+                      `Transferencia exitosa a MT5\n` +
+                      `Nuevo balance MT5: $${details.destination_new_balance?.toFixed(2) || amountNum}`,
+                      {
+                        duration: 5000,
+                        style: { background: '#10b981', color: 'white' },
+                        icon: '✅'
+                      }
+                    );
+                  } else {
+                    toast.success('Transferencia completada exitosamente en MT5', {
+                      duration: 4000,
                       style: { background: '#10b981', color: 'white' },
                       icon: '✅'
+                    });
+                  }
+                } else {
+                  console.error('[Wallet] Failed to transfer to MT5:', mt5Result.error);
+                  toast.error(
+                    mt5Result.error || t('transfer.mt5UpdateWarning') || 
+                    'La transferencia se registró pero el balance en MT5 podría tardar en actualizarse', 
+                    {
+                      duration: 5000,
+                      icon: '⚠️'
                     }
                   );
-                } else {
-                  toast.success('Transferencia completada exitosamente en MT5', {
-                    duration: 4000,
-                    style: { background: '#10b981', color: 'white' },
-                    icon: '✅'
-                  });
                 }
-              } else {
-                console.error('[Wallet] Failed to transfer to MT5:', mt5Result.error);
-                // La transferencia ya se registró en la base de datos, solo notificar sobre MT5
-                toast.error(
-                  mt5Result.error || t('transfer.mt5UpdateWarning') || 
-                  'La transferencia se registró pero el balance en MT5 podría tardar en actualizarse', 
-                  {
-                    duration: 5000,
-                    icon: '⚠️'
-                  }
-                );
+              } catch (mt5Error) {
+                console.error('[Wallet] Error transferring to MT5:', mt5Error);
+                // No fallar la transferencia si MT5 falla, solo notificar
+                toast.error(t('transfer.mt5UpdateWarning') || 'La transferencia se registró pero el balance en MT5 podría tardar en actualizarse', {
+                  duration: 5000,
+                  icon: '⚠️'
+                });
               }
-            } catch (mt5Error) {
-              console.error('[Wallet] Error transferring to MT5:', mt5Error);
-              // No fallar la transferencia si MT5 falla, solo notificar
-              toast.error(t('transfer.mt5UpdateWarning') || 'La transferencia se registró pero el balance en MT5 podría tardar en actualizarse', {
-                duration: 5000,
-                icon: '⚠️'
-              });
+            } else {
+              console.warn('[Wallet] No account_number found for MT5 account:', transferToAccount);
             }
           } else {
             console.warn('[Wallet] No account_number found for MT5 account:', transferToAccount);
@@ -1033,6 +1101,14 @@ const Wallet = () => {
 
   // Contenido para transferencias
   const renderTransferContent = () => {
+    // Filtrar solo cuentas MT5 reales (no demo) con balance > 0
+    const realMT5AccountsWithBalance = mt5Accounts.filter(acc => 
+      acc.account_type?.toLowerCase() === 'real' && (acc.balance || 0) > 0
+    );
+    
+    // Determinar si mostrar opción MT5-to-MT5 (mínimo 2 cuentas reales con balance)
+    const showMT5ToMT5Option = realMT5AccountsWithBalance.length >= 2;
+    
     // Determinar origen y balance
     const sourceBalance = transferFromAccount 
       ? (transferFromAccount.balance || 0)
@@ -1056,14 +1132,80 @@ const Wallet = () => {
           <h3 className="text-lg font-semibold mb-2 text-white">{t('common.steps.step1')}</h3>
           <p className="text-[#9ca3af] mb-4 text-sm">{t('transfer.selectDestination')}</p>
           
-          {/* Mostrar origen fijo: Balance General */}
-          <div className="mb-4 p-4 bg-gradient-to-br from-cyan-900/20 to-cyan-800/20 border border-cyan-500/30 rounded-lg">
-            <div className="text-xs text-cyan-400 mb-1">Origen</div>
-            <div className="font-semibold text-white">{sourceName}</div>
-            <div className="text-sm text-cyan-300 mt-1">
-              ${sourceBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD
+          {/* Selector de origen - Balance General o MT5 (si hay múltiples cuentas MT5) */}
+          {showMT5ToMT5Option ? (
+            <div className="mb-4">
+              <div className="text-xs text-gray-400 mb-2">Origen</div>
+              <div className="relative" ref={transferFromDropdownRef}>
+                <button 
+                  onClick={() => setShowTransferFromDropdown(!showTransferFromDropdown)}
+                  className="w-full p-4 text-left rounded-lg border-2 border-[#4b5563] bg-[#1e1e1e] hover:bg-[#374151] transition-colors font-medium text-[#9ca3af] hover:text-white"
+                >
+                  <div className="flex items-center gap-3">
+                    <ArrowUp className="w-6 h-6 text-cyan-400" />
+                    <div>
+                      <div className="font-semibold text-white">{sourceName}</div>
+                      <div className="text-sm text-cyan-300">
+                        ${sourceBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                {showTransferFromDropdown && (
+                  <div className="absolute top-full left-0 mt-2 w-full bg-[#232323] border border-[#334155] rounded-lg shadow-xl z-50">
+                    <div className="p-2 max-h-60 overflow-y-auto">
+                      {/* Balance General */}
+                      <button
+                        onClick={() => handleSelectTransferFromAccount(null)}
+                        className="w-full p-3 text-left rounded-lg hover:bg-[#374151] transition-colors"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="font-medium text-white">{t('common.generalBalance')}</div>
+                            <div className="text-xs text-[#9ca3af]">Balance principal</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold text-white">${brokerBalance.toLocaleString()}</div>
+                            <div className="text-xs text-[#9ca3af]">USD</div>
+                          </div>
+                        </div>
+                      </button>
+                      
+                      {/* Cuentas MT5 con balance */}
+                      {realMT5AccountsWithBalance.map((account) => (
+                        <button
+                          key={account.id}
+                          onClick={() => handleSelectTransferFromAccount(account)}
+                          className="w-full p-3 text-left rounded-lg hover:bg-[#374151] transition-colors"
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="font-medium text-white">{account.account_name}</div>
+                              <div className="text-xs text-[#9ca3af]">{account.account_type} • {account.account_number}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold text-white">${(account.balance || 0).toLocaleString()}</div>
+                              <div className="text-xs text-[#9ca3af]">USD</div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Mostrar origen fijo: Balance General cuando no hay múltiples MT5 */
+            <div className="mb-4 p-4 bg-gradient-to-br from-cyan-900/20 to-cyan-800/20 border border-cyan-500/30 rounded-lg">
+              <div className="text-xs text-cyan-400 mb-1">Origen</div>
+              <div className="font-semibold text-white">{sourceName}</div>
+              <div className="text-sm text-cyan-300 mt-1">
+                ${sourceBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD
+              </div>
+            </div>
+          )}
           
           <div className="relative" ref={transferDropdownRef}>
             <div className="text-xs text-gray-400 mb-2">Destino (Cuenta MT5)</div>
