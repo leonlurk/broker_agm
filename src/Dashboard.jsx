@@ -32,7 +32,46 @@ const Dashboard = ({ onLogout }) => {
   const { t } = useTranslation('common');
   const location = useLocation();
   const navigate = useNavigate();
-  const [selectedOption, setSelectedOption] = useState("Dashboard");
+  
+  // Map between sidebar options and URL segments (moved before state)
+  const optionToPath = {
+    'Dashboard': '',
+    'Cuentas': 'accounts',
+    'Wallet': 'wallet',
+    'Afiliados': 'affiliates',
+    'Noticias': 'news',
+    'Descargas': 'downloads',
+    'Calculadora': 'calculator',
+    'Competicion': 'competition',
+    'PropFirm': 'propfirm',
+    'Broker': 'broker'
+  };
+  const pathToOption = {
+    '': 'Dashboard',
+    'accounts': 'Cuentas',
+    'wallet': 'Wallet',
+    'affiliates': 'Afiliados',
+    'news': 'Noticias',
+    'downloads': 'Descargas',
+    'calculator': 'Calculadora',
+    'competition': 'Competicion',
+    'propfirm': 'PropFirm',
+    'broker': 'Broker'
+  };
+  
+  // Initialize selectedOption from URL on first load
+  const getInitialSelectedOption = () => {
+    const match = location.pathname.match(/^\/dashboard\/?(.*)$/);
+    if (match) {
+      const segment = (match[1] || '').replace(/\/$/, '');
+      const baseSegment = segment.split('/')[0];
+      const opt = pathToOption[baseSegment];
+      return opt || "Dashboard";
+    }
+    return "Dashboard";
+  };
+  
+  const [selectedOption, setSelectedOption] = useState(getInitialSelectedOption());
   const [navigationParams, setNavigationParams] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
@@ -68,31 +107,6 @@ const Dashboard = ({ onLogout }) => {
     console.log("[Dashboard - src] selectedOption state updated to:", selectedOption);
   }, [selectedOption]);
 
-  // Map between sidebar options and URL segments
-  const optionToPath = {
-    'Dashboard': '',
-    'Cuentas': 'accounts',
-    'Wallet': 'wallet',
-    'Afiliados': 'affiliates',
-    'Noticias': 'news',
-    'Descargas': 'downloads',
-    'Calculadora': 'calculator',
-    'Competicion': 'competition',
-    'PropFirm': 'propfirm',
-    'Broker': 'broker'
-  };
-  const pathToOption = {
-    '': 'Dashboard',
-    'accounts': 'Cuentas',
-    'wallet': 'Wallet',
-    'affiliates': 'Afiliados',
-    'news': 'Noticias',
-    'downloads': 'Descargas',
-    'calculator': 'Calculadora',
-    'competition': 'Competicion',
-    'propfirm': 'PropFirm',
-    'broker': 'Broker'
-  };
 
   // Sync selectedOption from URL on load and when pathname changes
   useEffect(() => {

@@ -33,9 +33,8 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
         });
     }, [user]);
 
-    // Debug selectedOption changes to ensure sidebar updates correctly
+    // Force re-render when selectedOption changes to ensure visual update
     useEffect(() => {
-        console.log("[Sidebar] selectedOption changed to:", selectedOption);
         // Force re-render by updating a local state if needed
         if (selectedOption) {
             // Ensure the component re-renders when selectedOption changes
@@ -211,20 +210,15 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                                     className={`flex items-center justify-between w-full rounded-xl bg-transparent border font-regular transition-all
                                         ${isMobile ? 'py-3 px-4 text-base' : 'py-4 px-6 text-lg'}
                                         ${(() => {
-                                            // Verificar si la opción actual está seleccionada
-                                            if (selectedOption === item.name) return true;
+                                            const isSelected = selectedOption === item.name;
+                                            const isSubSelected = item.subOptions && item.subOptions.some(sub => 
+                                                item.name === "Herramientas" ? sub.name === selectedOption : selectedOption === `${item.name} ${sub.name}`
+                                            );
+                                            const result = isSelected || isSubSelected;
                                             
-                                            // Para Herramientas, verificar subopciones directamente
-                                            if (item.name === "Herramientas" && item.subOptions) {
-                                                return item.subOptions.some(sub => sub.name === selectedOption);
-                                            }
+                                            // Debug removed for performance
                                             
-                                            // Para otras opciones con subopciones, verificar con prefijo
-                                            if (item.subOptions) {
-                                                return item.subOptions.some(sub => selectedOption === `${item.name} ${sub.name}`);
-                                            }
-                                            
-                                            return false;
+                                            return result;
                                         })()
                                             ? "bg-[#191919] border-cyan-500 border-opacity-30" 
                                             : "hover:bg-[#191919] border-transparent"}`}
