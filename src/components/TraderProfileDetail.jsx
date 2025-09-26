@@ -5,12 +5,15 @@ import SeguirTraderModal from './SeguirTraderModal';
 import AccountSelectionModal from './AccountSelectionModal';
 import CommentsRatingModal from './CommentsRatingModal';
 import { useAccounts } from '../contexts/AccountsContext';
+import useTranslation from '../hooks/useTranslation';
+import { followMaster } from '../services/copytradingService';
 
 const TraderProfileDetail = ({ trader, onBack }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('statistics');
   const [showAllTrades, setShowAllTrades] = useState(false);
-  const [rentabilidadTab, setRentabilidadTab] = useState('Rentabilidad');
-  const [rentabilidadRange, setRentabilidadRange] = useState('Día');
+  const [rentabilidadTab, setRentabilidadTab] = useState('profitability');
+  const [rentabilidadRange, setRentabilidadRange] = useState('day');
   const [showSeguirModal, setShowSeguirModal] = useState(false);
   
   // Estados para el modal de selección de cuenta
@@ -243,7 +246,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
             />
               <div>
               <h1 className="text-2xl font-semibold">{trader?.nombre || 'Nombre Trader'}</h1>
-              <p className="text-sm text-gray-400">Activo hace {trader?.activeSince || '51 días'}</p> 
+              <p className="text-sm text-gray-400">{t('copyTrading.traderDetail.activeSince')} {trader?.activeSince || '51 días'}</p> 
             </div>
                 </div>
           <div className="flex items-center gap-2">
@@ -259,7 +262,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
               }`}
             >
               <Target size={16} />
-              {followedTraders.has(trader?.id) ? 'Siguiendo' : 'Seguir Trader'}
+              {followedTraders.has(trader?.id) ? t('copyTrading.traderDetail.following') : t('copyTrading.traderDetail.followTrader')}
             </button>
             <button 
               onClick={handleCopyTrader}
@@ -271,14 +274,14 @@ const TraderProfileDetail = ({ trader, onBack }) => {
               }`}
             >
               <Copy size={16} />
-              {copiedTraders.has(trader?.id) ? 'Copiando' : 'Copiar'}
+              {copiedTraders.has(trader?.id) ? t('copyTrading.traderDetail.copying') : t('copyTrading.traderDetail.copy')}
             </button>
             <button 
               onClick={() => setShowCommentsModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-md text-sm transition-colors"
             >
               <MessageSquare size={16} />
-              Comentar
+              {t('copyTrading.traderDetail.comment')}
             </button>
                 </div>
               </div>
@@ -287,59 +290,59 @@ const TraderProfileDetail = ({ trader, onBack }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Columna Izquierda: Información */}
           <div className="space-y-3">
-            <h2 className="text-lg font-medium mb-2 border-b border-[#333] pb-1">Información</h2>
+            <h2 className="text-lg font-medium mb-2 border-b border-[#333] pb-1">{t('copyTrading.traderDetail.information')}</h2>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Número de cuenta</span>
+              <span className="text-gray-400">{t('copyTrading.traderDetail.accountNumber')}</span>
               <span>{trader?.accountNumber || '657237'}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Nombre del servidor</span>
+              <span className="text-gray-400">{t('copyTrading.traderDetail.serverName')}</span>
               <span>{trader?.server || 'MT5'}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Tipo de cuenta</span>
+              <span className="text-gray-400">{t('copyTrading.traderDetail.accountType')}</span>
               <span>{trader?.accountType || 'CopyFX MT5 Prime'}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Verificado</span>
-              <span className="text-green-500">{trader?.verified ? 'Sí' : 'Sí'}</span>
+              <span className="text-gray-400">{t('copyTrading.traderDetail.verified')}</span>
+              <span className="text-green-500">{trader?.verified ? t('copyTrading.traderDetail.yes') : t('copyTrading.traderDetail.yes')}</span>
               </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Saldo de la cuenta</span>
+              <span className="text-gray-400">{t('copyTrading.traderDetail.accountBalance')}</span>
               <span>{formatCurrency(trader?.balance || 5000.23)} USD</span>
               </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Capital administrado</span>
+              <span className="text-gray-400">{t('copyTrading.traderDetail.managedCapital')}</span>
               <span>{formatCurrency(trader?.managedCapital || 75009.73)} USD</span>
               </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Apalancamiento</span>
+              <span className="text-gray-400">{t('copyTrading.traderDetail.leverage')}</span>
               <span>1:{trader?.leverage || '300'}</span>
             </div>
           </div>
           
           {/* Columna Derecha: Reglas */}
           <div className="space-y-3">
-            <h2 className="text-lg font-medium mb-2 border-b border-[#333] pb-1">Reglas</h2>
+            <h2 className="text-lg font-medium mb-2 border-b border-[#333] pb-1">{t('copyTrading.traderDetail.rules')}</h2>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Nombre de la estrategia</span>
+              <span className="text-gray-400">{t('copyTrading.traderDetail.strategyName')}</span>
               <span>{trader?.strategyName || 'Nombre estrategia'}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Depósito mínimo</span>
+              <span className="text-gray-400">{t('copyTrading.traderDetail.minDeposit')}</span>
               <span>{formatCurrency(trader?.minDeposit || 100)} USD</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Tipo de comisión</span>
+              <span className="text-gray-400">{t('copyTrading.traderDetail.commissionType')}</span>
               <span>{trader?.commissionType || '20%'}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Frecuencia de pagos</span>
+              <span className="text-gray-400">{t('copyTrading.traderDetail.paymentFrequency')}</span>
               <span>{trader?.paymentFrequency || '1 semana'}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Modo de copia</span>
-              <span>{trader?.copyMode || 'Proporcional'}</span>
+              <span className="text-gray-400">{t('copyTrading.traderDetail.copyMode')}</span>
+              <span>{trader?.copyMode || t('copyTrading.traderDetail.proportional')}</span>
             </div>
           </div>
         </div>
@@ -347,39 +350,39 @@ const TraderProfileDetail = ({ trader, onBack }) => {
         {/* Métricas de Rendimiento */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
-            <p className="text-xs text-gray-400 mb-1">Rentabilidad total</p>
+            <p className="text-xs text-gray-400 mb-1">{t('copyTrading.traderDetail.totalProfitability')}</p>
             <p className="text-lg font-medium text-green-500">{formatPercentage(trader?.totalProfitabilityPercent || 191)}</p>
             <p className="text-xs text-gray-500">{formatCurrency(trader?.totalProfitabilityValue || 6238.99)} USD</p>
           </div>
           <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
-            <p className="text-xs text-gray-400 mb-1">Seguidores actuales</p>
+            <p className="text-xs text-gray-400 mb-1">{t('copyTrading.traderDetail.currentFollowers')}</p>
             <p className="text-lg font-medium">{trader?.followers || 20}</p>
             <p className={`text-xs ${ (trader?.followersChangePercent || -34.7) >= 0 ? 'text-green-500' : 'text-red-500'}`}>{formatPercentage(trader?.followersChangePercent || -34.7)}</p>
           </div>
            <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
-            <p className="text-xs text-gray-400 mb-1">Operaciones</p>
+            <p className="text-xs text-gray-400 mb-1">{t('copyTrading.traderDetail.operations')}</p>
             <p className="text-lg font-medium">{trader?.totalTrades || 7}</p>
           </div>
           <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
-            <p className="text-xs text-gray-400 mb-1">Winrate</p>
+            <p className="text-xs text-gray-400 mb-1">{t('copyTrading.traderDetail.winrate')}</p>
              <p className="text-lg font-medium">{formatPercentage(trader?.winRate || 85.71)}</p>
-            <p className="text-xs text-gray-500">{trader?.winningTrades || 6} Ganadas</p>
+            <p className="text-xs text-gray-500">{trader?.winningTrades || 6} {t('copyTrading.traderDetail.won')}</p>
           </div>
           <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
-            <p className="text-xs text-gray-400 mb-1">Retracción Máxima</p>
+            <p className="text-xs text-gray-400 mb-1">{t('copyTrading.traderDetail.maxDrawdown')}</p>
             <p className="text-lg font-medium text-red-500">{formatPercentage(trader?.maxDrawdown || -48.40)}</p>
           </div>
            <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
-            <p className="text-xs text-gray-400 mb-1">Promedio de Ganancia</p>
+            <p className="text-xs text-gray-400 mb-1">{t('copyTrading.traderDetail.avgProfit')}</p>
             <p className="text-lg font-medium text-green-500">{formatPercentage(trader?.avgProfit || 5)}</p>
           </div>
           <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
-            <p className="text-xs text-gray-400 mb-1">Beneficio</p>
-             <p className="text-sm text-green-500">Mayor {formatCurrency(trader?.maxProfitTrade || 1915.17)}</p>
-            <p className="text-sm text-red-500">Menor {formatCurrency(trader?.minProfitTrade || -124.75)}</p>
+            <p className="text-xs text-gray-400 mb-1">{t('copyTrading.traderDetail.profit')}</p>
+             <p className="text-sm text-green-500">{t('copyTrading.traderDetail.highest')} {formatCurrency(trader?.maxProfitTrade || 1915.17)}</p>
+            <p className="text-sm text-red-500">{t('copyTrading.traderDetail.lowest')} {formatCurrency(trader?.minProfitTrade || -124.75)}</p>
           </div>
            <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
-            <p className="text-xs text-gray-400 mb-1">Suscriptores Activos</p>
+            <p className="text-xs text-gray-400 mb-1">{t('copyTrading.traderDetail.activeSubscribers')}</p>
             <p className="text-lg font-medium">{trader?.activeSubscribers || 8}</p>
           </div>
         </div>
@@ -389,7 +392,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
         <div className="lg:col-span-4 bg-[#232323] p-6 rounded-xl border border-[#333]">
       {/* Tabs */}
         <div className="flex mb-4 border-b border-[#333] overflow-x-auto">
-          {['Rentabilidad', 'Drawdown', 'Beneficio Total', 'Balance y Equidad', 'Retracción Máxima'].map(tab => (
+          {['profitability', 'drawdown', 'totalProfit', 'balanceAndEquity', 'maxRetraction'].map(tab => (
         <button
               key={tab}
               onClick={() => setRentabilidadTab(tab)}
@@ -399,14 +402,14 @@ const TraderProfileDetail = ({ trader, onBack }) => {
               : 'text-gray-400 hover:text-white'
           }`}
         >
-              {tab}
+              {t(`copyTrading.traderDetail.${tab}`)}
         </button>
           ))}
       </div>
       
          {/* Contenido de Tabs (Gráfico y otros) */}
         <div>
-          {rentabilidadTab === 'Rentabilidad' && (
+          {rentabilidadTab === 'profitability' && (
             <div>
               <div className="flex justify-end mb-4">
                  {/* TODO: Añadir lógica real al dropdown */}
@@ -416,10 +419,10 @@ const TraderProfileDetail = ({ trader, onBack }) => {
                     onChange={(e) => setRentabilidadRange(e.target.value)}
                     className="appearance-none bg-[#191919] border border-[#333] rounded px-3 py-1 text-xs pr-8 cursor-pointer"
                   >
-                    <option value="Día">Día</option>
-                    <option value="Semana">Semana</option>
-                    <option value="Mes">Mes</option>
-                    <option value="Año">Año</option>
+                    <option value="day">{t('copyTrading.traderDetail.day')}</option>
+                    <option value="week">{t('copyTrading.traderDetail.week')}</option>
+                    <option value="month">{t('copyTrading.traderDetail.month')}</option>
+                    <option value="year">{t('copyTrading.traderDetail.year')}</option>
                   </select>
                   <ChevronDown size={14} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
@@ -473,7 +476,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
             </div>
           </div>
           )}
-          {rentabilidadTab === 'Drawdown' && (
+          {rentabilidadTab === 'drawdown' && (
             <div>
               <div className="flex justify-end mb-4">
                 <div className="relative">
@@ -482,10 +485,10 @@ const TraderProfileDetail = ({ trader, onBack }) => {
                     onChange={(e) => setRentabilidadRange(e.target.value)}
                     className="appearance-none bg-[#191919] border border-[#333] rounded px-3 py-1 text-xs pr-8 cursor-pointer"
                   >
-                    <option value="Día">Día</option>
-                    <option value="Semana">Semana</option>
-                    <option value="Mes">Mes</option>
-                    <option value="Año">Año</option>
+                    <option value="day">{t('copyTrading.traderDetail.day')}</option>
+                    <option value="week">{t('copyTrading.traderDetail.week')}</option>
+                    <option value="month">{t('copyTrading.traderDetail.month')}</option>
+                    <option value="year">{t('copyTrading.traderDetail.year')}</option>
                   </select>
                   <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
                 </div>
@@ -536,29 +539,29 @@ const TraderProfileDetail = ({ trader, onBack }) => {
               {/* Estadísticas de drawdown */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
-                  <p className="text-xs text-gray-400 mb-1">Drawdown Máximo</p>
+                  <p className="text-xs text-gray-400 mb-1">{t('copyTrading.traderDetail.maxDrawdownStat')}</p>
                   <p className="text-lg font-medium text-red-500">-18.4%</p>
                 </div>
                 <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
-                  <p className="text-xs text-gray-400 mb-1">Drawdown Actual</p>
+                  <p className="text-xs text-gray-400 mb-1">{t('copyTrading.traderDetail.currentDrawdown')}</p>
                   <p className="text-lg font-medium text-red-400">-6.3%</p>
                 </div>
                 <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
-                  <p className="text-xs text-gray-400 mb-1">Duración Máx</p>
-                  <p className="text-lg font-medium text-white">12 días</p>
+                  <p className="text-xs text-gray-400 mb-1">{t('copyTrading.traderDetail.maxDuration')}</p>
+                  <p className="text-lg font-medium text-white">12 {t('copyTrading.time.days')}</p>
                 </div>
                 <div className="bg-[#191919] p-3 rounded-lg border border-[#333]">
-                  <p className="text-xs text-gray-400 mb-1">Recuperación</p>
-                  <p className="text-lg font-medium text-yellow-500">En curso</p>
+                  <p className="text-xs text-gray-400 mb-1">{t('copyTrading.traderDetail.recovery')}</p>
+                  <p className="text-lg font-medium text-yellow-500">{t('copyTrading.traderDetail.inProgress')}</p>
                 </div>
               </div>
             </div>
           )}
 
           {/* Contenido para las otras pestañas */}
-          {!['Rentabilidad', 'Drawdown'].includes(rentabilidadTab) && (
+          {!['profitability', 'drawdown'].includes(rentabilidadTab) && (
             <div className="text-center text-gray-500 py-10">
-              Contenido para {rentabilidadTab} (Pendiente)
+              {t('copyTrading.traderDetail.contentPending', { tab: t(`copyTrading.traderDetail.${rentabilidadTab}`) })}
             </div>
           )}
                 </div>
@@ -568,7 +571,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
         <div className="lg:col-span-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
          {/* Instrumentos de Trading (Pie Chart) */}
         <div className="lg:col-span-1 bg-[#232323] p-6 rounded-xl border border-[#333]">
-          <h2 className="text-lg font-medium mb-4">Instrumentos de Trading</h2>
+          <h2 className="text-lg font-medium mb-4">{t('copyTrading.traderDetail.tradingInstruments')}</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart> 
@@ -612,7 +615,7 @@ const TraderProfileDetail = ({ trader, onBack }) => {
                   }}
                   labelStyle={{ color: '#ffffff' }}
                   itemStyle={{ color: '#ffffff' }}
-                  formatter={(value) => [`${value}%`, 'Porcentaje']}
+                  formatter={(value) => [`${value}%`, t('copyTrading.traderDetail.percentage')]}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -622,18 +625,18 @@ const TraderProfileDetail = ({ trader, onBack }) => {
          {/* Historial de Operaciones */}
         <div className="lg:col-span-2 bg-[#232323] p-6 rounded-xl border border-[#333]">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium">Historial de Operaciones</h2>
+            <h2 className="text-lg font-medium">{t('copyTrading.traderDetail.operationsHistory')}</h2>
           </div>
             
             <div className="overflow-x-auto">
               <table className="w-full min-w-[600px]">
                 <thead className="text-left text-xs text-gray-400 border-b border-[#333]">
                   <tr>
-                    <th className="pb-2 font-medium">Posición</th>
-                    <th className="pb-2 font-medium">Entrada</th>
-                    <th className="pb-2 font-medium">Salida</th>
-                    <th className="pb-2 font-medium">Ganancia</th>
-                    <th className="pb-2 font-medium">Orden</th>
+                    <th className="pb-2 font-medium">{t('copyTrading.traderDetail.position')}</th>
+                    <th className="pb-2 font-medium">{t('copyTrading.traderDetail.entry')}</th>
+                    <th className="pb-2 font-medium">{t('copyTrading.traderDetail.exit')}</th>
+                    <th className="pb-2 font-medium">{t('copyTrading.traderDetail.gain')}</th>
+                    <th className="pb-2 font-medium">{t('copyTrading.traderDetail.order')}</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm divide-y divide-[#333]">
@@ -682,18 +685,33 @@ const TraderProfileDetail = ({ trader, onBack }) => {
         }}
         trader={trader}
         selectedAccount={selectedAccountForCopy}
-        onConfirm={(formData) => {
-          console.log('Copiar trader confirmado:', formData);
-          console.log('Cuenta seleccionada:', selectedAccountForCopy);
-          // Aquí integrarías con tu API para copiar al trader
-          
-          // Marcar el trader como copiado
-          if (trader?.id) {
-            setCopiedTraders(prev => new Set([...prev, trader.id]));
+        onConfirm={async (formData) => {
+          try {
+            // Llamar al endpoint followMaster del backend
+            const response = await followMaster({
+              master_user_id: trader.user_id || trader.id,
+              follower_mt5_account_id: parseInt(formData.accountId),
+              risk_ratio: parseFloat(formData.riskRatio)
+            });
+            
+            if (response.success || response.message) {
+              // Mostrar mensaje de éxito
+              alert(t('copyTrading.messages.followSuccess') || 'Successfully following trader');
+              
+              // Marcar el trader como copiado
+              if (trader?.id) {
+                setCopiedTraders(prev => new Set([...prev, trader.id]));
+              }
+            } else {
+              throw new Error(response.error || 'Error following trader');
+            }
+          } catch (error) {
+            console.error('Error siguiendo trader:', error);
+            alert(t('copyTrading.messages.followError') + ': ' + (error.message || 'Error desconocido'));
+          } finally {
+            setShowSeguirModal(false);
+            setSelectedAccountForCopy(null);
           }
-          
-          setShowSeguirModal(false);
-          setSelectedAccountForCopy(null);
         }}
       />
 

@@ -3,11 +3,12 @@ import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, MoreH
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
 import { getPammFunds, getMyFunds } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
-import { scrollToTopManual } from '../hooks/useScrollToTop';
-import { useTranslation } from 'react-i18next';
+import { useAccounts } from '../contexts/AccountsContext';
+import useTranslation from '../hooks/useTranslation';
+import { followMaster } from '../services/copytradingService';
 
 const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
-    const { t } = useTranslation();
+    const { t } = useTranslation('pamm');
     const [view, setView] = useState('dashboard'); // dashboard, explorer, fundProfile
     const [selectedFund, setSelectedFund] = useState(null);
     const [chartPeriod, setChartPeriod] = useState('1M');
@@ -343,7 +344,7 @@ const PammDashboardView = ({
             {/* Widget 3: Gráfico de Rendimiento Histórico */}
             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-                    <h2 className="text-xl font-semibold text-cyan-400 mb-4 sm:mb-0">{t('pamm.historicalPerformance')}</h2>
+                    <h2 className="text-xl font-semibold text-cyan-400 mb-4 sm:mb-0">{t('pamm.investor.historicalPerformance')}</h2>
                     <div className="flex gap-2">
                         {['1M', '3M', '6M', '1A'].map((period) => (
                             <button
@@ -1684,9 +1685,25 @@ const PammDetailView = ({ trader, onBack, investedFunds, setInvestedFunds }) => 
                 isOpen={showInvertirModal}
                 onClose={() => setShowInvertirModal(false)}
                 gestor={trader}
-                onConfirm={(formData) => {
-                    console.log('Inversión PAMM confirmada:', formData);
-                    // Aquí integrarías con tu API para procesar la inversión
+                onConfirm={async (formData) => {
+                    try {
+                        // Llamar al endpoint followMaster del backend para PAMM
+                        const response = await followMaster({
+                            master_user_id: trader.user_id || trader.id,
+                            follower_mt5_account_id: parseInt(formData.accountId),
+                            risk_ratio: parseFloat(formData.riskRatio || 1.0)
+                        });
+                        
+                        if (response.success || response.message) {
+                            alert(t('copyTrading.messages.followSuccess') || 'Successfully following PAMM fund');
+                            setShowInvertirModal(false);
+                        } else {
+                            throw new Error(response.error || 'Error following PAMM fund');
+                        }
+                    } catch (error) {
+                        console.error('Error siguiendo PAMM fund:', error);
+                        alert(t('copyTrading.messages.followError') + ': ' + (error.message || 'Error desconocido'));
+                    }
                 }}
             />
         </div>

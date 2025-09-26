@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { AuthAdapter } from './database.adapter'; // Importamos el adapter para obtener el token
 
-// La URL base para Copy Trading - usa el dominio público con SSL
+// La URL base para Copy Trading - usa MT5Manager como proxy
 // MT5Manager en producción hace proxy interno a Copy-PAMM (localhost:8080)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444';
-// Conectado a MT5Manager producción que hace proxy hacia Copy-PAMM API interna
+// MT5Manager redirige automáticamente las peticiones /api/v1/* al backend Copy-PAMM
 
 // Creamos una instancia de Axios para nuestro servicio de lógica
 const logicApiClient = axios.create({
@@ -46,17 +46,18 @@ logicApiClient.interceptors.request.use(
 
 /**
  * Permite al usuario actual seguir a un Master Trader.
- * @param {string} masterUserId - El ID de Firebase del usuario master.
- * @param {string} followerMt5AccountId - El ID de la cuenta MT5 del usuario que va a seguir.
- * @param {number} [riskRatio=1.0] - El ratio de riesgo para la copia.
+ * @param {object} params - Parámetros para seguir al master
+ * @param {string} params.master_user_id - El ID del usuario master
+ * @param {number} params.follower_mt5_account_id - El ID de la cuenta MT5 del seguidor
+ * @param {number} [params.risk_ratio=1.0] - El ratio de riesgo para la copia
  * @returns {Promise<object>} La respuesta del servidor.
  */
-export const followMaster = async (masterUserId, followerMt5AccountId, riskRatio = 1.0) => {
+export const followMaster = async ({ master_user_id, follower_mt5_account_id, risk_ratio = 1.0 }) => {
   try {
     const response = await logicApiClient.post('/api/v1/copy/follow', {
-      masterUserId,
-      followerMt5AccountId,
-      riskRatio
+      master_user_id,
+      follower_mt5_account_id,
+      risk_ratio
     });
     return response.data;
   } catch (error) {
@@ -176,7 +177,7 @@ export const getTraderStats = async () => {
  */
 export const getCopyStats = async () => {
   try {
-    const response = await logicApiClient.get('/copy/stats');
+    const response = await logicApiClient.get('/api/v1/copy/stats');
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al obtener estadísticas de copy trading' };

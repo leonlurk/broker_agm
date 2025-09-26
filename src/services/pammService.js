@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { AuthAdapter } from './database.adapter'; // Importamos el adapter para obtener el token
 
-// La URL base para PAMM - usa el dominio público con SSL
+// La URL base para PAMM - usa MT5Manager como proxy
 // MT5Manager en producción hace proxy interno a Copy-PAMM (localhost:8080)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444';
-// Conectado a MT5Manager producción que hace proxy hacia Copy-PAMM API interna
+// MT5Manager redirige automáticamente las peticiones /api/v1/* al backend Copy-PAMM
 
 // Creamos una instancia de Axios para nuestro servicio de lógica
 const logicApiClient = axios.create({

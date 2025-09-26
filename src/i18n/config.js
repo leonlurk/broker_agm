@@ -15,6 +15,8 @@ import esErrors from '../locales/es/errors.json';
 import esForms from '../locales/es/forms.json';
 import esTools from '../locales/es/tools.json';
 import esAffiliates from '../locales/es/affiliates.json';
+import esCopytrading from '../locales/es/copytrading.json';
+import esPamm from '../locales/es/pamm.json';
 
 import enCommon from '../locales/en/common.json';
 import enAuth from '../locales/en/auth.json';
@@ -28,6 +30,8 @@ import enErrors from '../locales/en/errors.json';
 import enForms from '../locales/en/forms.json';
 import enTools from '../locales/en/tools.json';
 import enAffiliates from '../locales/en/affiliates.json';
+import enCopytrading from '../locales/en/copytrading.json';
+import enPamm from '../locales/en/pamm.json';
 
 const resources = {
   es: {
@@ -42,7 +46,9 @@ const resources = {
     errors: esErrors,
     forms: esForms,
     tools: esTools,
-    affiliates: esAffiliates
+    affiliates: esAffiliates,
+    copytrading: esCopytrading,
+    pamm: esPamm
   },
   en: {
     common: enCommon,
@@ -56,7 +62,9 @@ const resources = {
     errors: enErrors,
     forms: enForms,
     tools: enTools,
-    affiliates: enAffiliates
+    affiliates: enAffiliates,
+    copytrading: enCopytrading,
+    pamm: enPamm
   }
 };
 
@@ -69,7 +77,7 @@ i18n
     fallbackLng: 'es',
     debug: false,
     
-    ns: ['common', 'auth', 'dashboard', 'kyc', 'wallet', 'trading', 'settings', 'notifications', 'errors', 'forms', 'tools', 'affiliates'],
+    ns: ['common', 'auth', 'dashboard', 'kyc', 'wallet', 'trading', 'settings', 'notifications', 'errors', 'forms', 'tools', 'affiliates', 'copytrading', 'pamm'],
     defaultNS: 'common',
     
     interpolation: {

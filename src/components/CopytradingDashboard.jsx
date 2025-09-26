@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import TraderProfileDetail from './TraderProfileDetail';
 import SeguirTraderModal from './SeguirTraderModal';
 import AccountSelectionModal from './AccountSelectionModal';
-import { getMasterTraders, getMySubscriptions } from '../services/copytradingService';
+import { getMasterTraders, getMySubscriptions, followMaster } from '../services/copytradingService';
 import { useAccounts } from '../contexts/AccountsContext';
 import useTranslation from '../hooks/useTranslation';
 
@@ -99,12 +99,34 @@ const CopytradingDashboard = () => {
     setSelectedTrader(null);
   };
   
-  const toggleExpandTrader = (traderId) => {
-    console.log("Toggling expanded trader:", traderId);
-    if (expandedTrader === traderId) {
-      setExpandedTrader(null);
-    } else {
-      setExpandedTrader(traderId);
+  const handleFollowTrader = async (formData) => {
+    try {
+      setIsLoading(true);
+      
+      // Llamar al endpoint followMaster del backend
+      const response = await followMaster({
+        master_user_id: selectedTraderForCopy.user_id || selectedTraderForCopy.id,
+        follower_mt5_account_id: parseInt(formData.accountId),
+        risk_ratio: parseFloat(formData.riskRatio)
+      });
+      
+      if (response.success || response.message) {
+        // Mostrar mensaje de éxito
+        alert(t('copyTrading.messages.followSuccess') || 'Successfully following trader');
+        
+        // Cerrar modal
+        setShowSeguirModal(false);
+        
+        // Actualizar datos si es necesario
+        await fetchData();
+      } else {
+        throw new Error(response.error || 'Error following trader');
+      }
+    } catch (error) {
+      console.error('Error siguiendo trader:', error);
+      alert(t('copyTrading.messages.followError') + ': ' + (error.message || 'Error desconocido'));
+    } finally {
+      setIsLoading(false);
     }
   };
   

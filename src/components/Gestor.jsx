@@ -26,7 +26,7 @@ const initialTraderDashboardData = {
 };
 
 const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('copytrading');
   const [view, setView] = useState('dashboard'); // dashboard, myInvestors, profileEdit
   const [investors, setInvestors] = useState([]);
   const [traderStats, setTraderStats] = useState(initialTraderDashboardData);

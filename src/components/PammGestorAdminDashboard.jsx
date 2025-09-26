@@ -49,7 +49,7 @@ const StatCard = ({ icon, title, value, detail }) => {
 };
 
 const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('pamm');
   const [view, setView] = useState('dashboard'); // dashboard, investorDetail
   const [selectedInvestor, setSelectedInvestor] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
@@ -144,7 +144,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   });
 
   // Dynamic accounts data from PAMM manager dashboard API
-  const accountsData = pammGestorData?.accounts || [];
+  const accountsData = gestorData?.accounts || [];
 
   if (view === 'fundDetail' && selectedInvestor) {
     const fund = selectedInvestor;
@@ -584,7 +584,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           className="flex items-center gap-2 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-5 rounded-lg hover:opacity-90 transition"
         >
           <Plus size={18} />
-          {t('pamm.createFund')}
+          {t('pamm.manager.createFund')}
         </button>
       </div>
 

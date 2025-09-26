@@ -136,8 +136,8 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
             ]
         },
         { name: "Afiliados", translationKey: "sidebar.items.affiliates", icon: <img src="./Group_light.svg" className="w-8 h-8" alt="Afiliados" /> },
-        /* { 
-            name: "Copytrading", 
+        {
+            name: "Copytrading",
             translationKey: "sidebar.copyTrading",
             icon: <img src="./copy-linear.svg" className="w-8 h-8" alt="Copytrading" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z'/%3E%3C/svg%3E"} />,
             subOptions: [
@@ -145,15 +145,15 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                 { name: "Gestor", translationKey: "sidebar.items.manager" }
             ]
         },
-        { 
-            name: "Pamm", 
+        {
+            name: "Pamm",
             translationKey: "sidebar.pamm",
             icon: <img src="./elements.svg" className="w-8 h-8" alt="Pamm" />,
             subOptions: [
                 { name: "Inversor", translationKey: "sidebar.items.pammInvestor" },
                 { name: "Gestor", translationKey: "sidebar.items.pammManager" }
             ]
-        }, */
+        }
     ];
 
     return (

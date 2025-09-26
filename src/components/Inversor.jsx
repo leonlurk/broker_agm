@@ -22,7 +22,7 @@ const initialHistoricalData = [];
 // Los traders se cargarán dinámicamente desde la API
 
 const Inversor = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('copytrading');
   const [view, setView] = useState('dashboard'); // dashboard, explorer, traderProfile
   const [selectedTrader, setSelectedTrader] = useState(null);
   const [chartPeriod, setChartPeriod] = useState('1M');
