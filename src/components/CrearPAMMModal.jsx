@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, DollarSign, AlertTriangle, TrendingUp, Shield, Users, Clock, Target, User, Settings, Copy, Percent } from 'lucide-react';
+import { X, DollarSign, AlertTriangle, TrendingUp, Shield, Users, Clock, Target, Star, Settings, ChevronLeft, ChevronRight, Copy, Percent, User } from 'lucide-react';
+import { useAccounts } from '../contexts/AccountsContext';
+import { supabase } from '../supabase/config';
+import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { createPammFund } from '../services/pammService';
 
 const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData = null }) => {
+  const { getAllAccounts } = useAccounts();
+  const { user } = useAuth();
+  const { t } = useTranslation();
   const getInitialFormData = () => {
     if (mode === 'configure' && fundData) {
       return {
@@ -24,6 +32,8 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
         tipoContrato: 'PAMM Standard',
         biografia: '',
         cuentaCopiar: '',
+        cuentaMT5Seleccionada: '',
+        convertirseEnManager: false,
         profitSplit: 80,
         tradingExperience: '',
         riskManagement: '',
@@ -51,6 +61,8 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
       tipoContrato: 'PAMM Standard',
       biografia: '',
       cuentaCopiar: '',
+      cuentaMT5Seleccionada: '',
+      convertirseEnManager: false,
       profitSplit: 80,
       tradingExperience: '',
       riskManagement: '',
@@ -64,7 +76,17 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
 
   const [errors, setErrors] = useState({});
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const maxSteps = mode === 'configure' ? 3 : 4;
+  
+  // Obtener cuentas MT5 reales del usuario
+  const accounts = getAllAccounts();
+  const realAccounts = accounts.filter(acc => 
+    acc.account_type === 'Real' || 
+    acc.accountType === 'Real' ||
+    acc.account_type === 'real' ||
+    acc.accountType === 'real'
+  );
 
   // Reset form data when modal opens or fundData changes
   React.useEffect(() => {
@@ -90,7 +112,6 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
   const horariosOperacion = ['24/7', '08:00-18:00 GMT', '14:00-22:00 GMT', 'Solo sesión europea', 'Solo sesión americana'];
   const nivelesExperiencia = ['Principiante', 'Intermedio', 'Avanzado'];
   const tiposContrato = ['PAMM Standard', 'PAMM Pro', 'PAMM Elite', 'Copy Trading Híbrido'];
-  const cuentasDisponibles = ['Cuenta Principal MT5', 'Cuenta Demo MT5', 'Cuenta ECN', 'Cuenta Scalping'];
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -133,8 +154,8 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
         }
       }
       if (step === 2) {
-        if (!formData.cuentaCopiar) {
-          newErrors.cuentaCopiar = 'Selecciona una cuenta para copiar';
+        if (!formData.cuentaMT5Seleccionada) {
+          newErrors.cuentaMT5Seleccionada = 'Selecciona una cuenta para copiar';
         }
         if (!formData.profitSplit || formData.profitSplit < 50 || formData.profitSplit > 95) {
           newErrors.profitSplit = 'El profit split debe estar entre 50% y 95%';
@@ -197,6 +218,12 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
       if (!formData.riesgoMaximo || formData.riesgoMaximo < 5 || formData.riesgoMaximo > 50) {
         newErrors.riesgoMaximo = 'El riesgo máximo debe estar entre 5% y 50%';
       }
+      if (formData.convertirseEnManager && !formData.cuentaMT5Seleccionada) {
+        newErrors.cuentaMT5Seleccionada = 'Selecciona una cuenta MT5 para el fondo PAMM';
+      }
+      if (realAccounts.length === 0) {
+        newErrors.cuentaMT5Seleccionada = 'Necesitas al menos una cuenta MT5 Real para crear un fondo PAMM';
+      }
     }
 
     setErrors(newErrors);
@@ -213,11 +240,78 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
     setCurrentStep(prev => prev - 1);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateStep(maxSteps)) {
+    if (!validateStep(maxSteps)) return;
+    
+    setIsSubmitting(true);
+    try {
+      // Si el usuario quiere convertirse en PAMM manager, actualizar Supabase
+      if (formData.convertirseEnManager && user?.id) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            is_pamm_manager: true,
+            pamm_config: {
+              fund_name: formData.nombreFondo,
+              description: formData.descripcion,
+              strategy_type: formData.tipoEstrategia,
+              management_fee: formData.managementFee,
+              performance_fee: formData.performanceFee,
+              lockup_period: formData.lockupPeriod,
+              min_investment: formData.inversionMinima,
+              max_risk: formData.riesgoMaximo,
+              markets: formData.mercados,
+              trading_hours: formData.horarioOperacion,
+              pamm_mt5_account: formData.cuentaMT5Seleccionada,
+              min_capital: formData.capitalMinimo,
+              max_capital: formData.capitalMaximo,
+              created_at: new Date().toISOString()
+            }
+          })
+          .eq('id', user.id);
+          
+        if (error) {
+          console.error('Error updating PAMM manager status:', error);
+          alert('Error al configurar como PAMM manager: ' + error.message);
+          return;
+        }
+
+        // Crear el fondo PAMM a través del backend
+        try {
+          const fundDataForBackend = {
+            name: formData.nombreFondo,
+            description: formData.descripcion,
+            strategy_type: formData.tipoEstrategia,
+            management_fee: formData.managementFee,
+            performance_fee: formData.performanceFee,
+            lockup_period: formData.lockupPeriod,
+            min_investment: formData.inversionMinima,
+            max_risk: formData.riesgoMaximo,
+            markets: formData.mercados,
+            trading_hours: formData.horarioOperacion,
+            pamm_mt5_account: formData.cuentaMT5Seleccionada,
+            min_capital: formData.capitalMinimo,
+            max_capital: formData.capitalMaximo
+          };
+
+          const fundResult = await createPammFund(fundDataForBackend);
+          console.log('Fund created successfully:', fundResult);
+          alert('¡Fondo PAMM creado exitosamente!');
+        } catch (fundError) {
+          console.error('Error creating PAMM fund:', fundError);
+          alert('Error al crear el fondo PAMM: ' + (fundError.message || 'Error desconocido'));
+          return;
+        }
+      }
+      
       onConfirm(formData);
       onClose();
+    } catch (error) {
+      console.error('Error in handleSubmit:', error);
+      alert('Error al crear el fondo PAMM: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -305,19 +399,21 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
                   Cuenta a Copiar *
                 </label>
                 <select
-                  value={formData.cuentaCopiar}
-                  onChange={(e) => handleInputChange('cuentaCopiar', e.target.value)}
-                  className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white focus:border-green-500 focus:outline-none"
+                  value={formData.cuentaMT5Seleccionada}
+                  onChange={(e) => handleInputChange('cuentaMT5Seleccionada', e.target.value)}
+                  className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white focus:border-cyan-500 focus:outline-none"
                 >
-                  <option value="">Selecciona una cuenta</option>
-                  {cuentasDisponibles.map((cuenta) => (
-                    <option key={cuenta} value={cuenta}>{cuenta}</option>
+                  <option value="">{t('pamm.selectMT5Account')}</option>
+                  {realAccounts.map((account) => (
+                    <option key={account.id} value={account.accountNumber || account.account_number || account.login}>
+                      {account.name || account.accountName || account.account_name || `Account ${account.accountNumber || account.account_number || account.login}`} - ${account.balance?.toLocaleString() || '0'} USD (Leverage 1:{account.leverage})
+                    </option>
                   ))}
                 </select>
-                {errors.cuentaCopiar && (
+                {errors.cuentaMT5Seleccionada && (
                   <p className="text-red-400 text-sm flex items-center gap-1">
                     <AlertTriangle size={14} />
-                    {errors.cuentaCopiar}
+                    {errors.cuentaMT5Seleccionada}
                   </p>
                 )}
               </div>
@@ -470,11 +566,105 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
       case 1:
         return (
           <div className="space-y-6">
+            {/* Toggle Convertirse en PAMM Manager */}
+            <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-xl p-6 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">Convertirse en PAMM Manager</h3>
+                  <p className="text-sm text-gray-400">Crea y gestiona fondos PAMM para que otros usuarios inviertan</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.convertirseEnManager}
+                    onChange={(e) => handleInputChange('convertirseEnManager', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-[#333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                </label>
+              </div>
+            </div>
+
+            {/* Selección de Cuenta MT5 PAMM */}
+            {formData.convertirseEnManager && (
+              <div className="bg-[#2a2a2a] border border-[#333] rounded-xl p-6 mb-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Settings size={20} className="text-purple-400" />
+                  Cuenta MT5 para Fondo PAMM
+                </h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Selecciona la cuenta MT5 que utilizarás para gestionar el fondo PAMM
+                </p>
+                
+                {realAccounts.length > 0 ? (
+                  <div className="space-y-3">
+                    {realAccounts.map((account) => (
+                      <label
+                        key={account.id}
+                        className={`flex items-center p-4 rounded-lg border cursor-pointer transition-colors ${
+                          formData.cuentaMT5Seleccionada === account.accountNumber
+                            ? 'border-purple-500 bg-purple-500/10'
+                            : 'border-[#333] bg-[#1a1a1a] hover:border-[#444]'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="cuentaMT5PAMM"
+                          value={account.accountNumber}
+                          checked={formData.cuentaMT5Seleccionada === account.accountNumber}
+                          onChange={(e) => handleInputChange('cuentaMT5Seleccionada', e.target.value)}
+                          className="sr-only"
+                        />
+                        <div className="flex items-center justify-between w-full">
+                          <div>
+                            <h4 className="font-semibold text-white">{account.accountName}</h4>
+                            <p className="text-sm text-gray-400">#{account.accountNumber}</p>
+                            <p className="text-xs text-gray-500">{account.accountTypeSelection} • Apalancamiento 1:{account.leverage}</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center gap-1 text-white font-semibold">
+                              <DollarSign size={14} />
+                              <span>{account.balance?.toLocaleString() || '0'}</span>
+                            </div>
+                            <p className="text-xs text-gray-400">{t('pamm.balance')} USD</p>
+                          </div>
+                        </div>
+                        {formData.cuentaMT5Seleccionada === account.accountNumber && (
+                          <div className="ml-3">
+                            <div className="w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                          </div>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                      <p className="text-red-400 font-medium mb-2">No tienes cuentas MT5 reales</p>
+                      <p className="text-sm text-gray-400">
+                        Necesitas al menos una cuenta MT5 Real para crear un fondo PAMM.
+                        Ve a "Nueva Cuenta" para crear una.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {errors.cuentaMT5Seleccionada && (
+                  <p className="text-red-400 text-sm flex items-center gap-1 mt-3">
+                    <AlertTriangle size={14} />
+                    {errors.cuentaMT5Seleccionada}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="text-center mb-6">
               <div className="p-3 bg-blue-500 bg-opacity-20 rounded-full w-16 h-16 mx-auto mb-4">
                 <TrendingUp className="text-blue-500 w-10 h-10" />
               </div>
-              <h3 className="text-xl font-semibold text-white">Información Básica</h3>
+              <h3 className="text-xl font-semibold text-white">Información del Fondo</h3>
               <p className="text-gray-400">Define el nombre y descripción de tu fondo</p>
             </div>
 
@@ -730,12 +920,12 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {mercadosDisponibles.map((mercado) => (
-                    <label key={mercado} className="flex items-center space-x-2 cursor-pointer">
+                    <label key={mercado} className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={formData.mercados.includes(mercado)}
                         onChange={() => handleMercadoChange(mercado)}
-                        className="w-4 h-4 text-orange-500 bg-[#2a2a2a] border-[#333] rounded focus:ring-orange-500"
+                        className="w-5 h-5 text-orange-500 bg-[#2a2a2a] border-[#333] rounded focus:ring-orange-500"
                       />
                       <span className="text-sm text-gray-300">{mercado}</span>
                     </label>

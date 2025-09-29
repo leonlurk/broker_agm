@@ -183,3 +183,29 @@ export const getCopyStats = async () => {
     throw error.response?.data || { error: 'Error al obtener estadísticas de copy trading' };
   }
 };
+
+/**
+ * Configura al usuario como master trader.
+ * @param {object} masterData - Datos de configuración del master trader
+ * @returns {Promise<object>} Respuesta del servidor
+ */
+export const configureMaster = async (masterData) => {
+  try {
+    const response = await logicApiClient.post('/api/v1/copy/configure-master', {
+      master_mt5_account: masterData.cuentaMT5Seleccionada,
+      strategy_name: masterData.nombreEstrategia,
+      description: masterData.descripcionEstrategia,
+      commission_rate: masterData.comisionSolicitada,
+      max_risk: masterData.riesgoMaximo,
+      max_drawdown: masterData.drawdownMaximo,
+      markets: masterData.mercadosOperados,
+      trading_hours: masterData.horariosOperacion,
+      min_capital: masterData.capitalMinimo,
+      max_followers: masterData.maximoSeguidores,
+      experience_level: masterData.experienciaRequerida
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al configurar como master trader' };
+  }
+};

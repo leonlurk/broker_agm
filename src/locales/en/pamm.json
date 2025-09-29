@@ -1,6 +1,7 @@
 {
   "pamm": {
     "title": "PAMM",
+    "subtitle": "PAMM Trading",
     "description": "Invest in funds managed by professional managers and receive profits proportional to your investment.",
     "dashboard": "PAMM Dashboard",
     "exploreFunds": "Explore Funds",
