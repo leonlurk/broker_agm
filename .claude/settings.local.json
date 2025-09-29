@@ -15,7 +15,9 @@
       "Bash(npx tailwindcss init:*)",
       "Bash(npm run dev:*)",
       "Bash(git commit:*)",
-      "Read(//c/Users/Administrator/Desktop/broker/payroll-crypto-api/**)"
+      "Read(//c/Users/Administrator/Desktop/broker/payroll-crypto-api/**)",
+      "Read(//home/rdpuser/Desktop/metatrader-api-v2/**)",
+      "Read(//home/rdpuser/Desktop/copy-pamm/**)"
     ],
     "deny": [],
     "ask": [],

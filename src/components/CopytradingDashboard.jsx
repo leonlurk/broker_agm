@@ -102,29 +102,41 @@ const CopytradingDashboard = () => {
   const handleFollowTrader = async (formData) => {
     try {
       setIsLoading(true);
-      
+
+      // Validar dependencias
+      if (!selectedTraderForCopy) throw new Error('No hay trader seleccionado');
+      if (!selectedAccountForCopy?.accountNumber) throw new Error('No hay cuenta seleccionada');
+
+      // Mapear porcentaje de riesgo (1-50%) a risk_ratio (0.01 - 1.0)
+      const pct = Number(formData?.porcentajeRiesgo) || 5; // default 5%
+      const computedRisk = Math.max(0.01, Math.min(1.0, pct / 100));
+
       // Llamar al endpoint followMaster del backend
       const response = await followMaster({
         master_user_id: selectedTraderForCopy.user_id || selectedTraderForCopy.id,
-        follower_mt5_account_id: parseInt(formData.accountId),
-        risk_ratio: parseFloat(formData.riskRatio)
+        follower_mt5_account_id: parseInt(selectedAccountForCopy.accountNumber, 10),
+        risk_ratio: computedRisk
       });
-      
+
       if (response.success || response.message) {
-        // Mostrar mensaje de éxito
         alert(t('copyTrading.messages.followSuccess') || 'Successfully following trader');
-        
-        // Cerrar modal
+
+        // Marcar en UI como copiado
+        setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+
+        // Cerrar modal y limpiar selección
         setShowSeguirModal(false);
-        
-        // Actualizar datos si es necesario
+        setSelectedTraderForCopy(null);
+        setSelectedAccountForCopy(null);
+
+        // Refrescar datos
         await fetchData();
       } else {
         throw new Error(response.error || 'Error following trader');
       }
     } catch (error) {
       console.error('Error siguiendo trader:', error);
-      alert(t('copyTrading.messages.followError') + ': ' + (error.message || 'Error desconocido'));
+      alert((t('copyTrading.messages.followError') || 'Error al seguir al trader') + ': ' + (error.message || 'Error desconocido'));
     } finally {
       setIsLoading(false);
     }
@@ -548,19 +560,10 @@ const CopytradingDashboard = () => {
         }}
         trader={selectedTraderForCopy}
         selectedAccount={selectedAccountForCopy}
-        onConfirm={(formData) => {
+        onConfirm={async (formData) => {
           console.log('Copiar trader confirmado desde dashboard:', formData);
           console.log('Cuenta seleccionada:', selectedAccountForCopy);
-          // Aquí integrarías con tu API para copiar al trader
-          
-          // Marcar el trader como copiado
-          if (selectedTraderForCopy) {
-            setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
-          }
-          
-          setShowSeguirModal(false);
-          setSelectedTraderForCopy(null);
-          setSelectedAccountForCopy(null);
+          await handleFollowTrader(formData);
         }}
       />
     </div>

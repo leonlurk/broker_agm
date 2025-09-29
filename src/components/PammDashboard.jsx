@@ -4,8 +4,9 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, Area
 import { getPammFunds, getMyFunds } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
 import { useAccounts } from '../contexts/AccountsContext';
-import useTranslation from '../hooks/useTranslation';
+import { useTranslation } from 'react-i18next';
 import { followMaster } from '../services/copytradingService';
+import { scrollToTopManual } from '../hooks/useScrollToTop';
 
 const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
     const { t } = useTranslation('pamm');
@@ -236,7 +237,7 @@ const PammDashboardView = ({
                     <div className="flex-1">
                         <h1 className="text-3xl font-semibold mb-3">{t('pamm.dashboard')}</h1>
                         <div className="space-y-2">
-                            <p className="text-gray-300 font-medium">PAMM Trading</p>
+                            <p className="text-gray-300 font-medium">{t('pamm.subtitle')}</p>
                             <p className="text-gray-400 max-w-2xl">
                                 {t('pamm.investor.description')}
                             </p>
@@ -295,7 +296,7 @@ const PammDashboardView = ({
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-white">{fund.name}</h3>
-                                        <p className="text-sm text-gray-400">{t('pamm.manager')}: {fund.manager}</p>
+                                        <p className="text-sm text-gray-400">{t('pamm.fund.manager')}: {fund.manager}</p>
                                         <p className="text-sm text-gray-400">{t('pamm.invested')}: {formatCurrency(fund.investedAmount)}</p>
                                     </div>
                                 </div>
@@ -518,7 +519,7 @@ const PammExplorerView = ({
                     <div>
                         <h3 className="text-lg font-medium">{fund.name}</h3>
                         <p className="text-green-500 text-sm">{formatPercentage(fund.monthlyReturn)} {t('pamm.explorer.lastMonth')}</p>
-                        <p className="text-gray-400 text-sm mt-1">{t('pamm.manager')}: {fund.manager} • Desde: {fund.since}</p>
+                        <p className="text-gray-400 text-sm mt-1">{t('pamm.fund.manager')}: {fund.manager} • {t('pamm.fund.inception')}: {fund.since}</p>
                     </div>
                     <div className={`${getTypeColor(fund.type)} text-xs px-2 py-1 rounded text-white`}>
                         {fund.type}
@@ -847,7 +848,7 @@ const PammFundProfileView = ({
                     </button>
                     <div>
                         <h1 className="text-2xl font-semibold">{fund.name}</h1>
-                        <p className="text-gray-400">{t('pamm.manager')}: {fund.manager}</p>
+                        <p className="text-gray-400">{t('pamm.fund.manager')}: {fund.manager}</p>
                     </div>
                 </div>
                 <button

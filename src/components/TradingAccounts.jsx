@@ -13,6 +13,8 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../i18n/config';
 // Importar servicio optimizado
 import accountMetricsOptimized from '../services/accountMetricsOptimized';
+// Importar servicio estandarizado para datos de equity
+import equityDataService from '../services/equityDataService';
 import { 
   getBalanceChartData, 
   recordBalanceSnapshot,
@@ -692,16 +694,16 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             try {
               const k = dashboardData.kpis;
               const initial = parseFloat(k.initial_balance ?? 0) || 0;
-              // Usar equity como valor actual preferido para métricas en vivo; fallback a balance
-              const current = parseFloat((k.equity ?? k.balance) ?? 0) || 0;
+              // Usar servicio estandarizado para obtener equity actual
+              const current = equityDataService.getAccountEquity(k);
               const profit = current - initial;
               const profitPct = initial > 0 ? (profit / initial) * 100 : 0;
               const fixedKpis = {
                 ...k,
                 initial_balance: initial,
-                // Mantener balance reportado, pero exponer equity como fuente del "current" para P&L
-                balance: parseFloat(k.balance ?? 0) || 0,
-                equity: parseFloat((k.equity ?? k.balance) ?? 0) || 0,
+                // Usar servicio estandarizado para datos consistentes
+                balance: equityDataService.getAccountBalance(k),
+                equity: equityDataService.getAccountEquity(k),
                 profit_loss: profit,
                 profit_loss_percentage: profitPct,
                 total_deposits: initial,
@@ -737,18 +739,18 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             let formattedBalance = balanceHistory.map(item => ({
               date: item.timestamp || item.date,
               timestamp: item.timestamp || item.date,
-              // Preferir equity si existe; fallback a balance/value
-              value: (item.equity ?? item.balance ?? item.value ?? 0),
-              balance: (item.balance ?? item.value ?? 0),
-              equity: (item.equity ?? null)
+              // Usar servicio estandarizado para datos de gráfico
+              value: equityDataService.getChartValue(item),
+              balance: equityDataService.getAccountBalance(item),
+              equity: equityDataService.getAccountEquity(item)
             }));
             try {
               if (dashboardData.kpis && formattedBalance.length > 0) {
                 const currentVal = parseFloat(dashboardData.kpis.balance ?? 0) || 0;
                 const li = formattedBalance.length - 1;
-                const lastVal = parseFloat(formattedBalance[li].value ?? 0) || 0;
+                const lastVal = equityDataService.getChartValue(formattedBalance[li]);
                 if (currentVal > 0 && Math.abs(currentVal - lastVal) > 0.01) {
-                  formattedBalance[li] = { ...formattedBalance[li], value: currentVal, balance: currentVal };
+                  formattedBalance[li] = { ...formattedBalance[li], value: currentVal, balance: currentVal, equity: currentVal };
                 }
               }
             } catch (e) {}
@@ -1048,7 +1050,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           day: '2-digit', 
           month: 'short' 
         }),
-        value: item.value || item.balance || 0
+        value: equityDataService.getChartValue(item)
       }));
     }
     
@@ -1594,7 +1596,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         const db = new Date(b.date || b.timestamp).getTime();
         return da - db;
       });
-      const initialBalance = parseFloat(sorted[0]?.value ?? 0) || 0;
+      const initialBalance = equityDataService.getChartValue(sorted[0]) || 0;
 
       // Reducir puntos para evitar aglomeración
       const step = Math.ceil(sorted.length / (isMobile ? 6 : 12));
@@ -1609,7 +1611,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           day: '2-digit', 
           month: 'short' 
         }),
-        value: (parseFloat(point.value ?? point.balance ?? 0) || 0) - initialBalance,
+        value: equityDataService.getChartValue(point) - initialBalance,
         dateISO: point.date || point.timestamp
       }));
     }
@@ -1777,7 +1779,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       });
       const dataPoints = filteredData.length;
       // Calcular rango real para decidir si reducimos puntos
-      const vals = filteredData.map(p => parseFloat(p.value ?? p.balance ?? 0) || 0);
+      const vals = filteredData.map(p => equityDataService.getChartValue(p));
       const vMin = Math.min(...vals);
       const vMax = Math.max(...vals);
       const vRange = vMax - vMin;
@@ -1796,8 +1798,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       }
 
       return filteredData.map((point, index) => {
-        const currentValue = parseFloat(point.value ?? point.balance ?? 0) || 0;
-        const previousValue = index > 0 ? (parseFloat(filteredData[index - 1].value ?? filteredData[index - 1].balance ?? 0) || 0) : currentValue;
+        const currentValue = equityDataService.getChartValue(point);
+        const previousValue = index > 0 ? equityDataService.getChartValue(filteredData[index - 1]) : currentValue;
         const isGain = currentValue >= previousValue;
 
         return {
@@ -1992,7 +1994,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       let peakBalance = 0;
       
       let result = filteredData.map((point, index) => {
-        const currentBalance = (point.equity ?? point.value ?? point.balance ?? 0);
+        const currentBalance = equityDataService.getChartValue(point);
         
         // En el primer punto, establecer el pico y drawdown en 0
         if (index === 0) {
@@ -3088,8 +3090,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <div className="flex items-center mb-2 sm:mb-3">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3 text-white">
                   ${(
-                    // Mostrar equity directo si está disponible; fallback a equity existente o valor del historial
-                    directEquity ?? realMetrics?.equity ?? balanceData[balanceData.length - 1]?.value ?? 0
+                    // Mostrar equity usando servicio estandarizado
+                    directEquity ?? equityDataService.getAccountEquity(realMetrics) ?? equityDataService.getChartValue(balanceData[balanceData.length - 1]) ?? 0
                   ).toLocaleString()}
                 </span>
                 <span className={`px-2 py-1 rounded text-xs sm:text-sm ${
@@ -3103,10 +3105,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               {/* Chips con Balance y Equity actuales */}
               <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
                 <div className="px-2 py-1 bg-gray-800/50 border border-gray-700/50 rounded-md text-xs text-gray-300">
-                  {t('trading:balance')}: <span className="text-white font-semibold">${(realMetrics?.balance ?? balanceData[balanceData.length - 1]?.balance ?? 0).toLocaleString()}</span>
+                  {t('trading:balance')}: <span className="text-white font-semibold">${equityDataService.getAccountBalance(realMetrics ?? balanceData[balanceData.length - 1]).toLocaleString()}</span>
                 </div>
                 <div className="px-2 py-1 bg-cyan-900/30 border border-cyan-700/40 rounded-md text-xs text-cyan-300">
-                  {t('trading:equity')}: <span className="text-white font-semibold">${(directEquity ?? realMetrics?.equity ?? balanceData[balanceData.length - 1]?.equity ?? balanceData[balanceData.length - 1]?.value ?? 0).toLocaleString()}</span>
+                  {t('trading:equity')}: <span className="text-white font-semibold">${(directEquity ?? equityDataService.getAccountEquity(realMetrics) ?? equityDataService.getChartValue(balanceData[balanceData.length - 1]) ?? 0).toLocaleString()}</span>
                 </div>
               </div>
               
@@ -3247,8 +3249,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
                     ${(() => {
-                      // Calcular drawdown sobre equity actual cuando esté disponible
-                      const basis = (realMetrics?.equity ?? realMetrics?.balance ?? 0);
+                      // Calcular drawdown sobre equity usando servicio estandarizado
+                      const basis = equityDataService.getAccountEquity(realMetrics);
                       const maxDrawdownPercent = realMetrics?.max_drawdown || 0;
                       const drawdownAmount = (basis * maxDrawdownPercent) / 100;
                       return drawdownAmount.toFixed(2);
@@ -3262,7 +3264,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                       : 'bg-red-900 bg-opacity-50 text-red-200'
                   }`}>
                     {t('metrics.current')}: ${(() => {
-                      const basis = (realMetrics?.equity ?? realMetrics?.balance ?? 0);
+                      const basis = equityDataService.getAccountEquity(realMetrics);
                       const currentDrawdownPercent = realMetrics?.current_drawdown || 0;
                       const currentDrawdownAmount = (basis * currentDrawdownPercent) / 100;
                       return currentDrawdownAmount.toFixed(2);
