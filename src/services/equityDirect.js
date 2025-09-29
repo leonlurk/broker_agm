@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { logger } from '../utils/logger';
+import { supabase } from '../supabase/config';
 
-// Direct equity fetch without Supabase client
+// Direct equity fetch with Supabase authentication
 const BASE = (import.meta.env.VITE_BROKER_API_URL || import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444');
 
 const client = axios.create({
@@ -9,6 +10,22 @@ const client = axios.create({
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' }
 });
+
+// Add auth interceptor
+client.interceptors.request.use(
+  async config => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+      }
+    } catch (error) {
+      logger.error('[EquityDirect] Error getting auth token:', error);
+    }
+    return config;
+  },
+  error => Promise.reject(error)
+);
 
 // simple in-memory cache to avoid rate limits
 const cache = new Map(); // key: accountNumber -> { equity, ts }

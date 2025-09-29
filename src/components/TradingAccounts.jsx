@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, Legend, CartesianGrid, LabelList, Tooltip } from 'recharts';
 import { useAccounts, ACCOUNT_CATEGORIES } from '../contexts/AccountsContext';
 import { Copy, Eye, EyeOff, Check, X, Settings, Menu, Filter, ArrowUpRight, Star, Search as SearchIcon } from 'lucide-react';
@@ -655,7 +655,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   }, [selectedAccountId, realMetrics?.equity]);
   
   // Función para cargar métricas de una cuenta
-  const loadAccountMetrics = async (account) => {
+  const loadAccountMetrics = useCallback(async (account) => {
     if (!account || !account.account_number) return;
     
     // Prevenir llamadas duplicadas para la misma cuenta
@@ -824,8 +824,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         setLastUpdated(new Date());
         
       } catch (error) {
-        console.error('Error loading MT5 metrics:', error);
-        toast.error(t('trading.messages.metricsLoadError'));
+        console.error('[TradingAccounts] Error cargando métricas:', error);
       } finally {
         setIsLoadingMetrics(false);
         setIsRefreshing(false);
@@ -837,10 +836,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           lastLoadedAccountRef.current = account.account_number;
         }
       }
-    };
+  }, []);
 
-    // Función para refresh manual de datos
-    const handleRefreshData = async () => {
+  // Función para refresh manual de datos
+  const handleRefreshData = useCallback(async () => {
       if (!canRefresh || isRefreshing) {
         return;
       }
@@ -882,21 +881,19 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             icon: '⏱️'
           });
         } else {
-          toast.success(t('trading.messages.dataRefreshed') || 'Datos actualizados');
-          setLastUpdated(Date.now());
+          toast.success(t('accounts.fields.dataUpdated'));
         }
         
-        // Re-habilitar refresh después de 30 segundos
+      } catch (error) {
+        console.error('[TradingAccounts] Error en refresh:', error);
+        toast.error(t('accounts.fields.updateError'));
+      } finally {
+        // Reactivar refresh después de 30 segundos
         setTimeout(() => {
           setCanRefresh(true);
         }, RATE_LIMIT_MS);
-        
-      } catch (error) {
-        console.error('Error refreshing data:', error);
-        toast.error('Error al actualizar los datos');
-        setCanRefresh(true);
       }
-    };
+  }, [selectedAccountId, getAllAccounts, loadAccountMetrics, lastUpdated, t]);
     
   // useEffect para cargar datos reales de MT5 cuando se selecciona una cuenta con auto-refresh
   useEffect(() => {
@@ -1011,7 +1008,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   
   // Datos para el gráfico de balance (superior) usando la misma lógica del tab de Balance
   const initialBalance = realMetrics?.initial_balance || 0;
-  const balanceData = (() => {
+  const balanceData = useMemo(() => {
     const series = generateBalanceChartData();
     if (series && series.length > 0) {
       return series.map(item => ({ name: item.date, value: item.value, isGain: item.isGain }));
@@ -1023,19 +1020,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         { name: now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }), value: currentSelectedAccount.balance }
       ];
     }
-    return [
-      { name: t('months.jan'), value: 0 },
-      { name: t('months.feb'), value: 0 },
-      { name: t('months.mar'), value: 0 },
-      { name: t('months.apr'), value: 0 },
-      { name: t('months.may'), value: 0 },
-      { name: t('months.jun'), value: 0 },
-      { name: t('months.jul'), value: 0 },
-      { name: t('months.aug'), value: 0 },
-      { name: t('months.sep'), value: 0 },
-    ];
-  })();
-  
+    return [];
+  }, [realBalanceHistory, currentSelectedAccount]);
+
   // Calcular escala para el eje Y
   const yAxisConfig = calculateYAxisScale(balanceData);
 
@@ -1186,7 +1173,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         tiempoCierre: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
         instrumento: op.symbol,
         bandera: getInstrumentIcon(op.symbol),
-        tipo: op.operation_type === 'BUY' ? t('positions.types.buy') : t('positions.types.sell'),
+        tipo: op.operation_type === 'BUY' ? t('positions.types.buy') : op.type === 'SELL' ? t('positions.types.sell') : op.type,
         lotaje: parseFloat(op.volume).toFixed(2),
         stopLoss: op.stop_loss ? parseFloat(op.stop_loss).toFixed(5) : 'N/A',
         stopLossPct: op.stop_loss ? 
@@ -1197,7 +1184,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         precioApertura: parseFloat(op.open_price).toFixed(5),
         precioCierre: parseFloat(op.close_price).toFixed(5),
         pips: pips,
-        idPosicion: op.ticket,
+        idPosicion: op.ticket || '-',
         resultado: parseFloat(op.profit) >= 0 ? `+$${parseFloat(op.profit).toFixed(2)}` : `-$${Math.abs(parseFloat(op.profit)).toFixed(2)}`,
         resultadoColor: parseFloat(op.profit) >= 0 ? 'text-green-400' : 'text-red-400',
         resultadoPct: `${((parseFloat(op.profit) / (parseFloat(op.volume) * 1000)) * 100).toFixed(1)}%`,
@@ -1765,7 +1752,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     return data.filter((_, index) => index % step === 0 || index === data.length - 1);
   };
 
-  const benefitChartData = optimizeChartDataForMobile(generateBenefitChartData());
+  const benefitChartData = useMemo(() => 
+    optimizeChartDataForMobile(generateBenefitChartData()), 
+    [realBalanceHistory, historialData, benefitChartFilter, customDateFrom, customDateTo, isMobile]
+  );
 
   // Función para generar datos de Balance (declaración hoisted para poder usarla antes)
   function generateBalanceChartData() {
@@ -2180,7 +2170,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
   };
 
-  const currentChartData = getChartDataByTab();
+  const currentChartData = useMemo(() => getChartDataByTab(), [benefitChartTab, benefitChartData]);
 
   // Función para generar datos de instrumentos basado en filtros - COMPLETAMENTE DINÁMICO
   const generateInstrumentsData = () => {
@@ -2363,9 +2353,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     return months.map(month => ({ name: month, value: 0 }));
   };
 
-  // Generar datos dinámicos después de definir las funciones
-  const dynamicInstrumentsData = generateInstrumentsData();
-  const dynamicRendimientoData = generateRendimientoData();
+  // Memoizar datos dinámicos para evitar recálculos innecesarios
+  const dynamicInstrumentsData = useMemo(() => generateInstrumentsData(), [realInstruments, historialData]);
+  const dynamicRendimientoData = useMemo(() => generateRendimientoData(), [realPerformance, rendimientoFilters]);
   
   // Actualizar las variables con los datos dinámicos generados
   instrumentosData = dynamicInstrumentsData;
