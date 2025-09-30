@@ -130,7 +130,7 @@ const ConfigurarGestorModal = ({ isOpen, onClose, onConfirm }) => {
     setIsSubmitting(true);
     try {
       // Si el usuario quiere convertirse en master trader, configurar a través del backend
-      if (formData.convertirseEnMaster && user?.id) {
+      if (formData.convertirseEnMaster) {
         console.log('Calling configureMaster with data:', formData);
         try {
           const result = await configureMaster(formData);
@@ -142,7 +142,7 @@ const ConfigurarGestorModal = ({ isOpen, onClose, onConfirm }) => {
           return;
         }
       } else {
-        console.log('Not converting to master or no user ID');
+        console.log('Not converting to master - toggle is off');
       }
       
       onConfirm(formData);
