@@ -118,12 +118,20 @@ const ConfigurarGestorModal = ({ isOpen, onClose, onConfirm }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    console.log('Form submitted with data:', formData);
+    console.log('User:', user);
+    console.log('Convert to master:', formData.convertirseEnMaster);
+    
+    if (!validateForm()) {
+      console.log('Form validation failed:', errors);
+      return;
+    }
     
     setIsSubmitting(true);
     try {
       // Si el usuario quiere convertirse en master trader, configurar a través del backend
       if (formData.convertirseEnMaster && user?.id) {
+        console.log('Calling configureMaster with data:', formData);
         try {
           const result = await configureMaster(formData);
           console.log('Master trader configured successfully:', result);
@@ -133,6 +141,8 @@ const ConfigurarGestorModal = ({ isOpen, onClose, onConfirm }) => {
           alert(t('copyTrading.errors.configError') + ': ' + (backendError.error || backendError.message || 'Error desconocido'));
           return;
         }
+      } else {
+        console.log('Not converting to master or no user ID');
       }
       
       onConfirm(formData);
