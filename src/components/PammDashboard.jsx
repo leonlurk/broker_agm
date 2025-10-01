@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign } from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
 import { getPammFunds, getMyFunds } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
@@ -7,6 +7,7 @@ import { useAccounts } from '../contexts/AccountsContext';
 import { useTranslation } from 'react-i18next';
 import { followMaster } from '../services/copytradingService';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
+import { MasterAccountBadge, PerformanceStatusIndicator, MasterAccountSummaryCard } from './StatusIndicators';
 
 const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
     const { t } = useTranslation('pamm');
@@ -28,6 +29,8 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
     });
     const [filteredFunds, setFilteredFunds] = useState([]);
     const [myFunds, setMyFunds] = useState({ summary: {}, funds: [] });
+    const [userMasterFunds, setUserMasterFunds] = useState([]);
+    const [fundCreationSuccess, setFundCreationSuccess] = useState(false);
     const [isLoadingMyFunds, setIsLoadingMyFunds] = useState(false);
     
     // Estado para rastrear fondos en los que se está invirtiendo

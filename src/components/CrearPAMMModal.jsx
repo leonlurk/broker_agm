@@ -230,16 +230,6 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(prev => prev + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    setCurrentStep(prev => prev - 1);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateStep(maxSteps)) return;
@@ -277,6 +267,23 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
           return;
         }
 
+        // Show success notification with enhanced UI feedback
+        const successNotification = document.createElement('div');
+        successNotification.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white p-4 rounded-lg shadow-lg z-50 flex items-center gap-3';
+        successNotification.innerHTML = `
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <div>
+            <div class="font-semibold">PAMM Manager Status Activated!</div>
+            <div class="text-sm opacity-90">You can now create and manage PAMM funds</div>
+          </div>
+        `;
+        document.body.appendChild(successNotification);
+        setTimeout(() => {
+          document.body.removeChild(successNotification);
+        }, 5000);
+
         // Crear el fondo PAMM a través del backend
         try {
           const fundDataForBackend = {
@@ -297,7 +304,24 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
 
           const fundResult = await createPammFund(fundDataForBackend);
           console.log('Fund created successfully:', fundResult);
-          alert('¡Fondo PAMM creado exitosamente!');
+          
+          // Enhanced success feedback
+          const fundSuccessNotification = document.createElement('div');
+          fundSuccessNotification.className = 'fixed top-16 right-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white p-4 rounded-lg shadow-lg z-50 flex items-center gap-3';
+          fundSuccessNotification.innerHTML = `
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+            </svg>
+            <div>
+              <div class="font-semibold">PAMM Fund Created Successfully!</div>
+              <div class="text-sm opacity-90">${formData.nombreFondo} is now live and accepting investors</div>
+            </div>
+          `;
+          document.body.appendChild(fundSuccessNotification);
+          setTimeout(() => {
+            document.body.removeChild(fundSuccessNotification);
+          }, 5000);
+          
         } catch (fundError) {
           console.error('Error creating PAMM fund:', fundError);
           alert('Error al crear el fondo PAMM: ' + (fundError.message || 'Error desconocido'));
@@ -313,6 +337,16 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    setCurrentStep(prev => prev - 1);
   };
 
   const renderStep = () => {
@@ -569,9 +603,30 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
             {/* Toggle Convertirse en PAMM Manager */}
             <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-xl p-6 mb-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">Convertirse en PAMM Manager</h3>
-                  <p className="text-sm text-gray-400">Crea y gestiona fondos PAMM para que otros usuarios inviertan</p>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-500 bg-opacity-20 rounded-lg">
+                    <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-1">Convertirse en PAMM Manager</h3>
+                    <p className="text-sm text-gray-400">Crea y gestiona fondos PAMM para que otros usuarios inviertan</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-1 text-xs text-purple-400">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Earn management fees
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-purple-400">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Performance bonuses
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -583,6 +638,16 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
                   <div className="w-11 h-6 bg-[#333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
                 </label>
               </div>
+              {formData.convertirseEnManager && (
+                <div className="mt-4 p-3 bg-purple-500 bg-opacity-10 border border-purple-500 border-opacity-30 rounded-lg">
+                  <div className="flex items-center gap-2 text-purple-400 text-sm">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    <span>You will be set as a PAMM Manager upon fund creation. This enables you to receive management fees and performance bonuses.</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Selección de Cuenta MT5 PAMM */}

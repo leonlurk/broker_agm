@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Crown, CheckCircle, Search, Filter, Star, TrendingUp, Users, Target, Copy, BarChart3, PieChart, Calendar, Clock, AlertTriangle, DollarSign, Settings, Plus } from 'lucide-react';
 import TraderProfileDetail from './TraderProfileDetail';
 import SeguirTraderModal from './SeguirTraderModal';
 import AccountSelectionModal from './AccountSelectionModal';
 import { getMasterTraders, getMySubscriptions, followMaster } from '../services/copytradingService';
 import { useAccounts } from '../contexts/AccountsContext';
 import useTranslation from '../hooks/useTranslation';
+import { MasterAccountBadge, FollowStatusIndicator, SubscriptionStatusCard, MasterAccountSummaryCard } from './StatusIndicators';
 
 const CopytradingDashboard = () => {
   const { t } = useTranslation();
@@ -21,6 +22,10 @@ const CopytradingDashboard = () => {
   const [activeSubscriptions, setActiveSubscriptions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [copiedTraders, setCopiedTraders] = useState(new Set());
+  const [userMasterAccounts, setUserMasterAccounts] = useState([]);
+  const [followedTraders, setFollowedTraders] = useState(new Set());
+  const [subscriptionStatuses, setSubscriptionStatuses] = useState(new Map());
   
   // Estados para el modal de seguir trader
   const [showSeguirModal, setShowSeguirModal] = useState(false);
@@ -29,9 +34,6 @@ const CopytradingDashboard = () => {
   // Estados para el modal de selección de cuenta
   const [showAccountSelectionModal, setShowAccountSelectionModal] = useState(false);
   const [selectedAccountForCopy, setSelectedAccountForCopy] = useState(null);
-  
-  // Estado para rastrear qué traders están siendo copiados
-  const [copiedTraders, setCopiedTraders] = useState(new Set());
   
   useEffect(() => {
     const fetchData = async () => {
@@ -239,7 +241,7 @@ const CopytradingDashboard = () => {
           >
             Ver
           </button>
-                      <button 
+          <button 
             className="px-4 py-2 bg-[#333] hover:bg-[#444] rounded-md text-sm"
             onClick={(e) => {
               e.stopPropagation(); // Prevent event bubbling
@@ -278,7 +280,7 @@ const CopytradingDashboard = () => {
                 <div className="bg-[#191919] p-2 rounded text-sm">US100</div>
               </div>
               
-                              <button 
+              <button 
                 className="w-full px-4 py-2 bg-cyan-700 hover:bg-cyan-600 rounded-md text-sm"
                 onClick={(e) => {
                   e.stopPropagation(); // Prevent event bubbling
