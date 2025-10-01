@@ -97,8 +97,8 @@ const SeguirTraderModal = ({ isOpen, onClose, trader, selectedAccount, onConfirm
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      onConfirm(formData);
-      onClose();
+      onConfirm(formData, trader, selectedAccount);
+      // onClose se llama desde onConfirm después de la API
     }
   };
 
