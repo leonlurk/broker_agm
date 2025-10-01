@@ -94,12 +94,16 @@ const CombinedCopyTradingModal = ({
         return;
       }
 
-      const response = await followMaster({
+      const requestParams = {
         master_user_id: trader.id,
         master_mt5_account_id: masterMt5Account,
         follower_mt5_account_id: selectedAccount.account_number || selectedAccount.id,
         risk_ratio: formData.multiplicadorLote || 1.0
-      });
+      };
+      
+      console.log('Debug - Request parameters being sent to backend:', requestParams);
+      
+      const response = await followMaster(requestParams);
       
       console.log('✅ Copy Trading activado desde modal combinado:', response);
       alert(`✅ Ahora estás copiando a ${trader.name}`);
