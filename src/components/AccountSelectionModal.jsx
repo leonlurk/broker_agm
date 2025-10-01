@@ -7,7 +7,10 @@ const AccountSelectionModal = ({ isOpen, onClose, trader, onAccountSelected }) =
   const [selectedAccount, setSelectedAccount] = useState(null);
 
   const accounts = getAllAccounts();
-  const realAccounts = accounts.filter(acc => acc.accountType === 'Real');
+  const realAccounts = accounts.filter(acc => 
+    acc.account_type === 'Real' || 
+    acc.accountType === 'Real'
+  );
 
   const handleAccountSelect = (account) => {
     setSelectedAccount(account);
