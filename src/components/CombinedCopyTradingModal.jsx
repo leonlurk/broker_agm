@@ -60,13 +60,25 @@ const CombinedCopyTradingModal = ({
       return;
     }
 
-    // Extract master MT5 account from trader's master_config
+    // Debug: Log trader object to see available data
+    console.log('Debug - Full trader object:', trader);
+    console.log('Debug - trader.master_config:', trader.master_config);
+    console.log('Debug - trader keys:', Object.keys(trader));
+    
+    // Extract master MT5 account from trader's master_config or other possible fields
     const masterMt5Account = trader.master_config?.cuentaMT5Seleccionada || 
                             trader.master_config?.master_mt5_account ||
                             trader.masterAccount ||
-                            trader.mt5Account;
+                            trader.mt5Account ||
+                            trader.accountNumber ||
+                            trader.account_number ||
+                            trader.login ||
+                            trader.id; // Fallback to trader ID if no MT5 account found
+    
+    console.log('Debug - Extracted masterMt5Account:', masterMt5Account);
     
     if (!masterMt5Account) {
+      console.error('Debug - No MT5 account found in trader object:', trader);
       alert('Error: No se encontró la cuenta MT5 del master trader');
       return;
     }
