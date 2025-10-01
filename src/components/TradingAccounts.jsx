@@ -694,18 +694,21 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
             try {
               const k = dashboardData.kpis;
               const initial = parseFloat(k.initial_balance ?? 0) || 0;
-              // Usar servicio estandarizado para obtener equity actual
-              const current = equityDataService.getAccountEquity(k);
-              const profit = current - initial;
-              const profitPct = initial > 0 ? (profit / initial) * 100 : 0;
+              
+              // IMPORTANTE: Usar profit_loss del backend (desde operaciones cerradas)
+              // NO recalcular desde equity - initial porque incluye depósitos
+              const backendProfitLoss = parseFloat(k.profit_loss ?? 0);
+              const backendProfitPct = parseFloat(k.profit_loss_percentage ?? 0);
+              
               const fixedKpis = {
                 ...k,
                 initial_balance: initial,
                 // Usar servicio estandarizado para datos consistentes
                 balance: equityDataService.getAccountBalance(k),
                 equity: equityDataService.getAccountEquity(k),
-                profit_loss: profit,
-                profit_loss_percentage: profitPct,
+                // CRÍTICO: Usar valores del backend, no recalcular
+                profit_loss: backendProfitLoss,
+                profit_loss_percentage: backendProfitPct,
                 total_deposits: initial,
                 total_withdrawals: k.total_withdrawals ?? 0
               };
