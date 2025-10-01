@@ -276,10 +276,15 @@ const Inversor = () => {
     console.log('Account selected for copying:', account);
     console.log('Setting selectedAccountForCopy to:', account);
     console.log('Current selectedTraderForCopy:', selectedTraderForCopy);
+    
+    // Usar setTimeout para asegurar que los estados se actualicen antes del modal
     setSelectedAccountForCopy(account);
     setShowAccountSelectionModal(false);
-    setShowSeguirModal(true);
-    console.log('Modal states - showSeguirModal: true, account set, trader:', selectedTraderForCopy);
+    
+    setTimeout(() => {
+      setShowSeguirModal(true);
+      console.log('Modal opened with delay - account:', account, 'trader:', selectedTraderForCopy);
+    }, 100);
   };
 
   const handleFollowTrader = (trader) => {
