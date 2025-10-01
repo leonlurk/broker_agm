@@ -274,9 +274,12 @@ const Inversor = () => {
 
   const handleAccountSelected = (account) => {
     console.log('Account selected for copying:', account);
+    console.log('Setting selectedAccountForCopy to:', account);
+    console.log('Current selectedTraderForCopy:', selectedTraderForCopy);
     setSelectedAccountForCopy(account);
     setShowAccountSelectionModal(false);
     setShowSeguirModal(true);
+    console.log('Modal states - showSeguirModal: true, account set, trader:', selectedTraderForCopy);
   };
 
   const handleFollowTrader = (trader) => {
