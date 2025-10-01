@@ -581,33 +581,38 @@ const Inversor = () => {
           }}
           trader={selectedTraderForCopy}
           selectedAccount={selectedAccountForCopy}
-          onConfirm={async (formData) => {
-            console.log('Copiar trader confirmado desde dashboard:', formData);
-            console.log('Cuenta seleccionada:', selectedAccountForCopy);
+          onConfirm={async (formData, traderData, accountData) => {
+            console.log('Copiar trader confirmado desde Inversor:', formData);
+            console.log('Trader recibido:', traderData);
+            console.log('Cuenta recibida:', accountData);
+            console.log('Debug - account:', accountData);
+            console.log('Debug - trader:', traderData);
             
-            // Usar la cuenta que viene del modal directamente
-            const accountToUse = selectedAccountForCopy;
-            if (!accountToUse || !selectedTraderForCopy) {
+            // Use the passed data or fallback to component state
+            const finalTrader = traderData || selectedTraderForCopy;
+            const finalAccount = accountData || selectedAccountForCopy;
+            
+            if (!finalAccount || !finalTrader) {
               alert('Por favor selecciona una cuenta válida');
-              console.log('Debug - accountToUse:', accountToUse);
-              console.log('Debug - selectedTraderForCopy:', selectedTraderForCopy);
+              console.log('Debug - finalAccount:', finalAccount);
+              console.log('Debug - finalTrader:', finalTrader);
               return;
             }
             
             try {
               // Llamar a la API real de Copy Trading
               const response = await followMaster({
-                master_user_id: trader.userId || trader.id,
-                follower_mt5_account_id: account.id,
+                master_user_id: finalTrader.userId || finalTrader.id,
+                follower_mt5_account_id: finalAccount.accountNumber || finalAccount.id,
                 risk_ratio: formData.multiplicadorLote || 1.0
               });
               
               console.log('✅ Copy Trading activado:', response);
               
               // Marcar el trader como copiado
-              setCopiedTraders(prev => new Set([...prev, trader.id]));
+              setCopiedTraders(prev => new Set([...prev, finalTrader.id]));
               
-              alert(`✅ Ahora estás copiando a ${trader.name}`);
+              alert(`✅ Ahora estás copiando a ${finalTrader.name}`);
               
               setShowSeguirModal(false);
               setSelectedTraderForCopy(null);
@@ -912,17 +917,17 @@ const Inversor = () => {
             try {
               // Llamar a la API real de Copy Trading
               const response = await followMaster({
-                master_user_id: trader.userId || trader.id,
-                follower_mt5_account_id: account.id,
+                master_user_id: finalTrader.userId || finalTrader.id,
+                follower_mt5_account_id: finalAccount.accountNumber || finalAccount.id,
                 risk_ratio: formData.multiplicadorLote || 1.0
               });
               
               console.log('✅ Copy Trading activado:', response);
               
               // Marcar el trader como copiado
-              setCopiedTraders(prev => new Set([...prev, trader.id]));
+              setCopiedTraders(prev => new Set([...prev, finalTrader.id]));
               
-              alert(`✅ Ahora estás copiando a ${trader.name}`);
+              alert(`✅ Ahora estás copiando a ${finalTrader.name}`);
               
               setShowSeguirModal(false);
               setSelectedTraderForCopy(null);

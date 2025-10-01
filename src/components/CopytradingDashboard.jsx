@@ -101,13 +101,17 @@ const CopytradingDashboard = () => {
     setSelectedTrader(null);
   };
   
-  const handleFollowTrader = async (formData) => {
+  const handleFollowTrader = async (formData, traderData, accountData) => {
     try {
       setIsLoading(true);
 
+      // Use passed data or fallback to component state
+      const finalTrader = traderData || selectedTraderForCopy;
+      const finalAccount = accountData || selectedAccountForCopy;
+
       // Validar dependencias
-      if (!selectedTraderForCopy) throw new Error('No hay trader seleccionado');
-      if (!selectedAccountForCopy?.accountNumber) throw new Error('No hay cuenta seleccionada');
+      if (!finalTrader) throw new Error('No hay trader seleccionado');
+      if (!finalAccount?.accountNumber) throw new Error('No hay cuenta seleccionada');
 
       // Mapear porcentaje de riesgo (1-50%) a risk_ratio (0.01 - 1.0)
       const pct = Number(formData?.porcentajeRiesgo) || 5; // default 5%
@@ -115,8 +119,8 @@ const CopytradingDashboard = () => {
 
       // Llamar al endpoint followMaster del backend
       const response = await followMaster({
-        master_user_id: selectedTraderForCopy.user_id || selectedTraderForCopy.id,
-        follower_mt5_account_id: parseInt(selectedAccountForCopy.accountNumber, 10),
+        master_user_id: finalTrader.user_id || finalTrader.id,
+        follower_mt5_account_id: parseInt(finalAccount.accountNumber, 10),
         risk_ratio: computedRisk
       });
 
@@ -124,7 +128,7 @@ const CopytradingDashboard = () => {
         alert(t('copyTrading.messages.followSuccess') || 'Successfully following trader');
 
         // Marcar en UI como copiado
-        setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+        setCopiedTraders(prev => new Set([...prev, finalTrader.id]));
 
         // Cerrar modal y limpiar selección
         setShowSeguirModal(false);
@@ -562,10 +566,18 @@ const CopytradingDashboard = () => {
         }}
         trader={selectedTraderForCopy}
         selectedAccount={selectedAccountForCopy}
-        onConfirm={async (formData) => {
+        onConfirm={async (formData, traderData, accountData) => {
           console.log('Copiar trader confirmado desde dashboard:', formData);
-          console.log('Cuenta seleccionada:', selectedAccountForCopy);
-          await handleFollowTrader(formData);
+          console.log('Trader recibido:', traderData);
+          console.log('Cuenta recibida:', accountData);
+          console.log('Debug - account:', accountData);
+          console.log('Debug - trader:', traderData);
+          
+          // Use the passed data or fallback to component state
+          const finalTrader = traderData || selectedTraderForCopy;
+          const finalAccount = accountData || selectedAccountForCopy;
+          
+          await handleFollowTrader(formData, finalTrader, finalAccount);
         }}
       />
     </div>

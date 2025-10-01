@@ -685,13 +685,23 @@ const TraderProfileDetail = ({ trader, onBack }) => {
         }}
         trader={trader}
         selectedAccount={selectedAccountForCopy}
-        onConfirm={async (formData) => {
+        onConfirm={async (formData, traderData, accountData) => {
+          console.log('Copiar trader confirmado desde TraderProfileDetail:', formData);
+          console.log('Trader recibido:', traderData);
+          console.log('Cuenta recibida:', accountData);
+          console.log('Debug - account:', accountData);
+          console.log('Debug - trader:', traderData);
+          
           try {
+            // Use the passed data or fallback to component state
+            const finalTrader = traderData || trader;
+            const finalAccount = accountData || selectedAccountForCopy;
+            
             // Llamar al endpoint followMaster del backend
             const response = await followMaster({
-              master_user_id: trader.user_id || trader.id,
-              follower_mt5_account_id: parseInt(formData.accountId),
-              risk_ratio: parseFloat(formData.riskRatio)
+              master_user_id: finalTrader.user_id || finalTrader.id,
+              follower_mt5_account_id: parseInt(finalAccount?.accountNumber || formData.accountId),
+              risk_ratio: parseFloat(formData.porcentajeRiesgo || formData.riskRatio)
             });
             
             if (response.success || response.message) {
