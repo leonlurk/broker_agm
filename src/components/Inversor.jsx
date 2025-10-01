@@ -7,7 +7,7 @@ import CommentsRatingModal from './CommentsRatingModal';
 import { useAccounts } from '../contexts/AccountsContext';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { useTranslation } from 'react-i18next';
-import { getMasterTraders, getMySubscriptions, getInvestorPortfolio } from '../services/copytradingService';
+import { getMasterTraders, getMySubscriptions, getInvestorPortfolio, followMaster } from '../services/copytradingService';
 
 // Estados iniciales vacíos para datos dinámicos
 const initialPortfolioData = {
@@ -573,18 +573,41 @@ const Inversor = () => {
           }}
           trader={selectedTraderForCopy}
           selectedAccount={selectedAccountForCopy}
-          onConfirm={(formData) => {
+          onConfirm={async (formData) => {
             console.log('Copiar trader confirmado desde dashboard:', formData);
             console.log('Cuenta seleccionada:', selectedAccountForCopy);
             
-            // Marcar el trader como copiado
-            if (selectedTraderForCopy) {
-              setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+            if (!selectedAccountForCopy || !selectedTraderForCopy) {
+              alert('Por favor selecciona una cuenta válida');
+              return;
             }
             
-            setShowSeguirModal(false);
-            setSelectedTraderForCopy(null);
-            setSelectedAccountForCopy(null);
+            try {
+              // Llamar a la API real de Copy Trading
+              const response = await followMaster({
+                master_user_id: selectedTraderForCopy.userId || selectedTraderForCopy.id,
+                follower_mt5_account_id: selectedAccountForCopy.id,
+                risk_ratio: formData.multiplicadorLote || 1.0
+              });
+              
+              console.log('✅ Copy Trading activado:', response);
+              
+              // Marcar el trader como copiado
+              setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+              
+              alert(`✅ Ahora estás copiando a ${selectedTraderForCopy.name}`);
+              
+              setShowSeguirModal(false);
+              setSelectedTraderForCopy(null);
+              setSelectedAccountForCopy(null);
+              
+              // Recargar suscripciones
+              const newSubscriptions = await getMySubscriptions();
+              setSubscriptions(newSubscriptions);
+            } catch (error) {
+              console.error('❌ Error al copiar trader:', error);
+              alert(`Error: ${error.error || error.message || 'No se pudo activar el copy trading'}`);
+            }
           }}
         />
 
@@ -862,18 +885,41 @@ const Inversor = () => {
           }}
           trader={selectedTraderForCopy}
           selectedAccount={selectedAccountForCopy}
-          onConfirm={(formData) => {
+          onConfirm={async (formData) => {
             console.log('Copiar trader confirmado desde explorer:', formData);
             console.log('Cuenta seleccionada:', selectedAccountForCopy);
             
-            // Marcar el trader como copiado
-            if (selectedTraderForCopy) {
-              setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+            if (!selectedAccountForCopy || !selectedTraderForCopy) {
+              alert('Por favor selecciona una cuenta válida');
+              return;
             }
             
-            setShowSeguirModal(false);
-            setSelectedTraderForCopy(null);
-            setSelectedAccountForCopy(null);
+            try {
+              // Llamar a la API real de Copy Trading
+              const response = await followMaster({
+                master_user_id: selectedTraderForCopy.userId || selectedTraderForCopy.id,
+                follower_mt5_account_id: selectedAccountForCopy.id,
+                risk_ratio: formData.multiplicadorLote || 1.0
+              });
+              
+              console.log('✅ Copy Trading activado:', response);
+              
+              // Marcar el trader como copiado
+              setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+              
+              alert(`✅ Ahora estás copiando a ${selectedTraderForCopy.name}`);
+              
+              setShowSeguirModal(false);
+              setSelectedTraderForCopy(null);
+              setSelectedAccountForCopy(null);
+              
+              // Recargar suscripciones
+              const newSubscriptions = await getMySubscriptions();
+              setSubscriptions(newSubscriptions);
+            } catch (error) {
+              console.error('❌ Error al copiar trader:', error);
+              alert(`Error: ${error.error || error.message || 'No se pudo activar el copy trading'}`);
+            }
           }}
         />
 
@@ -1341,18 +1387,41 @@ const Inversor = () => {
           }}
           trader={selectedTraderForCopy}
           selectedAccount={selectedAccountForCopy}
-          onConfirm={(formData) => {
+          onConfirm={async (formData) => {
             console.log('Copiar trader confirmado desde trader profile:', formData);
             console.log('Cuenta seleccionada:', selectedAccountForCopy);
             
-            // Marcar el trader como copiado
-            if (selectedTraderForCopy) {
-              setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+            if (!selectedAccountForCopy || !selectedTraderForCopy) {
+              alert('Por favor selecciona una cuenta válida');
+              return;
             }
             
-            setShowSeguirModal(false);
-            setSelectedTraderForCopy(null);
-            setSelectedAccountForCopy(null);
+            try {
+              // Llamar a la API real de Copy Trading
+              const response = await followMaster({
+                master_user_id: selectedTraderForCopy.userId || selectedTraderForCopy.id,
+                follower_mt5_account_id: selectedAccountForCopy.id,
+                risk_ratio: formData.multiplicadorLote || 1.0
+              });
+              
+              console.log('✅ Copy Trading activado:', response);
+              
+              // Marcar el trader como copiado
+              setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+              
+              alert(`✅ Ahora estás copiando a ${selectedTraderForCopy.name}`);
+              
+              setShowSeguirModal(false);
+              setSelectedTraderForCopy(null);
+              setSelectedAccountForCopy(null);
+              
+              // Recargar suscripciones
+              const newSubscriptions = await getMySubscriptions();
+              setSubscriptions(newSubscriptions);
+            } catch (error) {
+              console.error('❌ Error al copiar trader:', error);
+              alert(`Error: ${error.error || error.message || 'No se pudo activar el copy trading'}`);
+            }
           }}
         />
 
@@ -1394,19 +1463,41 @@ const Inversor = () => {
         }}
         trader={selectedTraderForCopy}
         selectedAccount={selectedAccountForCopy}
-        onConfirm={(formData) => {
+        onConfirm={async (formData) => {
           console.log('Copiar trader confirmado desde inversor:', formData);
           console.log('Cuenta seleccionada:', selectedAccountForCopy);
-          // Aquí integrarías con tu API para copiar al trader
           
-          // Marcar el trader como copiado
-          if (selectedTraderForCopy) {
-            setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+          if (!selectedAccountForCopy || !selectedTraderForCopy) {
+            alert('Por favor selecciona una cuenta válida');
+            return;
           }
           
-          setShowSeguirModal(false);
-          setSelectedTraderForCopy(null);
-          setSelectedAccountForCopy(null);
+          try {
+            // Llamar a la API real de Copy Trading
+            const response = await followMaster({
+              master_user_id: selectedTraderForCopy.userId || selectedTraderForCopy.id,
+              follower_mt5_account_id: selectedAccountForCopy.id,
+              risk_ratio: formData.multiplicadorLote || 1.0
+            });
+            
+            console.log('✅ Copy Trading activado:', response);
+            
+            // Marcar el trader como copiado
+            setCopiedTraders(prev => new Set([...prev, selectedTraderForCopy.id]));
+            
+            alert(`✅ Ahora estás copiando a ${selectedTraderForCopy.name}`);
+            
+            setShowSeguirModal(false);
+            setSelectedTraderForCopy(null);
+            setSelectedAccountForCopy(null);
+            
+            // Recargar suscripciones
+            const newSubscriptions = await getMySubscriptions();
+            setSubscriptions(newSubscriptions);
+          } catch (error) {
+            console.error('❌ Error al copiar trader:', error);
+            alert(`Error: ${error.error || error.message || 'No se pudo activar el copy trading'}`);
+          }
         }}
       />
 
