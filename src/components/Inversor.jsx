@@ -577,8 +577,12 @@ const Inversor = () => {
             console.log('Copiar trader confirmado desde dashboard:', formData);
             console.log('Cuenta seleccionada:', selectedAccountForCopy);
             
-            if (!selectedAccountForCopy || !selectedTraderForCopy) {
+            // Usar la cuenta que viene del modal directamente
+            const accountToUse = selectedAccountForCopy;
+            if (!accountToUse || !selectedTraderForCopy) {
               alert('Por favor selecciona una cuenta válida');
+              console.log('Debug - accountToUse:', accountToUse);
+              console.log('Debug - selectedTraderForCopy:', selectedTraderForCopy);
               return;
             }
             
@@ -586,7 +590,7 @@ const Inversor = () => {
               // Llamar a la API real de Copy Trading
               const response = await followMaster({
                 master_user_id: selectedTraderForCopy.userId || selectedTraderForCopy.id,
-                follower_mt5_account_id: selectedAccountForCopy.id,
+                follower_mt5_account_id: accountToUse.id,
                 risk_ratio: formData.multiplicadorLote || 1.0
               });
               
@@ -889,8 +893,12 @@ const Inversor = () => {
             console.log('Copiar trader confirmado desde explorer:', formData);
             console.log('Cuenta seleccionada:', selectedAccountForCopy);
             
-            if (!selectedAccountForCopy || !selectedTraderForCopy) {
+            // Usar la cuenta que viene del modal directamente
+            const accountToUse = selectedAccountForCopy;
+            if (!accountToUse || !selectedTraderForCopy) {
               alert('Por favor selecciona una cuenta válida');
+              console.log('Debug - accountToUse:', accountToUse);
+              console.log('Debug - selectedTraderForCopy:', selectedTraderForCopy);
               return;
             }
             
@@ -898,7 +906,7 @@ const Inversor = () => {
               // Llamar a la API real de Copy Trading
               const response = await followMaster({
                 master_user_id: selectedTraderForCopy.userId || selectedTraderForCopy.id,
-                follower_mt5_account_id: selectedAccountForCopy.id,
+                follower_mt5_account_id: accountToUse.id,
                 risk_ratio: formData.multiplicadorLote || 1.0
               });
               
