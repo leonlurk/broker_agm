@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Plus, Target } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell, Legend } from 'recharts';
-import SeguirTraderModal from './SeguirTraderModal';
-import AccountSelectionModal from './AccountSelectionModal';
+import CombinedCopyTradingModal from './CombinedCopyTradingModal';
 import CommentsRatingModal from './CommentsRatingModal';
 import { useAccounts } from '../contexts/AccountsContext';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
@@ -46,13 +45,9 @@ const Inversor = () => {
   const [portfolioData, setPortfolioData] = useState(initialPortfolioData);
   const [historicalData, setHistoricalData] = useState(initialHistoricalData);
   
-  // Estados para el modal de seguir trader
-  const [showSeguirModal, setShowSeguirModal] = useState(false);
+  // Estados para el modal combinado de copy trading
+  const [showCombinedModal, setShowCombinedModal] = useState(false);
   const [selectedTraderForCopy, setSelectedTraderForCopy] = useState(null);
-  
-  // Estados para el modal de selección de cuenta
-  const [showAccountSelectionModal, setShowAccountSelectionModal] = useState(false);
-  const [selectedAccountForCopy, setSelectedAccountForCopy] = useState(null);
   
   // Estados para el modal de comentarios
   const [showCommentsModal, setShowCommentsModal] = useState(false);
@@ -264,32 +259,26 @@ const Inversor = () => {
   };
 
   const handleCopyTrader = (trader) => {
-    if (followedTraders.has(trader.id)) {
-      return; // Ya está siendo seguido
+    if (copiedTraders.has(trader.id)) {
+      return; // Ya está siendo copiado
     }
     console.log('Copiando trader:', trader.name);
     setSelectedTraderForCopy(trader);
-    setShowAccountSelectionModal(true);
+    setShowCombinedModal(true);
   };
 
-  const handleAccountSelected = (account) => {
-    console.log('Account selected for copying:', account);
-    console.log('Setting selectedAccountForCopy to:', account);
-    console.log('Current selectedTraderForCopy:', selectedTraderForCopy);
+  const handleCombinedModalConfirm = (formData, trader, account) => {
+    console.log('Combined modal confirmed:', { formData, trader, account });
     
-    // Store both trader and account data before closing account modal
-    const currentTrader = selectedTraderForCopy;
+    // Marcar el trader como copiado
+    setCopiedTraders(prev => new Set([...prev, trader.id]));
     
-    setSelectedAccountForCopy(account);
-    setShowAccountSelectionModal(false);
-    
-    // Immediately open the seguir modal with the preserved data
-    setTimeout(() => {
-      // Restore the trader data that might have been cleared by onClose
-      setSelectedTraderForCopy(currentTrader);
-      setShowSeguirModal(true);
-      console.log('Modal opened with preserved data - account:', account, 'trader:', currentTrader);
-    }, 50);
+    // Recargar suscripciones
+    getMySubscriptions().then(newSubscriptions => {
+      setSubscriptions(newSubscriptions);
+    }).catch(error => {
+      console.error('Error reloading subscriptions:', error);
+    });
   };
 
   const handleFollowTrader = (trader) => {
@@ -567,61 +556,14 @@ const Inversor = () => {
       </div>
       
       {/* Global Modals */}
-      <AccountSelectionModal
-        isOpen={showAccountSelectionModal}
+      <CombinedCopyTradingModal
+        isOpen={showCombinedModal}
         onClose={() => {
-          setShowAccountSelectionModal(false);
+          setShowCombinedModal(false);
           setSelectedTraderForCopy(null);
-          setSelectedAccountForCopy(null);
         }}
         trader={selectedTraderForCopy}
-        onAccountSelected={handleAccountSelected}
-      />
-
-      <SeguirTraderModal 
-        isOpen={showSeguirModal}
-        onClose={() => {
-          setShowSeguirModal(false);
-          setSelectedTraderForCopy(null);
-          setSelectedAccountForCopy(null);
-        }}
-        trader={selectedTraderForCopy}
-        selectedAccount={selectedAccountForCopy}
-        onConfirm={async (formData, traderData, accountData) => {
-          console.log('Copiar trader confirmado desde Inversor:', formData);
-          console.log('Trader recibido:', traderData);
-          console.log('Cuenta recibida:', accountData);
-          
-          const finalTrader = traderData || selectedTraderForCopy;
-          const finalAccount = accountData || selectedAccountForCopy;
-          
-          if (!finalAccount || !finalTrader) {
-            alert('Por favor selecciona una cuenta válida');
-            return;
-          }
-          
-          try {
-            const response = await followMaster({
-              master_user_id: finalTrader.userId || finalTrader.id,
-              follower_mt5_account_id: finalAccount.accountNumber || finalAccount.id,
-              risk_ratio: formData.multiplicadorLote || 1.0
-            });
-            
-            console.log('✅ Copy Trading activado:', response);
-            setCopiedTraders(prev => new Set([...prev, finalTrader.id]));
-            alert(`✅ Ahora estás copiando a ${finalTrader.name}`);
-            
-            setShowSeguirModal(false);
-            setSelectedTraderForCopy(null);
-            setSelectedAccountForCopy(null);
-            
-            const newSubscriptions = await getMySubscriptions();
-            setSubscriptions(newSubscriptions);
-          } catch (error) {
-            console.error('❌ Error al copiar trader:', error);
-            alert(`Error: ${error.error || error.message || 'No se pudo activar el copy trading'}`);
-          }
-        }}
+        onConfirm={handleCombinedModalConfirm}
       />
 
       <CommentsRatingModal
@@ -878,61 +820,14 @@ const Inversor = () => {
       </div>
       
       {/* Global Modals */}
-      <AccountSelectionModal
-        isOpen={showAccountSelectionModal}
+      <CombinedCopyTradingModal
+        isOpen={showCombinedModal}
         onClose={() => {
-          setShowAccountSelectionModal(false);
+          setShowCombinedModal(false);
           setSelectedTraderForCopy(null);
-          setSelectedAccountForCopy(null);
         }}
         trader={selectedTraderForCopy}
-        onAccountSelected={handleAccountSelected}
-      />
-
-      <SeguirTraderModal 
-        isOpen={showSeguirModal}
-        onClose={() => {
-          setShowSeguirModal(false);
-          setSelectedTraderForCopy(null);
-          setSelectedAccountForCopy(null);
-        }}
-        trader={selectedTraderForCopy}
-        selectedAccount={selectedAccountForCopy}
-        onConfirm={async (formData, traderData, accountData) => {
-          console.log('Copiar trader confirmado desde Inversor:', formData);
-          console.log('Trader recibido:', traderData);
-          console.log('Cuenta recibida:', accountData);
-          
-          const finalTrader = traderData || selectedTraderForCopy;
-          const finalAccount = accountData || selectedAccountForCopy;
-          
-          if (!finalAccount || !finalTrader) {
-            alert('Por favor selecciona una cuenta válida');
-            return;
-          }
-          
-          try {
-            const response = await followMaster({
-              master_user_id: finalTrader.userId || finalTrader.id,
-              follower_mt5_account_id: finalAccount.accountNumber || finalAccount.id,
-              risk_ratio: formData.multiplicadorLote || 1.0
-            });
-            
-            console.log('✅ Copy Trading activado:', response);
-            setCopiedTraders(prev => new Set([...prev, finalTrader.id]));
-            alert(`✅ Ahora estás copiando a ${finalTrader.name}`);
-            
-            setShowSeguirModal(false);
-            setSelectedTraderForCopy(null);
-            setSelectedAccountForCopy(null);
-            
-            const newSubscriptions = await getMySubscriptions();
-            setSubscriptions(newSubscriptions);
-          } catch (error) {
-            console.error('❌ Error al copiar trader:', error);
-            alert(`Error: ${error.error || error.message || 'No se pudo activar el copy trading'}`);
-          }
-        }}
+        onConfirm={handleCombinedModalConfirm}
       />
 
       <CommentsRatingModal
@@ -1379,61 +1274,14 @@ const Inversor = () => {
       </div>
       
       {/* Global Modals */}
-      <AccountSelectionModal
-        isOpen={showAccountSelectionModal}
+      <CombinedCopyTradingModal
+        isOpen={showCombinedModal}
         onClose={() => {
-          setShowAccountSelectionModal(false);
+          setShowCombinedModal(false);
           setSelectedTraderForCopy(null);
-          setSelectedAccountForCopy(null);
         }}
         trader={selectedTraderForCopy}
-        onAccountSelected={handleAccountSelected}
-      />
-
-      <SeguirTraderModal 
-        isOpen={showSeguirModal}
-        onClose={() => {
-          setShowSeguirModal(false);
-          setSelectedTraderForCopy(null);
-          setSelectedAccountForCopy(null);
-        }}
-        trader={selectedTraderForCopy}
-        selectedAccount={selectedAccountForCopy}
-        onConfirm={async (formData, traderData, accountData) => {
-          console.log('Copiar trader confirmado desde Inversor:', formData);
-          console.log('Trader recibido:', traderData);
-          console.log('Cuenta recibida:', accountData);
-          
-          const finalTrader = traderData || selectedTraderForCopy;
-          const finalAccount = accountData || selectedAccountForCopy;
-          
-          if (!finalAccount || !finalTrader) {
-            alert('Por favor selecciona una cuenta válida');
-            return;
-          }
-          
-          try {
-            const response = await followMaster({
-              master_user_id: finalTrader.userId || finalTrader.id,
-              follower_mt5_account_id: finalAccount.accountNumber || finalAccount.id,
-              risk_ratio: formData.multiplicadorLote || 1.0
-            });
-            
-            console.log('✅ Copy Trading activado:', response);
-            setCopiedTraders(prev => new Set([...prev, finalTrader.id]));
-            alert(`✅ Ahora estás copiando a ${finalTrader.name}`);
-            
-            setShowSeguirModal(false);
-            setSelectedTraderForCopy(null);
-            setSelectedAccountForCopy(null);
-            
-            const newSubscriptions = await getMySubscriptions();
-            setSubscriptions(newSubscriptions);
-          } catch (error) {
-            console.error('❌ Error al copiar trader:', error);
-            alert(`Error: ${error.error || error.message || 'No se pudo activar el copy trading'}`);
-          }
-        }}
+        onConfirm={handleCombinedModalConfirm}
       />
 
       <CommentsRatingModal
@@ -1454,61 +1302,14 @@ const Inversor = () => {
       </div>
       
       {/* Global Modals */}
-      <AccountSelectionModal
-        isOpen={showAccountSelectionModal}
+      <CombinedCopyTradingModal
+        isOpen={showCombinedModal}
         onClose={() => {
-          setShowAccountSelectionModal(false);
+          setShowCombinedModal(false);
           setSelectedTraderForCopy(null);
-          setSelectedAccountForCopy(null);
         }}
         trader={selectedTraderForCopy}
-        onAccountSelected={handleAccountSelected}
-      />
-
-      <SeguirTraderModal 
-        isOpen={showSeguirModal}
-        onClose={() => {
-          setShowSeguirModal(false);
-          setSelectedTraderForCopy(null);
-          setSelectedAccountForCopy(null);
-        }}
-        trader={selectedTraderForCopy}
-        selectedAccount={selectedAccountForCopy}
-        onConfirm={async (formData, traderData, accountData) => {
-          console.log('Copiar trader confirmado desde Inversor:', formData);
-          console.log('Trader recibido:', traderData);
-          console.log('Cuenta recibida:', accountData);
-          
-          const finalTrader = traderData || selectedTraderForCopy;
-          const finalAccount = accountData || selectedAccountForCopy;
-          
-          if (!finalAccount || !finalTrader) {
-            alert('Por favor selecciona una cuenta válida');
-            return;
-          }
-          
-          try {
-            const response = await followMaster({
-              master_user_id: finalTrader.userId || finalTrader.id,
-              follower_mt5_account_id: finalAccount.accountNumber || finalAccount.id,
-              risk_ratio: formData.multiplicadorLote || 1.0
-            });
-            
-            console.log('✅ Copy Trading activado:', response);
-            setCopiedTraders(prev => new Set([...prev, finalTrader.id]));
-            alert(`✅ Ahora estás copiando a ${finalTrader.name}`);
-            
-            setShowSeguirModal(false);
-            setSelectedTraderForCopy(null);
-            setSelectedAccountForCopy(null);
-            
-            const newSubscriptions = await getMySubscriptions();
-            setSubscriptions(newSubscriptions);
-          } catch (error) {
-            console.error('❌ Error al copiar trader:', error);
-            alert(`Error: ${error.error || error.message || 'No se pudo activar el copy trading'}`);
-          }
-        }}
+        onConfirm={handleCombinedModalConfirm}
       />
 
       <CommentsRatingModal
