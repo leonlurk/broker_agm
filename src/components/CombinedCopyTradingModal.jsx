@@ -60,9 +60,21 @@ const CombinedCopyTradingModal = ({
       return;
     }
 
+    // Extract master MT5 account from trader's master_config
+    const masterMt5Account = trader.master_config?.cuentaMT5Seleccionada || 
+                            trader.master_config?.master_mt5_account ||
+                            trader.masterAccount ||
+                            trader.mt5Account;
+    
+    if (!masterMt5Account) {
+      alert('Error: No se encontró la cuenta MT5 del master trader');
+      return;
+    }
+
     try {
       const response = await followMaster({
         master_user_id: trader.userId || trader.id,
+        master_mt5_account_id: masterMt5Account,
         follower_mt5_account_id: selectedAccount.account_number || selectedAccount.id,
         risk_ratio: formData.multiplicadorLote || 1.0
       });

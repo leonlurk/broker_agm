@@ -48,14 +48,16 @@ logicApiClient.interceptors.request.use(
  * Permite al usuario actual seguir a un Master Trader.
  * @param {object} params - Parámetros para seguir al master
  * @param {string} params.master_user_id - El ID del usuario master
+ * @param {string} params.master_mt5_account_id - El ID de la cuenta MT5 del master
  * @param {number} params.follower_mt5_account_id - El ID de la cuenta MT5 del seguidor
  * @param {number} [params.risk_ratio=1.0] - El ratio de riesgo para la copia
  * @returns {Promise<object>} La respuesta del servidor.
  */
-export const followMaster = async ({ master_user_id, follower_mt5_account_id, risk_ratio = 1.0 }) => {
+export const followMaster = async ({ master_user_id, master_mt5_account_id, follower_mt5_account_id, risk_ratio = 1.0 }) => {
   try {
     const response = await logicApiClient.post('/api/v1/copy/follow', {
       master_user_id,
+      master_mt5_account_id,
       follower_mt5_account_id,
       risk_ratio
     });

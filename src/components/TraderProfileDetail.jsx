@@ -697,9 +697,21 @@ const TraderProfileDetail = ({ trader, onBack }) => {
             const finalTrader = traderData || trader;
             const finalAccount = accountData || selectedAccountForCopy;
             
+            // Extract master MT5 account from trader's master_config
+            const masterMt5Account = finalTrader.master_config?.cuentaMT5Seleccionada || 
+                                    finalTrader.master_config?.master_mt5_account ||
+                                    finalTrader.masterAccount ||
+                                    finalTrader.mt5Account;
+            
+            if (!masterMt5Account) {
+              alert('Error: No se encontró la cuenta MT5 del master trader');
+              return;
+            }
+
             // Llamar al endpoint followMaster del backend
             const response = await followMaster({
               master_user_id: finalTrader.user_id || finalTrader.id,
+              master_mt5_account_id: masterMt5Account,
               follower_mt5_account_id: parseInt(finalAccount?.accountNumber || formData.accountId),
               risk_ratio: parseFloat(formData.porcentajeRiesgo || formData.riskRatio)
             });

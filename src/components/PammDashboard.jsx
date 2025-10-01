@@ -1691,9 +1691,22 @@ const PammDetailView = ({ trader, onBack, investedFunds, setInvestedFunds }) => 
                 gestor={trader}
                 onConfirm={async (formData) => {
                     try {
+                        // Extract master MT5 account from trader's pamm_config
+                        const masterMt5Account = trader.pamm_config?.pamm_mt5_account || 
+                                                trader.master_config?.cuentaMT5Seleccionada || 
+                                                trader.master_config?.master_mt5_account ||
+                                                trader.masterAccount ||
+                                                trader.mt5Account;
+                        
+                        if (!masterMt5Account) {
+                            alert('Error: No se encontró la cuenta MT5 del PAMM manager');
+                            return;
+                        }
+
                         // Llamar al endpoint followMaster del backend para PAMM
                         const response = await followMaster({
                             master_user_id: trader.user_id || trader.id,
+                            master_mt5_account_id: masterMt5Account,
                             follower_mt5_account_id: parseInt(formData.accountId),
                             risk_ratio: parseFloat(formData.riskRatio || 1.0)
                         });

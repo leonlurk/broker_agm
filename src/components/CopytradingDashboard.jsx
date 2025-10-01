@@ -117,9 +117,21 @@ const CopytradingDashboard = () => {
       const pct = Number(formData?.porcentajeRiesgo) || 5; // default 5%
       const computedRisk = Math.max(0.01, Math.min(1.0, pct / 100));
 
+      // Extract master MT5 account from trader's master_config
+      const masterMt5Account = finalTrader.master_config?.cuentaMT5Seleccionada || 
+                              finalTrader.master_config?.master_mt5_account ||
+                              finalTrader.masterAccount ||
+                              finalTrader.mt5Account;
+      
+      if (!masterMt5Account) {
+        alert('Error: No se encontró la cuenta MT5 del master trader');
+        return;
+      }
+
       // Llamar al endpoint followMaster del backend
       const response = await followMaster({
         master_user_id: finalTrader.user_id || finalTrader.id,
+        master_mt5_account_id: masterMt5Account,
         follower_mt5_account_id: parseInt(finalAccount.accountNumber, 10),
         risk_ratio: computedRisk
       });
