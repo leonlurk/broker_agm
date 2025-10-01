@@ -3,6 +3,7 @@ import { X, DollarSign, TrendingUp, Shield, Settings, ChevronRight } from 'lucid
 import { useAccounts } from '../contexts/AccountsContext';
 import { useTranslation } from 'react-i18next';
 import { followMaster } from '../services/copytradingService';
+import { supabase } from '../supabase/config';
 
 const CombinedCopyTradingModal = ({ 
   isOpen, 
@@ -60,32 +61,41 @@ const CombinedCopyTradingModal = ({
       return;
     }
 
-    // Debug: Log trader object to see available data
-    console.log('Debug - Full trader object:', trader);
-    console.log('Debug - trader.master_config:', trader.master_config);
-    console.log('Debug - trader keys:', Object.keys(trader));
-    
-    // Extract master MT5 account from trader's master_config or other possible fields
-    const masterMt5Account = trader.master_config?.cuentaMT5Seleccionada || 
-                            trader.master_config?.master_mt5_account ||
-                            trader.masterAccount ||
-                            trader.mt5Account ||
-                            trader.accountNumber ||
-                            trader.account_number ||
-                            trader.login ||
-                            trader.id; // Fallback to trader ID if no MT5 account found
-    
-    console.log('Debug - Extracted masterMt5Account:', masterMt5Account);
-    
-    if (!masterMt5Account) {
-      console.error('Debug - No MT5 account found in trader object:', trader);
-      alert('Error: No se encontró la cuenta MT5 del master trader');
-      return;
-    }
-
     try {
+      // Fetch full trader profile data from Supabase to get master_config
+      console.log('Fetching full trader profile for ID:', trader.id);
+      const { data: traderProfile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', trader.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching trader profile:', error);
+        alert('Error: No se pudo obtener la información del trader');
+        return;
+      }
+
+      console.log('Debug - Full trader profile from DB:', traderProfile);
+      console.log('Debug - trader profile master_config:', traderProfile?.master_config);
+
+      // Extract master MT5 account from the full profile data
+      const masterMt5Account = traderProfile?.master_config?.cuentaMT5Seleccionada || 
+                              traderProfile?.master_config?.master_mt5_account ||
+                              traderProfile?.master_config?.master_account ||
+                              traderProfile?.masterAccount ||
+                              traderProfile?.mt5Account;
+      
+      console.log('Debug - Extracted masterMt5Account from profile:', masterMt5Account);
+      
+      if (!masterMt5Account) {
+        console.error('Debug - No MT5 account found in trader profile:', traderProfile);
+        alert('Error: El trader no tiene configurada una cuenta MT5 como master');
+        return;
+      }
+
       const response = await followMaster({
-        master_user_id: trader.userId || trader.id,
+        master_user_id: trader.id,
         master_mt5_account_id: masterMt5Account,
         follower_mt5_account_id: selectedAccount.account_number || selectedAccount.id,
         risk_ratio: formData.multiplicadorLote || 1.0
