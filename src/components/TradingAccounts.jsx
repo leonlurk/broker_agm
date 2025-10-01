@@ -838,7 +838,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       }
   }, []);
 
-  // Función para refresh manual de datos
+  // Función para refresh manual de datos con rate limiting inteligente
   const handleRefreshData = useCallback(async () => {
       if (!canRefresh || isRefreshing) {
         return;
@@ -846,17 +846,21 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
       const currentTime = Date.now();
       const timeSinceLastRefresh = lastRefreshTime ? currentTime - lastRefreshTime : Infinity;
-      const RATE_LIMIT_MS = 30000; // 30 segundos
+      const RATE_LIMIT_MS = 15000; // Reducido a 15 segundos
 
-      // Rate limiting
+      // Rate limiting inteligente
       if (timeSinceLastRefresh < RATE_LIMIT_MS) {
         const remainingTime = Math.ceil((RATE_LIMIT_MS - timeSinceLastRefresh) / 1000);
-        toast.error(`Espere ${remainingTime} segundos antes de actualizar nuevamente`);
+        toast.error(`Espere ${remainingTime}s antes de actualizar`, {
+          duration: 2000,
+          icon: '⏱️'
+        });
         return;
       }
 
       const selectedAccount = getAllAccounts().find(acc => acc.id === selectedAccountId);
-      if (!selectedAccount || !selectedAccount.account_number) {
+      if (!selectedAccount) {
+        toast.error('No hay cuenta seleccionada');
         return;
       }
 
@@ -864,31 +868,30 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         setCanRefresh(false);
         setLastRefreshTime(currentTime);
         
+        // Limpiar datos existentes para mostrar loading
+        setRealMetrics(null);
+        setRealStatistics(null);
+        setRealBalanceHistory([]);
+        
         // Obtener timestamp antes del fetch
         const beforeFetch = Date.now();
         
-        // Llamar a la función de carga de métricas
+        // Cargar métricas de la cuenta seleccionada
         await loadAccountMetrics(selectedAccount);
         
-        // Verificar si los datos cambiaron comparando timestamps
-        const afterFetch = Date.now();
-        const dataAge = afterFetch - (lastUpdated || 0);
+        // Calcular tiempo de respuesta
+        const responseTime = Date.now() - beforeFetch;
         
-        // Si los datos no han cambiado (timestamp muy similar), mostrar mensaje
-        if (dataAge < 60000) { // Menos de 1 minuto de diferencia
-          toast.info(t('accounts.fields.dataWillUpdate'), {
-            duration: 4000,
-            icon: '⏱️'
-          });
-        } else {
-          toast.success(t('accounts.fields.dataUpdated'));
-        }
+        // Mostrar toast de éxito con tiempo de respuesta
+        toast.success(`✅ Datos actualizados (${(responseTime/1000).toFixed(1)}s)`, {
+          duration: 3000
+        });
         
       } catch (error) {
         console.error('[TradingAccounts] Error en refresh:', error);
-        toast.error(t('accounts.fields.updateError'));
+        toast.error('Error al actualizar datos');
       } finally {
-        // Reactivar refresh después de 30 segundos
+        // Reactivar refresh después del rate limit
         setTimeout(() => {
           setCanRefresh(true);
         }, RATE_LIMIT_MS);
@@ -3404,36 +3407,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           
           {/* Sección Beneficio Total con Tabs */}
           <div className="p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl">
-            {/* Timestamp y botón refresh */}
-            <div className="flex justify-between items-center mb-4">
-              <div></div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleRefreshData}
-                  disabled={!canRefresh || isRefreshing}
-                  className={`p-1.5 rounded-md text-xs transition-colors ${
-                    canRefresh && !isRefreshing
-                      ? 'text-gray-400 hover:text-cyan-400 hover:bg-[#3a3a3a]'
-                      : 'text-gray-600 cursor-not-allowed'
-                  }`}
-                  title={t('accounts.fields.refresh')}
-                >
-                  <svg
-                    className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            {/* Remover botón refresh duplicado del beneficio total */}
             {/* Header con Tabs y Filtro - RESPONSIVE */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
               {/* Tabs */}
