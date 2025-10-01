@@ -96,8 +96,8 @@ const CombinedCopyTradingModal = ({
 
       const requestParams = {
         master_user_id: trader.id,
-        master_account: masterMt5Account,
-        follower_account: selectedAccount.account_number || selectedAccount.id,
+        master_mt5_account_id: masterMt5Account,
+        follower_mt5_account_id: selectedAccount.account_number || selectedAccount.id,
         risk_ratio: formData.multiplicadorLote || 1.0
       };
       

@@ -1706,8 +1706,8 @@ const PammDetailView = ({ trader, onBack, investedFunds, setInvestedFunds }) => 
                         // Llamar al endpoint followMaster del backend para PAMM
                         const response = await followMaster({
                             master_user_id: trader.user_id || trader.id,
-                            master_account: masterMt5Account,
-                            follower_account: parseInt(formData.accountId),
+                            master_mt5_account_id: masterMt5Account,
+                            follower_mt5_account_id: parseInt(formData.accountId),
                             risk_ratio: parseFloat(formData.riskRatio || 1.0)
                         });
                         

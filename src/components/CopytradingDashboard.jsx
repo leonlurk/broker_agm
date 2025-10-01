@@ -131,8 +131,8 @@ const CopytradingDashboard = () => {
       // Llamar al endpoint followMaster del backend
       const response = await followMaster({
         master_user_id: finalTrader.user_id || finalTrader.id,
-        master_account: masterMt5Account,
-        follower_account: parseInt(finalAccount.accountNumber, 10),
+        master_mt5_account_id: masterMt5Account,
+        follower_mt5_account_id: parseInt(finalAccount.accountNumber, 10),
         risk_ratio: computedRisk
       });
 
