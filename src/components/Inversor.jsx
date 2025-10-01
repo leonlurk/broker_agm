@@ -277,14 +277,19 @@ const Inversor = () => {
     console.log('Setting selectedAccountForCopy to:', account);
     console.log('Current selectedTraderForCopy:', selectedTraderForCopy);
     
-    // Usar setTimeout para asegurar que los estados se actualicen antes del modal
+    // Store both trader and account data before closing account modal
+    const currentTrader = selectedTraderForCopy;
+    
     setSelectedAccountForCopy(account);
     setShowAccountSelectionModal(false);
     
+    // Immediately open the seguir modal with the preserved data
     setTimeout(() => {
+      // Restore the trader data that might have been cleared by onClose
+      setSelectedTraderForCopy(currentTrader);
       setShowSeguirModal(true);
-      console.log('Modal opened with delay - account:', account, 'trader:', selectedTraderForCopy);
-    }, 100);
+      console.log('Modal opened with preserved data - account:', account, 'trader:', currentTrader);
+    }, 50);
   };
 
   const handleFollowTrader = (trader) => {
