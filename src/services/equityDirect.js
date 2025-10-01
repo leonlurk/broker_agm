@@ -7,7 +7,7 @@ const BASE = (import.meta.env.VITE_BROKER_API_URL || import.meta.env.VITE_API_BA
 
 const client = axios.create({
   baseURL: BASE,
-  timeout: 15000,
+  timeout: 60000, // Aumentado a 60 segundos
   headers: { 'Content-Type': 'application/json' }
 });
 

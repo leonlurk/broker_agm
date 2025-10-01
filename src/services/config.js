@@ -116,7 +116,7 @@ class ConfigService {
     return {
       baseUrl: this.config.API_BASE_URL,
       tradingUrl: this.config.TRADING_API_URL,
-      timeout: 30000, // 30 seconds
+      timeout: 60000, // Aumentado a 60 segundos
       retries: 3
     };
   }

@@ -14,7 +14,7 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://apekapital
  */
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 60000, // Aumentado a 60 segundos
   headers: {
     'Content-Type': 'application/json'
   }

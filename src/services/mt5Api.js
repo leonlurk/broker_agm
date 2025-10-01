@@ -13,7 +13,7 @@ const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444
 
 const mt5Api = axios.create({
   baseURL: baseURL,
-  timeout: 30000,
+  timeout: 60000, // Aumentado a 60 segundos
   headers: {
     'Content-Type': 'application/json'
   }

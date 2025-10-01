@@ -14,7 +14,7 @@ const baseURL = import.meta.env.DEV
 
 const mt5Api = axios.create({
   baseURL: baseURL,
-  timeout: 30000,
+  timeout: 60000, // Aumentado a 60 segundos
   headers: {
     'Content-Type': 'application/json'
   }
