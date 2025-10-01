@@ -296,7 +296,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     if (currentUser && currentUser.id) {
       loadInitialData();
     }
-  }, [currentUser, currentUser?.id, getAllAccounts]);
+  }, [currentUser?.id]); // Remover getAllAccounts de dependencias
 
   useEffect(() => {
     const checkIfMobile = () => {
@@ -652,7 +652,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedAccountId, realMetrics?.equity]);
+  }, [selectedAccountId]); // Remover realMetrics de dependencias para evitar loops
   
   // Función para cargar métricas de una cuenta
   const loadAccountMetrics = useCallback(async (account) => {
@@ -893,7 +893,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           setCanRefresh(true);
         }, RATE_LIMIT_MS);
       }
-  }, [selectedAccountId, getAllAccounts, loadAccountMetrics, lastUpdated, t]);
+  }, [selectedAccountId, lastUpdated]); // Remover funciones de dependencias
     
   // useEffect para cargar datos reales de MT5 cuando se selecciona una cuenta con auto-refresh
   useEffect(() => {
@@ -931,7 +931,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         lastLoadedAccountRef.current = null;
       }
     };
-  }, [selectedAccountId, getAllAccounts]); // Solo recargar cuando cambia la cuenta seleccionada
+  }, [selectedAccountId]); // Solo recargar cuando cambia la cuenta seleccionada
 
   // Función helper para obtener el estado de la cuenta
   const getAccountStatus = (account) => {
