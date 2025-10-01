@@ -4,6 +4,9 @@ import useTranslation from '../hooks/useTranslation';
 
 const SeguirTraderModal = ({ isOpen, onClose, trader, selectedAccount, onConfirm }) => {
   const { t } = useTranslation();
+  
+  // Debug logs para verificar props
+  console.log('SeguirTraderModal props:', { trader, selectedAccount, isOpen });
   const [formData, setFormData] = useState({
     capitalAsignado: 5000,
     porcentajeRiesgo: 5,
