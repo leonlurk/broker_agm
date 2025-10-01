@@ -3224,7 +3224,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 </CustomTooltip>
                   <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
-                    ${Math.abs(realMetrics?.profit_loss || 0).toFixed(2)}
+                    ${(realMetrics?.profit_loss || 0).toFixed(2)}
                   </span>
                   <span className={`px-2 py-1 rounded text-xs ${
                     (realMetrics?.profit_loss || 0) >= 0
