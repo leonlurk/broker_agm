@@ -79,9 +79,9 @@ const AccountSelectionModal = ({ isOpen, onClose, trader, onAccountSelected }) =
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-white">{account.accountName}</h3>
-                      <p className="text-sm text-gray-400">#{account.accountNumber}</p>
-                      <p className="text-xs text-gray-500">{account.accountTypeSelection} • Apalancamiento 1:{account.leverage}</p>
+                      <h3 className="font-semibold text-white">{account.account_name || account.accountName}</h3>
+                      <p className="text-sm text-gray-400">#{account.account_number || account.accountNumber}</p>
+                      <p className="text-xs text-gray-500">{account.account_type_selection || account.accountTypeSelection} • Apalancamiento 1:{account.leverage}</p>
                     </div>
                     <div className="text-right">
                       <div className="flex items-center gap-1 text-white font-semibold">
