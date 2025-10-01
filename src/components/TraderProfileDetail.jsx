@@ -711,8 +711,8 @@ const TraderProfileDetail = ({ trader, onBack }) => {
             // Llamar al endpoint followMaster del backend
             const response = await followMaster({
               master_user_id: finalTrader.user_id || finalTrader.id,
-              master_mt5_account_id: masterMt5Account,
-              follower_mt5_account_id: parseInt(finalAccount?.accountNumber || formData.accountId),
+              master_account: masterMt5Account,
+              follower_account: parseInt(finalAccount?.accountNumber || formData.accountId),
               risk_ratio: parseFloat(formData.porcentajeRiesgo || formData.riskRatio)
             });
             
