@@ -162,6 +162,7 @@ const Inversor = () => {
           // Fallback: formatear suscripciones tradicionales
           const formattedSubs = subsData.map(sub => ({
             id: sub.id,
+            master_id: sub.master_id, // IMPORTANTE: Preservar para sincronizar copiedTraders
             name: sub.master?.name || sub.master?.username || 'Unknown Trader',
             avatar: sub.master?.photo_url || '/Avatar1.png',
             personalPnL: sub.pnl || 0,
