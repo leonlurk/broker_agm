@@ -67,6 +67,20 @@ const Inversor = () => {
     }
   }, [view, selectedTrader]);
 
+  // Sincronizar copiedTraders con subscriptions
+  useEffect(() => {
+    if (subscriptions && subscriptions.length > 0) {
+      // Extraer IDs de masters de las suscripciones
+      const copiedTraderIds = subscriptions.map(sub => {
+        // Puede venir como sub.master_id o sub.master?.id
+        return sub.master_id || sub.master?.id || sub.id;
+      }).filter(Boolean);
+      
+      setCopiedTraders(new Set(copiedTraderIds));
+      console.log('Traders copiados sincronizados:', copiedTraderIds);
+    }
+  }, [subscriptions]);
+
   // Cargar datos reales de la API
   useEffect(() => {
     const fetchTradersData = async () => {
