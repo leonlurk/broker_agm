@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Plus, Target } from 'lucide-react';
+import { ChevronDown, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Plus, Target, UserMinus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell, Legend } from 'recharts';
 import CombinedCopyTradingModal from './CombinedCopyTradingModal';
 import CommentsRatingModal from './CommentsRatingModal';
 import { useAccounts } from '../contexts/AccountsContext';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { useTranslation } from 'react-i18next';
-import { getMasterTraders, getMySubscriptions, getInvestorPortfolio, followMaster } from '../services/copytradingService';
+import { getMasterTraders, getMySubscriptions, getInvestorPortfolio, followMaster, unfollowMaster } from '../services/copytradingService';
+import toast from 'react-hot-toast';
 
 // Estados iniciales vacíos para datos dinámicos
 const initialPortfolioData = {
@@ -298,6 +299,59 @@ const Inversor = () => {
     console.log('Copiando trader:', trader.name);
     setSelectedTraderForCopy(trader);
     setShowCombinedModal(true);
+  };
+
+  const handleUnfollowTrader = async (trader) => {
+    try {
+      console.log('[Inversor] Unfollowing trader:', trader.name);
+
+      // Buscar la suscripción activa para este trader
+      const subscription = subscriptions.find(sub =>
+        sub.master_id === trader.id || sub.master_user_id === trader.id
+      );
+
+      if (!subscription) {
+        toast.error('No se encontró la suscripción activa');
+        return;
+      }
+
+      // Confirmar antes de dejar de seguir
+      if (!window.confirm(`¿Estás seguro de que deseas dejar de seguir a ${trader.name}? Se cerrarán todas las posiciones abiertas copiadas de este trader.`)) {
+        return;
+      }
+
+      // Llamar al servicio de unfollow
+      // La API del backend obtiene el follower_mt5_account_id del token de autenticación
+      await unfollowMaster(trader.id, subscription.follower_mt5_account_id);
+
+      // Actualizar estado local
+      setCopiedTraders(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(trader.id);
+        return newSet;
+      });
+
+      // Recargar suscripciones
+      const subsData = await getMySubscriptions();
+      const formattedSubs = subsData.map(sub => ({
+        id: sub.id,
+        master_id: sub.master_user_id || sub.master_id,
+        master_user_id: sub.master_user_id || sub.master_id,
+        name: sub.master?.name || sub.master?.username || 'Unknown Trader',
+        avatar: sub.master?.photo_url || '/Avatar1.png',
+        personalPnL: sub.pnl || 0,
+        personalPnLPercentage: sub.pnl_percentage || 0,
+        assignedCapital: sub.assigned_capital || 0,
+        status: sub.status || 'active'
+      }));
+
+      setSubscriptions(formattedSubs);
+
+      toast.success(`Has dejado de seguir a ${trader.name}`);
+    } catch (error) {
+      console.error('[Inversor] Error unfollowing trader:', error);
+      toast.error(error.message || 'Error al dejar de seguir al trader');
+    }
   };
 
   const handleCombinedModalConfirm = async (formData, trader, account) => {
@@ -873,18 +927,23 @@ const Inversor = () => {
 
               {/* Action Buttons */}
               <div className="flex gap-2">
-                <button
-                  onClick={() => handleCopyTrader(trader)}
-                  className={`flex-1 py-2 px-4 rounded-lg transition-all text-sm font-medium flex items-center justify-center gap-2 ${
-                    copiedTraders.has(trader.id)
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white hover:opacity-90'
-                  }`}
-                  disabled={copiedTraders.has(trader.id)}
-                >
-                  <Copy size={16} />
-                  {copiedTraders.has(trader.id) ? t('copyTrading.status.copying') : t('copyTrading.copyNow')}
-                </button>
+                {copiedTraders.has(trader.id) ? (
+                  <button
+                    onClick={() => handleUnfollowTrader(trader)}
+                    className="flex-1 py-2 px-4 rounded-lg transition-all text-sm font-medium flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-red-700"
+                  >
+                    <UserMinus size={16} />
+                    Dejar de seguir
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleCopyTrader(trader)}
+                    className="flex-1 py-2 px-4 rounded-lg transition-all text-sm font-medium flex items-center justify-center gap-2 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white hover:opacity-90"
+                  >
+                    <Copy size={16} />
+                    {t('copyTrading.copyNow')}
+                  </button>
+                )}
                 <button
                   onClick={() => handleViewTraderDetails(trader)}
                   className="px-4 py-2 border border-[#333] text-gray-400 rounded-lg hover:text-white hover:border-gray-300 transition-colors text-sm flex items-center justify-center gap-2"
