@@ -137,11 +137,31 @@ const Inversor = () => {
         
         setRealTraders(formattedTraders);
         setFilteredTraders(formattedTraders);
-        
+
+        // ALWAYS format and set subscriptions from subsData first
+        console.log('[Inversor] 📝 Formatting subscriptions from API');
+        console.log('[Inversor] subsData to format:', subsData);
+
+        const formattedSubs = subsData.map(sub => ({
+          id: sub.id,
+          master_id: sub.master_user_id || sub.master_id, // IMPORTANTE: Preservar para sincronizar copiedTraders
+          master_user_id: sub.master_user_id || sub.master_id, // También guardar master_user_id
+          name: sub.master?.name || sub.master?.username || 'Unknown Trader',
+          avatar: sub.master?.photo_url || '/Avatar1.png',
+          personalPnL: sub.pnl || 0,
+          personalPnLPercentage: sub.pnl_percentage || 0,
+          assignedCapital: sub.assigned_capital || 0,
+          status: sub.status || 'active'
+        }));
+
+        console.log('[Inversor] 💾 Setting subscriptions to state:', formattedSubs);
+        setSubscriptions(formattedSubs);
+
         // Usar portfolio data del API si está disponible
         if (portfolioApiData) {
+          console.log('[Inversor] Portfolio API data available:', portfolioApiData);
           const currentBalance = portfolioApiData.total_balance || 0;
-          
+
           setPortfolioData({
             totalBalance: currentBalance,
             totalPnL: portfolioApiData.total_pnl || 0,
@@ -154,7 +174,7 @@ const Inversor = () => {
             const data = [];
             const dates = ['01/12', '05/12', '10/12', '15/12', '20/12', '25/12', '30/12'];
             const startValue = currentValue / (1 + (pnlPercentage / 100));
-            
+
             dates.forEach((date, index) => {
               const progress = (index + 1) / dates.length;
               const value = startValue + ((currentValue - startValue) * progress);
@@ -163,46 +183,13 @@ const Inversor = () => {
                 value: Math.round(value * 100) / 100
               });
             });
-            
+
             return data;
           };
-          
+
           setHistoricalData(generateHistoricalData(currentBalance, portfolioApiData.total_pnl_percentage || 0));
-
-          // Usar los traders copiados del portfolio API
-          if (portfolioApiData.copied_traders) {
-            const formattedCopiedTraders = portfolioApiData.copied_traders.map(trader => ({
-              id: trader.id,
-              master_id: trader.master_id || trader.id, // IMPORTANTE: Preservar master_id
-              name: trader.name,
-              avatar: trader.avatar || '/Avatar1.png',
-              personalPnL: trader.personal_pnl || 0,
-              personalPnLPercentage: trader.personal_pnl_percentage || 0,
-              assignedCapital: trader.assigned_capital || 0,
-              status: trader.status || 'active'
-            }));
-
-            setSubscriptions(formattedCopiedTraders);
-          }
         } else {
-          // Fallback: formatear suscripciones tradicionales
-          console.log('[Inversor] 📝 Formatting subscriptions (no portfolio API data)');
-          console.log('[Inversor] subsData to format:', subsData);
-
-          const formattedSubs = subsData.map(sub => ({
-            id: sub.id,
-            master_id: sub.master_user_id || sub.master_id, // IMPORTANTE: Preservar para sincronizar copiedTraders
-            master_user_id: sub.master_user_id || sub.master_id, // También guardar master_user_id
-            name: sub.master?.name || sub.master?.username || 'Unknown Trader',
-            avatar: sub.master?.photo_url || '/Avatar1.png',
-            personalPnL: sub.pnl || 0,
-            personalPnLPercentage: sub.pnl_percentage || 0,
-            assignedCapital: sub.assigned_capital || 0,
-            status: sub.status || 'active'
-          }));
-
-          console.log('[Inversor] 💾 Setting subscriptions to state:', formattedSubs);
-          setSubscriptions(formattedSubs);
+          console.log('[Inversor] No portfolio API data, using subscription-based calculations');
           
           // Calcular portfolio data basado en suscripciones
           if (formattedSubs.length > 0) {
