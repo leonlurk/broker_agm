@@ -94,7 +94,13 @@ const Inversor = () => {
           getMySubscriptions(),
           getInvestorPortfolio().catch(() => null) // No fallar si portfolio endpoint no está disponible
         ]);
-        
+
+        console.log('[Inversor] 🔍 RAW API DATA:');
+        console.log('[Inversor] Traders from API:', tradersData);
+        console.log('[Inversor] First trader structure:', tradersData[0]);
+        console.log('[Inversor] Subscriptions from API:', subsData);
+        console.log('[Inversor] First subscription structure:', subsData[0]);
+
         // Formatear los traders para el componente
         const formattedTraders = tradersData.map(trader => ({
           id: trader.id,
@@ -111,6 +117,9 @@ const Inversor = () => {
           strategy: trader.strategy || 'N/A',
           isVerified: trader.is_verified || false
         }));
+
+        console.log('[Inversor] Formatted traders:', formattedTraders);
+        console.log('[Inversor] Follower counts:', formattedTraders.map(t => ({ name: t.name, followers: t.followers })));
         
         setRealTraders(formattedTraders);
         setFilteredTraders(formattedTraders);
