@@ -47,6 +47,9 @@ const CopytradingDashboard = () => {
           getMySubscriptions()
         ]);
 
+        console.log('🔍 RAW TRADERS FROM API:', traders);
+        console.log('🔍 FIRST TRADER STRUCTURE:', traders[0]);
+
         // Mapear traders con follower_count del backend
         const formattedTraders = traders.map(trader => ({
           id: trader.id,
