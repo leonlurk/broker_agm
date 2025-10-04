@@ -47,36 +47,46 @@ const CopytradingDashboard = () => {
           getMySubscriptions()
         ]);
 
-        // Mapear traders si es necesario (similar a Inversor.jsx)
+        // Mapear traders con follower_count del backend
         const formattedTraders = traders.map(trader => ({
           id: trader.id,
-          name: trader.name || 'N/A',
+          user_id: trader.id,
+          name: trader.username || trader.name || 'N/A',
+          followerCount: trader.follower_count || 0, // Usar el contador del backend
           profit: `+${trader.performance?.monthly_pnl_percentage?.toFixed(1) || 0}%`,
-          since: new Date(trader.createdAt).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }),
-          type: trader.type || 'Verificado', // 'Premium', 'Verificado', 'Nuevo'
-          typeColor: 'bg-blue-600', // Lógica de color pendiente
+          since: new Date(trader.created_at || Date.now()).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }),
+          type: trader.type || 'Verificado',
+          typeColor: 'bg-blue-600',
           rentabilidad: `+${trader.performance?.total_pnl_percentage?.toFixed(1) || 0}%`,
-          rentabilidadPercentage: `${trader.performance?.total_pnl_percentage || 0}%`,
-          riesgo: trader.riskLevel || 'Medio', // 'Bajo', 'Medio', 'Alto'
-          riesgoColor: 'text-yellow-400', // Lógica de color pendiente
+          rentabilidadPercentage: `${Math.min(100, Math.abs(trader.performance?.total_pnl_percentage || 0))}%`,
+          riesgo: trader.riskLevel || 'Medio',
+          riesgoColor: 'text-yellow-400',
           riesgoPercentage: `${trader.riskScore || 50}%`,
-          riesgoBarColor: 'bg-yellow-500' // Lógica de color pendiente
+          riesgoBarColor: 'bg-yellow-500',
+          master_config: trader.master_config
         }));
 
-        // Mapear suscripciones si es necesario
+        // Mapear suscripciones
         const formattedSubscriptions = subscriptions.map(sub => ({
           id: sub.id,
-          traderId: sub.masterUserId,
-          name: sub.masterInfo?.name || 'Trader Desconocido',
+          traderId: sub.master_user_id,
+          name: sub.master?.username || sub.master?.name || 'Trader Desconocido',
           invested: `$${sub.investmentAmount?.toFixed(2) || 0}`,
           profit: `+$${sub.currentProfit?.toFixed(2) || 0}`,
           profitPercentage: `+${sub.currentProfitPercentage?.toFixed(1) || 0}%`,
-          status: 'Activo', // El estado debería venir de la API
-          startedDate: new Date(sub.createdAt).toLocaleDateString()
+          status: sub.status === 'active' ? 'Activo' : 'Pausado',
+          startedDate: new Date(sub.created_at).toLocaleDateString()
         }));
 
         setAvailableTraders(formattedTraders);
         setActiveSubscriptions(formattedSubscriptions);
+        
+        // Sincronizar copiedTraders con subscriptions activas
+        const followedIds = new Set(subscriptions
+          .filter(sub => sub.status === 'active')
+          .map(sub => sub.master_user_id)
+        );
+        setCopiedTraders(followedIds);
 
       } catch (err) {
         setError('No se pudieron cargar los datos de Copytrading.');
@@ -139,16 +149,48 @@ const CopytradingDashboard = () => {
       if (response.success || response.message) {
         alert(t('copyTrading.messages.followSuccess') || 'Successfully following trader');
 
-        // Marcar en UI como copiado
-        setCopiedTraders(prev => new Set([...prev, finalTrader.id]));
+        // Marcar en UI como copiado usando el user_id correcto
+        const traderId = finalTrader.user_id || finalTrader.id;
+        setCopiedTraders(prev => new Set([...prev, traderId]));
 
         // Cerrar modal y limpiar selección
         setShowSeguirModal(false);
         setSelectedTraderForCopy(null);
         setSelectedAccountForCopy(null);
 
-        // Refrescar datos
-        await fetchData();
+        // Refrescar datos desde el servidor para obtener actualización completa
+        const [traders, subscriptions] = await Promise.all([
+          getMasterTraders(),
+          getMySubscriptions()
+        ]);
+        
+        // Re-mapear traders
+        const formattedTraders = traders.map(trader => ({
+          id: trader.id,
+          user_id: trader.id,
+          name: trader.username || trader.name || 'N/A',
+          followerCount: trader.follower_count || 0,
+          profit: `+${trader.performance?.monthly_pnl_percentage?.toFixed(1) || 0}%`,
+          since: new Date(trader.created_at || Date.now()).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }),
+          type: trader.type || 'Verificado',
+          typeColor: 'bg-blue-600',
+          rentabilidad: `+${trader.performance?.total_pnl_percentage?.toFixed(1) || 0}%`,
+          rentabilidadPercentage: `${Math.min(100, Math.abs(trader.performance?.total_pnl_percentage || 0))}%`,
+          riesgo: trader.riskLevel || 'Medio',
+          riesgoColor: 'text-yellow-400',
+          riesgoPercentage: `${trader.riskScore || 50}%`,
+          riesgoBarColor: 'bg-yellow-500',
+          master_config: trader.master_config
+        }));
+        
+        setAvailableTraders(formattedTraders);
+        
+        // Sincronizar estado de copiados
+        const followedIds = new Set(subscriptions
+          .filter(sub => sub.status === 'active')
+          .map(sub => sub.master_user_id)
+        );
+        setCopiedTraders(followedIds);
       } else {
         throw new Error(response.error || 'Error following trader');
       }
@@ -187,8 +229,31 @@ const CopytradingDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6 bg-[#232323] text-white text-center">
-        <h1 className="text-xl font-semibold">{t('copytrading.loadingData')}</h1>
+      <div className="p-6 bg-[#232323] text-white">
+        <h1 className="text-2xl font-bold mb-6">Traders Disponibles</h1>
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-[#191919] p-6 rounded-xl border border-[#333] animate-pulse">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex-1">
+                  <div className="h-5 bg-[#333] rounded w-32 mb-2"></div>
+                  <div className="h-4 bg-[#333] rounded w-24 mb-1"></div>
+                  <div className="h-3 bg-[#333] rounded w-40"></div>
+                </div>
+                <div className="h-6 bg-[#333] rounded w-20"></div>
+              </div>
+              <div className="space-y-3">
+                <div className="h-2 bg-[#333] rounded w-full"></div>
+                <div className="h-2 bg-[#333] rounded w-full"></div>
+              </div>
+              <div className="flex space-x-2 mt-4">
+                <div className="h-10 bg-[#333] rounded flex-1"></div>
+                <div className="h-10 bg-[#333] rounded w-16"></div>
+                <div className="h-10 bg-[#333] rounded w-16"></div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -205,6 +270,7 @@ const CopytradingDashboard = () => {
   // Renderizar tarjeta de trader
   const renderTraderCard = (trader) => {
     const isExpanded = expandedTrader === trader.id;
+    const isCopying = copiedTraders.has(trader.user_id || trader.id);
     
     return (
       <div key={trader.id} className="bg-[#191919] p-6 rounded-xl border border-[#333] mb-4">
@@ -213,6 +279,10 @@ const CopytradingDashboard = () => {
             <h3 className="text-lg font-medium">{trader.name}</h3>
             <p className="text-green-500 text-sm">{trader.profit} último mes</p>
             <p className="text-gray-400 text-sm mt-1">Operando desde: {trader.since}</p>
+            <p className="text-cyan-400 text-xs mt-1">
+              <Users size={12} className="inline mr-1" />
+              {trader.followerCount || 0} {trader.followerCount === 1 ? 'seguidor' : 'seguidores'}
+            </p>
           </div>
           <div className={`${trader.typeColor} text-xs px-2 py-1 rounded text-white`}>
             {trader.type}
@@ -241,15 +311,25 @@ const CopytradingDashboard = () => {
         
         <div className="flex space-x-2">
           <button 
-            className={`flex-1 px-4 py-2 rounded-md text-sm transition-colors ${
-              copiedTraders.has(trader.id) 
-                ? 'bg-green-600 hover:bg-green-700' 
+            className={`flex-1 px-4 py-2 rounded-md text-sm transition-colors flex items-center justify-center ${
+              isCopying
+                ? 'bg-green-600 hover:bg-green-700 cursor-not-allowed' 
                 : 'bg-cyan-700 hover:bg-cyan-600'
             }`}
             onClick={() => handleCopyTrader(trader)}
-            disabled={copiedTraders.has(trader.id)}
+            disabled={isCopying}
           >
-            {copiedTraders.has(trader.id) ? t('copytrading.copying') : t('copytrading.copy')}
+            {isCopying ? (
+              <>
+                <CheckCircle size={16} className="mr-2" />
+                {t('copytrading.copying') || 'Copiando'}
+              </>
+            ) : (
+              <>
+                <Copy size={16} className="mr-2" />
+                {t('copytrading.copy') || 'Copiar ahora'}
+              </>
+            )}
           </button>
           <button 
             className="px-4 py-2 bg-[#333] hover:bg-[#444] rounded-md text-sm"
