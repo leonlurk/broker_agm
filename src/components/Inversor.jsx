@@ -186,6 +186,9 @@ const Inversor = () => {
           }
         } else {
           // Fallback: formatear suscripciones tradicionales
+          console.log('[Inversor] 📝 Formatting subscriptions (no portfolio API data)');
+          console.log('[Inversor] subsData to format:', subsData);
+
           const formattedSubs = subsData.map(sub => ({
             id: sub.id,
             master_id: sub.master_user_id || sub.master_id, // IMPORTANTE: Preservar para sincronizar copiedTraders
@@ -197,7 +200,8 @@ const Inversor = () => {
             assignedCapital: sub.assigned_capital || 0,
             status: sub.status || 'active'
           }));
-          
+
+          console.log('[Inversor] 💾 Setting subscriptions to state:', formattedSubs);
           setSubscriptions(formattedSubs);
           
           // Calcular portfolio data basado en suscripciones
