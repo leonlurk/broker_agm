@@ -17,7 +17,7 @@ const CopytradingDashboard = () => {
   const [typeFilter, setTypeFilter] = useState('');
   const [riskFilter, setRiskFilter] = useState('');
   
-  // Version: 2025-10-04 - UX improvements applied
+  // Version: 2025-10-04 - UX improvements applied (deploy trigger)
   
   // Estados para datos de la API
   const [availableTraders, setAvailableTraders] = useState([]);
