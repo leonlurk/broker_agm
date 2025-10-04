@@ -321,8 +321,8 @@ const Inversor = () => {
       }
 
       // Llamar al servicio de unfollow
-      // La API del backend obtiene el follower_mt5_account_id del token de autenticación
-      await unfollowMaster(trader.id, subscription.follower_mt5_account_id);
+      // La API del backend obtiene el follower_user_id del token de autenticación
+      await unfollowMaster(trader.id);
 
       // Actualizar estado local
       setCopiedTraders(prev => {

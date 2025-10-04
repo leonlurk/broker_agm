@@ -84,14 +84,12 @@ export const getMasterTraders = async () => {
 /**
  * Permite al usuario actual dejar de seguir a un Master Trader.
  * @param {string} masterUserId - El ID de Firebase del usuario master.
- * @param {string} followerMt5AccountId - El ID de la cuenta MT5 del seguidor.
  * @returns {Promise<object>} La respuesta del servidor.
  */
-export const unfollowMaster = async (masterUserId, followerMt5AccountId) => {
+export const unfollowMaster = async (masterUserId) => {
   try {
     const response = await logicApiClient.post('/api/v1/copy/unfollow', {
-      masterUserId,
-      followerMt5AccountId,
+      master_user_id: masterUserId
     });
     return response.data;
   } catch (error) {
