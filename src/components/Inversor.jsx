@@ -70,15 +70,27 @@ const Inversor = () => {
   // Sincronizar copiedTraders con subscriptions
   useEffect(() => {
     if (subscriptions && subscriptions.length > 0) {
+      console.log('[Inversor] 🔄 Syncing copiedTraders from subscriptions:', subscriptions);
+
       // Extraer IDs de masters de las suscripciones
       const copiedTraderIds = subscriptions.map(sub => {
+        console.log('[Inversor] Extracting master ID from sub:', {
+          master_id: sub.master_id,
+          master_user_id: sub.master_user_id,
+          master_obj_id: sub.master?.id,
+          id: sub.id
+        });
         // Puede venir como sub.master_id, sub.master_user_id, sub.master?.id o sub.id
-        return sub.master_id || sub.master_user_id || sub.master?.id || sub.id;
+        const extractedId = sub.master_id || sub.master_user_id || sub.master?.id || sub.id;
+        console.log('[Inversor] Extracted ID:', extractedId);
+        return extractedId;
       }).filter(Boolean);
 
+      console.log('[Inversor] ✅ Traders copiados sincronizados:', copiedTraderIds);
+      console.log('[Inversor] copiedTraders Set will contain:', Array.from(new Set(copiedTraderIds)));
       setCopiedTraders(new Set(copiedTraderIds));
-      console.log('[Inversor] Traders copiados sincronizados:', copiedTraderIds);
     } else {
+      console.log('[Inversor] No subscriptions, clearing copiedTraders');
       setCopiedTraders(new Set());
     }
   }, [subscriptions]);
@@ -100,6 +112,8 @@ const Inversor = () => {
         console.log('[Inversor] First trader structure:', tradersData[0]);
         console.log('[Inversor] Subscriptions from API:', subsData);
         console.log('[Inversor] First subscription structure:', subsData[0]);
+        console.log('[Inversor] Subscription has master_user_id?', subsData[0]?.master_user_id);
+        console.log('[Inversor] Subscription fields:', Object.keys(subsData[0] || {}));
 
         // Formatear los traders para el componente
         const formattedTraders = tradersData.map(trader => ({
@@ -761,6 +775,7 @@ const Inversor = () => {
         </div>
 
         {/* Traders Grid */}
+        {console.log('[Inversor] 🎨 Rendering traders grid. copiedTraders Set:', Array.from(copiedTraders))}
         {isLoadingTraders ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map(i => (
@@ -793,7 +808,10 @@ const Inversor = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTraders.map((trader) => (
+            {filteredTraders.map((trader) => {
+              const isCopied = copiedTraders.has(trader.id);
+              console.log('[Inversor] 🔍 Checking trader:', trader.id, trader.name, 'isCopied?', isCopied, 'copiedTraders has:', Array.from(copiedTraders));
+              return (
             <div key={trader.id} className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 hover:border-cyan-500/50 transition-colors">
               {/* Trader Header */}
               <div className="flex items-center gap-3 mb-4">
@@ -885,7 +903,8 @@ const Inversor = () => {
                 </button>
               </div>
             </div>
-          ))}
+          );
+            })}
           </div>
         )}
 
