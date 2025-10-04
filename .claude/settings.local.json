@@ -17,7 +17,8 @@
       "Bash(git commit:*)",
       "Read(//c/Users/Administrator/Desktop/broker/payroll-crypto-api/**)",
       "Read(//home/rdpuser/Desktop/metatrader-api-v2/**)",
-      "Read(//home/rdpuser/Desktop/copy-pamm/**)"
+      "Read(//home/rdpuser/Desktop/copy-pamm/**)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],
