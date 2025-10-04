@@ -72,12 +72,14 @@ const Inversor = () => {
     if (subscriptions && subscriptions.length > 0) {
       // Extraer IDs de masters de las suscripciones
       const copiedTraderIds = subscriptions.map(sub => {
-        // Puede venir como sub.master_id o sub.master?.id
-        return sub.master_id || sub.master?.id || sub.id;
+        // Puede venir como sub.master_id, sub.master_user_id, sub.master?.id o sub.id
+        return sub.master_id || sub.master_user_id || sub.master?.id || sub.id;
       }).filter(Boolean);
-      
+
       setCopiedTraders(new Set(copiedTraderIds));
-      console.log('Traders copiados sincronizados:', copiedTraderIds);
+      console.log('[Inversor] Traders copiados sincronizados:', copiedTraderIds);
+    } else {
+      setCopiedTraders(new Set());
     }
   }, [subscriptions]);
 
@@ -148,6 +150,7 @@ const Inversor = () => {
           if (portfolioApiData.copied_traders) {
             const formattedCopiedTraders = portfolioApiData.copied_traders.map(trader => ({
               id: trader.id,
+              master_id: trader.master_id || trader.id, // IMPORTANTE: Preservar master_id
               name: trader.name,
               avatar: trader.avatar || '/Avatar1.png',
               personalPnL: trader.personal_pnl || 0,
@@ -155,14 +158,15 @@ const Inversor = () => {
               assignedCapital: trader.assigned_capital || 0,
               status: trader.status || 'active'
             }));
-            
+
             setSubscriptions(formattedCopiedTraders);
           }
         } else {
           // Fallback: formatear suscripciones tradicionales
           const formattedSubs = subsData.map(sub => ({
             id: sub.id,
-            master_id: sub.master_id, // IMPORTANTE: Preservar para sincronizar copiedTraders
+            master_id: sub.master_user_id || sub.master_id, // IMPORTANTE: Preservar para sincronizar copiedTraders
+            master_user_id: sub.master_user_id || sub.master_id, // También guardar master_user_id
             name: sub.master?.name || sub.master?.username || 'Unknown Trader',
             avatar: sub.master?.photo_url || '/Avatar1.png',
             personalPnL: sub.pnl || 0,
@@ -282,18 +286,34 @@ const Inversor = () => {
     setShowCombinedModal(true);
   };
 
-  const handleCombinedModalConfirm = (formData, trader, account) => {
-    console.log('Combined modal confirmed:', { formData, trader, account });
-    
-    // Marcar el trader como copiado
+  const handleCombinedModalConfirm = async (formData, trader, account) => {
+    console.log('[Inversor] Combined modal confirmed:', { formData, trader, account });
+
+    // Marcar el trader como copiado inmediatamente para UI feedback
     setCopiedTraders(prev => new Set([...prev, trader.id]));
-    
-    // Recargar suscripciones
-    getMySubscriptions().then(newSubscriptions => {
-      setSubscriptions(newSubscriptions);
-    }).catch(error => {
-      console.error('Error reloading subscriptions:', error);
-    });
+
+    // Recargar suscripciones desde el backend
+    try {
+      const subsData = await getMySubscriptions();
+      console.log('[Inversor] Subscriptions reloaded after copy:', subsData);
+
+      // Formatear correctamente las suscripciones
+      const formattedSubs = subsData.map(sub => ({
+        id: sub.id,
+        master_id: sub.master_user_id || sub.master_id,
+        master_user_id: sub.master_user_id || sub.master_id,
+        name: sub.master?.name || sub.master?.username || 'Unknown Trader',
+        avatar: sub.master?.photo_url || '/Avatar1.png',
+        personalPnL: sub.pnl || 0,
+        personalPnLPercentage: sub.pnl_percentage || 0,
+        assignedCapital: sub.assigned_capital || 0,
+        status: sub.status || 'active'
+      }));
+
+      setSubscriptions(formattedSubs);
+    } catch (error) {
+      console.error('[Inversor] Error reloading subscriptions:', error);
+    }
   };
 
   const handleFollowTrader = (trader) => {
@@ -732,8 +752,39 @@ const Inversor = () => {
         </div>
 
         {/* Traders Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTraders.map((trader) => (
+        {isLoadingTraders ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 animate-pulse">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-[#333] rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-[#333] rounded w-24 mb-2"></div>
+                    <div className="h-3 bg-[#333] rounded w-32"></div>
+                  </div>
+                  <div className="h-4 bg-[#333] rounded w-12"></div>
+                </div>
+                <div className="space-y-3 mb-4">
+                  <div className="h-3 bg-[#333] rounded w-full"></div>
+                  <div className="h-3 bg-[#333] rounded w-full"></div>
+                  <div className="h-3 bg-[#333] rounded w-full"></div>
+                  <div className="h-3 bg-[#333] rounded w-full"></div>
+                  <div className="h-3 bg-[#333] rounded w-full"></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-[#1C1C1C] rounded-lg">
+                  <div className="h-8 bg-[#333] rounded"></div>
+                  <div className="h-8 bg-[#333] rounded"></div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1 h-10 bg-[#333] rounded-lg"></div>
+                  <div className="h-10 w-24 bg-[#333] rounded-lg"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTraders.map((trader) => (
             <div key={trader.id} className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 hover:border-cyan-500/50 transition-colors">
               {/* Trader Header */}
               <div className="flex items-center gap-3 mb-4">
@@ -826,12 +877,15 @@ const Inversor = () => {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Results Count */}
-        <div className="mt-6 text-center text-gray-400">
-          {filteredTraders.length} {t('copyTrading.trader.available')}
-        </div>
+        {!isLoadingTraders && (
+          <div className="mt-6 text-center text-gray-400">
+            {filteredTraders.length} {t('copyTrading.trader.available')}
+          </div>
+        )}
       </div>
       
       {/* Global Modals */}
