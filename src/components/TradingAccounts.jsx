@@ -15,13 +15,12 @@ import i18n from '../i18n/config';
 import accountMetricsOptimized from '../services/accountMetricsOptimized';
 // Importar servicio estandarizado para datos de equity
 import equityDataService from '../services/equityDataService';
-import { 
-  getBalanceChartData, 
+import {
+  getBalanceChartData,
   recordBalanceSnapshot,
   getTradingOperations,
-  getPerformanceChartData 
+  getPerformanceChartData
 } from '../services/accountHistory';
-import equityDirect from '../services/equityDirect';
 // Auto-sync ya manejado por el backend scheduler
 import { ListLoader, ChartLoader, useMinLoadingTime } from './WaveLoader';
 import { TradingAccountsLayoutLoader } from './ExactLayoutLoaders';
@@ -226,8 +225,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   
   // Estados para datos reales de MT5
   const [realMetrics, setRealMetrics] = useState(null);
-  // Equity directo desde API sin Supabase
-  const [directEquity, setDirectEquity] = useState(null);
   const [realStatistics, setRealStatistics] = useState(null);
   const [realInstruments, setRealInstruments] = useState(null);
   const [realPerformance, setRealPerformance] = useState(null);
@@ -632,28 +629,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const loadingRef = useRef(false);
   const lastLoadedAccountRef = useRef(null);
 
-  // Cargar equity directo sin Supabase cuando cambia la cuenta seleccionada
-  useEffect(() => {
-    const account = getAllAccounts().find(acc => acc.id === selectedAccountId);
-    if (!account?.account_number) {
-      setDirectEquity(null);
-      return;
-    }
-    // Evitar llamada si ya tenemos equity desde dashboard
-    if (realMetrics?.equity != null && !Number.isNaN(realMetrics.equity)) {
-      setDirectEquity(null); // usar el de dashboard
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const { equity } = await equityDirect.getEquityDirect(account.account_number);
-      if (!cancelled && equity !== null && !Number.isNaN(equity)) {
-        setDirectEquity(equity);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [selectedAccountId]); // Remover realMetrics de dependencias para evitar loops
-  
   // Función para cargar métricas de una cuenta
   const loadAccountMetrics = useCallback(async (account) => {
     if (!account || !account.account_number) return;
@@ -687,35 +662,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       
       // Procesar datos del dashboard
         if (dashboardData) {
-          // Actualizar métricas
+          // Actualizar métricas - confiar directamente en datos del backend
           if (dashboardData.kpis) {
             console.log('[TradingAccounts] Usando métricas optimizadas:', dashboardData.kpis);
-            // Hotfix: recalcular KPIs clave en frontend para asegurar consistencia
-            try {
-              const k = dashboardData.kpis;
-              const initial = parseFloat(k.initial_balance ?? 0) || 0;
-              
-              // IMPORTANTE: Usar profit_loss del backend (desde operaciones cerradas)
-              // NO recalcular desde equity - initial porque incluye depósitos
-              const backendProfitLoss = parseFloat(k.profit_loss ?? 0);
-              const backendProfitPct = parseFloat(k.profit_loss_percentage ?? 0);
-              
-              const fixedKpis = {
-                ...k,
-                initial_balance: initial,
-                // Usar servicio estandarizado para datos consistentes
-                balance: equityDataService.getAccountBalance(k),
-                equity: equityDataService.getAccountEquity(k),
-                // CRÍTICO: Usar valores del backend, no recalcular
-                profit_loss: backendProfitLoss,
-                profit_loss_percentage: backendProfitPct,
-                total_deposits: initial,
-                total_withdrawals: k.total_withdrawals ?? 0
-              };
-              setRealMetrics(fixedKpis);
-            } catch(e) {
-              setRealMetrics(dashboardData.kpis);
-            }
+            setRealMetrics(dashboardData.kpis);
           }
           
           // Actualizar estadísticas
@@ -3086,8 +3036,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               <div className="flex items-center mb-2 sm:mb-3">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3 text-white">
                   ${(
-                    // Mostrar equity usando servicio estandarizado
-                    directEquity ?? equityDataService.getAccountEquity(realMetrics) ?? equityDataService.getChartValue(balanceData[balanceData.length - 1]) ?? 0
+                    // Mostrar equity usando servicio estandarizado - fuente única desde dashboard
+                    equityDataService.getAccountEquity(realMetrics) ?? 0
                   ).toLocaleString()}
                 </span>
                 <span className={`px-2 py-1 rounded text-xs sm:text-sm ${
@@ -3101,10 +3051,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
               {/* Chips con Balance y Equity actuales */}
               <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
                 <div className="px-2 py-1 bg-gray-800/50 border border-gray-700/50 rounded-md text-xs text-gray-300">
-                  {t('trading:balance')}: <span className="text-white font-semibold">${equityDataService.getAccountBalance(realMetrics ?? balanceData[balanceData.length - 1]).toLocaleString()}</span>
+                  {t('trading:balance')}: <span className="text-white font-semibold">${equityDataService.getAccountBalance(realMetrics).toLocaleString()}</span>
                 </div>
                 <div className="px-2 py-1 bg-cyan-900/30 border border-cyan-700/40 rounded-md text-xs text-cyan-300">
-                  {t('trading:equity')}: <span className="text-white font-semibold">${(directEquity ?? equityDataService.getAccountEquity(realMetrics) ?? equityDataService.getChartValue(balanceData[balanceData.length - 1]) ?? 0).toLocaleString()}</span>
+                  {t('trading:equity')}: <span className="text-white font-semibold">${equityDataService.getAccountEquity(realMetrics).toLocaleString()}</span>
                 </div>
               </div>
               
