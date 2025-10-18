@@ -3,7 +3,48 @@
  * Handles all transactional emails via backend API
  */
 
-import api from './api';
+import axios from 'axios';
+import { AuthAdapter } from './database.adapter';
+
+// La URL base para Email Service - usa MT5Manager como proxy
+// MT5Manager en producción hace proxy interno a Copy-PAMM (localhost:8080)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error('VITE_API_BASE_URL is not defined in environment variables. Please check your .env file.');
+}
+
+// Creamos una instancia de Axios para el servicio de email
+const logicApiClient = axios.create({
+  baseURL: API_BASE_URL
+});
+
+// Interceptor para añadir automáticamente el token de autenticación
+logicApiClient.interceptors.request.use(
+  async (config) => {
+    try {
+      if (AuthAdapter.isSupabase()) {
+        const { supabase } = await import('../supabase/config');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          config.headers.Authorization = `Bearer ${session.access_token}`;
+        }
+      } else {
+        const user = await AuthAdapter.getCurrentUser();
+        if (user && user.getIdToken) {
+          const token = await user.getIdToken();
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      }
+    } catch (error) {
+      console.warn('Error getting auth token:', error);
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // API configuration
 const SENDER_EMAIL = import.meta.env.VITE_SENDER_EMAIL || 'noreply@alphaglobalmarket.io';
@@ -23,7 +64,7 @@ class EmailService {
    */
   async sendEmail(emailData) {
     try {
-      const response = await api.post('/email/send', emailData);
+      const response = await logicApiClient.post('/api/v1/email/send', emailData);
 
       if (response.data.success) {
         return { success: true, messageId: response.data.messageId };
