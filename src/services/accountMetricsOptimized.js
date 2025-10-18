@@ -7,7 +7,13 @@ import axios from 'axios';
 import { supabase } from '../supabase/config';
 import { logger } from '../utils/logger';
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444'}/api/v1`;
+const baseUrl = import.meta.env.VITE_API_BASE_URL;
+
+if (!baseUrl) {
+  throw new Error('VITE_API_BASE_URL is not defined in environment variables. Please check your .env file.');
+}
+
+const API_BASE_URL = `${baseUrl}/api/v1`;
 
 /**
  * Cliente axios configurado con auth y reintentos

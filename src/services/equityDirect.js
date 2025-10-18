@@ -3,7 +3,11 @@ import { logger } from '../utils/logger';
 import { supabase } from '../supabase/config';
 
 // Direct equity fetch with Supabase authentication
-const BASE = (import.meta.env.VITE_BROKER_API_URL || import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444');
+const BASE = import.meta.env.VITE_BROKER_API_URL || import.meta.env.VITE_API_BASE_URL;
+
+if (!BASE) {
+  throw new Error('VITE_BROKER_API_URL or VITE_API_BASE_URL must be defined in environment variables. Please check your .env file.');
+}
 
 const client = axios.create({
   baseURL: BASE,

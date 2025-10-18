@@ -2588,8 +2588,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         return;
       }
       
-      // Usar la URL correcta de apekapital
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444';
+      // Usar la URL correcta de la API
+      const apiUrl = import.meta.env.VITE_API_BASE_URL;
+      if (!apiUrl) {
+        throw new Error('VITE_API_BASE_URL is not defined in environment variables');
+      }
       
       console.log('Syncing account:', accountNumber);
       console.log('API URL:', apiUrl);

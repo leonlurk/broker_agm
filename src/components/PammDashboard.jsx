@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
-import { getPammFunds, getMyFunds } from '../services/pammService';
+import { getPammFunds, getMyFunds, leavePammFund } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
+import RetirarPAMMModal from './RetirarPAMMModal';
 import { useAccounts } from '../contexts/AccountsContext';
 import { useTranslation } from 'react-i18next';
 import { followMaster } from '../services/copytradingService';
@@ -146,8 +147,32 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
         // Aquí iría la lógica para abrir el modal de inversión PAMM
     };
 
+    const handleWithdrawFromFund = (fund) => {
+        setSelectedFundForWithdraw(fund);
+        setShowWithdrawModal(true);
+    };
+
+    const handleConfirmWithdraw = async (fundId) => {
+        try {
+            await leavePammFund(fundId);
+            // Actualizar lista de fondos
+            setInvestedFunds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(fundId);
+                return newSet;
+            });
+            // Recargar mis fondos
+            loadMyFunds();
+            setShowWithdrawModal(false);
+            setSelectedFundForWithdraw(null);
+        } catch (error) {
+            console.error('Error withdrawing from fund:', error);
+            alert(error.message || 'Error al retirar del fondo');
+        }
+    };
+
     if (view === 'dashboard') {
-        return <PammDashboardView 
+        return <PammDashboardView
             formatCurrency={formatCurrency}
             formatPercentage={formatPercentage}
             formatAUM={formatAUM}
@@ -155,6 +180,7 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
             chartPeriod={chartPeriod}
             setChartPeriod={setChartPeriod}
             onViewFundDetails={handleViewFundDetails}
+            handleWithdrawFromFund={handleWithdrawFromFund}
             showDropdown={showDropdown}
             toggleDropdown={toggleDropdown}
             t={t}
@@ -215,14 +241,15 @@ const initialPammPortfolioData = {
     activeCapital: 0
 };
 
-const PammDashboardView = ({ 
-    formatCurrency, 
-    formatPercentage, 
-    formatAUM, 
-    onExploreFunds, 
-    chartPeriod, 
+const PammDashboardView = ({
+    formatCurrency,
+    formatPercentage,
+    formatAUM,
+    onExploreFunds,
+    chartPeriod,
     setChartPeriod,
     onViewFundDetails,
+    handleWithdrawFromFund,
     showDropdown,
     toggleDropdown,
     t,
@@ -318,6 +345,14 @@ const PammDashboardView = ({
                                         </div>
                                     </div>
                                     
+                                    {/* Actions */}
+                                    <button
+                                        onClick={() => handleWithdrawFromFund(fund)}
+                                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 text-sm font-medium"
+                                    >
+                                        {t('pamm.withdraw.button', 'Retirar')}
+                                    </button>
+
                                     {/* Status */}
                                     <div className="flex items-center gap-2">
                                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -1457,7 +1492,11 @@ const PammDetailView = ({ trader, onBack, investedFunds, setInvestedFunds }) => 
     const [activeTab, setActiveTab] = useState('Rendimiento');
     const [timeFilter, setTimeFilter] = useState('mensual');
     const [showInvertirModal, setShowInvertirModal] = useState(false);
-    
+    const [selectedFundForInvest, setSelectedFundForInvest] = useState(null);
+
+    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+    const [selectedFundForWithdraw, setSelectedFundForWithdraw] = useState(null);
+
     // Custom dropdown states
     const [showTimeFilterDropdown, setShowTimeFilterDropdown] = useState(false);
     
@@ -1722,6 +1761,17 @@ const PammDetailView = ({ trader, onBack, investedFunds, setInvestedFunds }) => 
                         alert(t('copyTrading.messages.followError') + ': ' + (error.message || 'Error desconocido'));
                     }
                 }}
+            />
+
+            {/* Modal de Retirar de PAMM */}
+            <RetirarPAMMModal
+                isOpen={showWithdrawModal}
+                onClose={() => {
+                    setShowWithdrawModal(false);
+                    setSelectedFundForWithdraw(null);
+                }}
+                fund={selectedFundForWithdraw}
+                onConfirm={handleConfirmWithdraw}
             />
         </div>
     );

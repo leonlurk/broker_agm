@@ -248,7 +248,11 @@ export const createTradingAccount = async (userId, accountData) => {
     // This ensures the balance shown is the actual MT5 balance
     try {
       logger.info('Forcing sync for new account', { accountNumber });
-      const syncUrl = `${import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444'}/api/v1/supabase/accounts/${accountNumber}/sync`;
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      if (!baseUrl) {
+        throw new Error('VITE_API_BASE_URL is not defined in environment variables');
+      }
+      const syncUrl = `${baseUrl}/api/v1/supabase/accounts/${accountNumber}/sync`;
       
       // Get auth token
       const { data: { session } } = await supabase.auth.getSession();

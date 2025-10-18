@@ -3,7 +3,12 @@ import { AuthAdapter } from './database.adapter'; // Importamos el adapter para 
 
 // La URL base para Copy Trading - usa MT5Manager como proxy
 // MT5Manager en producción hace proxy interno a Copy-PAMM (localhost:8080)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error('VITE_API_BASE_URL is not defined in environment variables. Please check your .env file.');
+}
+
 // MT5Manager redirige automáticamente las peticiones /api/v1/* al backend Copy-PAMM
 
 // Creamos una instancia de Axios para nuestro servicio de lógica

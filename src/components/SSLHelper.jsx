@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 const SSLHelper = ({ onSuccess }) => {
   const [checking, setChecking] = useState(true);
   const [sslAccepted, setSslAccepted] = useState(false);
-  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://62.171.177.212:8443';
+  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443'; // Fallback to localhost for SSL testing
 
   useEffect(() => {
     checkSSL();

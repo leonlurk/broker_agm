@@ -1,55 +1,35 @@
 /**
- * Brevo Email Service for Alpha Global Market
- * Handles all transactional emails from the frontend
+ * Email Service for Alpha Global Market
+ * Handles all transactional emails via backend API
  */
 
-// API configuration from environment variables
-const BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY || '';
-const BREVO_API_URL = 'https://api.brevo.com/v3';
+import api from './api';
+
+// API configuration
 const SENDER_EMAIL = import.meta.env.VITE_SENDER_EMAIL || 'noreply@alphaglobalmarket.io';
 const SENDER_NAME = import.meta.env.VITE_SENDER_NAME || 'Alpha Global Market';
 
 class EmailService {
   constructor() {
-    this.apiKey = BREVO_API_KEY;
-    this.apiUrl = BREVO_API_URL;
     this.senderEmail = SENDER_EMAIL;
     this.senderName = SENDER_NAME;
     this.supportEmail = 'support@alphaglobalmarket.io';
-    
-    // Log configuration status (without exposing the key)
-    if (!this.apiKey) {
-      console.warn('[EmailService] BREVO API key not configured. Email sending will fail.');
-    } else {
-      console.log('[EmailService] Initialized with sender:', this.senderEmail);
-    }
   }
 
   /**
-   * Send email using Brevo API
+   * Send email via backend API
    * @param {Object} emailData - Email configuration
    * @returns {Promise} API response
    */
   async sendEmail(emailData) {
     try {
-      const response = await fetch(`${this.apiUrl}/smtp/email`, {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'api-key': this.apiKey,
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify(emailData)
-      });
+      const response = await api.post('/email/send', emailData);
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('[EmailService] Email sent successfully:', result);
-        return { success: true, messageId: result.messageId };
+      if (response.data.success) {
+        return { success: true, messageId: response.data.messageId };
       } else {
-        const error = await response.text();
-        console.error('[EmailService] Failed to send email:', error);
-        return { success: false, error };
+        console.error('[EmailService] Failed to send email:', response.data.error);
+        return { success: false, error: response.data.error };
       }
     } catch (error) {
       console.error('[EmailService] Error sending email:', error);

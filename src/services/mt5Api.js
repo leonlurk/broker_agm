@@ -9,7 +9,11 @@ import { getSession } from '../supabase/config';
 
 // Create axios instance with base configuration
 // Use the API URL for MT5 operations (port 444)
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://apekapital.com:444';
+const baseURL = import.meta.env.VITE_API_BASE_URL;
+
+if (!baseURL) {
+  throw new Error('VITE_API_BASE_URL is not defined in environment variables. Please check your .env file.');
+}
 
 const mt5Api = axios.create({
   baseURL: baseURL,

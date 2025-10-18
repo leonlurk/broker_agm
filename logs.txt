@@ -1,1 +1,227 @@
-1|copy-pamm-api  |   action: 'close_position'                                                                                         1|copy-pamm-api  | }                                                                                                                  1|copy-pamm-api  | ✅ Position closed on follower 101290: { success: false, error: "'str' object has no attribute 'value'" }          1|copy-pamm-api  | [16:11:24.599] ERROR (12604): Server Error: 500 - POST /api/v1/copy/unfollow - 435ms - IP: ::1                     1|copy-pamm-api  | [16:11:24.599] WARN (12604): Security Alert - 500: POST /unfollow - IP: ::1 - Duration: 436ms                      1|copy-pamm-api  | 🔴 Closing position on 1 followers for master position 144827                                                      1|copy-pamm-api  | 📤 Sending CLOSE request to follower 101290: {                                                                     1|copy-pamm-api  |   follower_account: '101290',                                                                                      1|copy-pamm-api  |   position_id: 144827,                                                                                             1|copy-pamm-api  |   action: 'close_position'                                                                                         1|copy-pamm-api  | }                                                 
+🚀 Iniciando Worker Manager
+📊 Configuración: 2-8 workers
+✅ Worker 1 iniciado
+✅ Worker 2 iniciado
+✅ Worker Manager iniciado
+🔍 Iniciando detector de trades (solo detección)
+✅ Detector iniciado (polling cada 2s)
+It is highly recommended to use a minimum Redis version of 6.2.0
+             Current: 5.0.14.1
+It is highly recommended to use a minimum Redis version of 6.2.0
+             Current: 5.0.14.1
+It is highly recommended to use a minimum Redis version of 6.2.0
+             Current: 5.0.14.1
+It is highly recommended to use a minimum Redis version of 6.2.0
+             Current: 5.0.14.1
+🔄 [Worker] Procesando trade SOLUSD para 1 followers
+🔍 DEBUG masterTrade object: {
+  "position_id": 178922,
+  "ticket": 178922,
+  "symbol": "SOLUSD",
+  "action": 0,
+  "volume": 0.01,
+  "price_open": 186.22,
+  "price_current": 186.24,
+  "sl": 0,
+  "tp": 0,
+  "profit": 0,
+  "time_open": 1760795142,
+  "comment": "",
+  "event_type": "POSITION_OPENED"
+}
+🔍 DEBUG masterPositionId extracted: 178922
+🚀 Iniciando sistema de replicación con polling cada 2 segundos
+🔄 [INIT] Inicializando cache de posiciones...
+🔄 Inicializando cache de posiciones abiertas...
+📊 Inicializando cache para 1 masters
+[09:46:30.322] [32mINFO[39m (21688): [36m✅ Worker Manager y Detector iniciados correctamente[39m
+[09:46:30.514] [32mINFO[39m (21688): [36m🚀 AGM Logic Backend Enterprise running on port 8080[39m
+[09:46:30.514] [32mINFO[39m (21688): [36m📊 Database: SUPABASE[39m
+[09:46:30.514] [32mINFO[39m (21688): [36m🔒 Security: ENABLED[39m
+[09:46:30.514] [32mINFO[39m (21688): [36m📈 Metrics: ENABLED[39m
+[09:46:30.515] [32mINFO[39m (21688): [36m💾 Redis: CONNECTED[39m
+[09:46:30.515] [32mINFO[39m (21688): [36m🔗 Python API: https://apekapital.com:444/api/v1[39m
+[09:46:30.515] [32mINFO[39m (21688): [36m🚀 Iniciando servicio de replicación...[39m
+📊 [Detector] 1 masters activos, 1 relaciones
+⏳ Detección anterior en proceso, omitiendo ciclo
+📊 Estado: 2 workers | Cola: 1 jobs (0 waiting, 1 active)
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ Detección anterior en proceso, omitiendo ciclo
+📊 Estado: 2 workers | Cola: 1 jobs (0 waiting, 1 active)
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ Detección anterior en proceso, omitiendo ciclo
+✅ Master 101308: 1 posiciones en cache
+✅ Cache de posiciones inicializado
+✅ [INIT] Cache inicializado correctamente
+🔍 Window de búsqueda: 7200 segundos
+🛡️ Deduplicación de deals: ACTIVADA
+🆕 [Detector] 1 trades nuevos de master 101308
+📦 [Detector] Encolando trade: {
+  "position_id": 178922,
+  "ticket": 178922,
+  "event_type": "POSITION_OPENED",
+  "symbol": "SOLUSD"
+}
+✅ Trade ejecutado en follower 101383: ticket 1998847867
+💾 [SAVE] masterPositionId: 178922, masterTrade.position_id: 178922, masterTrade.ticket: 178922
+💾 [SAVE] Full masterTrade: {
+  "position_id": 178922,
+  "ticket": 178922,
+  "symbol": "SOLUSD",
+  "action": 0,
+  "volume": 0.01,
+  "price_open": 186.22,
+  "price_current": 186.24,
+  "sl": 0,
+  "tp": 0,
+  "profit": 0,
+  "time_open": 1760795142,
+  "comment": "",
+  "event_type": "POSITION_OPENED"
+}
+⏳ Job 49 esperando en cola
+[RedisSubscriber] Connected to Redis
+[RedisSubscriber] Redis client ready
+[RedisSubscriber] Redis Subscriber initialized successfully
+[RedisSubscriber] ✅ Subscribed to channel: copy-trading:new-deal
+✅ Redis Pub/Sub connected - listening on copy-trading:new-deal
+🚀 Real-time replication enabled (<1s latency)
+[2025-10-18T12:46:45.103Z] 🔍 Buscando nuevas operaciones para replicar...
+✨ [Detector] Ciclo completado en 12919ms. 1 trades encolados
+📊 Procesando 1 relaciones activas
+🔄 Actualizando cache para 1 masters
+📊 Estado: 2 workers | Cola: 2 jobs (1 waiting, 1 active)
+✅ Cache actualizado: dfe5c068-bddf-419d-b816-08303dd276ea -> 101308
+👥 Masters únicos a consultar: 1
+📡 Consultando trades del master 101308
+💾 Trade 1998847867 guardado en Supabase
+✅ [Worker] Completado: 1/1 exitosos
+✅ Worker completó job 48
+🔄 [Worker] Procesando trade SOLUSD para 1 followers
+🔍 DEBUG masterTrade object: {
+  "position_id": 178922,
+  "ticket": 178922,
+  "symbol": "SOLUSD",
+  "action": 0,
+  "volume": 0.01,
+  "price_open": 186.22,
+  "price_current": 186.16,
+  "sl": 0,
+  "tp": 0,
+  "profit": 0,
+  "time_open": 1760795142,
+  "comment": "",
+  "event_type": "POSITION_OPENED"
+}
+🔍 DEBUG masterPositionId extracted: 178922
+⏭️ SKIP: Master position 178922 already replicated to follower 101383 (follower ticket: 1998847867)
+✅ [Worker] Completado: 1/1 exitosos
+✅ Worker completó job 49
+📊 [Detector] 1 masters activos, 1 relaciones
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+✨ Ciclo completado en 16399ms. Trades replicados: 0
+📊 [Detector] 1 masters activos, 1 relaciones
+[2025-10-18T12:47:03.106Z] 🔍 Buscando nuevas operaciones para replicar...
+📊 Procesando 1 relaciones activas
+👥 Masters únicos a consultar: 1
+📡 Consultando trades del master 101308
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+✨ Ciclo completado en 14693ms. Trades replicados: 0
+📊 [Detector] 1 masters activos, 1 relaciones
+[2025-10-18T12:47:19.112Z] 🔍 Buscando nuevas operaciones para replicar...
+📊 Procesando 1 relaciones activas
+👥 Masters únicos a consultar: 1
+📡 Consultando trades del master 101308
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+🆕 [Detector] 1 trades nuevos de master 101308
+📦 [Detector] Encolando trade: {
+  "position_id": 178922,
+  "event_type": "POSITION_CLOSED"
+}
+🔴 1 posiciones cerradas detectadas para master 101308
+✅ 1 nuevos trades encontrados para master 101308
+⏳ Job 50 esperando en cola
+✨ Ciclo completado en 10364ms. Trades replicados: 1
+✨ [Detector] Ciclo completado en 11148ms. 1 trades encolados
+🔄 [Worker] Procesando trade undefined para 1 followers
+🔍 DEBUG: Looking up follower trade for master position 178922 on account 101383
+🔍 DEBUG: Lookup result: {
+  followerTrade: {
+    trade_id: '1998847867',
+    id: 'd00d07e0-0d8a-4210-8192-47dcc558b0ba'
+  },
+  lookupError: null
+}
+🎯 Closing follower position 1998847867 (master position: 178922)
+📊 Estado: 2 workers | Cola: 1 jobs (0 waiting, 1 active)
+📊 [Detector] 1 masters activos, 1 relaciones
+[2025-10-18T12:47:31.114Z] 🔍 Buscando nuevas operaciones para replicar...
+📊 Procesando 1 relaciones activas
+👥 Masters únicos a consultar: 1
+📡 Consultando trades del master 101308
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+✅ Posición 1998847867 cerrada en follower 101383
+✅ Worker completó job 50
+✨ Ciclo completado en 3484ms. Trades replicados: 0
+[2025-10-18T12:47:35.115Z] 🔍 Buscando nuevas operaciones para replicar...
+📊 Procesando 1 relaciones activas
+👥 Masters únicos a consultar: 1
+📡 Consultando trades del master 101308
+📊 [Detector] 1 masters activos, 1 relaciones
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+✨ Ciclo completado en 10614ms. Trades replicados: 0
+📊 [Detector] 1 masters activos, 1 relaciones
+[2025-10-18T12:47:47.123Z] 🔍 Buscando nuevas operaciones para replicar...
+📊 Procesando 1 relaciones activas
+👥 Masters únicos a consultar: 1
+📡 Consultando trades del master 101308
+⏳ Detección anterior en proceso, omitiendo ciclo
+⏳ El sondeo anterior aún está en proceso. Omitiendo este ciclo.
+⏳ Detección anterior en proceso, omitiendo ciclo

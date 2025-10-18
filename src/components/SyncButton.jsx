@@ -48,7 +48,7 @@ const SyncButton = ({ accountNumber, size = 'small' }) => {
       
       // Call sync endpoint
       const response = await fetch(
-        `https://apekapital.com:444/api/v1/sync/account/${accountNumber}/request`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/v1/sync/account/${accountNumber}/request`,
         {
           method: 'POST',
           headers: {
