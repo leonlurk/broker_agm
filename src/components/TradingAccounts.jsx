@@ -24,7 +24,7 @@ import {
 } from '../services/accountHistory';
 // Auto-sync ya manejado por el backend scheduler
 import { ListLoader, ChartLoader, useMinLoadingTime } from './WaveLoader';
-import { TradingAccountsLayoutLoader } from './ExactLayoutLoaders';
+import { TradingAccountsLayoutLoader, TradingAccountDetailsLoader } from './ExactLayoutLoaders';
 
 // --- Instrument Lists (from PipCalculator) ---
 const forexInstruments = [
@@ -2619,14 +2619,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
   };
 
-  // Loader for details view to avoid flicker while fetching metrics - DISABLED
-  // const detailsLoading = viewMode !== 'overview' && (
-  //   initialLoading || isLoading || isLoadingMetrics || !realMetrics || !realStatistics || !realBalanceHistory
-  // );
-
-  // if (detailsLoading) {
-  //   return <TradingAccountsLayoutLoader />;
-  // }
+  // Mostrar skeleton loader mientras se cargan las métricas de la cuenta
+  if (viewMode === 'details' && isLoadingMetrics && !realMetrics) {
+    return <TradingAccountDetailsLoader />;
+  }
 
   return (
     <div className="flex flex-col p-3 sm:p-4 text-white overflow-x-hidden">

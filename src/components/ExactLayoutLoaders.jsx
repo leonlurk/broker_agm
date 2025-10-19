@@ -292,6 +292,148 @@ export const TradingAccountsLayoutLoader = () => {
   );
 };
 
+// Loader exacto para Trading Account Details - vista de detalles de una cuenta
+export const TradingAccountDetailsLoader = () => {
+  return (
+    <div className="flex flex-col p-3 sm:p-4 text-white overflow-x-hidden">
+      {/* Back Button */}
+      <div className="mb-4">
+        <img
+          src="/Back.svg"
+          alt="Back"
+          className="h-6 cursor-pointer hover:opacity-80 transition-opacity"
+        />
+      </div>
+
+      {/* Account Header */}
+      <div className="mb-6 p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <WaveLoader height="h-10" width="w-10" rounded="rounded-lg" />
+            <div>
+              <WaveLoader height="h-6" width="w-32" className="mb-2" />
+              <WaveLoader height="h-4" width="w-24" />
+            </div>
+          </div>
+          <WaveLoader height="h-10" width="w-10" rounded="rounded-lg" />
+        </div>
+      </div>
+
+      {/* KPIs Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl">
+            <div className="flex items-start justify-between mb-3">
+              <WaveLoader height="h-5" width="w-24" className="mb-2" />
+              <WaveLoader height="h-5" width="w-5" rounded="rounded" />
+            </div>
+            <WaveLoader height="h-8" width="w-28" className="mb-2" />
+            <WaveLoader height="h-4" width="w-20" />
+          </div>
+        ))}
+      </div>
+
+      {/* Balance Chart */}
+      <div className="p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <WaveLoader height="h-6" width="w-32" />
+          <WaveLoader height="h-8" width="w-24" rounded="rounded-lg" />
+        </div>
+        <div className="h-64 relative">
+          <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between space-x-2">
+            {[...Array(16)].map((_, i) => (
+              <WaveLoader
+                key={i}
+                height={`h-${Math.floor(Math.random() * 48 + 16)}`}
+                width="w-full"
+                className="flex-1"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Benefit Chart */}
+      <div className="p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex gap-2">
+            <WaveLoader height="h-8" width="w-24" rounded="rounded-full" />
+            <WaveLoader height="h-8" width="w-24" rounded="rounded-full" />
+          </div>
+          <WaveLoader height="h-8" width="w-32" rounded="rounded-lg" />
+        </div>
+        <div className="h-64 relative">
+          <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between space-x-1">
+            {[...Array(20)].map((_, i) => (
+              <WaveLoader
+                key={i}
+                height={`h-${Math.floor(Math.random() * 56 + 8)}`}
+                width="w-full"
+                className="flex-1"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Instruments Section */}
+      <div className="p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl mb-6">
+        <WaveLoader height="h-6" width="w-32" className="mb-4" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="p-3 bg-[#1C1C1C] rounded-lg">
+              <WaveLoader height="h-4" width="w-20" className="mb-2" />
+              <WaveLoader height="h-5" width="w-16" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Performance Table */}
+      <div className="p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl mb-6">
+        <WaveLoader height="h-6" width="w-40" className="mb-4" />
+        <div className="h-48 relative flex items-center justify-center">
+          <div className="grid grid-cols-12 gap-2 w-full">
+            {[...Array(12)].map((_, i) => (
+              <WaveLoader
+                key={i}
+                height="h-16"
+                width="w-full"
+                className="col-span-1"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Operations History */}
+      <div className="p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl">
+        <WaveLoader height="h-6" width="w-48" className="mb-4" />
+
+        {/* Filters */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+          {[...Array(5)].map((_, i) => (
+            <WaveLoader key={i} height="h-10" width="w-full" rounded="rounded-lg" />
+          ))}
+        </div>
+
+        {/* Table */}
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4 p-3 bg-[#1C1C1C] rounded-lg">
+              <WaveLoader height="h-4" width="w-20" />
+              <WaveLoader height="h-4" width="w-24" />
+              <WaveLoader height="h-4" width="w-16" />
+              <WaveLoader height="h-4" width="w-20" />
+              <WaveLoader height="h-4" width="w-16" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Loader exacto para User Information - mejorado del existente
 export const UserInformationLayoutLoader = () => {
   return (
