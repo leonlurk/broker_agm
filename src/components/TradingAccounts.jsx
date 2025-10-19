@@ -3825,7 +3825,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
               {/* Tabla completa de transacciones */}
               {isMobile ? (
-                /* Vista de tarjetas para móvil con scroll */}
                 <div className="space-y-3 max-h-[600px] overflow-y-auto">
                   {filteredHistorialData.map((transaction, index) => (
                     <div key={index} className="p-4 bg-[#1a1a1a] rounded-lg border border-[#333]">
@@ -3879,9 +3878,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   ))}
                 </div>
               ) : (
-              /* Vista de tabla desktop con scroll vertical */
-              <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                  <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#333]">
                       <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">
