@@ -15,6 +15,8 @@ import i18n from '../i18n/config';
 import accountMetricsOptimized from '../services/accountMetricsOptimized';
 // Importar servicio estandarizado para datos de equity
 import equityDataService from '../services/equityDataService';
+// Importar Supabase para Realtime WebSocket
+import { supabase } from '../supabase/config';
 import {
   getBalanceChartData,
   recordBalanceSnapshot,
@@ -235,9 +237,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const [realTradingOperations, setRealTradingOperations] = useState(null);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastRefreshTime, setLastRefreshTime] = useState(null);
-  const [canRefresh, setCanRefresh] = useState(true);
 
   // State for new instrument filter
   const [showInstrumentDropdown, setShowInstrumentDropdown] = useState(false);
@@ -639,13 +638,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
     
     loadingRef.current = true;
-    
-    // No mostrar loading en auto-refresh, solo en carga inicial
+
+    // Mostrar loading solo en carga inicial
     if (!realMetrics && !realStatistics) {
       setIsLoadingMetrics(true);
-    } else {
-      // Si ya hay datos, mostrar indicador de refresh
-      setIsRefreshing(true);
     }
     
     try {
@@ -780,7 +776,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         console.error('[TradingAccounts] Error cargando métricas:', error);
       } finally {
         setIsLoadingMetrics(false);
-        setIsRefreshing(false);
         loadingRef.current = false;
         // Actualizar timestamp de última actualización
         setLastUpdated(Date.now());
@@ -791,67 +786,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       }
   }, []);
 
-  // Función para refresh manual de datos con rate limiting inteligente
-  const handleRefreshData = useCallback(async () => {
-      if (!canRefresh || isRefreshing) {
-        return;
-      }
-
-      const currentTime = Date.now();
-      const timeSinceLastRefresh = lastRefreshTime ? currentTime - lastRefreshTime : Infinity;
-      const RATE_LIMIT_MS = 15000; // Reducido a 15 segundos
-
-      // Rate limiting inteligente
-      if (timeSinceLastRefresh < RATE_LIMIT_MS) {
-        const remainingTime = Math.ceil((RATE_LIMIT_MS - timeSinceLastRefresh) / 1000);
-        toast.error(`Espere ${remainingTime}s antes de actualizar`, {
-          duration: 2000,
-          icon: '⏱️'
-        });
-        return;
-      }
-
-      const selectedAccount = getAllAccounts().find(acc => acc.id === selectedAccountId);
-      if (!selectedAccount) {
-        toast.error('No hay cuenta seleccionada');
-        return;
-      }
-
-      try {
-        setCanRefresh(false);
-        setLastRefreshTime(currentTime);
-        
-        // Limpiar datos existentes para mostrar loading
-        setRealMetrics(null);
-        setRealStatistics(null);
-        setRealBalanceHistory([]);
-        
-        // Obtener timestamp antes del fetch
-        const beforeFetch = Date.now();
-        
-        // Cargar métricas de la cuenta seleccionada
-        await loadAccountMetrics(selectedAccount);
-        
-        // Calcular tiempo de respuesta
-        const responseTime = Date.now() - beforeFetch;
-        
-        // Mostrar toast de éxito con tiempo de respuesta
-        toast.success(`✅ Datos actualizados (${(responseTime/1000).toFixed(1)}s)`, {
-          duration: 3000
-        });
-        
-      } catch (error) {
-        console.error('[TradingAccounts] Error en refresh:', error);
-        toast.error('Error al actualizar datos');
-      } finally {
-        // Reactivar refresh después del rate limit
-        setTimeout(() => {
-          setCanRefresh(true);
-        }, RATE_LIMIT_MS);
-      }
-  }, [selectedAccountId, lastUpdated]); // Remover funciones de dependencias
-    
-  // useEffect para cargar datos reales de MT5 cuando se selecciona una cuenta con auto-refresh
+  // useEffect para cargar datos reales de MT5 y suscribirse a actualizaciones en tiempo real
   useEffect(() => {
     if (!selectedAccountId) return;
     
@@ -860,27 +795,79 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     
     // Cargar datos inmediatamente
     loadAccountMetrics(selectedAccount);
-    
-    // Auto-refresh desactivado por ahora - los datos se actualizan solo con refresh manual
-    // Para reactivar, descomentar las siguientes líneas:
-    /*
-    let refreshInterval;
-    if (selectedAccountId) {
-      console.log('[TradingAccounts] Configurando auto-refresh cada 60 segundos');
-      refreshInterval = setInterval(() => {
-        console.log('[TradingAccounts] Auto-refresh de métricas...', new Date().toISOString());
-        loadAccountMetrics(selectedAccount);
-      }, 60000); // 60 segundos
+
+    // ========== REALTIME WEBSOCKET SUBSCRIPTION ==========
+    // Suscribirse a cambios en tiempo real de la cuenta en broker_accounts
+    console.log(`[Realtime] 🔌 Iniciando suscripción para cuenta ${selectedAccount.account_number}`);
+
+    let channel = null;
+
+    try {
+      channel = supabase
+        .channel(`equity_realtime_${selectedAccount.account_number}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'broker_accounts',
+            filter: `login=eq.${selectedAccount.account_number}`
+          },
+          (payload) => {
+            console.log('[Realtime] ✅ Actualización recibida:', payload.new);
+
+            // Actualización quirúrgica de métricas con datos en tiempo real
+            setRealMetrics(prev => {
+              if (!prev) return prev;
+
+              const newEquity = parseFloat(payload.new.equity || prev.equity);
+              const newBalance = parseFloat(payload.new.balance || prev.balance);
+              const newMargin = parseFloat(payload.new.margin || prev.margin);
+              const newFreeMargin = parseFloat(payload.new.free_margin || prev.free_margin);
+
+              return {
+                ...prev,
+                // CRÍTICO: Balance mostrado siempre es equity (práctica de brokers)
+                balance: newEquity,
+                equity: newEquity,
+                margin: newMargin,
+                free_margin: newFreeMargin,
+                margin_level: newMargin > 0 ? (newEquity / newMargin) * 100 : 0
+              };
+            });
+
+            // Actualizar timestamp de última actualización
+            setLastUpdated(new Date());
+
+            console.log('[Realtime] ✅ Métricas actualizadas en tiempo real');
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Realtime] 📡 Estado de suscripción:', status);
+
+          if (status === 'SUBSCRIBED') {
+            console.log('[Realtime] ✅ Conectado exitosamente');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('[Realtime] ❌ Error en el canal');
+          } else if (status === 'TIMED_OUT') {
+            console.error('[Realtime] ⏱️ Timeout en conexión');
+          } else if (status === 'CLOSED') {
+            console.warn('[Realtime] 🔌 Canal cerrado');
+          }
+        });
+
+      console.log('[Realtime] 📝 Canal creado:', channel);
+    } catch (error) {
+      console.error('[Realtime] ❌ Error creando suscripción:', error);
     }
-    */
-    let refreshInterval = null;
-    
-    // Limpiar intervalo al desmontar o cambiar dependencias
+
+    // Limpiar suscripción al desmontar o cambiar de cuenta
     return () => {
-      if (refreshInterval) {
-        console.log('[TradingAccounts] Limpiando intervalo de auto-refresh');
-        clearInterval(refreshInterval);
+      if (channel) {
+        console.log(`[Realtime] 🔌 Desuscribiéndose de cuenta ${selectedAccount.account_number}`);
+        supabase.removeChannel(channel);
       }
+
       // Resetear el ref cuando cambia la cuenta
       loadingRef.current = false;
       if (selectedAccountId !== lastLoadedAccountRef.current) {
@@ -1724,20 +1711,17 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         return da - db;
       });
       const dataPoints = filteredData.length;
-      // Calcular rango real para decidir si reducimos puntos
-      const vals = filteredData.map(p => equityDataService.getChartValue(p));
-      const vMin = Math.min(...vals);
-      const vMax = Math.max(...vals);
-      const vRange = vMax - vMin;
 
-      // Si hay más de 10 puntos, tomar solo algunos representativos
-      if (dataPoints > 12 && vRange > Math.max(5, Math.abs(vals[0]) * 0.001)) {
-        const step = Math.max(1, Math.floor(dataPoints / (isMobile ? 10 : 16))); // más puntos visibles
-        filteredData = filteredData.filter((_, index) => 
+      // SIEMPRE reducir puntos si hay más de 12, sin importar el rango
+      // Esto elimina la condición problemática que excluía cuentas con poca variación
+      if (dataPoints > 12) {
+        const step = Math.max(1, Math.floor(dataPoints / (isMobile ? 10 : 16)));
+        filteredData = filteredData.filter((_, index) =>
           index === 0 || // Primer punto
           index === dataPoints - 1 || // Último punto
           index % step === 0 // Puntos intermedios
         );
+        // Asegurar mínimo 2 puntos para el gráfico
         if (filteredData.length < 2) {
           filteredData = [filteredData[0] ?? realBalanceHistory[0], filteredData[filteredData.length - 1] ?? realBalanceHistory[realBalanceHistory.length - 1]].filter(Boolean);
         }
@@ -2776,40 +2760,14 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 <div className="mb-3 sm:mb-4">
                   <div className="flex justify-between items-start mb-2">
                     <h2 className="text-lg sm:text-xl font-semibold">{t('accounts.details.title')}</h2>
-                    <div className="flex items-center gap-2">
-                      <CustomTooltip content={t('accounts.fields.updateFrequencyTooltip')}>
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-md border border-gray-700/50 cursor-help">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          <p className="text-gray-300 text-xs font-medium">
-                            {t('accounts.fields.updateFrequency')}
-                          </p>
-                        </div>
-                      </CustomTooltip>
-                      <button
-                        onClick={handleRefreshData}
-                        disabled={!canRefresh || isRefreshing}
-                        className={`p-1.5 rounded-md text-xs transition-colors ${
-                          canRefresh && !isRefreshing
-                            ? 'text-gray-400 hover:text-cyan-400 hover:bg-[#3a3a3a]'
-                            : 'text-gray-600 cursor-not-allowed'
-                        }`}
-                        title={t('accounts.fields.refresh')}
-                      >
-                        <svg
-                          className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                          />
-                        </svg>
-                      </button>
-                    </div>
+                    <CustomTooltip content="Datos actualizados en tiempo real vía WebSocket">
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-md border border-gray-700/50 cursor-help">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <p className="text-gray-300 text-xs font-medium">
+                          Tiempo Real
+                        </p>
+                      </div>
+                    </CustomTooltip>
                   </div>
                   <p className="text-gray-400 text-xs sm:text-sm">{t('accounts.details.subtitle')}</p>
                 </div>
@@ -3009,32 +2967,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                 <CustomTooltip content={t('tooltips.balance')}>
                   <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold cursor-help">{t('balance')}</h2>
                 </CustomTooltip>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleRefreshData}
-                    disabled={!canRefresh || isRefreshing}
-                    className={`p-1.5 rounded-md text-xs transition-colors ${
-                      canRefresh && !isRefreshing
-                        ? 'text-gray-400 hover:text-cyan-400 hover:bg-[#3a3a3a]'
-                        : 'text-gray-600 cursor-not-allowed'
-                    }`}
-                    title={t('accounts.fields.refresh')}
-                  >
-                    <svg
-                      className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                  </button>
-                </div>
               </div>
               <div className="flex items-center mb-2 sm:mb-3">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3 text-white">
