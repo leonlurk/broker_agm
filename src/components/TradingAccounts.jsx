@@ -4,7 +4,6 @@ import { useAccounts, ACCOUNT_CATEGORIES } from '../contexts/AccountsContext';
 import { Copy, Eye, EyeOff, Check, X, Settings, Menu, Filter, ArrowUpRight, Star, Search as SearchIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
-// import { updateInvestorPassword } from '../services/tradingAccounts'; // Ya no necesario, investor password es solo lectura
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { DatabaseAdapter } from '../services/database.adapter';
 import CustomDropdown from './utils/CustomDropdown';
