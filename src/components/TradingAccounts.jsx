@@ -3825,8 +3825,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
               {/* Tabla completa de transacciones */}
               {isMobile ? (
-                /* Vista de tarjetas para móvil */
-                <div className="space-y-3">
+                /* Vista de tarjetas para móvil con scroll */}
+                <div className="space-y-3 max-h-[600px] overflow-y-auto">
                   {filteredHistorialData.map((transaction, index) => (
                     <div key={index} className="p-4 bg-[#1a1a1a] rounded-lg border border-[#333]">
                       {/* Header de la tarjeta */}
@@ -3879,7 +3879,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                   ))}
                 </div>
               ) : (
-              <div className="overflow-x-auto overflow-y-hidden">
+              /* Vista de tabla desktop con scroll vertical */
+              <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#333]">
