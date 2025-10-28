@@ -134,7 +134,8 @@
     },
     "search": {
       "placeholder": "Search traders...",
-      "noResults": "No traders found matching your criteria"
+      "noResults": "No traders found matching your criteria",
+      "filters": "Filters"
     },
     "messages": {
       "followSuccess": "Successfully following trader! You will now copy their trades.",

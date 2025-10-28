@@ -133,7 +133,8 @@
     },
     "search": {
       "placeholder": "Buscar traders...",
-      "noResults": "No se encontraron traders que coincidan con tus criterios"
+      "noResults": "No se encontraron traders que coincidan con tus criterios",
+      "filters": "Filtros"
     },
     "messages": {
       "followSuccess": "¡Ahora estás siguiendo al trader! Comenzarás a copiar sus operaciones.",
