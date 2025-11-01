@@ -626,17 +626,28 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Ref para prevenir llamadas duplicadas
   const loadingRef = useRef(false);
   const lastLoadedAccountRef = useRef(null);
+  const lastLoadTimeRef = useRef(0);
 
   // Función para cargar métricas de una cuenta
   const loadAccountMetrics = useCallback(async (account) => {
     if (!account || !account.account_number) return;
     
-    // Prevenir llamadas duplicadas para la misma cuenta
-    if (loadingRef.current || lastLoadedAccountRef.current === account.account_number) {
+    // Prevenir llamadas duplicadas solo si ya está cargando
+    if (loadingRef.current) {
+      console.log('[TradingAccounts] Request already in progress, skipping');
+      return;
+    }
+    
+    // Permitir recargas después de 5 segundos
+    const now = Date.now();
+    if (lastLoadedAccountRef.current === account.account_number && 
+        now - lastLoadTimeRef.current < 5000) {
+      console.log('[TradingAccounts] Recently loaded, using cache');
       return;
     }
     
     loadingRef.current = true;
+    lastLoadTimeRef.current = now;
 
     // Mostrar loading solo en carga inicial
     if (!realMetrics && !realStatistics) {
