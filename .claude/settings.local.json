@@ -19,7 +19,13 @@
       "Read(//home/rdpuser/Desktop/metatrader-api-v2/**)",
       "Read(//home/rdpuser/Desktop/copy-pamm/**)",
       "Bash(git add:*)",
-      "Read(//home/rdpuser/Desktop/mt5-trade-service/**)"
+      "Read(//home/rdpuser/Desktop/mt5-trade-service/**)",
+      "Read(//home/rdpuser/thinclient_drives/.clipboard/**)",
+      "Bash(while read file)",
+      "Bash(done)",
+      "Bash(python3 -m py_compile src/application/api/accounts.py)",
+      "Bash(python3 -m compileall src/)",
+      "Read(//home/rdpuser/Desktop/**)"
     ],
     "deny": [],
     "ask": [],

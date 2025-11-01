@@ -650,10 +650,10 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         'month'
       );
       
-      // Historial de balance: preferir el que ya viene en el dashboard para evitar 429
-      const balanceHistory = Array.isArray(dashboardData?.balance_history) && dashboardData.balance_history.length > 0
-        ? dashboardData.balance_history
-        : await accountMetricsOptimized.getBalanceHistory(account.account_number, 'month');
+      // Historial de balance: usar solo el que viene en el dashboard (ya incluido en la respuesta)
+      const balanceHistory = Array.isArray(dashboardData?.balance_history) 
+        ? dashboardData.balance_history 
+        : [];
       
       // Procesar datos del dashboard
         if (dashboardData) {
