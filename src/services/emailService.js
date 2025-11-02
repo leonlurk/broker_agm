@@ -281,6 +281,46 @@ class EmailService {
     return await this.sendEmail(emailData);
   }
 
+  /**
+   * Send margin call alert email
+   */
+  async sendMarginCallEmail(userData, accountData) {
+    const emailData = {
+      sender: {
+        name: this.senderName,
+        email: this.senderEmail
+      },
+      to: [{
+        email: userData.email,
+        name: userData.name || 'Usuario'
+      }],
+      subject: '⚠️ ALERTA: Margin Call en tu Cuenta MT5 - Acción Requerida',
+      htmlContent: this.getMarginCallTemplate(userData, accountData)
+    };
+
+    return await this.sendEmail(emailData);
+  }
+
+  /**
+   * Send stop out notification email
+   */
+  async sendStopOutEmail(userData, accountData, closedPositions) {
+    const emailData = {
+      sender: {
+        name: this.senderName,
+        email: this.senderEmail
+      },
+      to: [{
+        email: userData.email,
+        name: userData.name || 'Usuario'
+      }],
+      subject: '🔴 STOP OUT: Posiciones Cerradas Automáticamente - MT5',
+      htmlContent: this.getStopOutTemplate(userData, accountData, closedPositions)
+    };
+
+    return await this.sendEmail(emailData);
+  }
+
   // Email Templates
 
   getBaseTemplate(content, userName = 'Usuario') {
@@ -559,6 +599,344 @@ class EmailService {
       <p style="color: #71717a; font-size: 13px;">Si el botón no funciona, copia y pega este enlace en tu navegador:<br>${resetLink}</p>
     `;
     return this.getBaseTemplate(content, userData.name || 'Usuario');
+  }
+
+  getMarginCallTemplate(userData, accountData) {
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Margin Call Alert - Alpha Global Market</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #e4e4e7; background-color: #0a0a0a; }
+        .email-wrapper { width: 100%; background-color: #0a0a0a; padding: 40px 20px; }
+        .email-container { max-width: 600px; margin: 0 auto; background-color: #18181b; border: 1px solid #27272a; overflow: hidden; }
+        .banner-section { width: 100%; display: block; background-color: #000000; }
+        .banner-image { width: 100%; height: auto; display: block; }
+        .content-section { padding: 50px 40px; background-color: #18181b; border-top: 3px solid #dc2626; }
+        .logo-text { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #71717a; margin-bottom: 30px; text-align: center; }
+        .alert-icon { font-size: 64px; text-align: center; margin: 20px 0; }
+        .alert-badge { display: inline-block; margin: 0 auto 30px; padding: 12px 24px; background-color: #dc2626; color: #ffffff; font-size: 14px; font-weight: 600; border-radius: 50px; text-transform: uppercase; letter-spacing: 1px; }
+        h2 { color: #fafafa; font-size: 24px; font-weight: 300; margin-bottom: 25px; letter-spacing: -0.5px; text-align: center; }
+        p { color: #d4d4d8; font-size: 15px; line-height: 1.7; margin-bottom: 20px; }
+        .highlight { color: #fafafa; font-weight: 500; }
+        .account-details { background-color: #1f1f23; border: 1px solid #27272a; padding: 25px; margin: 30px 0; border-radius: 4px; }
+        .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #27272a; color: #d4d4d8; font-size: 14px; }
+        .detail-row:last-child { border-bottom: none; margin-top: 10px; padding-top: 20px; border-top: 2px solid #dc2626; }
+        .detail-label { color: #a1a1aa; }
+        .detail-value { color: #fafafa; font-weight: 500; text-align: right; }
+        .detail-value-critical { font-size: 24px; color: #dc2626; font-weight: 600; }
+        .warning-box { background-color: #422006; border-left: 4px solid #f59e0b; padding: 20px; margin: 30px 0; }
+        .warning-box p { color: #fbbf24; font-size: 14px; margin-bottom: 10px; }
+        .warning-box strong { color: #fcd34d; }
+        .warning-box ul { color: #fcd34d; margin: 10px 0 0 20px; }
+        .action-list { background-color: #1f1f23; border: 1px solid #27272a; padding: 25px; margin: 30px 0; border-radius: 4px; }
+        .action-list h3 { color: #fafafa; font-size: 16px; font-weight: 500; margin-bottom: 15px; }
+        .action-list ol { color: #d4d4d8; margin-left: 20px; line-height: 1.8; }
+        .action-list ol li { margin-bottom: 8px; }
+        .action-list strong { color: #fafafa; }
+        .button-wrapper { margin: 40px 0; text-align: center; }
+        .cta-button { display: inline-block; padding: 14px 40px; background-color: #22c55e; color: #ffffff !important; text-decoration: none; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; border: 1px solid #22c55e; border-radius: 4px; }
+        .cta-button:hover { background-color: #16a34a; border-color: #16a34a; }
+        .secondary-button { display: inline-block; padding: 14px 40px; background-color: transparent; color: #3b82f6 !important; text-decoration: none; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; border: 1px solid #3b82f6; border-radius: 4px; margin-left: 10px; }
+        .divider { width: 100%; height: 1px; background-color: #27272a; margin: 35px 0; }
+        .footer-section { background-color: #0f0f11; padding: 35px 40px; border-top: 1px solid #27272a; }
+        .footer-text { color: #71717a; font-size: 12px; margin-bottom: 15px; line-height: 1.6; }
+        .footer-link { color: #3b82f6; text-decoration: none; font-size: 12px; }
+        .footer-link:hover { text-decoration: underline; }
+        .company-info { margin-top: 30px; padding-top: 20px; border-top: 1px solid #27272a; }
+        .company-name { color: #fafafa; font-size: 14px; font-weight: 500; margin-bottom: 5px; }
+        .company-details { color: #52525b; font-size: 11px; line-height: 1.5; }
+        @media only screen and (max-width: 600px) {
+            .content-section { padding: 35px 25px; }
+            .footer-section { padding: 30px 25px; }
+            h2 { font-size: 22px; }
+            p { font-size: 14px; }
+            .cta-button { padding: 12px 35px; font-size: 13px; }
+            .secondary-button { padding: 12px 35px; font-size: 13px; margin-left: 0; margin-top: 10px; display: block; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-container">
+            <!-- Banner Section -->
+            <div class="banner-section">
+                <img src="https://ukngiipxprielwdfuvln.supabase.co/storage/v1/object/public/emails/Banner%20Mail%20-%20AGM%20(2).png"
+                     alt="Alpha Global Markets"
+                     class="banner-image">
+            </div>
+
+            <!-- Content Section -->
+            <div class="content-section">
+                <div class="logo-text">ALPHA GLOBAL MARKET</div>
+
+                <div class="alert-icon">⚠️</div>
+
+                <div style="text-align: center;">
+                    <div class="alert-badge">MARGIN CALL</div>
+                </div>
+
+                <h2>¡Tu cuenta está en riesgo de cierre automático!</h2>
+
+                <p>Estimado/a <span class="highlight">${userData.name || 'Usuario'}</span>,</p>
+
+                <div class="warning-box">
+                    <p><strong>⚠️ ALERTA CRÍTICA</strong></p>
+                    <p>Tu cuenta MT5 ha alcanzado el nivel de Margin Call. Esto significa que:</p>
+                    <ul>
+                        <li>No puedes abrir nuevas posiciones</li>
+                        <li>Si el Margin Level cae a 50% (Stop Out), tus posiciones se cerrarán automáticamente</li>
+                        <li>Podrías perder más de lo que esperas</li>
+                    </ul>
+                </div>
+
+                <div class="account-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Cuenta MT5:</span>
+                        <span class="detail-value">#${accountData.login || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Balance:</span>
+                        <span class="detail-value">$${(accountData.balance || 0).toFixed(2)} USD</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Equity:</span>
+                        <span class="detail-value" style="color: #dc2626;">$${(accountData.equity || 0).toFixed(2)} USD</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Margen Usado:</span>
+                        <span class="detail-value">$${(accountData.margin || 0).toFixed(2)} USD</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Margen Libre:</span>
+                        <span class="detail-value">$${(accountData.freeMargin || 0).toFixed(2)} USD</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Margin Level:</span>
+                        <span class="detail-value-critical">${(accountData.marginLevel || 0).toFixed(2)}%</span>
+                    </div>
+                </div>
+
+                <div class="action-list">
+                    <h3>🎯 Acciones Recomendadas (URGENTE):</h3>
+                    <ol>
+                        <li><strong>Deposita fondos ahora</strong> para aumentar tu margin level y evitar cierres automáticos</li>
+                        <li><strong>Cierra posiciones perdedoras</strong> para liberar margen y reducir el riesgo</li>
+                        <li><strong>Reduce el tamaño de tus posiciones</strong> actuales para disminuir el margen usado</li>
+                        <li><strong>Contacta a tu Account Manager</strong> si necesitas asesoría urgente</li>
+                    </ol>
+                </div>
+
+                <div class="button-wrapper">
+                    <a href="https://alphaglobalmarket.io/wallet" class="cta-button">Depositar Ahora</a>
+                    <a href="https://alphaglobalmarket.io/trading-accounts" class="secondary-button">Ver Mis Cuentas</a>
+                </div>
+
+                <div class="divider"></div>
+
+                <p style="color: #9ca3af; font-size: 14px; margin-top: 30px;">
+                    <strong>¿Qué es un Stop Out?</strong><br>
+                    Si tu Margin Level cae por debajo del 50%, nuestro sistema cerrará automáticamente tus posiciones empezando por las más perdedoras para proteger tu capital restante.
+                </p>
+
+                <p style="color: #71717a; font-size: 13px;">
+                    <strong>Nota de Riesgo:</strong> El trading de CFDs conlleva un alto riesgo de pérdida. Asegúrate de entender completamente los riesgos antes de operar. Solo opera con capital que puedas permitirte perder.
+                </p>
+            </div>
+
+            <!-- Footer Section -->
+            <div class="footer-section">
+                <p class="footer-text">
+                    Si tienes alguna pregunta o necesitas asistencia urgente, contacta a nuestro equipo de soporte 24/7:
+                </p>
+                <a href="mailto:support@alphaglobalmarket.io" class="footer-link">support@alphaglobalmarket.io</a><br>
+                <a href="https://t.me/agm_soporte" class="footer-link">https://t.me/agm_soporte</a>
+
+                <div class="company-info">
+                    <p class="company-name">ALPHA GLOBAL MARKET LTD.</p>
+                    <p class="company-details">
+                        No. 2025-00193<br>
+                        Ground Floor, The Sotheby building, Rodney Village,<br>
+                        Rodney Bay, Gros-islet, Saint Lucia
+                    </p>
+                </div>
+
+                <p class="footer-text" style="margin-top: 20px; font-size: 10px;">
+                    © 2025 Alpha Global Market Ltd. Todos los derechos reservados.<br><br>
+                    Este es un email automático de alerta. Tu cuenta requiere atención inmediata para evitar pérdidas adicionales.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+  }
+
+  getStopOutTemplate(userData, accountData, closedPositions = []) {
+    const positionsHTML = closedPositions.length > 0
+      ? closedPositions.map(pos => `
+          <div class="detail-row">
+            <span class="detail-label">${pos.symbol || 'N/A'} ${pos.type || ''}</span>
+            <span class="detail-value" style="color: #dc2626;">$${(pos.profit || 0).toFixed(2)}</span>
+          </div>
+        `).join('')
+      : '<div class="detail-row"><span class="detail-label">No hay información de posiciones</span></div>';
+
+    const totalLoss = closedPositions.reduce((sum, pos) => sum + (pos.profit || 0), 0);
+
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stop Out Notification - Alpha Global Market</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #e4e4e7; background-color: #0a0a0a; }
+        .email-wrapper { width: 100%; background-color: #0a0a0a; padding: 40px 20px; }
+        .email-container { max-width: 600px; margin: 0 auto; background-color: #18181b; border: 1px solid #27272a; overflow: hidden; }
+        .banner-section { width: 100%; display: block; background-color: #000000; }
+        .banner-image { width: 100%; height: auto; display: block; }
+        .content-section { padding: 50px 40px; background-color: #18181b; border-top: 3px solid #dc2626; }
+        .logo-text { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #71717a; margin-bottom: 30px; text-align: center; }
+        .alert-icon { font-size: 64px; text-align: center; margin: 20px 0; }
+        .alert-badge { display: inline-block; margin: 0 auto 30px; padding: 12px 24px; background-color: #dc2626; color: #ffffff; font-size: 14px; font-weight: 600; border-radius: 50px; text-transform: uppercase; letter-spacing: 1px; }
+        h2 { color: #fafafa; font-size: 24px; font-weight: 300; margin-bottom: 25px; letter-spacing: -0.5px; text-align: center; }
+        p { color: #d4d4d8; font-size: 15px; line-height: 1.7; margin-bottom: 20px; }
+        .highlight { color: #fafafa; font-weight: 500; }
+        .account-details { background-color: #1f1f23; border: 1px solid #27272a; padding: 25px; margin: 30px 0; border-radius: 4px; }
+        .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #27272a; color: #d4d4d8; font-size: 14px; }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label { color: #a1a1aa; }
+        .detail-value { color: #fafafa; font-weight: 500; text-align: right; }
+        .loss-summary { background-color: #27272a; border: 2px solid #dc2626; padding: 20px; margin: 30px 0; border-radius: 4px; text-align: center; }
+        .loss-amount { font-size: 36px; color: #dc2626; font-weight: 700; margin: 10px 0; }
+        .info-box { background-color: #422006; border-left: 4px solid #f59e0b; padding: 20px; margin: 30px 0; }
+        .info-box p { color: #fbbf24; font-size: 14px; margin-bottom: 8px; }
+        .info-box strong { color: #fcd34d; }
+        .info-box ul { color: #fcd34d; margin: 10px 0 0 20px; }
+        .button-wrapper { margin: 40px 0; text-align: center; }
+        .cta-button { display: inline-block; padding: 14px 40px; background-color: #3b82f6; color: #ffffff !important; text-decoration: none; font-size: 14px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; border: 1px solid #3b82f6; border-radius: 4px; }
+        .cta-button:hover { background-color: #2563eb; border-color: #2563eb; }
+        .divider { width: 100%; height: 1px; background-color: #27272a; margin: 35px 0; }
+        .footer-section { background-color: #0f0f11; padding: 35px 40px; border-top: 1px solid #27272a; }
+        .footer-text { color: #71717a; font-size: 12px; margin-bottom: 15px; line-height: 1.6; }
+        .footer-link { color: #3b82f6; text-decoration: none; font-size: 12px; }
+        .footer-link:hover { text-decoration: underline; }
+        .company-info { margin-top: 30px; padding-top: 20px; border-top: 1px solid #27272a; }
+        .company-name { color: #fafafa; font-size: 14px; font-weight: 500; margin-bottom: 5px; }
+        .company-details { color: #52525b; font-size: 11px; line-height: 1.5; }
+        @media only screen and (max-width: 600px) {
+            .content-section { padding: 35px 25px; }
+            .footer-section { padding: 30px 25px; }
+            h2 { font-size: 22px; }
+            p { font-size: 14px; }
+            .loss-amount { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-container">
+            <!-- Banner Section -->
+            <div class="banner-section">
+                <img src="https://ukngiipxprielwdfuvln.supabase.co/storage/v1/object/public/emails/Banner%20Mail%20-%20AGM%20(2).png"
+                     alt="Alpha Global Markets"
+                     class="banner-image">
+            </div>
+
+            <!-- Content Section -->
+            <div class="content-section">
+                <div class="logo-text">ALPHA GLOBAL MARKET</div>
+
+                <div class="alert-icon">🔴</div>
+
+                <div style="text-align: center;">
+                    <div class="alert-badge">STOP OUT EJECUTADO</div>
+                </div>
+
+                <h2>Tus posiciones han sido cerradas automáticamente</h2>
+
+                <p>Estimado/a <span class="highlight">${userData.name || 'Usuario'}</span>,</p>
+
+                <p>
+                    Te informamos que tu cuenta MT5 <strong>#${accountData.login || 'N/A'}</strong> ha alcanzado el nivel de Stop Out (Margin Level por debajo del 50%).
+                </p>
+
+                <p>
+                    Como medida de protección automática, nuestro sistema ha cerrado algunas o todas tus posiciones abiertas para evitar mayores pérdidas.
+                </p>
+
+                <div class="loss-summary">
+                    <p style="color: #a1a1aa; font-size: 14px; margin: 0;">Pérdida Total</p>
+                    <div class="loss-amount">$${totalLoss.toFixed(2)} USD</div>
+                    <p style="color: #a1a1aa; font-size: 13px; margin: 0;">Balance restante: $${(accountData.balance || 0).toFixed(2)} USD</p>
+                </div>
+
+                <div class="account-details">
+                    <h3 style="color: #fafafa; font-size: 16px; margin-bottom: 15px;">Posiciones Cerradas:</h3>
+                    ${positionsHTML}
+                </div>
+
+                <div class="info-box">
+                    <p><strong>📚 ¿Cómo evitar un Stop Out en el futuro?</strong></p>
+                    <ul>
+                        <li>Mantén un balance adecuado en tu cuenta</li>
+                        <li>Usa stop loss en todas tus posiciones</li>
+                        <li>No uses todo tu margen disponible</li>
+                        <li>Monitorea tu Margin Level regularmente</li>
+                        <li>Considera depositar más fondos antes de alcanzar el Margin Call</li>
+                    </ul>
+                </div>
+
+                <div class="button-wrapper">
+                    <a href="https://alphaglobalmarket.io/trading-accounts" class="cta-button">Ver Estado de Mi Cuenta</a>
+                </div>
+
+                <div class="divider"></div>
+
+                <p style="color: #71717a; font-size: 13px;">
+                    Si necesitas asesoría sobre gestión de riesgo o cómo evitar situaciones similares, nuestro equipo de Account Managers está disponible para ayudarte 24/7.
+                </p>
+
+                <p style="color: #71717a; font-size: 13px;">
+                    <strong>Nota de Riesgo:</strong> El trading de CFDs conlleva un alto riesgo de pérdida. Recuerda usar siempre una gestión de riesgo apropiada y solo opera con capital que puedas permitirte perder.
+                </p>
+            </div>
+
+            <!-- Footer Section -->
+            <div class="footer-section">
+                <p class="footer-text">
+                    ¿Necesitas ayuda o asesoría? Contáctanos:
+                </p>
+                <a href="mailto:support@alphaglobalmarket.io" class="footer-link">support@alphaglobalmarket.io</a><br>
+                <a href="https://t.me/agm_soporte" class="footer-link">https://t.me/agm_soporte</a>
+
+                <div class="company-info">
+                    <p class="company-name">ALPHA GLOBAL MARKET LTD.</p>
+                    <p class="company-details">
+                        No. 2025-00193<br>
+                        Ground Floor, The Sotheby building, Rodney Village,<br>
+                        Rodney Bay, Gros-islet, Saint Lucia
+                    </p>
+                </div>
+
+                <p class="footer-text" style="margin-top: 20px; font-size: 10px;">
+                    © 2025 Alpha Global Market Ltd. Todos los derechos reservados.<br><br>
+                    Este es un email automático de notificación. Esta acción se ejecutó automáticamente para proteger tu capital restante.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `;
   }
 }
 
