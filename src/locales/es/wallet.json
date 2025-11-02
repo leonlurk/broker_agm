@@ -307,6 +307,10 @@
     "acceptsBoth": "Esta dirección acepta USDT tanto en Ethereum (ERC-20) como en BSC (BEP-20)",
     "minAmount": "Monto mínimo: ${{amount}} USD",
     "autoCredit": "Los fondos se acreditarán automáticamente",
+    "cannotClose": "No se puede cerrar el modal mientras se espera confirmación de la transacción",
+    "waitForConfirmation": "Por favor espere la confirmación de la transacción",
+    "pollingActive": "Verificación activa",
+    "cannotCloseWhileWaiting": "Por favor no cierre esta ventana hasta que se confirme su depósito para evitar problemas con la detección",
     "errors": {
       "authError": "Error de autenticación con el servicio de pagos",
       "generateError": "Error al generar la dirección de depósito",

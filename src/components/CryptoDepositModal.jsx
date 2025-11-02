@@ -22,6 +22,9 @@ const CryptoDepositModal = ({
   const [error, setError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Control para prevenir cierre durante polling
+  const canCloseModal = depositStatus !== 'waiting';
+
   // Mapeo de monedas a redes
   const getCoinNetwork = (coinId) => {
     if (coinId === 'USDT_TRC20') return 'tron';
@@ -159,20 +162,61 @@ const CryptoDepositModal = ({
     return 50;
   };
 
+  // Handler para intentar cerrar el modal
+  const handleCloseAttempt = () => {
+    if (canCloseModal) {
+      onClose();
+    } else {
+      toast.error(t('cryptoModal.cannotClose'), { duration: 3000 });
+    }
+  };
+
+  // Prevenir cierre con ESC durante polling
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        e.preventDefault();
+        handleCloseAttempt();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, canCloseModal]);
+
   if (!isOpen) return null;
 
   const relevantWallet = getRelevantWallet();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+      onClick={(e) => {
+        // Prevenir cierre al hacer clic fuera del modal durante polling
+        if (e.target === e.currentTarget) {
+          handleCloseAttempt();
+        }
+      }}
+    >
       <div className="bg-[#1e1e1e] rounded-2xl p-6 max-w-lg w-full mx-auto border border-[#334155] max-h-[85vh] relative">
         <div className="overflow-y-auto max-h-[calc(85vh-3rem)]">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">{t('cryptoModal.title')}</h2>
           <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            onClick={handleCloseAttempt}
+            disabled={!canCloseModal}
+            className={`transition-colors ${
+              canCloseModal
+                ? 'text-gray-400 hover:text-white cursor-pointer'
+                : 'text-gray-600 cursor-not-allowed opacity-50'
+            }`}
+            title={!canCloseModal ? t('cryptoModal.waitForConfirmation') : ''}
           >
             <XCircleIcon className="w-6 h-6" />
           </button>
@@ -182,6 +226,23 @@ const CryptoDepositModal = ({
         {error && (
           <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded-lg">
             <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Warning: Cannot close during polling */}
+        {!canCloseModal && walletInfo && (
+          <div className="mb-4 p-4 bg-orange-900/20 border border-orange-600 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <InfoIcon className="w-5 h-5 text-orange-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-orange-400 font-semibold text-sm mb-1">
+                  {t('cryptoModal.pollingActive')}
+                </p>
+                <p className="text-orange-300 text-xs">
+                  {t('cryptoModal.cannotCloseWhileWaiting')}
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -325,10 +386,16 @@ const CryptoDepositModal = ({
             {/* Actions */}
             <div className="flex justify-center">
               <button
-                onClick={onClose}
-                className="px-8 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                onClick={handleCloseAttempt}
+                disabled={!canCloseModal}
+                className={`px-8 py-3 rounded-lg transition-colors ${
+                  canCloseModal
+                    ? 'bg-gray-700 hover:bg-gray-600 text-white cursor-pointer'
+                    : 'bg-gray-800 text-gray-500 cursor-not-allowed opacity-50'
+                }`}
+                title={!canCloseModal ? t('cryptoModal.waitForConfirmation') : ''}
               >
-                {t('cryptoModal.close')}
+                {canCloseModal ? t('cryptoModal.close') : t('cryptoModal.waiting')}
               </button>
             </div>
           </div>

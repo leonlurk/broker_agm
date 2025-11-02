@@ -306,6 +306,10 @@
     "acceptsBoth": "This address accepts USDT on both Ethereum (ERC-20) and BSC (BEP-20)",
     "minAmount": "Minimum amount: ${{amount}} USD",
     "autoCredit": "Funds will be credited automatically",
+    "cannotClose": "Cannot close modal while waiting for transaction confirmation",
+    "waitForConfirmation": "Please wait for transaction confirmation",
+    "pollingActive": "Verification active",
+    "cannotCloseWhileWaiting": "Please do not close this window until your deposit is confirmed to avoid detection issues",
     "errors": {
       "authError": "Authentication error with payment service",
       "generateError": "Error generating deposit address",
