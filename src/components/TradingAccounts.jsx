@@ -660,11 +660,14 @@ const loadAccountMetrics = useCallback(async (account) => {
   }
   
   try {
-    // PASO 1: Obtener datos en TIEMPO REAL del MT5 Manager (equity actual)
-    console.log('[TradingAccounts] Obteniendo datos en tiempo real del MT5 Manager...');
-    const realtimeData = await brokerAccountsService.getBrokerAccountDetails(account.account_number);
+    // Obtener datos del dashboard (incluye equity actualizado por sync worker)
+    console.log('[TradingAccounts] Obteniendo datos del dashboard...');
+    const dashboardData = await accountMetricsOptimized.getDashboardData(
+      account.account_number,
+      'month'
+    );
     
-    // PASO 2: Obtener posiciones ABIERTAS del MT5 Manager
+    // Obtener posiciones ABIERTAS (si el endpoint está disponible)
     console.log('[TradingAccounts] Obteniendo posiciones abiertas...');
     let openPositions = [];
     try {
@@ -675,13 +678,6 @@ const loadAccountMetrics = useCallback(async (account) => {
       console.warn('[TradingAccounts] No se pudieron obtener posiciones abiertas:', error);
     }
     
-    // PASO 3: Obtener datos históricos del dashboard (gráficos y operaciones cerradas)
-    console.log('[TradingAccounts] Obteniendo datos históricos de Supabase...');
-    const dashboardData = await accountMetricsOptimized.getDashboardData(
-      account.account_number,
-      'month'
-    );
-    
     // Historial de balance: usar solo el que viene en el dashboard (ya incluido en la respuesta)
     const balanceHistory = Array.isArray(dashboardData?.balance_history) 
       ? dashboardData.balance_history 
@@ -689,30 +685,14 @@ const loadAccountMetrics = useCallback(async (account) => {
     
     // Procesar datos del dashboard
     if (dashboardData) {
-      // Actualizar métricas - PRIORIZAR datos en tiempo real del MT5 Manager
-      if (dashboardData.kpis && realtimeData?.success) {
-        console.log('[TradingAccounts] Combinando métricas en tiempo real + históricas');
-        const realtimeAccount = realtimeData.account;
-        
-        // Usar EQUITY del MT5 Manager en tiempo real para balance actual
-        const realtimeEquity = equityDataService.getAccountEquity(realtimeAccount);
-        const realtimeBalance = equityDataService.getAccountBalance(realtimeAccount);
-        const realtimeMargin = realtimeAccount.margin || 0;
-        const realtimeFreeMargin = realtimeAccount.free_margin || realtimeEquity;
-        
+      // Usar métricas del dashboard (equity actualizado por sync worker cada 60s)
+      if (dashboardData.kpis) {
+        console.log('[TradingAccounts] Usando métricas del dashboard:', dashboardData.kpis);
+        // CRÍTICO: Usar equity como balance (práctica de brokers)
         setRealMetrics({
           ...dashboardData.kpis,
-          // CRÍTICO: Sobrescribir con datos en tiempo real
-          balance: realtimeEquity,  // Balance mostrado = equity
-          equity: realtimeEquity,
-          margin: realtimeMargin,
-          free_margin: realtimeFreeMargin,
-          margin_level: realtimeMargin > 0 ? (realtimeEquity / realtimeMargin) * 100 : 0
+          balance: dashboardData.kpis.equity || dashboardData.kpis.balance
         });
-        console.log('[TradingAccounts] Balance en tiempo real (equity):', realtimeEquity);
-      } else if (dashboardData.kpis) {
-        console.log('[TradingAccounts] Usando métricas optimizadas:', dashboardData.kpis);
-        setRealMetrics(dashboardData.kpis);
       }
       
       // Actualizar estadísticas
