@@ -16,6 +16,9 @@ import accountMetricsOptimized from '../services/accountMetricsOptimized';
 import equityDataService from '../services/equityDataService';
 // Importar Supabase para Realtime WebSocket
 import { supabase } from '../supabase/config';
+// Importar broker services
+import * as brokerAccountsService from '../services/brokerAccountsService';
+import { brokerApi } from '../services/brokerAccountsService';
 import {
   getBalanceChartData,
   recordBalanceSnapshot,
@@ -625,176 +628,249 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // Ref para prevenir llamadas duplicadas
   const loadingRef = useRef(false);
-  const lastLoadedAccountRef = useRef(null);
-  const lastLoadTimeRef = useRef(0);
 
-  // Función para cargar métricas de una cuenta
-  const loadAccountMetrics = useCallback(async (account) => {
-    if (!account || !account.account_number) return;
-    
-    // Prevenir llamadas duplicadas solo si ya está cargando
-    if (loadingRef.current) {
-      console.log('[TradingAccounts] Request already in progress, skipping');
-      return;
-    }
-    
-    // Permitir recargas después de 5 segundos
-    const now = Date.now();
-    if (lastLoadedAccountRef.current === account.account_number && 
-        now - lastLoadTimeRef.current < 5000) {
-      console.log('[TradingAccounts] Recently loaded, using cache');
-      return;
-    }
-    
-    loadingRef.current = true;
-    lastLoadTimeRef.current = now;
+// Ref para prevenir llamadas duplicadas
+const loadingRef = useRef(false);
+const lastLoadedAccountRef = useRef(null);
+const lastLoadTimeRef = useRef(0);
 
-    // Mostrar loading solo en carga inicial
-    if (!realMetrics && !realStatistics) {
-      setIsLoadingMetrics(true);
-    }
+// Función para cargar métricas de una cuenta
+const loadAccountMetrics = useCallback(async (account) => {
+  if (!account || !account.account_number) {
+    console.error('[TradingAccounts] No account provided to loadAccountMetrics');
+    return;
+  }
+
+  // Prevenir cargas duplicadas
+  if (loadingRef.current) {
+    console.log('[TradingAccounts] Ya hay una carga en progreso, saltando...');
+    return;
+  }
+  
+  // Prevenir cargas muy frecuentes (menos de 2 segundos)
+  const now = Date.now();
+  if (lastLoadTimeRef.current && (now - lastLoadTimeRef.current) < 2000) {
+    console.log('[TradingAccounts] Carga muy reciente, saltando...');
+    return;
+  }
+  
+  loadingRef.current = true;
+  lastLoadTimeRef.current = now;
+
+  // Mostrar loading solo en carga inicial
+  if (!realMetrics && !realStatistics) {
+    setIsLoadingMetrics(true);
+  }
+  
+  try {
+    // PASO 1: Obtener datos en TIEMPO REAL del MT5 Manager (equity actual)
+    console.log('[TradingAccounts] Obteniendo datos en tiempo real del MT5 Manager...');
+    const realtimeData = await brokerAccountsService.getBrokerAccountDetails(account.account_number);
     
+    // PASO 2: Obtener posiciones ABIERTAS del MT5 Manager
+    console.log('[TradingAccounts] Obteniendo posiciones abiertas...');
+    let openPositions = [];
     try {
-      // Obtener todos los datos del dashboard desde el endpoint optimizado
-      const dashboardData = await accountMetricsOptimized.getDashboardData(
-        account.account_number,
-        'month'
-      );
-      
-      // Historial de balance: usar solo el que viene en el dashboard (ya incluido en la respuesta)
-      const balanceHistory = Array.isArray(dashboardData?.balance_history) 
-        ? dashboardData.balance_history 
-        : [];
-      
-      // Procesar datos del dashboard
-        if (dashboardData) {
-          // Actualizar métricas - confiar directamente en datos del backend
-          if (dashboardData.kpis) {
-            console.log('[TradingAccounts] Usando métricas optimizadas:', dashboardData.kpis);
-            setRealMetrics(dashboardData.kpis);
-          }
-          
-          // Actualizar estadísticas
-          if (dashboardData.statistics) {
-            console.log('[TradingAccounts] Usando estadísticas optimizadas:', dashboardData.statistics);
-            setRealStatistics(dashboardData.statistics);
-          }
-          
-          // Actualizar instrumentos
-          if (dashboardData.instruments && dashboardData.instruments.length > 0) {
-            console.log('[TradingAccounts] Usando instrumentos optimizados:', dashboardData.instruments);
-            setRealInstruments({
-              distribution: dashboardData.instruments,
-              total_instruments: dashboardData.instruments.length,
-              total_trades: dashboardData.statistics?.total_trades || 0
-            });
-          }
-          
-          // Actualizar historial de balance
-          if (balanceHistory && balanceHistory.length > 0) {
-            console.log('[TradingAccounts] Balance history recibido:', balanceHistory.length, 'puntos');
-            console.log('[TradingAccounts] Balance history muestra:', balanceHistory.slice(0, 2));
-            // Formatear para el gráfico
-            let formattedBalance = balanceHistory.map(item => ({
-              date: item.timestamp || item.date,
-              timestamp: item.timestamp || item.date,
-              // Usar servicio estandarizado para datos de gráfico
-              value: equityDataService.getChartValue(item),
-              balance: equityDataService.getAccountBalance(item),
-              equity: equityDataService.getAccountEquity(item)
-            }));
-            try {
-              if (dashboardData.kpis && formattedBalance.length > 0) {
-                const currentVal = parseFloat(dashboardData.kpis.balance ?? 0) || 0;
-                const li = formattedBalance.length - 1;
-                const lastVal = equityDataService.getChartValue(formattedBalance[li]);
-                if (currentVal > 0 && Math.abs(currentVal - lastVal) > 0.01) {
-                  formattedBalance[li] = { ...formattedBalance[li], value: currentVal, balance: currentVal, equity: currentVal };
-                }
-              }
-            } catch (e) {}
-            console.log('[TradingAccounts] Balance formateado:', formattedBalance.slice(0, 2));
-            setRealBalanceHistory(formattedBalance);
-          } else {
-            console.log('[TradingAccounts] NO hay balance history!');
-          }
-        }
+      const positionsResponse = await brokerApi.get(`/accounts/${account.account_number}/positions`);
+      openPositions = positionsResponse.data || [];
+      console.log('[TradingAccounts] Posiciones abiertas:', openPositions.length);
+    } catch (error) {
+      console.warn('[TradingAccounts] No se pudieron obtener posiciones abiertas:', error);
+    }
+    
+    // PASO 3: Obtener datos históricos del dashboard (gráficos y operaciones cerradas)
+    console.log('[TradingAccounts] Obteniendo datos históricos de Supabase...');
+    const dashboardData = await accountMetricsOptimized.getDashboardData(
+      account.account_number,
+      'month'
+    );
+    
+    // Historial de balance: usar solo el que viene en el dashboard (ya incluido en la respuesta)
+    const balanceHistory = Array.isArray(dashboardData?.balance_history) 
+      ? dashboardData.balance_history 
+      : [];
+    
+    // Procesar datos del dashboard
+    if (dashboardData) {
+      // Actualizar métricas - PRIORIZAR datos en tiempo real del MT5 Manager
+      if (dashboardData.kpis && realtimeData?.success) {
+        console.log('[TradingAccounts] Combinando métricas en tiempo real + históricas');
+        const realtimeAccount = realtimeData.account;
         
-        // Usar operaciones del dashboard si están disponibles
-        if (dashboardData.recent_operations && dashboardData.recent_operations.length > 0) {
-          // Transformar las operaciones al formato esperado por la tabla
-          const transformedOps = {
-            operations: dashboardData.recent_operations.map(op => {
-              const openTime = op.open_time ? new Date(op.open_time) : null;
-              const closeTime = op.close_time ? new Date(op.close_time) : null;
-              
-              return {
-                // Formato para la tabla de historial
-                fechaApertura: openTime ? openTime.toLocaleDateString() : '-',
-                tiempoApertura: openTime ? openTime.toLocaleTimeString() : '-',
-                fechaCierre: closeTime ? closeTime.toLocaleDateString() : '-',
-                tiempoCierre: closeTime ? closeTime.toLocaleTimeString() : '-',
-                fechaISO: op.close_time || op.open_time,
-                instrumento: op.symbol || 'N/A',
-                bandera: getInstrumentIcon(op.symbol || 'N/A'),
-                tipo: op.type === 'BUY' ? t('positions.types.buy') : op.type === 'SELL' ? t('positions.types.sell') : op.type,
-                lotaje: (op.volume || 0).toFixed(2),
-                stopLossFormatted: op.stop_loss ? parseFloat(op.stop_loss).toFixed(5) : '0.0',
-                takeProfitFormatted: op.take_profit ? parseFloat(op.take_profit).toFixed(5) : '0.0',
-                precioApertura: (op.open_price || 0).toFixed(5),
-                precioCierre: (op.close_price || 0).toFixed(5),
-                pips: op.pips || 0,
-                idPosicion: op.ticket || '-',
-                resultado: `$${(op.profit || 0).toFixed(2)}`,
-                resultadoPct: `${((op.profit || 0) / 10000 * 100).toFixed(1)}%`,
-                resultadoColor: (op.profit || 0) >= 0 ? 'text-green-400' : 'text-red-400',
-                ganancia: op.profit || 0,
-                stopLossPct: op.stop_loss ? 
-                  Math.abs((op.stop_loss - op.open_price) / op.open_price * 100).toFixed(1) + '%' : '-',
-                takeProfitPct: op.take_profit ? 
-                  Math.abs((op.take_profit - op.open_price) / op.open_price * 100).toFixed(1) + '%' : '-',
-                // También mantener los campos originales para compatibilidad
-                id: op.ticket,
-                ticket: op.ticket,
-                symbol: op.symbol,
-                type: op.operation_type || op.type,
-                volume: op.volume,
-                openPrice: op.open_price,
-                closePrice: op.close_price,
-                openTime: op.open_time,
-                closeTime: op.close_time,
-                stopLoss: op.stop_loss,
-                takeProfit: op.take_profit,
-                profit: op.profit,
-                swap: op.swap || 0,
-                commission: op.commission || 0,
-                status: op.status || 'CLOSED'
-              };
-            }),
-            total_operations: dashboardData.recent_operations.length
-          };
-          setRealHistory(transformedOps);
-        } else {
-          // Si no hay operaciones, establecer array vacío
-          setRealHistory({ operations: [], total_operations: 0 });
-        }
+        // Usar EQUITY del MT5 Manager en tiempo real para balance actual
+        const realtimeEquity = equityDataService.getAccountEquity(realtimeAccount);
+        const realtimeBalance = equityDataService.getAccountBalance(realtimeAccount);
+        const realtimeMargin = realtimeAccount.margin || 0;
+        const realtimeFreeMargin = realtimeAccount.free_margin || realtimeEquity;
         
-        // Actualizar tiempo de última actualización
-        setLastUpdated(new Date());
-        
-      } catch (error) {
-        console.error('[TradingAccounts] Error cargando métricas:', error);
-      } finally {
-        setIsLoadingMetrics(false);
-        loadingRef.current = false;
-        // Actualizar timestamp de última actualización
-        setLastUpdated(Date.now());
-        // Guardar la cuenta cargada exitosamente
-        if (account) {
-          lastLoadedAccountRef.current = account.account_number;
-        }
+        setRealMetrics({
+          ...dashboardData.kpis,
+          // CRÍTICO: Sobrescribir con datos en tiempo real
+          balance: realtimeEquity,  // Balance mostrado = equity
+          equity: realtimeEquity,
+          margin: realtimeMargin,
+          free_margin: realtimeFreeMargin,
+          margin_level: realtimeMargin > 0 ? (realtimeEquity / realtimeMargin) * 100 : 0
+        });
+        console.log('[TradingAccounts] Balance en tiempo real (equity):', realtimeEquity);
+      } else if (dashboardData.kpis) {
+        console.log('[TradingAccounts] Usando métricas optimizadas:', dashboardData.kpis);
+        setRealMetrics(dashboardData.kpis);
       }
-  }, []);
+      
+      // Actualizar estadísticas
+      if (dashboardData.statistics) {
+        console.log('[TradingAccounts] Usando estadísticas optimizadas:', dashboardData.statistics);
+        setRealStatistics(dashboardData.statistics);
+      }
+      
+      // Actualizar instrumentos
+      if (dashboardData.instruments && dashboardData.instruments.length > 0) {
+        console.log('[TradingAccounts] Usando instrumentos optimizados:', dashboardData.instruments);
+        setRealInstruments({
+          distribution: dashboardData.instruments,
+          total_instruments: dashboardData.instruments.length,
+          total_trades: dashboardData.statistics?.total_trades || 0
+        });
+      }
+      
+      // Actualizar historial de balance
+      if (balanceHistory && balanceHistory.length > 0) {
+        console.log('[TradingAccounts] Balance history recibido:', balanceHistory.length, 'puntos');
+        console.log('[TradingAccounts] Balance history muestra:', balanceHistory.slice(0, 2));
+        // Formatear para el gráfico
+        let formattedBalance = balanceHistory.map(item => ({
+          date: item.timestamp || item.date,
+          timestamp: item.timestamp || item.date,
+          // Usar servicio estandarizado para datos de gráfico
+          value: equityDataService.getChartValue(item),
+          balance: equityDataService.getAccountBalance(item),
+          equity: equityDataService.getAccountEquity(item)
+        }));
+        try {
+          if (dashboardData.kpis && formattedBalance.length > 0) {
+            const currentVal = parseFloat(dashboardData.kpis.balance ?? 0) || 0;
+            const li = formattedBalance.length - 1;
+            const lastVal = equityDataService.getChartValue(formattedBalance[li]);
+            if (currentVal > 0 && Math.abs(currentVal - lastVal) > 0.01) {
+              formattedBalance[li] = { ...formattedBalance[li], value: currentVal, balance: currentVal, equity: currentVal };
+            }
+          }
+        } catch (e) {}
+        console.log('[TradingAccounts] Balance formateado:', formattedBalance.slice(0, 2));
+        setRealBalanceHistory(formattedBalance);
+      } else {
+        console.log('[TradingAccounts] NO hay balance history!');
+      }
+    }
+    
+    // COMBINAR operaciones cerradas + posiciones abiertas
+    const allOperations = [];
+    
+    // 1. Agregar operaciones CERRADAS del dashboard
+    if (dashboardData.recent_operations && dashboardData.recent_operations.length > 0) {
+      allOperations.push(...dashboardData.recent_operations);
+    }
+    
+    // 2. Agregar posiciones ABIERTAS del MT5 Manager
+    if (openPositions && openPositions.length > 0) {
+      const openOps = openPositions.map(pos => ({
+        ...pos,
+        close_time: null,  // NULL indica posición abierta
+        close_price: pos.current_price || pos.price_current,
+        profit: pos.profit || 0,
+        status: 'OPEN'
+      }));
+      allOperations.push(...openOps);
+    }
+    
+    if (allOperations.length > 0) {
+      // Transformar TODAS las operaciones (cerradas + abiertas) al formato de la tabla
+      const transformedOps = {
+        operations: allOperations.map(op => {
+          const openTime = op.open_time ? new Date(op.open_time) : null;
+          const closeTime = op.close_time ? new Date(op.close_time) : null;
+          
+          // Detectar si es posición abierta
+          const isOpen = !op.close_time || op.status === 'OPEN';
+          
+          return {
+            // Formato para la tabla de historial
+            fechaApertura: openTime ? openTime.toLocaleDateString() : '-',
+            tiempoApertura: openTime ? openTime.toLocaleTimeString() : '-',
+            fechaCierre: isOpen ? null : (closeTime ? closeTime.toLocaleDateString() : '-'),
+            tiempoCierre: isOpen ? null : (closeTime ? closeTime.toLocaleTimeString() : '-'),
+            isOpen: isOpen,  // Flag para identificar posiciones abiertas
+            fechaISO: op.close_time || op.open_time,
+            instrumento: op.symbol || 'N/A',
+            bandera: getInstrumentIcon(op.symbol || 'N/A'),
+            tipo: op.type === 'BUY' ? t('positions.types.buy') : op.type === 'SELL' ? t('positions.types.sell') : op.type,
+            lotaje: (op.volume || 0).toFixed(2),
+            stopLossFormatted: op.stop_loss ? parseFloat(op.stop_loss).toFixed(5) : '0.0',
+            takeProfitFormatted: op.take_profit ? parseFloat(op.take_profit).toFixed(5) : '0.0',
+            precioApertura: (op.open_price || 0).toFixed(5),
+            precioCierre: (op.close_price || 0).toFixed(5),
+            pips: op.pips || 0,
+            idPosicion: op.ticket || '-',
+            resultado: `$${(op.profit || 0).toFixed(2)}`,
+            resultadoPct: `${((op.profit || 0) / 10000 * 100).toFixed(1)}%`,
+            resultadoColor: (op.profit || 0) >= 0 ? 'text-green-400' : 'text-red-400',
+            ganancia: op.profit || 0,
+            stopLossPct: op.stop_loss ? 
+              Math.abs((op.stop_loss - op.open_price) / op.open_price * 100).toFixed(1) + '%' : '-',
+            takeProfitPct: op.take_profit ? 
+              Math.abs((op.take_profit - op.open_price) / op.open_price * 100).toFixed(1) + '%' : '-',
+            // También mantener los campos originales para compatibilidad
+            id: op.ticket,
+            ticket: op.ticket,
+            symbol: op.symbol,
+            type: op.operation_type || op.type,
+            volume: op.volume,
+            openPrice: op.open_price,
+            closePrice: op.close_price,
+            openTime: op.open_time,
+            closeTime: op.close_time,
+            stopLoss: op.stop_loss,
+            takeProfit: op.take_profit,
+            profit: op.profit,
+            swap: op.swap || 0,
+            commission: op.commission || 0,
+            status: isOpen ? 'OPEN' : (op.status || 'CLOSED')
+          };
+        }),
+        total_operations: allOperations.length
+      };
+      
+      // Ordenar: posiciones abiertas primero, luego cerradas por fecha
+      transformedOps.operations.sort((a, b) => {
+        if (a.isOpen && !b.isOpen) return -1;
+        if (!a.isOpen && b.isOpen) return 1;
+        return new Date(b.fechaISO) - new Date(a.fechaISO);
+      });
+      
+      setRealHistory(transformedOps);
+      console.log('[TradingAccounts] Total operaciones (abiertas + cerradas):', transformedOps.total_operations);
+    } else {
+      // Si no hay operaciones, establecer array vacío
+      setRealHistory({ operations: [], total_operations: 0 });
+    }
+    
+    // Actualizar tiempo de última actualización
+    setLastUpdated(new Date());
+    
+  } catch (error) {
+    console.error('[TradingAccounts] Error cargando métricas:', error);
+  } finally {
+    setIsLoadingMetrics(false);
+    loadingRef.current = false;
+    // Actualizar timestamp de última actualización
+    setLastUpdated(Date.now());
+    // Guardar la cuenta cargada exitosamente
+    if (account) {
+      lastLoadedAccountRef.current = account.account_number;
+    }
+  }
+}, []);
 
   // useEffect para cargar datos reales de MT5 y suscribirse a actualizaciones en tiempo real
   useEffect(() => {
@@ -3937,17 +4013,27 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
                           </div>
                         </td>
 
-                        {/* {t('dateClose')} */}
+                        {/* Fecha De Cierre */}
                         <td className="py-3 px-2">
-                          <div className="flex items-center gap-1 text-white text-xs">
-                            <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                            </svg>
-                            <div>
-                              <div>{transaction.fechaCierre}</div>
-                              <div className="text-gray-500">{transaction.tiempoCierre}</div>
+                          {transaction.isOpen ? (
+                            <div className="flex items-center gap-2">
+                              <div className="relative flex items-center justify-center">
+                                <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                              </div>
+                              <span className="text-green-400 font-medium">Position Opened</span>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-white">
+                              <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                              </svg>
+                              <div>
+                                <div>{transaction.fechaCierre}</div>
+                                <div className="text-gray-500">{transaction.tiempoCierre}</div>
+                              </div>
+                            </div>
+                          )}
                         </td>
 
                         {/* {t('instrument')} */}
