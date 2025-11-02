@@ -666,7 +666,7 @@ const loadAccountMetrics = useCallback(async (account) => {
     console.log('[TradingAccounts] Obteniendo datos en tiempo real del MT5...');
     let realtimeData = null;
     try {
-      const accountInfoResponse = await brokerApi.get(`/accounts/${account.account_number}/info`);
+      const accountInfoResponse = await brokerApi.get(`/accounts/${account.account_number}`);
       realtimeData = accountInfoResponse.data;
       console.log('[TradingAccounts] Datos en tiempo real obtenidos:', realtimeData);
     } catch (error) {
