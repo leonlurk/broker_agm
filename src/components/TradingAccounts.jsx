@@ -662,12 +662,12 @@ const loadAccountMetrics = useCallback(async (account) => {
   try {
     // ENFOQUE HÍBRIDO: Combinar datos en tiempo real + históricos
     
-    // PASO 1: Obtener datos en TIEMPO REAL del MT5 Manager
+    // PASO 1: Obtener datos en TIEMPO REAL del MT5 Manager (balance, equity, margin)
     console.log('[TradingAccounts] Obteniendo datos en tiempo real del MT5...');
     let realtimeData = null;
     try {
-      const statsResponse = await brokerApi.get(`/accounts/${account.account_number}/statistics`);
-      realtimeData = statsResponse.data;
+      const accountInfoResponse = await brokerApi.get(`/accounts/${account.account_number}/info`);
+      realtimeData = accountInfoResponse.data;
       console.log('[TradingAccounts] Datos en tiempo real obtenidos:', realtimeData);
     } catch (error) {
       console.warn('[TradingAccounts] No se pudieron obtener datos en tiempo real:', error);
