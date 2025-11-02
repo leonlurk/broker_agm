@@ -420,18 +420,21 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
 
     const now = new Date();
     const periodStart = new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
-    
+
     // Ordenar por timestamp (más antiguo primero)
     const sortedHistory = [...balanceHistory].sort((a, b) => {
       const dateA = new Date(a.timestamp || a.date);
       const dateB = new Date(b.timestamp || b.date);
       return dateA - dateB;
     });
-    
+
+    // Balance actual (último snapshot)
+    let endBalance = sortedHistory[sortedHistory.length - 1];
+    const currentValue = parseFloat(endBalance.equity ?? endBalance.balance ?? endBalance.value ?? 0);
+
     // Encontrar el balance más cercano al inicio del período
     let startBalance = null;
-    let endBalance = sortedHistory[sortedHistory.length - 1]; // Último balance
-    
+
     for (let i = sortedHistory.length - 1; i >= 0; i--) {
       const recordDate = new Date(sortedHistory[i].timestamp || sortedHistory[i].date);
       if (recordDate <= periodStart) {
@@ -439,30 +442,34 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
         break;
       }
     }
-    
+
     // Si no hay datos del inicio del período, usar el primer registro disponible
     if (!startBalance && sortedHistory.length > 0) {
       startBalance = sortedHistory[0];
     }
-    
+
     if (!startBalance || !endBalance) {
       return { percentage: 0, amount: 0 };
     }
-    
-    // Preferir equity para reflejar PnL con posiciones abiertas (fallback a balance/value)
-    const initialValue = (startBalance.equity ?? startBalance.balance ?? startBalance.value ?? 0);
-    const currentValue = (endBalance.equity ?? endBalance.balance ?? endBalance.value ?? 0);
-    
-    // Si tenemos KPIs de la cuenta, usar el balance inicial real para cálculos más precisos
-    let realInitialValue = initialValue;
-    if (accountKpis?.initial_balance && days >= 30) {
-      // Para períodos largos (30 días), usar el balance inicial real de la cuenta
-      realInitialValue = parseFloat(accountKpis.initial_balance) || initialValue;
+
+    // Obtener valor inicial del período
+    let initialValue = parseFloat(startBalance.equity ?? startBalance.balance ?? startBalance.value ?? 0);
+
+    // CORRECCIÓN: Para cuentas nuevas o períodos largos, usar balance inicial de KPIs
+    // Solo si el período solicitado cubre toda la vida de la cuenta
+    const firstSnapshotDate = new Date(sortedHistory[0].timestamp || sortedHistory[0].date);
+    const accountAgeInDays = (now - firstSnapshotDate) / (1000 * 60 * 60 * 24);
+
+    if (accountKpis?.initial_balance && (days >= accountAgeInDays || days >= 30)) {
+      // Si el período solicitado es mayor que la edad de la cuenta, usar balance inicial real
+      initialValue = parseFloat(accountKpis.initial_balance) || initialValue;
     }
-    
-    const profit = currentValue - realInitialValue;
-    const percentage = realInitialValue > 0 ? (profit / realInitialValue) * 100 : 0;
-    
+
+    const profit = currentValue - initialValue;
+    const percentage = initialValue > 0 ? (profit / initialValue) * 100 : 0;
+
+    console.log(`[PNL ${days}d] Initial: $${initialValue.toFixed(2)}, Current: $${currentValue.toFixed(2)}, Profit: $${profit.toFixed(2)} (${percentage.toFixed(2)}%)`);
+
     return {
       percentage: percentage,
       amount: profit
