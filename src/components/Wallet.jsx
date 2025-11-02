@@ -742,6 +742,24 @@ const Wallet = () => {
             // Notificar transferencia
             notifyTransfer(amountNum, transferFromAccount.account_name, t('common.generalBalance'));
 
+            // 📧 Enviar email de transferencia completada
+            try {
+              await emailServiceProxy.sendTransferCompletedEmail({
+                email: currentUser.email,
+                name: userData?.full_name || currentUser.displayName || currentUser.email.split('@')[0],
+                transferType: 'mt5_to_wallet',
+                amount: amountNum.toFixed(2),
+                fromAccount: transferFromAccount.account_name,
+                toAccount: t('common.generalBalance'),
+                newBalanceFrom: mt5Result.data?.transfer_details?.source_new_balance?.toFixed(2),
+                newBalanceTo: newBalance.toFixed(2)
+              });
+              console.log('[Wallet] Transfer email sent successfully');
+            } catch (emailError) {
+              console.error('[Wallet] Error sending transfer email:', emailError);
+              // No fallar la transferencia si el email falla
+            }
+
           } else {
             console.error('[Wallet] MT5-to-Wallet transfer failed:', mt5Result.error);
             toast.error(mt5Result.error || 'Error en la transferencia MT5 → Wallet');
@@ -803,6 +821,24 @@ const Wallet = () => {
             // Notificar transferencia
             notifyTransfer(amountNum, transferFromAccount.account_name, transferToAccount.account_name);
 
+            // 📧 Enviar email de transferencia completada
+            try {
+              await emailServiceProxy.sendTransferCompletedEmail({
+                email: currentUser.email,
+                name: userData?.full_name || currentUser.displayName || currentUser.email.split('@')[0],
+                transferType: 'mt5_to_mt5',
+                amount: amountNum.toFixed(2),
+                fromAccount: transferFromAccount.account_name,
+                toAccount: transferToAccount.account_name,
+                newBalanceFrom: mt5Result.data?.transfer_details?.source_new_balance?.toFixed(2),
+                newBalanceTo: mt5Result.data?.transfer_details?.destination_new_balance?.toFixed(2)
+              });
+              console.log('[Wallet] Transfer email sent successfully');
+            } catch (emailError) {
+              console.error('[Wallet] Error sending transfer email:', emailError);
+              // No fallar la transferencia si el email falla
+            }
+
           } else {
             console.error('[Wallet] MT5-to-MT5 transfer failed:', mt5Result.error);
             toast.error(mt5Result.error || 'Error en la transferencia MT5-to-MT5');
@@ -861,6 +897,25 @@ const Wallet = () => {
                       icon: '✅'
                     });
                   }
+
+                  // 📧 Enviar email de transferencia completada
+                  try {
+                    await emailServiceProxy.sendTransferCompletedEmail({
+                      email: currentUser.email,
+                      name: userData?.full_name || currentUser.displayName || currentUser.email.split('@')[0],
+                      transferType: 'wallet_to_mt5',
+                      amount: amountNum.toFixed(2),
+                      fromAccount: t('common.generalBalance'),
+                      toAccount: transferToAccount.account_name,
+                      newBalanceFrom: newBalance.toFixed(2),
+                      newBalanceTo: details?.new_mt5_balance?.toFixed(2) || details?.destination_new_balance?.toFixed(2)
+                    });
+                    console.log('[Wallet] Transfer email sent successfully');
+                  } catch (emailError) {
+                    console.error('[Wallet] Error sending transfer email:', emailError);
+                    // No fallar la transferencia si el email falla
+                  }
+
                 } else {
                   console.error('[Wallet] Failed to transfer to MT5:', mt5Result.error);
                   toast.error(

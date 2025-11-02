@@ -220,6 +220,29 @@ class EmailServiceProxy {
       credentials: credentials
     });
   }
+
+  /**
+   * Send transfer completed email
+   */
+  async sendTransferCompletedEmail(transferData) {
+    return await this.sendEmailThroughBackend('transfer-completed', {
+      email: transferData.email,
+      name: transferData.name,
+      transferType: transferData.transferType, // 'wallet_to_mt5' | 'mt5_to_mt5' | 'mt5_to_wallet'
+      amount: transferData.amount,
+      fromAccount: transferData.fromAccount,
+      toAccount: transferData.toAccount,
+      completedDate: transferData.completedDate || new Date().toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      newBalanceFrom: transferData.newBalanceFrom,
+      newBalanceTo: transferData.newBalanceTo
+    });
+  }
 }
 
 // Export singleton instance
