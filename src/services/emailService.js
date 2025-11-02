@@ -47,8 +47,11 @@ logicApiClient.interceptors.request.use(
 );
 
 // API configuration
-const SENDER_EMAIL = import.meta.env.VITE_SENDER_EMAIL || 'noreply@alphaglobalmarket.io';
-const SENDER_NAME = import.meta.env.VITE_SENDER_NAME || 'Alpha Global Market';
+// ⚠️ DEPRECATION NOTICE: Este servicio llama al backend MT5Manager que puede no tener emails implementados.
+// Se recomienda usar emailServiceProxy.js que llama a payroll-crypto-api (donde están los templates).
+// TODO: Migrar todos los componentes a usar emailServiceProxy.js y deprecar este archivo.
+const SENDER_EMAIL = 'noreply@alphaglobalmarket.io'; // Hardcoded - backend decide el remitente real
+const SENDER_NAME = 'Alpha Global Market'; // Hardcoded - backend decide el nombre real
 
 class EmailService {
   constructor() {
