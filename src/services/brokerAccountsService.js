@@ -464,6 +464,9 @@ export const checkBrokerApiStatus = async () => {
   }
 };
 
+// Export brokerApi instance for direct use
+export { brokerApi };
+
 export default {
   createBrokerAccount,
   getBrokerAccountDetails,
