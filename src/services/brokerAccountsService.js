@@ -4,7 +4,7 @@ import { getApiConfig } from './config';
 
 // API Configuration
 const API_CONFIG = getApiConfig();
-const BROKER_API_BASE = `${API_CONFIG.baseUrl}/api/v1/broker`;
+const BROKER_API_BASE = `${API_CONFIG.baseUrl}/api/v1`;
 
 // Create axios instance for broker API
 const brokerApi = axios.create({
