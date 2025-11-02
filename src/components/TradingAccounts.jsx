@@ -674,12 +674,13 @@ const loadAccountMetrics = useCallback(async (account) => {
     }
     
     // PASO 2: Obtener posiciones ABIERTAS en tiempo real
+    // TEMPORAL: Usando endpoint de Supabase para ver trades ficticios
     console.log('[TradingAccounts] Obteniendo posiciones abiertas...');
     let openPositions = [];
     try {
-      const positionsResponse = await brokerApi.get(`/accounts/${account.account_number}/positions`);
+      const positionsResponse = await brokerApi.get(`/supabase/accounts/${account.account_number}/positions/from-db`);
       openPositions = positionsResponse.data || [];
-      console.log('[TradingAccounts] Posiciones abiertas:', openPositions.length);
+      console.log('[TradingAccounts] Posiciones abiertas (desde Supabase):', openPositions.length);
     } catch (error) {
       console.warn('[TradingAccounts] No se pudieron obtener posiciones abiertas:', error);
     }
