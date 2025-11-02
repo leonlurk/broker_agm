@@ -628,11 +628,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
   // Ref para prevenir llamadas duplicadas
   const loadingRef = useRef(false);
-
-// Ref para prevenir llamadas duplicadas
-const loadingRef = useRef(false);
-const lastLoadedAccountRef = useRef(null);
-const lastLoadTimeRef = useRef(0);
+  const lastLoadedAccountRef = useRef(null);
+  const lastLoadTimeRef = useRef(0);
 
 // Función para cargar métricas de una cuenta
 const loadAccountMetrics = useCallback(async (account) => {
