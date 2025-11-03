@@ -30,6 +30,8 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
   const [view, setView] = useState('dashboard'); // dashboard, myInvestors, profileEdit
   const [investors, setInvestors] = useState([]);
   const [traderStats, setTraderStats] = useState(initialTraderDashboardData);
+  const [masterConfig, setMasterConfig] = useState(null); // Configuración de Master Trader
+  const [isMasterTrader, setIsMasterTrader] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showConfigurarModal, setShowConfigurarModal] = useState(false);
@@ -71,15 +73,17 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
       try {
         setIsLoading(true);
         setError(null);
-        
+
         // Cargar estadísticas del trader y seguidores en paralelo
         const [statsData, followersData] = await Promise.all([
           getTraderStats().catch(() => null),
           getFollowers().catch(() => [])
         ]);
-        
+
         // Actualizar estadísticas del trader
         if (statsData) {
+          setIsMasterTrader(true);
+
           setTraderStats({
             overview: {
               totalAUM: statsData.overview?.total_aum || 0,
@@ -96,7 +100,12 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
             recentTrades: statsData.recent_trades || [],
             followerDistribution: statsData.follower_distribution || []
           });
-          
+
+          // Extraer la configuración del Master Trader si está disponible
+          if (statsData.master_config) {
+            setMasterConfig(statsData.master_config);
+          }
+
           // Usar la lista de inversores del API si está disponible
           if (statsData.followers_list && Array.isArray(statsData.followers_list)) {
             setInvestors(statsData.followers_list);
@@ -117,24 +126,22 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               lastActivity: follower.updated_at || follower.created_at || new Date().toISOString(),
               status: follower.status || 'active'
             }));
-            
+
             setInvestors(formattedInvestors);
           }
         } else {
-          // Usar datos mock como fallback
-          setInvestors(traderStats.topInvestors || []);
+          setIsMasterTrader(false);
         }
-        
+
       } catch (err) {
         console.error('Error loading trader data:', err);
         setError('No se pudieron cargar los datos.');
-        // Usar datos mock como fallback en caso de error
-        setInvestors(traderStats.topInvestors || []);
+        setIsMasterTrader(false);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchTraderData();
   }, []);
 
@@ -341,122 +348,167 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           </div>
         </div>
 
-        {/* Portafolio Section */}
+        {/* Portafolio Section - DATOS DINÁMICOS */}
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-8">
           <h2 className="text-xl font-semibold mb-6 text-cyan-400">{t('copyTrading.manager.portfolio')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Capital Propio */}
-            <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                  <DollarSign size={24} className="text-blue-400" />
-                </div>
-                <TrendingUp size={20} className="text-blue-400" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-1">$25,340.00</h3>
-              <p className="text-sm text-gray-400">{t('copyTrading.manager.ownCapital')}</p>
-              <div className="mt-2 text-xs text-gray-500">
-                <span className="text-green-400">+8.5%</span> {t('copyTrading.time.thisMonth')}
-              </div>
-            </div>
-
-            {/* Capital de Terceros */}
+            {/* Capital de Terceros (AUM) */}
             <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center">
                   <Users size={24} className="text-cyan-400" />
                 </div>
-                <TrendingUp size={20} className="text-cyan-400" />
+                {traderStats.overview.monthlyReturn >= 0 ? (
+                  <TrendingUp size={20} className="text-green-400" />
+                ) : (
+                  <TrendingDown size={20} className="text-red-400" />
+                )}
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">$89,500.00</h3>
+              <h3 className="text-2xl font-bold text-white mb-1">{formatAUM(traderStats.overview.totalAUM)}</h3>
               <p className="text-sm text-gray-400">{t('copyTrading.manager.thirdPartyCapital')}</p>
               <div className="mt-2 text-xs text-gray-500">
-                <span className="text-yellow-400">5 {t('copyTrading.manager.investors')}</span> {t('copyTrading.status.active')}
+                <span className="text-cyan-400">{traderStats.overview.activeFollowers} {t('copyTrading.manager.investors')}</span> {t('copyTrading.status.active')}
               </div>
             </div>
 
-            {/* Capital Total Administrado */}
+            {/* Retorno Mensual */}
+            <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                  <TrendingUp size={24} className="text-blue-400" />
+                </div>
+                {traderStats.overview.monthlyReturn >= 0 ? (
+                  <ArrowUp size={20} className="text-green-400" />
+                ) : (
+                  <ArrowDown size={20} className="text-red-400" />
+                )}
+              </div>
+              <h3 className={`text-2xl font-bold mb-1 ${traderStats.overview.monthlyReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {formatPercentage(traderStats.overview.monthlyReturn)}
+              </h3>
+              <p className="text-sm text-gray-400">{t('copyTrading.manager.monthlyReturn')}</p>
+              <div className="mt-2 text-xs text-gray-500">
+                <span className="text-gray-400">{t('copyTrading.time.thisMonth')}</span>
+              </div>
+            </div>
+
+            {/* Comisiones Totales */}
             <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
-                  <Briefcase size={24} className="text-green-400" />
+                  <DollarSign size={24} className="text-green-400" />
                 </div>
                 <TrendingUp size={20} className="text-green-400" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">$114,840.00</h3>
-              <p className="text-sm text-gray-400">{t('copyTrading.manager.totalManagedCapital')}</p>
+              <h3 className="text-2xl font-bold text-white mb-1">{formatCurrency(traderStats.overview.totalCommissions)}</h3>
+              <p className="text-sm text-gray-400">{t('copyTrading.manager.totalCommissions')}</p>
               <div className="mt-2 text-xs text-gray-500">
-                <span className="text-green-400">+12.8%</span> {t('copyTrading.stats.totalReturn')}
+                <span className="text-green-400">{formatCurrency(traderStats.overview.monthlyCommissions)}</span> {t('copyTrading.time.thisMonth')}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Mis Cuentas Copy Trading */}
+        {/* Mis Cuentas Copy Trading - DATOS DINÁMICOS */}
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-8">
           <h2 className="text-xl font-semibold mb-6 text-cyan-400">{t('copyTrading.manager.myCopyTradingAccounts')}</h2>
-          <div className="space-y-4">
 
-            {/* Cuenta Copy Trading 2 */}
-            <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold">CT2</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white">Copy Trading Account #2</h3>
-                    <p className="text-sm text-gray-400">{t('copyTrading.manager.created')}: 02/11/2024</p>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="text-sm text-gray-400">{t('copyTrading.stats.aum')}: <span className="text-white font-medium">$89,500</span></span>
-                      <span className="text-sm text-gray-400">{t('copyTrading.manager.investors')}: <span className="text-white font-medium">5</span></span>
-                      <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">{t('copyTrading.status.paused')}</span>
+          {isMasterTrader && masterConfig ? (
+            <div className="space-y-4">
+              {/* Cuenta Master Configurada */}
+              <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6 hover:border-cyan-600/50 transition-colors">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-cyan-600 to-cyan-800 rounded-full flex items-center justify-center">
+                      <Award size={24} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white text-lg">{masterConfig.strategy_name || 'Estrategia de Trading'}</h3>
+                      <p className="text-sm text-gray-400 mb-1">{t('copyTrading.manager.created')}: {new Date(masterConfig.created_at).toLocaleDateString()}</p>
+                      <div className="flex flex-wrap items-center gap-4 mt-2">
+                        <span className="text-sm text-gray-400">
+                          {t('copyTrading.stats.aum')}: <span className="text-white font-medium">{formatAUM(traderStats.overview.totalAUM)}</span>
+                        </span>
+                        <span className="text-sm text-gray-400">
+                          {t('copyTrading.manager.investors')}: <span className="text-white font-medium">{traderStats.overview.activeFollowers}</span>
+                        </span>
+                        <span className="text-sm text-gray-400">
+                          Cuenta MT5: <span className="text-cyan-400 font-medium">#{masterConfig.master_mt5_account}</span>
+                        </span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          traderStats.overview.activeFollowers > 0
+                            ? 'bg-green-500/20 text-green-400 border border-green-600/50'
+                            : 'bg-gray-500/20 text-gray-400 border border-gray-600/50'
+                        }`}>
+                          {traderStats.overview.activeFollowers > 0 ? t('copyTrading.status.active') : t('copyTrading.status.inactive')}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {masterConfig.markets && masterConfig.markets.map((market, idx) => (
+                          <span key={idx} className="text-xs px-2 py-1 bg-cyan-600/20 text-cyan-400 rounded">
+                            {market}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                        <div className="bg-[#232323] p-2 rounded">
+                          <p className="text-gray-400">Comisión</p>
+                          <p className="text-white font-medium">{masterConfig.commission_rate}%</p>
+                        </div>
+                        <div className="bg-[#232323] p-2 rounded">
+                          <p className="text-gray-400">Riesgo Máx.</p>
+                          <p className="text-white font-medium">{masterConfig.max_risk}%</p>
+                        </div>
+                        <div className="bg-[#232323] p-2 rounded">
+                          <p className="text-gray-400">Drawdown Máx.</p>
+                          <p className="text-white font-medium">{masterConfig.max_drawdown}%</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleViewAccountInfo('CT1')}
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
-                  >
-                    <Eye size={16} />
-                    {t('copyTrading.actions.manage')}
-                  </button>
+
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => handleViewMyInvestors()}
+                      className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 justify-center"
+                    >
+                      <Users size={16} />
+                      Ver Seguidores
+                    </button>
+                    <button
+                      onClick={handleEditProfile}
+                      className="border border-[#333] hover:border-cyan-600 text-gray-400 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 justify-center"
+                    >
+                      <Edit size={16} />
+                      Editar Perfil
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Cuenta Copy Trading 3 */}
-            <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold">CT3</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white">Copy Trading Account #3</h3>
-                    <p className="text-sm text-gray-400">{t('copyTrading.manager.created')}: 20/09/2024</p>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="text-sm text-gray-400">AUM: <span className="text-white font-medium">$0</span></span>
-                      <span className="text-sm text-gray-400">Inversores: <span className="text-white font-medium">0</span></span>
-                      <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">{t('copyTrading.status.inactive')}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleViewAccountInfo('CT1')}
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
-                  >
-                    <Eye size={16} />
-                    {t('copyTrading.actions.manage')}
-                  </button>
-                </div>
+          ) : (
+            /* Empty state - Usuario aún no es Master Trader */
+            <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-8 text-center">
+              <div className="w-16 h-16 bg-cyan-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Award size={32} className="text-cyan-400" />
               </div>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {t('copyTrading.manager.noMasterAccountYet')}
+              </h3>
+              <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                {t('copyTrading.manager.configureMasterDescription')}
+              </p>
+              <button
+                onClick={handleCreateCopy}
+                className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-3 px-6 rounded-xl hover:opacity-90 transition-opacity font-medium inline-flex items-center gap-2"
+              >
+                <Settings size={20} />
+                {t('copyTrading.manager.becomeMasterTrader')}
+              </button>
             </div>
-          </div>
+          )}
         </div>
 
 
