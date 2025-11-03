@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Star, Users, DollarSign, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Eye, Settings, BarChart3, Activity, Award, Calendar, Copy, MoreHorizontal, Edit, Camera, Save, X, Info, Shield, Target, Briefcase, Search, Filter, SlidersHorizontal, Pause, StopCircle, MessageCircle, UserCheck, Plus } from 'lucide-react';
+import { Star, Users, DollarSign, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Eye, Settings, BarChart3, Activity, Award, Calendar, Copy, MoreHorizontal, Edit, Camera, Save, X, Info, Shield, Target, Briefcase, Search, Filter, SlidersHorizontal, Pause, StopCircle, MessageCircle, UserCheck, Plus, RefreshCw, AlertTriangle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell } from 'recharts';
 import CrearPAMMModal from './CrearPAMMModal';
 import CopiarEstrategiaModal from './CopiarEstrategiaModal';
@@ -63,14 +63,16 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   const [showCopiarEstrategiaModal, setShowCopiarEstrategiaModal] = useState(false);
   const [showFundConfigModal, setShowFundConfigModal] = useState(false);
   const [selectedFundForConfig, setSelectedFundForConfig] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const data = gestorData;
-  
+
   // Cargar datos del gestor PAMM desde la API
   useEffect(() => {
     const fetchGestorData = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         // ✅ ACTIVADO: Cargar datos REALES desde la API
         const { getManagerStats } = await import('../services/pammService');
         const response = await getManagerStats();
@@ -91,9 +93,9 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
         setIsLoading(false);
       }
     };
-    
+
     fetchGestorData();
-  }, []);
+  }, [refreshTrigger]);
 
   // Efecto para hacer scroll hacia arriba cuando cambie la vista
   useEffect(() => {
@@ -141,6 +143,15 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   const handleBackToDashboard = () => {
     setView('dashboard');
     setSelectedInvestor(null);
+  };
+
+  const handleRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleFundCreated = () => {
+    // Trigger refresh after fund creation
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const filteredInvestors = investors.filter(investor => {
@@ -587,13 +598,25 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
             {t('pamm.manager.description')}
           </p>
         </div>
-        <button
-          onClick={() => setShowCrearFondoModal(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-5 rounded-lg hover:opacity-90 transition"
-        >
-          <Plus size={18} />
-          {t('pamm.manager.createFund')}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className={`p-2 bg-[#2a2a2a] hover:bg-[#333] text-gray-400 hover:text-white rounded-lg transition-all ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            title="Actualizar datos"
+          >
+            <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+          </button>
+          <button
+            onClick={() => setShowCrearFondoModal(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-2 px-5 rounded-lg hover:opacity-90 transition"
+          >
+            <Plus size={18} />
+            {t('pamm.manager.createFund')}
+          </button>
+        </div>
       </div>
 
       {/* Portfolio Section */}
@@ -641,9 +664,89 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
         <div className="mb-6">
           <h2 className="text-xl font-semibold">{t('pamm.manager.myFunds')}</h2>
         </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {accountsData.map((account) => (
+
+        {/* Loading Skeleton */}
+        {isLoading && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-[#333] p-6 rounded-xl border border-[#444] animate-pulse">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="h-5 bg-[#444] rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-[#444] rounded w-1/2"></div>
+                  </div>
+                  <div className="h-6 w-16 bg-[#444] rounded-full"></div>
+                </div>
+                <div className="space-y-3 mb-6">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((j) => (
+                    <div key={j} className="flex justify-between">
+                      <div className="h-4 bg-[#444] rounded w-1/3"></div>
+                      <div className="h-4 bg-[#444] rounded w-1/4"></div>
+                    </div>
+                  ))}
+                </div>
+                <div className="h-10 bg-[#444] rounded"></div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !isLoading && (
+          <div className="text-center py-12">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500 bg-opacity-10 rounded-full mb-4">
+              <AlertTriangle className="text-red-500" size={32} />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">Error al cargar fondos</h3>
+            <p className="text-gray-400 mb-4">{error}</p>
+            <button
+              onClick={handleRefresh}
+              className="flex items-center gap-2 bg-[#333] hover:bg-[#444] text-white py-2 px-4 rounded-lg transition-colors mx-auto"
+            >
+              <RefreshCw size={16} />
+              Intentar de nuevo
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && !error && accountsData.length === 0 && (
+          <div className="text-center py-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-full mb-6">
+              <Briefcase className="text-purple-400" size={40} />
+            </div>
+            <h3 className="text-2xl font-semibold text-white mb-3">No tienes fondos PAMM</h3>
+            <p className="text-gray-400 mb-6 max-w-md mx-auto">
+              Crea tu primer fondo PAMM para comenzar a gestionar capital de inversores y generar comisiones por tu experiencia en trading.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-8">
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Comisiones de gestión</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>Comisiones de rendimiento</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span>Control total</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowCrearFondoModal(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-3 px-6 rounded-lg hover:opacity-90 transition mx-auto text-base font-medium"
+            >
+              <Plus size={20} />
+              Crear mi primer fondo PAMM
+            </button>
+          </div>
+        )}
+
+        {/* Funds Grid */}
+        {!isLoading && !error && accountsData.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {accountsData.map((account) => (
             <div key={account.id} className="bg-[#333] p-6 rounded-xl border border-[#444]">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -708,12 +811,13 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
 
 
       {/* Modal de Crear/Configurar Fondo PAMM */}
-      <CrearPAMMModal 
+      <CrearPAMMModal
         isOpen={showCrearFondoModal}
         onClose={() => setShowCrearFondoModal(false)}
         mode="configure"
@@ -721,6 +825,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           console.log('Contrato PAMM configurado:', formData);
           // Aquí integrarías con tu API para configurar el contrato
         }}
+        onFundCreated={handleFundCreated}
       />
 
       {/* Modal de Copiar Estrategia */}

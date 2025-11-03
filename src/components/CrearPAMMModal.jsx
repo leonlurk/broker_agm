@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { createPammFund } from '../services/pammService';
 
-const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData = null }) => {
+const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData = null, onFundCreated = null }) => {
   const { getAllAccounts } = useAccounts();
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -233,7 +233,7 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateStep(maxSteps)) return;
-    
+
     setIsSubmitting(true);
     try {
       // Si el usuario quiere convertirse en PAMM manager, actualizar Supabase
@@ -304,7 +304,7 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
 
           const fundResult = await createPammFund(fundDataForBackend);
           console.log('Fund created successfully:', fundResult);
-          
+
           // Enhanced success feedback
           const fundSuccessNotification = document.createElement('div');
           fundSuccessNotification.className = 'fixed top-16 right-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white p-4 rounded-lg shadow-lg z-50 flex items-center gap-3';
@@ -321,14 +321,19 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
           setTimeout(() => {
             document.body.removeChild(fundSuccessNotification);
           }, 5000);
-          
+
+          // Trigger parent refresh if callback provided
+          if (onFundCreated) {
+            onFundCreated();
+          }
+
         } catch (fundError) {
           console.error('Error creating PAMM fund:', fundError);
           alert('Error al crear el fondo PAMM: ' + (fundError.message || 'Error desconocido'));
           return;
         }
       }
-      
+
       onConfirm(formData);
       onClose();
     } catch (error) {
@@ -1162,9 +1167,18 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
           ) : (
             <button
               onClick={handleSubmit}
-              className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-lg transition-colors font-medium"
+              disabled={isSubmitting}
+              className={`px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-lg transition-colors font-medium flex items-center gap-2 ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
-              {mode === 'configure' ? 'Guardar Configuración' : 'Crear Fondo'}
+              {isSubmitting && (
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              {isSubmitting ? 'Creando...' : (mode === 'configure' ? 'Guardar Configuración' : 'Crear Fondo')}
             </button>
           )}
         </div>
