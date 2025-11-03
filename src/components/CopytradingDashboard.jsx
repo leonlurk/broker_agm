@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Crown, CheckCircle, Search, Filter, Star, Trend
 import TraderProfileDetail from './TraderProfileDetail';
 import SeguirTraderModal from './SeguirTraderModal';
 import AccountSelectionModal from './AccountSelectionModal';
-import { getMasterTraders, getMySubscriptions, followMaster } from '../services/copytradingService';
+import { getMasterTraders, getMySubscriptions, followMaster, getFollowers, getCopyStats, getTraderStats } from '../services/copytradingService';
 import { useAccounts } from '../contexts/AccountsContext';
 import useTranslation from '../hooks/useTranslation';
 import { MasterAccountBadge, FollowStatusIndicator, SubscriptionStatusCard, MasterAccountSummaryCard } from './StatusIndicators';
@@ -22,6 +22,10 @@ const CopytradingDashboard = () => {
   // Estados para datos de la API
   const [availableTraders, setAvailableTraders] = useState([]);
   const [activeSubscriptions, setActiveSubscriptions] = useState([]);
+  const [myFollowers, setMyFollowers] = useState([]); // Seguidores si soy Master
+  const [copyStats, setCopyStats] = useState(null); // Estadísticas generales
+  const [traderStats, setTraderStats] = useState(null); // Stats como Master
+  const [isMasterTrader, setIsMasterTrader] = useState(false); // Si soy Master
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copiedTraders, setCopiedTraders] = useState(new Set());
@@ -42,15 +46,40 @@ const CopytradingDashboard = () => {
       try {
         setIsLoading(true);
         setError(null);
-        
-        // Cargar ambas listas de datos en paralelo
-        const [traders, subscriptions] = await Promise.all([
+
+        // Cargar estadísticas primero para determinar si soy Master
+        const [traders, subscriptions, stats] = await Promise.all([
           getMasterTraders(),
-          getMySubscriptions()
+          getMySubscriptions(),
+          getCopyStats().catch(() => ({ as_master: { active: 0 }, as_follower: { active: 0 } }))
         ]);
 
         console.log('🔍 RAW TRADERS FROM API:', traders);
-        console.log('🔍 FIRST TRADER STRUCTURE:', traders[0]);
+        console.log('🔍 COPY STATS:', stats);
+
+        setCopyStats(stats);
+
+        // Determinar si soy Master Trader
+        const isIMaster = stats?.as_master?.active > 0 || stats?.as_master?.total > 0;
+        setIsMasterTrader(isIMaster);
+
+        // Si soy Master, cargar mis seguidores y stats
+        if (isIMaster) {
+          try {
+            const [followers, masterStats] = await Promise.all([
+              getFollowers(),
+              getTraderStats().catch(() => null)
+            ]);
+
+            console.log('👥 MY FOLLOWERS:', followers);
+            console.log('📊 TRADER STATS:', masterStats);
+
+            setMyFollowers(followers || []);
+            setTraderStats(masterStats);
+          } catch (err) {
+            console.warn('Error cargando datos de Master:', err);
+          }
+        }
 
         // Mapear traders con follower_count del backend
         const formattedTraders = traders.map(trader => ({
@@ -68,10 +97,16 @@ const CopytradingDashboard = () => {
           riesgoColor: 'text-yellow-400',
           riesgoPercentage: `${trader.riskScore || 50}%`,
           riesgoBarColor: 'bg-yellow-500',
-          master_config: trader.master_config
+          master_config: trader.master_config,
+          // Agregar datos reales de performance
+          totalTrades: trader.performance?.total_trades || 0,
+          winRate: trader.performance?.win_rate || 0,
+          avgProfit: trader.performance?.avg_profit || 0,
+          maxDrawdown: trader.performance?.max_drawdown || 0,
+          sharpeRatio: trader.performance?.sharpe_ratio || 0
         }));
 
-        // Mapear suscripciones
+        // Mapear suscripciones con más detalle
         const formattedSubscriptions = subscriptions.map(sub => ({
           id: sub.id,
           traderId: sub.master_user_id,
@@ -80,12 +115,14 @@ const CopytradingDashboard = () => {
           profit: `+$${sub.currentProfit?.toFixed(2) || 0}`,
           profitPercentage: `+${sub.currentProfitPercentage?.toFixed(1) || 0}%`,
           status: sub.status === 'active' ? 'Activo' : 'Pausado',
-          startedDate: new Date(sub.created_at).toLocaleDateString()
+          startedDate: new Date(sub.created_at).toLocaleDateString(),
+          riskRatio: sub.risk_ratio || 1.0,
+          masterPerformance: sub.master?.performance || {}
         }));
 
         setAvailableTraders(formattedTraders);
         setActiveSubscriptions(formattedSubscriptions);
-        
+
         // Sincronizar copiedTraders con subscriptions activas
         const followedIds = new Set(subscriptions
           .filter(sub => sub.status === 'active')
@@ -354,34 +391,41 @@ const CopytradingDashboard = () => {
           </button>
         </div>
         
-        {/* Panel expandible con vista previa de trader profile */}
+        {/* Panel expandible con vista previa de trader profile - DATOS DINÁMICOS */}
         {isExpanded && (
           <div className="mt-4 pt-4 border-t border-[#333]">
             <div className="bg-[#232323] p-4 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
                   <p className="text-sm text-gray-400">Rentabilidad total</p>
                   <p className="text-xl font-medium text-green-500">{trader.rentabilidad}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Operaciones</p>
-                  <p className="text-xl font-medium">{Math.floor(Math.random() * 100) + 250}</p>
+                  <p className="text-sm text-gray-400">Operaciones totales</p>
+                  <p className="text-xl font-medium">{trader.totalTrades || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Nivel de riesgo</p>
-                  <p className={`text-xl font-medium ${trader.riesgoColor}`}>{trader.riesgo}</p>
+                  <p className="text-sm text-gray-400">Tasa de éxito</p>
+                  <p className="text-xl font-medium text-cyan-400">{trader.winRate ? `${trader.winRate.toFixed(1)}%` : 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Max Drawdown</p>
+                  <p className="text-xl font-medium text-red-400">{trader.maxDrawdown ? `${trader.maxDrawdown.toFixed(1)}%` : 'N/A'}</p>
                 </div>
               </div>
-              
-              <p className="text-sm text-gray-400 mb-2">Instrumentos preferidos:</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-                <div className="bg-[#191919] p-2 rounded text-sm">EUR/USD</div>
-                <div className="bg-[#191919] p-2 rounded text-sm">GBP/USD</div>
-                <div className="bg-[#191919] p-2 rounded text-sm">XAU/USD</div>
-                <div className="bg-[#191919] p-2 rounded text-sm">US100</div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="bg-[#191919] p-3 rounded">
+                  <p className="text-xs text-gray-400 mb-1">Beneficio Promedio</p>
+                  <p className="text-lg font-medium text-green-400">{trader.avgProfit ? `$${trader.avgProfit.toFixed(2)}` : 'N/A'}</p>
+                </div>
+                <div className="bg-[#191919] p-3 rounded">
+                  <p className="text-xs text-gray-400 mb-1">Sharpe Ratio</p>
+                  <p className="text-lg font-medium">{trader.sharpeRatio ? trader.sharpeRatio.toFixed(2) : 'N/A'}</p>
+                </div>
               </div>
-              
-              <button 
+
+              <button
                 className="w-full px-4 py-2 bg-cyan-700 hover:bg-cyan-600 rounded-md text-sm"
                 onClick={(e) => {
                   e.stopPropagation(); // Prevent event bubbling
@@ -389,7 +433,7 @@ const CopytradingDashboard = () => {
                   handleViewTraderDetails(trader);
                 }}
               >
-                Ver perfil completo
+                Ver perfil completo →
               </button>
             </div>
           </div>
@@ -490,37 +534,64 @@ const CopytradingDashboard = () => {
       <h1 className="text-2xl font-semibold mb-4">Copy Trading</h1>
       <p className="text-gray-400 mb-6">Gestiona tus operaciones copy trading.</p>
       
-      {/* Tabs */}
+      {/* Tabs - Dinámicos según rol del usuario */}
       <div className="flex mb-6 border-b border-[#333] overflow-x-auto">
         <button
           onClick={() => setActiveTab('traders')}
-          className={`py-3 px-6 whitespace-nowrap ${
+          className={`py-3 px-6 whitespace-nowrap flex items-center gap-2 ${
             activeTab === 'traders'
               ? 'text-green-400 border-b-2 border-green-400'
               : 'text-gray-400 hover:text-white'
           }`}
         >
-          {t('copytrading.exploreTraders')}
+          <TrendingUp size={18} />
+          {t('copytrading.exploreTraders') || 'Explorar Traders'}
         </button>
         <button
           onClick={() => setActiveTab('subscriptions')}
-          className={`py-3 px-6 whitespace-nowrap ${
+          className={`py-3 px-6 whitespace-nowrap flex items-center gap-2 ${
             activeTab === 'subscriptions'
               ? 'text-green-400 border-b-2 border-green-400'
               : 'text-gray-400 hover:text-white'
           }`}
         >
-          {t('copytrading.myCopies')}
+          <Copy size={18} />
+          {t('copytrading.myCopies') || 'Mis Copias'}
+          {activeSubscriptions.length > 0 && (
+            <span className="bg-cyan-600 text-white text-xs px-2 py-0.5 rounded-full">
+              {activeSubscriptions.length}
+            </span>
+          )}
         </button>
+        {/* Tab de "Mis Seguidores" - Solo si soy Master Trader */}
+        {isMasterTrader && (
+          <button
+            onClick={() => setActiveTab('followers')}
+            className={`py-3 px-6 whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'followers'
+                ? 'text-green-400 border-b-2 border-green-400'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Users size={18} />
+            {t('copytrading.myFollowers') || 'Mis Seguidores'}
+            {myFollowers.length > 0 && (
+              <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full">
+                {myFollowers.length}
+              </span>
+            )}
+          </button>
+        )}
         <button
           onClick={() => setActiveTab('performance')}
-          className={`py-3 px-6 whitespace-nowrap ${
+          className={`py-3 px-6 whitespace-nowrap flex items-center gap-2 ${
             activeTab === 'performance'
               ? 'text-green-400 border-b-2 border-green-400'
               : 'text-gray-400 hover:text-white'
           }`}
         >
-          {t('copytrading.performance')}
+          <BarChart3 size={18} />
+          {t('copytrading.performance') || 'Rendimiento'}
         </button>
       </div>
       
@@ -640,7 +711,103 @@ const CopytradingDashboard = () => {
           )}
         </div>
       )}
-      
+
+      {/* Mis Seguidores - Vista para Master Traders */}
+      {activeTab === 'followers' && isMasterTrader && (
+        <div className="space-y-6">
+          {/* Panel de estadísticas como Master */}
+          {traderStats && (
+            <div className="bg-gradient-to-br from-purple-900/20 to-purple-800/10 border border-purple-700/30 rounded-xl p-6 mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Crown className="text-yellow-400" size={24} />
+                <h3 className="text-xl font-semibold">Estadísticas como Master Trader</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-[#191919]/50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-400 mb-1">Total Seguidores</p>
+                  <p className="text-2xl font-bold text-purple-400">{myFollowers.length}</p>
+                </div>
+                <div className="bg-[#191919]/50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-400 mb-1">Capital Gestionado</p>
+                  <p className="text-2xl font-bold text-green-400">${traderStats.total_capital_managed?.toFixed(2) || '0.00'}</p>
+                </div>
+                <div className="bg-[#191919]/50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-400 mb-1">Performance Total</p>
+                  <p className="text-2xl font-bold text-cyan-400">{traderStats.total_performance_pct?.toFixed(1) || '0.0'}%</p>
+                </div>
+                <div className="bg-[#191919]/50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-400 mb-1">Comisiones Ganadas</p>
+                  <p className="text-2xl font-bold text-yellow-400">${traderStats.total_commissions?.toFixed(2) || '0.00'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Lista de seguidores */}
+          {myFollowers.length > 0 ? (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Users size={20} className="text-purple-400" />
+                Personas que te están copiando ({myFollowers.length})
+              </h3>
+              {myFollowers.map(follower => (
+                <div key={follower.id} className="bg-[#191919] p-6 rounded-xl border border-[#333] hover:border-purple-600/50 transition-colors">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full flex items-center justify-center text-white font-bold">
+                          {follower.follower?.name?.[0]?.toUpperCase() || 'U'}
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-medium">{follower.follower?.name || 'Usuario Anónimo'}</h4>
+                          <p className="text-sm text-gray-400">{follower.follower?.email || 'Sin email'}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        <div>
+                          <p className="text-xs text-gray-400">Cuenta MT5</p>
+                          <p className="text-sm font-medium text-cyan-400">#{follower.follower_mt5_account_id}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Risk Ratio</p>
+                          <p className="text-sm font-medium">{(follower.risk_ratio * 100).toFixed(0)}%</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Desde</p>
+                          <p className="text-sm font-medium">{new Date(follower.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Estado</p>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            follower.status === 'active'
+                              ? 'bg-green-600/20 text-green-400 border border-green-600/50'
+                              : 'bg-gray-600/20 text-gray-400 border border-gray-600/50'
+                          }`}>
+                            {follower.status === 'active' ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-[#191919] p-8 rounded-xl border border-[#333] text-center">
+              <Users size={48} className="mx-auto text-gray-600 mb-4" />
+              <p className="text-lg mb-2">Aún no tienes seguidores</p>
+              <p className="text-gray-400 mb-4">Cuando alguien comience a copiar tus operaciones, aparecerá aquí</p>
+              <div className="bg-purple-900/20 border border-purple-700/30 rounded-lg p-4 mt-4 max-w-md mx-auto">
+                <p className="text-sm text-gray-300">
+                  💡 <strong>Consejo:</strong> Mejora tu rendimiento y visibilidad para atraer más seguidores
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Modal de Selección de Cuenta */}
       <AccountSelectionModal
         isOpen={showAccountSelectionModal}
