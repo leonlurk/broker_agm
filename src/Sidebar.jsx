@@ -122,24 +122,24 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
     };
 
     const menuItems = [
-        { name: "Dashboard", translationKey: "sidebar.items.home", icon: <img src="./darhboard_alt.svg" className="w-8 h-8" /> },
-        { name: "Cuentas", translationKey: "sidebar.items.tradingAccounts", icon: <img src="./Flag_finish_alt.svg" className="w-8 h-8" alt="Cuentas" /> },
+        { name: "Dashboard", translationKey: "sidebar.items.home", icon: <img src="/darhboard_alt.svg" className="w-8 h-8" /> },
+        { name: "Cuentas", translationKey: "sidebar.items.tradingAccounts", icon: <img src="/Flag_finish_alt.svg" className="w-8 h-8" alt="Cuentas" /> },
         { name: "Wallet", translationKey: "sidebar.items.wallet", icon: <RiWalletLine className="w-8 h-8 text-white" /> },
-        { 
-            name: "Herramientas", 
+        {
+            name: "Herramientas",
             translationKey: "sidebar.tools",
-            icon: <img src="./Setting_alt_line.svg" className="w-8 h-8" alt="Herramientas" />,
+            icon: <img src="/Setting_alt_line.svg" className="w-8 h-8" alt="Herramientas" />,
             subOptions: [
                 { name: "Calculadora", translationKey: "sidebar.items.calculator" },
                 { name: "Descargas", translationKey: "sidebar.items.downloads" },
                 { name: "Noticias", translationKey: "sidebar.items.news" }
             ]
         },
-        { name: "Afiliados", translationKey: "sidebar.items.affiliates", icon: <img src="./Group_light.svg" className="w-8 h-8" alt="Afiliados" /> },
+        { name: "Afiliados", translationKey: "sidebar.items.affiliates", icon: <img src="/Group_light.svg" className="w-8 h-8" alt="Afiliados" /> },
         {
             name: "Copytrading",
             translationKey: "sidebar.copyTrading",
-            icon: <img src="./copy-linear.svg" className="w-8 h-8" alt="Copytrading" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z'/%3E%3C/svg%3E"} />,
+            icon: <img src="/copy-linear.svg" className="w-8 h-8" alt="Copytrading" onError={(e) => e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z'/%3E%3C/svg%3E"} />,
             subOptions: [
                 { name: "Inversor", translationKey: "sidebar.items.investor" },
                 { name: "Gestor", translationKey: "sidebar.items.manager" }
@@ -148,7 +148,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
         {
             name: "Pamm",
             translationKey: "sidebar.pamm",
-            icon: <img src="./elements.svg" className="w-8 h-8" alt="Pamm" />,
+            icon: <img src="/elements.svg" className="w-8 h-8" alt="Pamm" />,
             subOptions: [
                 { name: "Inversor", translationKey: "sidebar.items.pammInvestor" },
                 { name: "Gestor", translationKey: "sidebar.items.pammManager" }
@@ -249,13 +249,13 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                                             let icon;
                                             switch(subOption.name) {
                                                 case "Calculadora":
-                                                    icon = <img src="./Calculadora2.svg" alt="Calculadora" />;
+                                                    icon = <img src="/Calculadora2.svg" alt="Calculadora" />;
                                                     break;
                                                 case "Descargas":
-                                                    icon = <img src="./load_light.svg" alt="Descargas" />;
+                                                    icon = <img src="/load_light.svg" alt="Descargas" />;
                                                     break;
                                                 case "Noticias":
-                                                    icon = <img src="./Book_open.svg" alt="Noticias" />;
+                                                    icon = <img src="/Book_open.svg" alt="Noticias" />;
                                                     break;
                                                 case "Inversor":
                                                     icon = <RiShieldLine className="text-white" />;
@@ -345,12 +345,12 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                     </button>
                     <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : 'my-4'}`}></div>
                     
-                    <button onClick={handleLogout} 
+                    <button onClick={handleLogout}
                         className={`w-full bg-transparent flex items-center space-x-2 py-2.5 px-4 text-gray-300 hover:bg-gray-700 rounded-lg
                                    ${isMobile ? 'mb-4 text-base' : 'mb-6 text-lg'}`}
                         style={{ outline: 'none' }}
                     >
-                        <img src="./Sign_out_circle_light.svg" className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} alt="Logout" />
+                        <img src="/Sign_out_circle_light.svg" className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} alt="Logout" />
                         <span>{t('common:buttons.logout')}</span>
                     </button>
                 </div>
