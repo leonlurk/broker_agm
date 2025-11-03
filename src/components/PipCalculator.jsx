@@ -436,21 +436,108 @@ const PipCalculator = () => {
     switch (type) {
       case 'forex':
         const [base, quote] = instrumentValue.split('/');
-        let pipMultiplier = 0.0001; // Standard for most Forex pairs
+        let pipMultiplier = 0.0001; // Standard for most Forex pairs (4th decimal)
         if (quote && quote.toUpperCase() === 'JPY') {
           pipMultiplier = 0.01; // JPY pairs have 2 decimal places for pips
         }
         return { pipMultiplier: pipMultiplier, contractSize: 100000, currency: quote, displayUnit: 'pip' };
+
       case 'stocks':
-        // For stocks, 1 "pip" or "point" is typically 1 unit of the quote currency.
+        // For stocks, 1 "point" is typically 1 unit of the quote currency.
         // Contract size typically 1 share for CFD, or 100 shares for standard lots.
         // This is a simplification. Real stock pip/tick values vary per stock and broker.
         return { pipMultiplier: 1, contractSize: 1, currency: 'USD', displayUnit: 'point' }; // Assuming USD stocks
+
       case 'crypto':
         // For crypto, a "tick" value depends on the specific crypto and exchange.
         // This is a simplification. Actual crypto tick values can vary (e.g., BTC $0.01, ETH $0.10).
         const [, cryptoQuote] = instrumentValue.split('/');
         return { pipMultiplier: 1, contractSize: 1, currency: cryptoQuote || 'USD', displayUnit: 'tick' }; // Default to USD if quote not found
+
+      case 'metal':
+        // Metals have specific contract sizes and pip values
+        // Reference: https://www.mql5.com/en/forum/129584
+        const metalSymbol = instrumentValue.split('/')[0]; // e.g., "XAU" from "XAU/USD"
+
+        switch (metalSymbol) {
+          case 'XAU': // Gold
+            // 1 lot = 100 troy ounces
+            // 1 pip = $0.01 movement (4th-5th decimal: 2000.00 → 2000.01)
+            // Value of 1 pip with 1 lot = 100 × $0.01 = $1
+            // Example: 1000 pips × 0.12 lots = $120
+            return { pipMultiplier: 0.01, contractSize: 100, currency: 'USD', displayUnit: 'pip' };
+
+          case 'XAG': // Silver
+            // 1 lot = 5000 troy ounces
+            // 1 pip = $0.001 movement (4th decimal: 25.000 → 25.001)
+            // Value of 1 pip with 1 lot = 5000 × $0.001 = $5
+            return { pipMultiplier: 0.001, contractSize: 5000, currency: 'USD', displayUnit: 'pip' };
+
+          case 'XPT': // Platinum
+            // 1 lot = 100 troy ounces
+            // 1 pip = $0.01 movement
+            // Value of 1 pip with 1 lot = 100 × $0.01 = $1
+            return { pipMultiplier: 0.01, contractSize: 100, currency: 'USD', displayUnit: 'pip' };
+
+          case 'XPD': // Palladium
+            // 1 lot = 100 troy ounces
+            // 1 pip = $0.01 movement
+            // Value of 1 pip with 1 lot = 100 × $0.01 = $1
+            return { pipMultiplier: 0.01, contractSize: 100, currency: 'USD', displayUnit: 'pip' };
+
+          case 'XCU': // Copper
+            // 1 lot = 1000 pounds
+            // 1 pip = $0.0001 movement
+            // Value of 1 pip with 1 lot = 1000 × $0.0001 = $0.10
+            return { pipMultiplier: 0.0001, contractSize: 1000, currency: 'USD', displayUnit: 'pip' };
+
+          default:
+            // Default for unknown metals (same as gold)
+            return { pipMultiplier: 0.01, contractSize: 100, currency: 'USD', displayUnit: 'pip' };
+        }
+
+      case 'index':
+        // Indices are measured in points, not pips
+        // Value per point varies by broker and contract specification
+        // These are typical CFD values for 1 standard lot
+        switch (instrumentValue) {
+          case 'SPX500': // S&P 500
+            // Typical: $10 per point with 1 lot
+            return { pipMultiplier: 1, contractSize: 10, currency: 'USD', displayUnit: 'point' };
+
+          case 'US30': // Dow Jones
+            // Typical: $1 per point with 1 lot
+            return { pipMultiplier: 1, contractSize: 1, currency: 'USD', displayUnit: 'point' };
+
+          case 'NAS100': // NASDAQ 100
+            // Typical: $1 per point with 1 lot
+            return { pipMultiplier: 1, contractSize: 1, currency: 'USD', displayUnit: 'point' };
+
+          case 'GER30': // DAX 30
+            // Typical: €1 per point with 1 lot
+            return { pipMultiplier: 1, contractSize: 1, currency: 'EUR', displayUnit: 'point' };
+
+          case 'UK100': // FTSE 100
+            // Typical: £1 per point with 1 lot
+            return { pipMultiplier: 1, contractSize: 1, currency: 'GBP', displayUnit: 'point' };
+
+          case 'JPN225': // Nikkei 225
+            // Typical: ¥100 per point with 1 lot
+            return { pipMultiplier: 1, contractSize: 100, currency: 'JPY', displayUnit: 'point' };
+
+          case 'FRA40': // CAC 40
+            // Typical: €1 per point with 1 lot
+            return { pipMultiplier: 1, contractSize: 1, currency: 'EUR', displayUnit: 'point' };
+
+          case 'AUS200': // ASX 200
+            // Typical: A$1 per point with 1 lot
+            return { pipMultiplier: 1, contractSize: 1, currency: 'AUD', displayUnit: 'point' };
+
+          default:
+            // Default for unknown indices
+            return { pipMultiplier: 1, contractSize: 1, currency: 'USD', displayUnit: 'point' };
+        }
+
       default:
         return { pipMultiplier: 0.0001, contractSize: 100000, currency: 'USD', displayUnit: 'pip' }; // Default Forex values
     }
@@ -836,7 +923,7 @@ const PipCalculator = () => {
                 {instrumentType === 'forex' && t('pipCalculator.quantities.pips')}
                 {instrumentType === 'stocks' && t('pipCalculator.quantities.points')}
                 {instrumentType === 'crypto' && t('pipCalculator.quantities.ticks')}
-                {instrumentType === 'metal' && t('pipCalculator.quantities.points')}
+                {instrumentType === 'metal' && t('pipCalculator.quantities.pips')}
                 {instrumentType === 'index' && t('pipCalculator.quantities.points')}
               </h2>
               <div className="relative">
