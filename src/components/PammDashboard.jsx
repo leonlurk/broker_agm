@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
-import { getPammFunds, getMyFunds, leavePammFund } from '../services/pammService';
+import { getPammFunds, getMyFunds, leavePammFund, joinPammFund } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
 import RetirarPAMMModal from './RetirarPAMMModal';
 import { useAccounts } from '../contexts/AccountsContext';
@@ -39,6 +39,12 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
     
     // Fund Profile states
     const [activeTab, setActiveTab] = useState('performance');
+
+    // Investment Modal states
+    const [showInvertirModal, setShowInvertirModal] = useState(false);
+    const [selectedFundForInvest, setSelectedFundForInvest] = useState(null);
+    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+    const [selectedFundForWithdraw, setSelectedFundForWithdraw] = useState(null);
 
     // Efecto para hacer scroll hacia arriba cuando cambie la vista
     useEffect(() => {
@@ -141,10 +147,9 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
         if (investedFunds.has(fund.id)) {
             return; // Ya está invertido
         }
-        console.log('Investing in fund:', fund.name);
-        // Simular inversión exitosa
-        setInvestedFunds(prev => new Set([...prev, fund.id]));
-        // Aquí iría la lógica para abrir el modal de inversión PAMM
+        console.log('Opening investment modal for fund:', fund.name);
+        setSelectedFundForInvest(fund);
+        setShowInvertirModal(true);
     };
 
     const handleWithdrawFromFund = (fund) => {
@@ -162,7 +167,8 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
                 return newSet;
             });
             // Recargar mis fondos
-            loadMyFunds();
+            const updatedFunds = await getMyFunds();
+            setMyFunds(updatedFunds);
             setShowWithdrawModal(false);
             setSelectedFundForWithdraw(null);
         } catch (error) {
@@ -225,11 +231,67 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
         />;
     }
 
-    // Fallback
+    // Fallback with modals
     return (
-        <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333]">
-            <p className="text-gray-400">{t('pamm.errors.viewNotFound')}</p>
-        </div>
+        <>
+            <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333]">
+                <p className="text-gray-400">{t('pamm.errors.viewNotFound')}</p>
+            </div>
+
+            {/* Modal de Invertir en PAMM */}
+            <InvertirPAMMModal
+                isOpen={showInvertirModal}
+                onClose={() => {
+                    setShowInvertirModal(false);
+                    setSelectedFundForInvest(null);
+                }}
+                gestor={selectedFundForInvest}
+                onConfirm={async (formData) => {
+                    try {
+                        if (!selectedFundForInvest) {
+                            alert('Error: No se seleccionó ningún fondo');
+                            return;
+                        }
+
+                        // Usar joinPammFund para PAMM (no followMaster que es para copy trading)
+                        const response = await joinPammFund(
+                            selectedFundForInvest.id || selectedFundForInvest.fund_id,
+                            parseInt(formData.cuentaMT5Seleccionada || formData.accountId),
+                            parseFloat(formData.montoInversion || formData.invested_amount)
+                        );
+
+                        if (response.message || response.investment) {
+                            alert('¡Inversión realizada exitosamente en el fondo PAMM!');
+                            setShowInvertirModal(false);
+                            setSelectedFundForInvest(null);
+
+                            // Marcar fondo como invertido
+                            setInvestedFunds(prev => new Set([...prev, selectedFundForInvest.id]));
+
+                            // Recargar mis fondos
+                            const updatedFunds = await getMyFunds();
+                            setMyFunds(updatedFunds);
+                        } else {
+                            throw new Error(response.error || 'Error al invertir en el fondo PAMM');
+                        }
+                    } catch (error) {
+                        console.error('Error invirtiendo en PAMM:', error);
+                        alert('Error al invertir: ' + (error.message || 'Error desconocido'));
+                    }
+                }}
+            />
+
+            {/* Modal de Retirar de PAMM */}
+            <RetirarPAMMModal
+                isOpen={showWithdrawModal}
+                onClose={() => {
+                    setShowWithdrawModal(false);
+                    setSelectedFundForWithdraw(null);
+                }}
+                fund={selectedFundForWithdraw}
+                onConfirm={handleConfirmWithdraw}
+            />
+        </>
     );
 };
 

@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
 import { X, DollarSign, AlertTriangle, TrendingUp, Calendar, Bell, Shield } from 'lucide-react';
+import { useAccounts } from '../contexts/AccountsContext';
 
 const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
+  const { getAllAccounts } = useAccounts();
+  const accounts = getAllAccounts();
+  const realAccounts = accounts.filter(acc =>
+    acc.account_type === 'Real' ||
+    acc.accountType === 'Real' ||
+    acc.account_type === 'real' ||
+    acc.accountType === 'real'
+  );
+
   const [formData, setFormData] = useState({
     montoInversion: 5000,
+    cuentaMT5Seleccionada: realAccounts[0]?.login || '',
     tipoInversion: 'Fija',
     periodoInversion: '3 meses',
     reinvertirGanancias: true,
@@ -38,8 +49,12 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.montoInversion || formData.montoInversion < (gestor?.inversionMinima || 1000)) {
-      newErrors.montoInversion = `El monto mínimo es $${gestor?.inversionMinima || 1000}`;
+    if (!formData.montoInversion || formData.montoInversion < (gestor?.inversionMinima || gestor?.min_investment || 1000)) {
+      newErrors.montoInversion = `El monto mínimo es $${gestor?.inversionMinima || gestor?.min_investment || 1000}`;
+    }
+
+    if (!formData.cuentaMT5Seleccionada) {
+      newErrors.cuentaMT5Seleccionada = 'Debes seleccionar una cuenta MT5';
     }
 
     if (!formData.limiteRiesgo || formData.limiteRiesgo < 5 || formData.limiteRiesgo > 100) {
@@ -156,6 +171,31 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
                   <p className="text-red-400 text-sm flex items-center gap-1">
                     <AlertTriangle size={14} />
                     {errors.montoInversion}
+                  </p>
+                )}
+              </div>
+
+              {/* Cuenta MT5 */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Cuenta MT5 para Invertir
+                </label>
+                <select
+                  value={formData.cuentaMT5Seleccionada}
+                  onChange={(e) => handleInputChange('cuentaMT5Seleccionada', e.target.value)}
+                  className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#333] rounded-lg text-white placeholder-gray-500 focus:border-green-500 focus:outline-none"
+                >
+                  <option value="">Selecciona una cuenta MT5</option>
+                  {realAccounts.map((account) => (
+                    <option key={account.login} value={account.login}>
+                      {account.login} - {account.name || 'Cuenta Real'} (Balance: ${account.balance || 0})
+                    </option>
+                  ))}
+                </select>
+                {errors.cuentaMT5Seleccionada && (
+                  <p className="text-red-400 text-sm flex items-center gap-1">
+                    <AlertTriangle size={14} />
+                    {errors.cuentaMT5Seleccionada}
                   </p>
                 )}
               </div>
