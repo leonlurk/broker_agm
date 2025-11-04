@@ -84,6 +84,8 @@
       "since": "Desde",
       "becomeMasterTrader": "Convertirse en Master Trader",
       "becomeMasterDescription": "Permite que otros usuarios copien tus operaciones y genera comisiones",
+      "noMasterAccountYet": "Aún no tienes una cuenta master configurada",
+      "configureMasterDescription": "Configura tu cuenta MT5 como master trader para que otros usuarios puedan copiar tus operaciones y comiences a generar comisiones",
       "masterAccountTitle": "Cuenta MT5 Master",
       "masterAccountDescription": "Selecciona la cuenta MT5 que quieres publicar como cuenta master para que otros usuarios puedan copiar",
       "selectMT5Account": "Selecciona una cuenta MT5",

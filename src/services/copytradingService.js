@@ -196,7 +196,7 @@ export const getCopyStats = async () => {
  */
 export const configureMaster = async (masterData) => {
   try {
-    const response = await logicApiClient.post('/api/v1/copy/configure-master', {
+    const payload = {
       master_mt5_account: masterData.cuentaMT5Seleccionada,
       strategy_name: masterData.nombreEstrategia,
       description: masterData.descripcionEstrategia,
@@ -208,9 +208,18 @@ export const configureMaster = async (masterData) => {
       min_capital: masterData.capitalMinimo,
       max_followers: masterData.maximoSeguidores,
       experience_level: masterData.experienciaRequerida
-    });
+    };
+
+    console.log('[configureMaster] Sending payload to backend:', payload);
+    console.log('[configureMaster] Full form data received:', masterData);
+
+    const response = await logicApiClient.post('/api/v1/copy/configure-master', payload);
+
+    console.log('[configureMaster] Backend response:', response.data);
     return response.data;
   } catch (error) {
+    console.error('[configureMaster] Error:', error);
+    console.error('[configureMaster] Error response:', error.response?.data);
     throw error.response?.data || { error: 'Error al configurar como master trader' };
   }
 };

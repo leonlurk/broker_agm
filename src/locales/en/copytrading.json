@@ -85,6 +85,8 @@
       "tryAdjustingFilters": "Try adjusting the search filters",
       "becomeMasterTrader": "Become Master Trader",
       "becomeMasterDescription": "Allow other users to copy your trades and earn commissions",
+      "noMasterAccountYet": "You don't have a master account configured yet",
+      "configureMasterDescription": "Configure your MT5 account as a master trader so other users can copy your trades and you can start earning commissions",
       "masterAccountTitle": "Master MT5 Account",
       "masterAccountDescription": "Select the MT5 account you want to publish as master account for others to copy",
       "selectMT5Account": "Select an MT5 Account",
