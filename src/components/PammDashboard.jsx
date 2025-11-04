@@ -426,7 +426,7 @@ const PammDashboardView = ({
                     <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
                         <p className="text-gray-400 text-xs mb-2 uppercase tracking-wide">Fondos Activos</p>
                         <div className="flex items-center gap-2">
-                            <p className="text-2xl font-bold text-white">{portfolioData.active_funds || investedFunds.length || 0}</p>
+                            <p className="text-2xl font-bold text-white">{portfolioData.active_funds || investedFundsArray.length || 0}</p>
                             <Users size={20} className="text-cyan-500" />
                         </div>
                     </div>
@@ -437,14 +437,14 @@ const PammDashboardView = ({
             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-semibold text-cyan-400">{t('pamm.myFunds')}</h2>
-                    {investedFunds.length > 0 && (
+                    {investedFundsArray.length > 0 && (
                         <span className="text-sm text-gray-400">
-                            {investedFunds.length} {investedFunds.length === 1 ? 'fondo activo' : 'fondos activos'}
+                            {investedFundsArray.length} {investedFundsArray.length === 1 ? 'fondo activo' : 'fondos activos'}
                         </span>
                     )}
                 </div>
 
-                {investedFunds.length === 0 ? (
+                {investedFundsArray.length === 0 ? (
                     /* Empty State */
                     <div className="text-center py-12">
                         <div className="w-20 h-20 bg-[#333] rounded-full flex items-center justify-center mx-auto mb-4">
