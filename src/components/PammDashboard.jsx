@@ -337,6 +337,8 @@ const PammDashboardView = ({
     formatPercentage,
     formatAUM,
     onExploreFunds,
+    chartPeriod,
+    setChartPeriod,
     onViewFundDetails,
     handleWithdrawFromFund,
     t,
