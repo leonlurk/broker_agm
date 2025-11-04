@@ -63,11 +63,9 @@ const AfiliadosDashboard = () => {
         if (currentUser && currentUser.id) {
           setUserId(currentUser.id);
           setReferralLink(`https://agm-broker.com/register?ref=${currentUser.id}`);
-          
-          // Load affiliate statistics
-          await loadAffiliateStats();
-          await loadActiveAccounts();
-          await loadPaymentHistory();
+
+          // Statistics are loaded via separate useEffect hooks below
+          // loadAffiliateStats, loadActiveAccounts, loadPaymentHistory
         } else if (currentUser === null) {
           // Solo mostrar error si currentUser es explícitamente null (no autenticado)
           setError(t('dashboard.messages.notAuthenticated'));
