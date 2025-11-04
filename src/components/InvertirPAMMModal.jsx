@@ -5,12 +5,25 @@ import { useAccounts } from '../contexts/AccountsContext';
 const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
   const { getAllAccounts } = useAccounts();
   const accounts = getAllAccounts();
-  const realAccounts = accounts.filter(acc =>
-    acc.account_type === 'Real' ||
-    acc.accountType === 'Real' ||
-    acc.account_type === 'real' ||
-    acc.accountType === 'real'
-  );
+
+  // Normalize accounts to ensure they have login field
+  const normalizeAccount = (acc) => ({
+    ...acc,
+    login: acc.login || acc.account_number || acc.accountNumber || acc.id,
+    name: acc.name || acc.account_name || 'Cuenta Real'
+  });
+
+  const realAccounts = accounts
+    .filter(acc =>
+      acc.account_type === 'Real' ||
+      acc.accountType === 'Real' ||
+      acc.account_type === 'real' ||
+      acc.accountType === 'real'
+    )
+    .map(normalizeAccount);
+
+  console.log('[InvertirPAMMModal] All accounts:', accounts);
+  console.log('[InvertirPAMMModal] Normalized real accounts:', realAccounts);
 
   const [formData, setFormData] = useState({
     montoInversion: 5000,
