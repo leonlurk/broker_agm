@@ -68,17 +68,22 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
   const [sortBy, setSortBy] = useState('investment'); // investment, performance, date
   const [showInvestorActions, setShowInvestorActions] = useState({});
 
-  useEffect(() => {
-    const fetchTraderData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+  // Función para cargar datos del trader (extraída para poder reutilizarla)
+  const fetchTraderData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
 
-        // Cargar estadísticas del trader y seguidores en paralelo
-        const [statsData, followersData] = await Promise.all([
-          getTraderStats().catch(() => null),
-          getFollowers().catch(() => [])
-        ]);
+      console.log('[Gestor] Fetching trader data...');
+
+      // Cargar estadísticas del trader y seguidores en paralelo
+      const [statsData, followersData] = await Promise.all([
+        getTraderStats().catch(() => null),
+        getFollowers().catch(() => [])
+      ]);
+
+      console.log('[Gestor] Stats data received:', statsData);
+      console.log('[Gestor] Followers data received:', followersData);
 
         // Actualizar estadísticas del trader
         if (statsData) {
@@ -129,19 +134,22 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
 
             setInvestors(formattedInvestors);
           }
-        } else {
-          setIsMasterTrader(false);
-        }
-
-      } catch (err) {
-        console.error('Error loading trader data:', err);
-        setError('No se pudieron cargar los datos.');
+      } else {
+        console.log('[Gestor] No stats data received, user is not a master trader');
         setIsMasterTrader(false);
-      } finally {
-        setIsLoading(false);
       }
-    };
 
+    } catch (err) {
+      console.error('[Gestor] Error loading trader data:', err);
+      setError('No se pudieron cargar los datos.');
+      setIsMasterTrader(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
     fetchTraderData();
   }, []);
 
@@ -516,12 +524,22 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
 
 
         {/* Modal de Configurar Gestor */}
-        <ConfigurarGestorModal 
+        <ConfigurarGestorModal
           isOpen={showConfigurarModal}
           onClose={() => setShowConfigurarModal(false)}
-          onConfirm={(formData) => {
-            console.log('Perfil de gestor configurado:', formData);
+          onConfirm={async (formData) => {
+            console.log('[Gestor] Perfil de gestor configurado:', formData);
             setShowConfigurarModal(false);
+
+            // Esperar un momento para que el backend procese la configuración
+            console.log('[Gestor] Waiting 2 seconds before refreshing data...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Recargar los datos del trader para mostrar la cuenta master configurada
+            console.log('[Gestor] Refreshing trader data after configuration...');
+            await fetchTraderData();
+
+            toast.success('Cuenta master configurada exitosamente');
           }}
         />
       </div>
