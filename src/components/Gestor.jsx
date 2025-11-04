@@ -90,12 +90,14 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           console.log('[Gestor] Checking if user is master trader...', {
             hasStatsData: !!statsData,
             hasMasterConfig: !!statsData.master_config,
+            hasMasterTrader: !!statsData.master_trader,
             hasOverview: !!statsData.overview,
-            isConfigured: statsData.is_configured || statsData.master_config?.is_active
+            isConfigured: statsData.is_configured
           });
 
           // Verificar si realmente está configurado como master trader
-          const isMaster = !!(statsData.master_config || statsData.is_configured);
+          // Ahora el backend devuelve is_configured: true/false de forma explícita
+          const isMaster = statsData.is_configured === true;
           setIsMasterTrader(isMaster);
 
           console.log('[Gestor] User is master trader:', isMaster);
