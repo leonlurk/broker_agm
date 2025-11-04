@@ -134,8 +134,21 @@ export const joinPammFund = async (fundId, mt5AccountId, investedAmount) => {
   } catch (error) {
     console.error('[pammService] joinPammFund error:', error.response?.data || error.message);
     const errorData = error.response?.data || { error: 'Error al unirse al fondo PAMM' };
+
+    // Extract error message - handle both string and object errors
+    let errorMessage = 'Error al unirse al fondo PAMM';
+    if (typeof errorData.error === 'string') {
+      errorMessage = errorData.error;
+    } else if (typeof errorData.message === 'string') {
+      errorMessage = errorData.message;
+    } else if (errorData.error && typeof errorData.error.message === 'string') {
+      errorMessage = errorData.error.message;
+    } else if (errorData.error && typeof errorData.error === 'object') {
+      errorMessage = JSON.stringify(errorData.error);
+    }
+
     // Return error object instead of throwing to allow modal to handle it
-    return { success: false, error: errorData.error || errorData.message || 'Error al unirse al fondo PAMM' };
+    return { success: false, error: errorMessage };
   }
 };
 

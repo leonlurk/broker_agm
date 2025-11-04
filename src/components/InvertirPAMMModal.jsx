@@ -14,7 +14,7 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
 
   const [formData, setFormData] = useState({
     montoInversion: 5000,
-    cuentaMT5Seleccionada: realAccounts[0]?.login || '',
+    cuentaMT5Seleccionada: realAccounts[0]?.login?.toString() || '',
     tipoInversion: 'Fija',
     periodoInversion: '3 meses',
     reinvertirGanancias: true,
@@ -34,11 +34,13 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
   const condicionesRetiroDisponibles = ['Al finalizar periodo', 'En cualquier momento'];
 
   const handleInputChange = (field, value) => {
+    console.log('[InvertirPAMMModal] Input change:', { field, value, type: typeof value });
+
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
-    
+
     // Limpiar error del campo cuando el usuario empiece a escribir
     if (errors[field]) {
       setErrors(prev => ({
