@@ -510,5 +510,30 @@
     "performanceChart": "Gráfico de Rendimiento",
     "comments": "Comentarios",
     "rating": "Calificación"
+  },
+  "comments": {
+    "title": "Comentarios y Calificación",
+    "addComment": "Agregar Comentario",
+    "yourRating": "Tu Calificación",
+    "rateTrader": "Califica a este trader",
+    "writeComment": "Escribe tu comentario...",
+    "yourComment": "Tu comentario",
+    "shareExperience": "Comparte tu experiencia con este trader",
+    "submit": "Enviar",
+    "cancel": "Cancelar",
+    "noComments": "Aún no hay comentarios",
+    "beFirst": "Sé el primero en comentar",
+    "commentSubmitted": "Comentario enviado exitosamente",
+    "errorSubmitting": "Error al enviar comentario",
+    "invalidRating": "Por favor selecciona una calificación",
+    "commentRequired": "El comentario es requerido",
+    "allComments": "Todos los Comentarios",
+    "mostRecent": "Más Recientes",
+    "topRated": "Mejor Calificados",
+    "verified": "Verificado",
+    "days": "días",
+    "months": "meses",
+    "years": "años",
+    "ago": "atrás"
   }
 }

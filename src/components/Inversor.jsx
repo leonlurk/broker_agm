@@ -118,19 +118,55 @@ const Inversor = () => {
 
         // Formatear los traders para el componente
         const formattedTraders = tradersData.map(trader => ({
+          // IDs y básicos
           id: trader.id,
           name: trader.name || trader.username || 'Trader',
+          nombre: trader.name || trader.username || 'Trader', // Alias para compatibilidad
           avatar: trader.photo_url || '/Avatar1.png',
+
+          // Performance y métricas principales
           monthlyPerformance: trader.performance?.monthly_pnl_percentage || 0,
-          riskLevel: trader.risk_level || 'Moderado',
-          aum: trader.aum || 0,
-          followers: trader.follower_count || 0,
-          maxDrawdown: trader.max_drawdown || 0,
+          totalProfitabilityPercent: trader.performance?.total_pnl_percentage || trader.performance?.monthly_pnl_percentage || 0,
+          totalProfitabilityValue: trader.performance?.total_pnl || 0,
+
+          // Estadísticas de trading
           winRate: trader.win_rate || 0,
+          totalTrades: trader.total_trades || trader.operations_count || 0,
+          winningTrades: trader.winning_trades || Math.floor((trader.total_trades || 0) * ((trader.win_rate || 0) / 100)),
+
+          // Seguidores y capital
+          followers: trader.follower_count || 0,
+          followersChangePercent: trader.followers_change_percentage || 0,
+          aum: trader.aum || 0,
+          managedCapital: trader.aum || trader.managed_capital || 0,
+
+          // Riesgo y drawdown
+          riskLevel: trader.risk_level || 'Moderado',
+          maxDrawdown: trader.max_drawdown || 0,
+
+          // Información de cuenta
+          accountNumber: trader.mt5_account || trader.account_number || 'N/A',
+          server: trader.server || 'MT5',
+          accountType: trader.account_type || 'CopyFX MT5 Prime',
+          balance: trader.balance || 0,
+          leverage: trader.leverage || 300,
+
+          // Estrategia y configuración
+          strategy: trader.strategy || trader.strategy_name || 'N/A',
+          strategyName: trader.strategy_name || trader.strategy || 'N/A',
+          minDeposit: trader.min_deposit || trader.min_capital || 100,
+          commissionType: trader.commission_type || trader.commission_rate ? `${trader.commission_rate}%` : '20%',
+          paymentFrequency: trader.payment_frequency || '1 semana',
+          copyMode: trader.copy_mode || 'Proporcional',
+
+          // Otros
           avgHoldTime: trader.avg_hold_time || 'N/A',
           rating: trader.rating || 0,
-          strategy: trader.strategy || 'N/A',
-          isVerified: trader.is_verified || false
+          isVerified: trader.is_verified || false,
+          verified: trader.is_verified || false, // Alias para compatibilidad
+          activeSince: trader.active_since || trader.created_at ?
+            Math.floor((Date.now() - new Date(trader.created_at).getTime()) / (1000 * 60 * 60 * 24)) + ' días' :
+            'N/A'
         }));
 
         console.log('[Inversor] Formatted traders:', formattedTraders);
@@ -457,6 +493,93 @@ const Inversor = () => {
   const PIE_COLORS = ['#0e7490', '#2563eb', '#7c3aed', '#dc2626', '#059669', '#d97706'];
 
   if (view === 'dashboard') {
+    // Skeleton Loading
+    if (isLoadingTraders) {
+      return (
+        <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333]">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+              <div className="flex-1">
+                <h1 className="text-3xl font-semibold mb-3">{t('copyTrading.dashboard')}</h1>
+                <div className="space-y-2">
+                  <p className="text-gray-300 font-medium">{t('copyTrading.title')}</p>
+                  <p className="text-gray-400 max-w-2xl">
+                    {t('copyTrading.description')}
+                  </p>
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                <button
+                  className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-3 px-8 rounded-xl opacity-50 cursor-not-allowed text-lg font-medium flex items-center gap-2"
+                  disabled
+                >
+                  <Eye size={20} />
+                  {t('copyTrading.investor.exploreTraders')}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Portfolio Widget Skeleton */}
+          <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6 animate-pulse">
+            <div className="h-6 bg-[#333] rounded w-40 mb-4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="text-center md:text-left">
+                  <div className="h-4 bg-[#333] rounded w-32 mb-2"></div>
+                  <div className="h-8 bg-[#333] rounded w-40"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Copied Traders Widget Skeleton */}
+          <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6 animate-pulse">
+            <div className="h-6 bg-[#333] rounded w-48 mb-4"></div>
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-[#1C1C1C] rounded-xl border border-[#333] p-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-[#333] rounded-full"></div>
+                      <div>
+                        <div className="h-5 bg-[#333] rounded w-32 mb-2"></div>
+                        <div className="h-4 bg-[#333] rounded w-24"></div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 bg-[#333] rounded w-32"></div>
+                      <div className="h-8 bg-[#333] rounded w-20"></div>
+                      <div className="h-10 bg-[#333] rounded w-24"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Historical Chart Widget Skeleton */}
+          <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6 animate-pulse">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+              <div className="h-6 bg-[#333] rounded w-56 mb-4 sm:mb-0"></div>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-8 bg-[#333] rounded w-12"></div>
+                ))}
+              </div>
+            </div>
+            <div className="h-64 bg-[#333] rounded"></div>
+          </div>
+
+          {/* CTA Button Skeleton */}
+          <div className="text-center">
+            <div className="h-12 bg-[#333] rounded-xl w-64 mx-auto animate-pulse"></div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <>
       <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333]">
@@ -1012,82 +1135,125 @@ const Inversor = () => {
           </button>
         </div>
 
-        {/* Trader Info Header */}
-        <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
+        {/* Trader Info Header - Enhanced with animations */}
+        <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6 animate-fadeIn">
           <div className="flex flex-col lg:flex-row items-center gap-6">
             {/* Avatar and Basic Info */}
             <div className="flex flex-col items-center text-center lg:text-left">
-              <div className="w-24 h-24 bg-cyan-500 rounded-full flex items-center justify-center relative mb-4">
-                <span className="text-white font-bold text-2xl">{(selectedTrader.name || 'T').charAt(0)}</span>
+              <div className="w-24 h-24 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-full flex items-center justify-center relative mb-4 shadow-lg shadow-cyan-500/50 ring-4 ring-cyan-500/20 transition-transform hover:scale-105">
+                <span className="text-white font-bold text-2xl">{(selectedTrader.name || 'T').charAt(0).toUpperCase()}</span>
                 {(selectedTrader.isVerified) && (
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
                     <Shield size={16} className="text-white" />
                   </div>
                 )}
               </div>
-              <h1 className="text-2xl font-bold mb-2">{selectedTrader.name || 'Trader'}</h1>
-              <p className="text-gray-400 mb-3">{selectedTrader.strategy || 'Estrategia no disponible'}</p>
-              <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold mb-2 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                {selectedTrader.name || 'Trader'}
+              </h1>
+              <p className="text-gray-400 mb-2 text-sm">{selectedTrader.strategy || 'Estrategia no disponible'}</p>
+              <div className="flex items-center gap-2 mb-2">
                 <div className="flex items-center gap-1">{renderStarRating(Math.floor(selectedTrader.rating || 0))}</div>
-                <span className="text-sm text-gray-400">({selectedTrader.rating || 0}/5)</span>
+                <span className="text-sm text-gray-400">({(selectedTrader.rating || 0).toFixed(1)}/5)</span>
+              </div>
+              {/* Active Since Badge */}
+              <div className="flex items-center gap-2 text-xs text-gray-500 bg-[#1C1C1C] px-3 py-1 rounded-full border border-[#333]">
+                <Calendar size={12} />
+                <span>Activo {selectedTrader.activeSince || 'N/A'}</span>
               </div>
             </div>
 
-            {/* Key Metrics */}
+            {/* Key Metrics - Enhanced Cards */}
             <div className="flex-1 w-full">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="text-center lg:text-left">
-                  <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.performance')}</p>
-                  <p className={`text-xl font-bold ${(selectedTrader.monthlyPerformance || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {/* Performance Card */}
+                <div className="bg-gradient-to-br from-[#1C1C1C] to-[#252525] p-4 rounded-xl border border-[#333] hover:border-cyan-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10 group">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp size={16} className="text-cyan-400 group-hover:scale-110 transition-transform" />
+                    <p className="text-xs text-gray-400">{t('copyTrading.stats.performance')}</p>
+                  </div>
+                  <p className={`text-2xl font-bold ${(selectedTrader.monthlyPerformance || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {formatPercentage(selectedTrader.monthlyPerformance || 0)}
                   </p>
+                  <p className="text-xs text-gray-500 mt-1">Mensual</p>
                 </div>
-                <div className="text-center lg:text-left">
-                  <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.followers')}</p>
-                  <p className="text-xl font-bold text-white">{selectedTrader.followers || 0}</p>
+
+                {/* Followers Card */}
+                <div className="bg-gradient-to-br from-[#1C1C1C] to-[#252525] p-4 rounded-xl border border-[#333] hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 group">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users size={16} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                    <p className="text-xs text-gray-400">{t('copyTrading.stats.followers')}</p>
+                  </div>
+                  <p className="text-2xl font-bold text-white">{selectedTrader.followers || 0}</p>
+                  <p className="text-xs text-gray-500 mt-1">Seguidores</p>
                 </div>
-                <div className="text-center lg:text-left">
-                  <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.aum')}</p>
-                  <p className="text-xl font-bold text-white">{formatAUM(selectedTrader.aum || 0)}</p>
+
+                {/* AUM Card */}
+                <div className="bg-gradient-to-br from-[#1C1C1C] to-[#252525] p-4 rounded-xl border border-[#333] hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 group">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign size={16} className="text-purple-400 group-hover:scale-110 transition-transform" />
+                    <p className="text-xs text-gray-400">{t('copyTrading.stats.aum')}</p>
+                  </div>
+                  <p className="text-2xl font-bold text-white">{formatAUM(selectedTrader.aum || 0)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Capital Gestionado</p>
                 </div>
-                <div className="text-center lg:text-left">
-                  <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.drawdown')}</p>
-                  <p className="text-xl font-bold text-red-400">-{selectedTrader.maxDrawdown || 0}%</p>
+
+                {/* Drawdown Card */}
+                <div className="bg-gradient-to-br from-[#1C1C1C] to-[#252525] p-4 rounded-xl border border-[#333] hover:border-red-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-red-500/10 group">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingDown size={16} className="text-red-400 group-hover:scale-110 transition-transform" />
+                    <p className="text-xs text-gray-400">{t('copyTrading.stats.drawdown')}</p>
+                  </div>
+                  <p className="text-2xl font-bold text-red-400">-{selectedTrader.maxDrawdown || 0}%</p>
+                  <p className="text-xs text-gray-500 mt-1">Máximo</p>
                 </div>
               </div>
               
-              {/* Action Buttons */}
-              <div className="flex gap-4 mt-6">
+              {/* Action Buttons - Enhanced with better visuals */}
+              <div className="flex flex-wrap gap-3 mt-6">
                 <button
                   onClick={() => handleCopyTrader(selectedTrader)}
-                  className={`py-3 px-8 rounded-xl transition-all font-medium flex items-center gap-2 ${
+                  className={`group relative py-3 px-8 rounded-xl transition-all duration-300 font-medium flex items-center gap-2 overflow-hidden ${
                     copiedTraders.has(selectedTrader.id)
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white hover:opacity-90'
+                      ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg shadow-green-500/30'
+                      : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:shadow-xl hover:shadow-cyan-500/30 hover:scale-105'
                   }`}
                   disabled={copiedTraders.has(selectedTrader.id)}
                 >
-                  <Copy size={20} />
-                  {copiedTraders.has(selectedTrader.id) ? t('copyTrading.status.copyingTrader') : t('copyTrading.actions.copyTrader')}
+                  <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 ${copiedTraders.has(selectedTrader.id) ? 'hidden' : ''}`}></div>
+                  <Copy size={20} className="relative z-10" />
+                  <span className="relative z-10">
+                    {copiedTraders.has(selectedTrader.id) ? t('copyTrading.status.copyingTrader') : t('copyTrading.actions.copyTrader')}
+                  </span>
                 </button>
-                <button 
+
+                <button
                   onClick={() => handleFollowTrader(selectedTrader)}
-                  className={`py-3 px-6 rounded-xl transition-colors font-medium ${
+                  className={`group py-3 px-6 rounded-xl transition-all duration-300 font-medium flex items-center gap-2 ${
                     followedTraders.has(selectedTrader.id)
-                      ? 'bg-green-600 hover:bg-green-700 text-white'
-                      : 'border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10'
+                      ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg shadow-green-500/30'
+                      : 'border-2 border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 hover:shadow-lg hover:shadow-cyan-500/20 hover:scale-105'
                   }`}
                 >
-                  {followedTraders.has(selectedTrader.id) ? t('copyTrading.status.following') : t('copyTrading.follow')}
+                  <Star size={18} className={followedTraders.has(selectedTrader.id) ? 'fill-current' : ''} />
+                  <span>{followedTraders.has(selectedTrader.id) ? t('copyTrading.status.following') : t('copyTrading.follow')}</span>
+                </button>
+
+                <button
+                  onClick={() => setShowCommentsModal(true)}
+                  className="group py-3 px-6 rounded-xl transition-all duration-300 font-medium flex items-center gap-2 border-2 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10 hover:shadow-lg hover:shadow-yellow-500/20 hover:scale-105"
+                >
+                  <MessageSquare size={18} className="group-hover:rotate-12 transition-transform" />
+                  <span>{t('copyTrading.actions.comment')}</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tabs Navigation */}
-        <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
-          <div className="flex flex-wrap gap-2 mb-6 border-b border-[#333] pb-4">
+        {/* Tabs Navigation - Enhanced with smooth transitions */}
+        <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 animate-fadeIn">
+          <div className="relative flex flex-wrap gap-2 mb-6 border-b border-[#333] pb-4">
             {[
               { id: 'performance', label: t('copyTrading.tabs.performance'), icon: BarChart3 },
               { id: 'drawdown', label: t('copyTrading.tabs.drawdown'), icon: TrendingDown },
@@ -1096,18 +1262,22 @@ const Inversor = () => {
               { id: 'comments', label: t('copyTrading.tabs.comments'), icon: MessageSquare }
             ].map((tab) => {
               const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-cyan-600 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-[#333]'
+                  className={`relative flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-300 font-medium ${
+                    isActive
+                      ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 scale-105'
+                      : 'text-gray-400 hover:text-white hover:bg-[#333] hover:scale-102'
                   }`}
                 >
-                  <Icon size={18} />
-                  {tab.label}
+                  <Icon size={18} className={`transition-transform ${isActive ? 'scale-110' : ''}`} />
+                  <span>{tab.label}</span>
+                  {isActive && (
+                    <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                  )}
                 </button>
               );
             })}
