@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, User, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
 import { getPammFunds, getMyFunds, leavePammFund, joinPammFund } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
@@ -403,96 +403,155 @@ const PammDashboardView = ({
             {/* Widget 1: Resumen de Portafolio PAMM */}
             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
                 <h2 className="text-xl font-semibold mb-4 text-cyan-400">{t('pamm.portfolio')}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center md:text-left">
-                        <p className="text-gray-400 text-sm mb-1">{t('pamm.totalBalance')}</p>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.totalBalance || 0)}</p>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
+                        <p className="text-gray-400 text-xs mb-2 uppercase tracking-wide">Total Invertido</p>
+                        <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.total_invested || portfolioData.totalBalance || 0)}</p>
                     </div>
-                    <div className="text-center md:text-left">
-                        <p className="text-gray-400 text-sm mb-1">{t('pamm.totalPnL')}</p>
-                        <div className="flex items-center justify-center md:justify-start gap-2">
-                            <p className={`text-2xl font-bold ${(portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                {formatCurrency(portfolioData.totalPnL || 0)}
+                    <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
+                        <p className="text-gray-400 text-xs mb-2 uppercase tracking-wide">Valor Actual</p>
+                        <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.total_current_value || portfolioData.activeCapital || 0)}</p>
+                    </div>
+                    <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
+                        <p className="text-gray-400 text-xs mb-2 uppercase tracking-wide">{t('pamm.totalPnL')}</p>
+                        <div className="flex items-center gap-2">
+                            <p className={`text-2xl font-bold ${(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                {formatCurrency(portfolioData.total_pnl || portfolioData.totalPnL || 0)}
                             </p>
-                            <div className={`flex items-center gap-1 ${(portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                {(portfolioData.totalPnL || 0) >= 0 ? <ArrowUp size={20} /> : <TrendingDown size={20} />}
-                                <span className="text-sm font-medium">({formatPercentage(portfolioData.totalPnLPercentage || 0)})</span>
-                            </div>
+                            {(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ?
+                                <ArrowUp size={20} className="text-green-500" /> :
+                                <TrendingDown size={20} className="text-red-500" />
+                            }
                         </div>
+                        <p className={`text-sm font-medium mt-1 ${(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                            {formatPercentage(portfolioData.total_pnl_percentage || portfolioData.totalPnLPercentage || 0)}
+                        </p>
                     </div>
-                    <div className="text-center md:text-left">
-                        <p className="text-gray-400 text-sm mb-1">{t('pamm.activeCapital')}</p>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.activeCapital || 0)}</p>
+                    <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
+                        <p className="text-gray-400 text-xs mb-2 uppercase tracking-wide">Fondos Activos</p>
+                        <div className="flex items-center gap-2">
+                            <p className="text-2xl font-bold text-white">{portfolioData.active_funds || investedFunds.length || 0}</p>
+                            <Users size={20} className="text-cyan-500" />
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Widget 2: Mis Fondos PAMM */}
             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
-                <h2 className="text-xl font-semibold mb-4 text-cyan-400">{t('pamm.myFunds')}</h2>
-                <div className="space-y-4">
-                    {investedFunds.map((fund) => (
-                        <div key={fund.id} className="bg-[#1C1C1C] rounded-xl border border-[#333] p-4">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                {/* Fund Info */}
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center">
-                                        <span className="text-white font-semibold">{(fund.fund_name || fund.name || 'F').charAt(0)}</span>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-white">{fund.fund_name || fund.name || 'Sin nombre'}</h3>
-                                        <p className="text-sm text-gray-400">{t('pamm.fund.manager')}: {fund.manager?.name || fund.manager?.display_name || 'Manager'}</p>
-                                        <p className="text-sm text-gray-400">{t('pamm.invested')}: {formatCurrency(fund.invested_amount || fund.investedAmount || 0)}</p>
-                                    </div>
-                                </div>
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold text-cyan-400">{t('pamm.myFunds')}</h2>
+                    {investedFunds.length > 0 && (
+                        <span className="text-sm text-gray-400">
+                            {investedFunds.length} {investedFunds.length === 1 ? 'fondo activo' : 'fondos activos'}
+                        </span>
+                    )}
+                </div>
 
-                                {/* Performance */}
-                                <div className="flex items-center gap-4">
-                                    <div className="text-right">
-                                        <p className="text-sm text-gray-400">{t('pamm.investor.performance')}</p>
-                                        <div className="flex items-center gap-2">
-                                            <p className={`font-semibold ${(fund.profit_loss || fund.personalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                                {formatCurrency(fund.profit_loss || fund.personalPnL || 0)}
-                                            </p>
-                                            <span className={`text-sm ${(fund.profit_loss || fund.personalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                                ({formatPercentage(fund.profit_loss_percentage || fund.personalPnLPercentage || 0)})
-                                            </span>
+                {investedFunds.length === 0 ? (
+                    /* Empty State */
+                    <div className="text-center py-12">
+                        <div className="w-20 h-20 bg-[#333] rounded-full flex items-center justify-center mx-auto mb-4">
+                            <TrendingUp size={40} className="text-gray-500" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-300 mb-2">No hay inversiones activas</h3>
+                        <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                            Comienza a invertir en fondos PAMM gestionados por traders experimentados
+                        </p>
+                        <button
+                            onClick={onExploreFunds}
+                            className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-lg transition-colors inline-flex items-center gap-2"
+                        >
+                            <Eye size={18} />
+                            Explorar Fondos
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {investedFunds.map((fund) => (
+                            <div key={fund.id} className="bg-[#1C1C1C] rounded-xl border border-[#333] overflow-hidden hover:border-cyan-600/50 transition-all duration-200">
+                                {/* Header */}
+                                <div className="p-5 border-b border-[#333]">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                                                <span className="text-white font-bold text-xl">{(fund.fund_name || fund.name || 'F').charAt(0)}</span>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-white mb-1">{fund.fund_name || fund.name || 'Sin nombre'}</h3>
+                                                <p className="text-sm text-gray-400 flex items-center gap-1">
+                                                    <User size={14} />
+                                                    {fund.manager?.name || fund.manager?.display_name || 'Manager'}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
-                                    
-                                    {/* Actions */}
-                                    <button
-                                        onClick={() => handleWithdrawFromFund(fund)}
-                                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 text-sm font-medium"
-                                    >
-                                        {t('pamm.withdraw.button', 'Retirar')}
-                                    </button>
-
-                                    {/* Status */}
-                                    <div className="flex items-center gap-2">
                                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                            fund.status === 'active' 
-                                                ? 'bg-green-500/20 text-green-400' 
-                                                : 'bg-yellow-500/20 text-yellow-400'
+                                            fund.status === 'active'
+                                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
                                         }`}>
                                             {fund.status === 'active' ? t('pamm.status.active') : t('pamm.status.paused')}
                                         </span>
                                     </div>
-                                    
-                                    {/* Actions */}
+                                </div>
+
+                                {/* Stats Grid */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-[#191919]">
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">Inversión Inicial</p>
+                                        <p className="text-base font-semibold text-white">{formatCurrency(fund.invested_amount || fund.investedAmount || 0)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">Valor Actual</p>
+                                        <p className="text-base font-semibold text-white">{formatCurrency(fund.current_value || fund.invested_amount || 0)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">Ganancia/Pérdida</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className={`text-base font-semibold ${(fund.profit_loss || fund.personalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                {formatCurrency(fund.profit_loss || fund.personalPnL || 0)}
+                                            </p>
+                                            {(fund.profit_loss || fund.personalPnL || 0) >= 0 ?
+                                                <ArrowUp size={16} className="text-green-500" /> :
+                                                <TrendingDown size={16} className="text-red-500" />
+                                            }
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">Rendimiento</p>
+                                        <p className={`text-base font-semibold ${(fund.profit_loss || fund.personalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                            {formatPercentage(fund.profit_loss_percentage || fund.personalPnLPercentage || 0)}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center justify-between p-4 bg-[#1C1C1C] border-t border-[#333]">
+                                    <div className="text-xs text-gray-500">
+                                        {fund.joined_at && (
+                                            <span>Invertido: {new Date(fund.joined_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => onViewFundDetails(fund)}
-                                            className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                            className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
                                         >
-                                            {t('pamm.manage')}
+                                            <Eye size={16} />
+                                            Ver Detalles
+                                        </button>
+                                        <button
+                                            onClick={() => handleWithdrawFromFund(fund)}
+                                            className="px-4 py-2 bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-600/30 hover:border-red-600/50 rounded-lg transition-all duration-200 text-sm font-medium"
+                                        >
+                                            Retirar
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Widget 3: Gráfico de Rendimiento Histórico */}
