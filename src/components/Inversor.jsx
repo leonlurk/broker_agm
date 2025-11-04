@@ -6,7 +6,7 @@ import CommentsRatingModal from './CommentsRatingModal';
 import { useAccounts } from '../contexts/AccountsContext';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { useTranslation } from 'react-i18next';
-import { getMasterTraders, getMySubscriptions, getInvestorPortfolio, followMaster, unfollowMaster, submitTraderComment } from '../services/copytradingService';
+import { getMasterTraders, getMySubscriptions, getInvestorPortfolio, followMaster, unfollowMaster, submitTraderComment, getTraderComments } from '../services/copytradingService';
 import toast from 'react-hot-toast';
 
 // Estados iniciales vacíos para datos dinámicos
@@ -256,11 +256,38 @@ const Inversor = () => {
     fetchTradersData();
   }, []);
 
-  // Efecto para inicializar comentarios - vacío hasta cargarlos de la API
+  // Cargar comentarios cuando se selecciona un trader
   useEffect(() => {
-    // Los comentarios se cargarán dinámicamente desde la API cuando se implemente
-    setComments([]);
-  }, []);
+    const loadComments = async () => {
+      if (selectedTrader && selectedTrader.id) {
+        console.log('[Inversor] Loading comments for trader:', selectedTrader.id);
+        try {
+          const traderComments = await getTraderComments(selectedTrader.id);
+          console.log('[Inversor] Loaded comments:', traderComments);
+
+          // Transformar los comentarios de Supabase al formato del componente
+          const formattedComments = traderComments.map(comment => ({
+            id: comment.id,
+            user: comment.user_name || 'Usuario',
+            avatar: comment.user_avatar || '/current-user.png',
+            date: new Date(comment.created_at).toISOString().split('T')[0],
+            rating: comment.rating,
+            comment: comment.comment,
+            isVerified: comment.is_verified || false
+          }));
+
+          setComments(formattedComments);
+        } catch (error) {
+          console.error('[Inversor] Error loading comments:', error);
+          setComments([]);
+        }
+      } else {
+        setComments([]);
+      }
+    };
+
+    loadComments();
+  }, [selectedTrader]);
 
   const handleExploreTraders = () => {
     setView('explorer');
@@ -445,22 +472,25 @@ const Inversor = () => {
       });
 
       console.log('Comentario guardado exitosamente en Supabase:', result);
-      toast.success(t('notifications.commentSubmitted'));
+      toast.success(t('copyTrading.notifications.commentSubmitted'));
 
-      // Actualizar la lista local de comentarios
-      const newComment = {
-        id: result.id,
-        user: commentData.traderName || 'Usuario',
-        avatar: '/current-user.png',
-        date: new Date().toISOString().split('T')[0],
-        rating: commentData.rating,
-        comment: commentData.comment
-      };
-
-      setComments(prev => [newComment, ...prev]);
+      // Recargar todos los comentarios desde la base de datos para obtener los datos completos
+      if (selectedTrader && selectedTrader.id) {
+        const traderComments = await getTraderComments(selectedTrader.id);
+        const formattedComments = traderComments.map(comment => ({
+          id: comment.id,
+          user: comment.user_name || 'Usuario',
+          avatar: comment.user_avatar || '/current-user.png',
+          date: new Date(comment.created_at).toISOString().split('T')[0],
+          rating: comment.rating,
+          comment: comment.comment,
+          isVerified: comment.is_verified || false
+        }));
+        setComments(formattedComments);
+      }
     } catch (error) {
       console.error('Error al guardar comentario:', error);
-      toast.error(t('notifications.commentError'));
+      toast.error(t('copyTrading.notifications.commentError'));
       throw error;
     }
   };
@@ -1255,7 +1285,7 @@ const Inversor = () => {
                   className="group py-3 px-6 rounded-xl transition-all duration-300 font-medium flex items-center gap-2 border-2 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10 hover:shadow-lg hover:shadow-yellow-500/20 hover:scale-105"
                 >
                   <MessageSquare size={18} className="group-hover:rotate-12 transition-transform" />
-                  <span>{t('actions.comment')}</span>
+                  <span>{t('copyTrading.actions.comment')}</span>
                 </button>
               </div>
             </div>

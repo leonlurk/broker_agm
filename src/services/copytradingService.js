@@ -225,12 +225,15 @@ export const configureMaster = async (masterData) => {
  */
 export const submitTraderComment = async ({ trader_id, rating, comment }) => {
   try {
+    console.log('[submitTraderComment] Starting...', { trader_id, rating, comment });
     const { supabase } = await import('../supabase/config');
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       throw new Error('Usuario no autenticado');
     }
+
+    console.log('[submitTraderComment] User authenticated:', user.id);
 
     // Verificar si el usuario ya tiene un comentario para este trader
     const { data: existing, error: checkError } = await supabase
@@ -240,13 +243,17 @@ export const submitTraderComment = async ({ trader_id, rating, comment }) => {
       .eq('trader_id', trader_id)
       .maybeSingle();
 
+    console.log('[submitTraderComment] Check existing result:', { existing, checkError });
+
     if (checkError && checkError.code !== 'PGRST116') {
+      console.error('[submitTraderComment] Error checking existing:', checkError);
       throw checkError;
     }
 
     let result;
     if (existing) {
       // Actualizar comentario existente
+      console.log('[submitTraderComment] Updating existing comment:', existing.id);
       const { data, error } = await supabase
         .from('trader_comments')
         .update({
@@ -258,10 +265,12 @@ export const submitTraderComment = async ({ trader_id, rating, comment }) => {
         .select()
         .single();
 
+      console.log('[submitTraderComment] Update result:', { data, error });
       if (error) throw error;
       result = data;
     } else {
       // Crear nuevo comentario
+      console.log('[submitTraderComment] Creating new comment');
       const { data, error } = await supabase
         .from('trader_comments')
         .insert({
@@ -273,13 +282,15 @@ export const submitTraderComment = async ({ trader_id, rating, comment }) => {
         .select()
         .single();
 
+      console.log('[submitTraderComment] Insert result:', { data, error });
       if (error) throw error;
       result = data;
     }
 
+    console.log('[submitTraderComment] Success! Returning:', result);
     return result;
   } catch (error) {
-    console.error('Error submitting comment:', error);
+    console.error('[submitTraderComment] Error:', error);
     throw error;
   }
 };
