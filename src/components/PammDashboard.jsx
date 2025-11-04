@@ -337,7 +337,7 @@ const PammDashboardView = ({
 
         for (let i = 0; i < days; i++) {
             const date = new Date();
-            date.setDate(date.setDate - (days - 1 - i));
+            date.setDate(date.getDate() - (days - 1 - i));
             const randomVariation = (Math.random() - 0.48) * 200; // Ligera tendencia alcista
             const value = baseValue + (i * 50) + randomVariation;
 
