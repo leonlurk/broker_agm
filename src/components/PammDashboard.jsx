@@ -388,7 +388,7 @@ const PammDashboardView = ({
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-white">{fund.name}</h3>
-                                        <p className="text-sm text-gray-400">{t('pamm.fund.manager')}: {fund.manager}</p>
+                                        <p className="text-sm text-gray-400">{t('pamm.fund.manager')}: {fund.manager?.name || fund.manager?.display_name || 'Manager'}</p>
                                         <p className="text-sm text-gray-400">{t('pamm.invested')}: {formatCurrency(fund.investedAmount)}</p>
                                     </div>
                                 </div>
@@ -598,15 +598,16 @@ const PammExplorerView = ({
     };
     
     const filteredFunds = funds.filter(fund => {
-        const matchesSearch = searchTerm === '' || 
+        const managerName = fund.manager?.name || fund.manager?.display_name || '';
+        const matchesSearch = searchTerm === '' ||
             fund.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            fund.manager.toLowerCase().includes(searchTerm.toLowerCase());
-        
+            managerName.toLowerCase().includes(searchTerm.toLowerCase());
+
         const matchesRisk = !filters.riskLevel || fund.riskLevel === filters.riskLevel;
         const matchesType = !filters.fundType || fund.type === filters.fundType;
         const matchesAUM = (!filters.aum.min || fund.aum >= parseFloat(filters.aum.min)) &&
                           (!filters.aum.max || fund.aum <= parseFloat(filters.aum.max));
-        
+
         return matchesSearch && matchesRisk && matchesType && matchesAUM;
     });
     
@@ -619,7 +620,7 @@ const PammExplorerView = ({
                     <div>
                         <h3 className="text-lg font-medium">{fund.name}</h3>
                         <p className="text-green-500 text-sm">{formatPercentage(fund.monthlyReturn)} {t('pamm.explorer.lastMonth')}</p>
-                        <p className="text-gray-400 text-sm mt-1">{t('pamm.fund.manager')}: {fund.manager} • {t('pamm.fund.inception')}: {fund.since}</p>
+                        <p className="text-gray-400 text-sm mt-1">{t('pamm.fund.manager')}: {fund.manager?.name || fund.manager?.display_name || 'Manager'} • {t('pamm.fund.inception')}: {fund.since}</p>
                     </div>
                     <div className={`${getTypeColor(fund.type)} text-xs px-2 py-1 rounded text-white`}>
                         {fund.type}
@@ -948,7 +949,7 @@ const PammFundProfileView = ({
                     </button>
                     <div>
                         <h1 className="text-2xl font-semibold">{fund.name}</h1>
-                        <p className="text-gray-400">{t('pamm.fund.manager')}: {fund.manager}</p>
+                        <p className="text-gray-400">{t('pamm.fund.manager')}: {fund.manager?.name || fund.manager?.display_name || 'Manager'}</p>
                     </div>
                 </div>
                 <button
