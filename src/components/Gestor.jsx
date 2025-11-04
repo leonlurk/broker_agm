@@ -132,6 +132,25 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           if (statsData.master_config) {
             console.log('[Gestor] Master config found:', statsData.master_config);
             setMasterConfig(statsData.master_config);
+
+            // Cargar datos del perfil desde master_config
+            console.log('[Gestor] Loading profile data from master_config');
+            setProfileData({
+              displayName: statsData.master_config.display_name || statsData.master_config.strategy_name || 'Master Trader',
+              bio: statsData.master_config.bio || statsData.master_config.description || '',
+              strategy: statsData.master_config.strategy || statsData.master_config.strategy_name || '',
+              riskLevel: statsData.master_config.risk_level || 'Moderado',
+              minInvestment: statsData.master_config.min_investment || statsData.master_config.min_capital || 1000,
+              maxInvestment: statsData.master_config.max_investment || 50000,
+              commissionRate: statsData.master_config.commission_rate || statsData.master_config.commission_rate || 20,
+              isPublic: statsData.master_config.is_public !== undefined ? statsData.master_config.is_public : true,
+              allowCopying: statsData.master_config.allow_copying !== undefined ? statsData.master_config.allow_copying : true,
+              avatar: '/trader-avatar.png',
+              tradingExperience: statsData.master_config.trading_experience || statsData.master_config.experience_level || '5+ años',
+              specializations: Array.isArray(statsData.master_config.specializations) ? statsData.master_config.specializations : ['Forex', 'Scalping', 'Technical Analysis'],
+              timeZone: statsData.master_config.time_zone || 'GMT-3 (Buenos Aires)',
+              tradingHours: statsData.master_config.trading_hours || '09:00 - 17:00'
+            });
           } else {
             console.log('[Gestor] No master config in response');
           }
