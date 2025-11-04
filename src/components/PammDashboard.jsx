@@ -179,8 +179,10 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
         }
     };
 
+    // Render current view
+    let currentView;
     if (view === 'dashboard') {
-        return <PammDashboardView
+        currentView = <PammDashboardView
             formatCurrency={formatCurrency}
             formatPercentage={formatPercentage}
             formatAUM={formatAUM}
@@ -193,11 +195,10 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
             toggleDropdown={toggleDropdown}
             t={t}
             myFunds={myFunds}
+            isLoadingMyFunds={isLoadingMyFunds}
         />;
-    }
-
-    if (view === 'explorer') {
-        return <PammExplorerView 
+    } else if (view === 'explorer') {
+        currentView = <PammExplorerView
             formatCurrency={formatCurrency}
             formatPercentage={formatPercentage}
             formatAUM={formatAUM}
@@ -215,10 +216,8 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
             filteredFunds={filteredFunds}
             t={t}
         />;
-    }
-
-    if (view === 'fundProfile' && selectedFund) {
-        return <PammFundProfileView 
+    } else if (view === 'fundProfile' && selectedFund) {
+        currentView = <PammFundProfileView
             fund={selectedFund}
             formatCurrency={formatCurrency}
             formatPercentage={formatPercentage}
@@ -231,25 +230,32 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
             setActiveTab={setActiveTab}
             t={t}
         />;
-    }
-
-    // Fallback with modals
-    return (
-        <>
+    } else {
+        // Fallback
+        currentView = (
             <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333]">
                 <p className="text-gray-400">{t('pamm.errors.viewNotFound')}</p>
             </div>
+        );
+    }
 
-            {/* Modal de Invertir en PAMM */}
+    // Always render modals alongside the current view
+    return (
+        <>
+            {currentView}
+
+            {/* Modal de Invertir en PAMM - Always rendered */}
             <InvertirPAMMModal
                 isOpen={showInvertirModal}
                 onClose={() => {
+                    console.log('[PammDashboard] Closing investment modal');
                     setShowInvertirModal(false);
                     setSelectedFundForInvest(null);
                 }}
                 gestor={selectedFundForInvest}
                 onConfirm={async (formData) => {
                     try {
+                        console.log('[PammDashboard] Confirming investment with data:', formData);
                         if (!selectedFundForInvest) {
                             alert('Error: No se seleccionó ningún fondo');
                             return;
@@ -283,7 +289,7 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
                 }}
             />
 
-            {/* Modal de Retirar de PAMM */}
+            {/* Modal de Retirar de PAMM - Always rendered */}
             <RetirarPAMMModal
                 isOpen={showWithdrawModal}
                 onClose={() => {
