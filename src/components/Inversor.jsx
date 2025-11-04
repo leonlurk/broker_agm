@@ -445,7 +445,7 @@ const Inversor = () => {
       });
 
       console.log('Comentario guardado exitosamente en Supabase:', result);
-      toast.success(t('comments.commentSubmitted'));
+      toast.success('Comentario enviado exitosamente');
 
       // Actualizar la lista local de comentarios
       const newComment = {
@@ -460,7 +460,7 @@ const Inversor = () => {
       setComments(prev => [newComment, ...prev]);
     } catch (error) {
       console.error('Error al guardar comentario:', error);
-      toast.error(t('comments.submitError'));
+      toast.error('Error al enviar el comentario. Intenta nuevamente.');
       throw error;
     }
   };
