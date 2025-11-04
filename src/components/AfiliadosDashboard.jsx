@@ -24,7 +24,8 @@ const AfiliadosDashboard = () => {
   const [selectedTrader, setSelectedTrader] = useState(null);
   const [visibleAfiliados] = useState(3);
   const [isMobile, setIsMobile] = useState(false);
-  
+  const [referralLink, setReferralLink] = useState('');
+
   // Estados para paginación y datos dinámicos
   const [currentPageCuentas, setCurrentPageCuentas] = useState(1);
   const [activeAccounts, setActiveAccounts] = useState([]);
