@@ -266,11 +266,25 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
                         const accountId = parseInt(formData.cuentaMT5Seleccionada);
                         const amount = parseFloat(formData.montoInversion);
 
-                        console.log('[PammDashboard] Calling joinPammFund with:', {
+                        console.log('[PammDashboard] Raw form data:', formData);
+                        console.log('[PammDashboard] Parsed values:', {
                             fundId,
                             accountId,
-                            amount
+                            amount,
+                            isAccountIdValid: !isNaN(accountId),
+                            isAmountValid: !isNaN(amount)
                         });
+
+                        // Validate parsed values
+                        if (!fundId) {
+                            return { success: false, error: 'ID del fondo no válido' };
+                        }
+                        if (isNaN(accountId) || !accountId) {
+                            return { success: false, error: 'Cuenta MT5 no válida. Por favor seleccione una cuenta.' };
+                        }
+                        if (isNaN(amount) || amount <= 0) {
+                            return { success: false, error: 'Monto de inversión no válido' };
+                        }
 
                         // Usar joinPammFund para PAMM (no followMaster que es para copy trading)
                         const response = await joinPammFund(fundId, accountId, amount);
