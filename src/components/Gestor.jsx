@@ -96,8 +96,17 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           });
 
           // Verificar si realmente está configurado como master trader
-          // Ahora el backend devuelve is_configured: true/false de forma explícita
-          const isMaster = statsData.is_configured === true;
+          // Prioridad: 1) is_configured explícito, 2) presencia de master_trader o master_config
+          let isMaster = false;
+
+          if (statsData.is_configured !== undefined) {
+            // Backend nuevo: usa el campo explícito
+            isMaster = statsData.is_configured === true;
+          } else {
+            // Fallback para backend viejo: verifica presencia de config
+            isMaster = !!(statsData.master_trader || statsData.master_config);
+          }
+
           setIsMasterTrader(isMaster);
 
           console.log('[Gestor] User is master trader:', isMaster);
