@@ -1327,69 +1327,95 @@ const Inversor = () => {
               {/* Performance Chart */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 text-cyan-400">{t('copyTrading.tabs.performance')}</h3>
-                <div className="h-64 mb-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={traderProfileData?.performance?.chartData || []}>
-                      <XAxis 
-                        dataKey="date" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: '#9CA3AF', fontSize: 12 }}
-                      />
-                      <YAxis 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: '#9CA3AF', fontSize: 12 }}
-                        tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: '#1C1C1C', 
-                          border: '1px solid #333', 
-                          borderRadius: '8px',
-                          color: '#ffffff'
-                        }}
-                        formatter={(value) => [formatCurrency(value), t('copyTrading.investor.portfolioValue')]}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="value" 
-                        stroke="#22d3ee" 
-                        strokeWidth={2}
-                        fill="#22d3ee" 
-                        fillOpacity={0.1}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
+                {traderProfileData?.performance?.chartData && traderProfileData.performance.chartData.length > 0 ? (
+                  <div className="h-64 mb-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={traderProfileData.performance.chartData}>
+                        <XAxis
+                          dataKey="date"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                          tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#1C1C1C',
+                            border: '1px solid #333',
+                            borderRadius: '8px',
+                            color: '#ffffff'
+                          }}
+                          formatter={(value) => [formatCurrency(value), t('copyTrading.investor.portfolioValue')]}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#22d3ee"
+                          strokeWidth={2}
+                          fill="#22d3ee"
+                          fillOpacity={0.1}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-64 mb-4 bg-gradient-to-br from-[#1C1C1C] to-[#252525] rounded-xl border border-[#333] flex flex-col items-center justify-center">
+                    <div className="text-center p-8">
+                      <div className="w-20 h-20 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <BarChart3 size={40} className="text-cyan-400/50" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-300 mb-2">Sin Datos de Rendimiento</h4>
+                      <p className="text-sm text-gray-500 max-w-md">
+                        Este trader aún no tiene suficiente historial de trading para mostrar gráficos de rendimiento.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Performance Metrics by Period */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 text-cyan-400">{t('copyTrading.metrics.title')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {Object.entries(traderProfileData?.performance?.periods || {}).map(([period, data]) => (
-                    <div key={period} className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
-                      <h4 className="font-semibold text-white mb-3">{period}</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-400">{t('copyTrading.metrics.return')}</span>
-                          <span className={`text-sm font-medium ${data.return >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {formatPercentage(data.return)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-400">{t('copyTrading.metrics.sharpe')}</span>
-                          <span className="text-sm font-medium text-white">{data.sharpe}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-400">{t('copyTrading.metrics.volatility')}</span>
-                          <span className="text-sm font-medium text-white">{data.volatility}%</span>
+                {Object.entries(traderProfileData?.performance?.periods || {}).length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Object.entries(traderProfileData.performance.periods).map(([period, data]) => (
+                      <div key={period} className="bg-gradient-to-br from-[#1C1C1C] to-[#252525] rounded-xl p-4 border border-[#333] hover:border-cyan-500/50 transition-all duration-300">
+                        <h4 className="font-semibold text-white mb-3">{period}</h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-400">{t('copyTrading.metrics.return')}</span>
+                            <span className={`text-sm font-medium ${(data.return || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {formatPercentage(data.return || 0)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-400">{t('copyTrading.metrics.sharpe')}</span>
+                            <span className="text-sm font-medium text-white">{data.sharpe || 0}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-400">{t('copyTrading.metrics.volatility')}</span>
+                            <span className="text-sm font-medium text-white">{data.volatility || 0}%</span>
+                          </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-gradient-to-br from-[#1C1C1C] to-[#252525] rounded-xl border border-[#333] p-8 text-center">
+                    <div className="w-16 h-16 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Activity size={32} className="text-cyan-400/50" />
                     </div>
-                  ))}
-                </div>
+                    <h4 className="text-lg font-semibold text-gray-300 mb-2">Sin Métricas Disponibles</h4>
+                    <p className="text-sm text-gray-500 max-w-md mx-auto">
+                      Las métricas de rendimiento se calcularán una vez que el trader tenga historial de operaciones.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1482,40 +1508,48 @@ const Inversor = () => {
           {activeTab === 'instruments' && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-cyan-400">{t('copyTrading.tabs.instruments')}</h3>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                    <span className="text-white">EURUSD</span>
-                    <span className="text-white font-medium">31.31%</span>
+
+              {traderProfileData?.instruments && traderProfileData.instruments.length > 0 ? (
+                <div className="flex items-center justify-between">
+                  <div className="space-y-3">
+                    {traderProfileData.instruments.map((instrument, index) => (
+                      <div key={index} className="flex items-center space-x-3">
+                        <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}></div>
+                        <span className="text-white">{instrument.name}</span>
+                        <span className="text-white font-medium">{instrument.percentage}%</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-full bg-cyan-400"></div>
-                    <span className="text-white">XAUUSD</span>
-                    <span className="text-white font-medium">68.69%</span>
+                  <div className="w-48 h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={traderProfileData.instruments}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={70}
+                          dataKey="percentage"
+                          nameKey="name"
+                        >
+                          {traderProfileData.instruments.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
-                <div className="w-48 h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'EURUSD', value: 31.31 },
-                          { name: 'XAUUSD', value: 68.69 }
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={70}
-                        dataKey="value"
-                      >
-                        <Cell fill="#3b82f6" />
-                        <Cell fill="#22d3ee" />
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+              ) : (
+                <div className="bg-gradient-to-br from-[#1C1C1C] to-[#252525] rounded-xl border border-[#333] p-8 text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Target size={32} className="text-purple-400/50" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-300 mb-2">Sin Instrumentos Registrados</h4>
+                  <p className="text-sm text-gray-500 max-w-md mx-auto">
+                    Los instrumentos de trading se mostrarán una vez que el trader comience a operar.
+                  </p>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -1567,21 +1601,23 @@ const Inversor = () => {
               
               {/* Estadísticas de drawdown */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
+                <div className="bg-gradient-to-br from-[#1C1C1C] to-[#252525] rounded-xl p-4 border border-[#333] hover:border-red-500/50 transition-all duration-300">
                   <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.maxDrawdown')}</p>
-                  <p className="text-lg font-medium text-red-500">-{selectedTrader.maxDrawdown || 18.4}%</p>
+                  <p className="text-lg font-medium text-red-500">-{selectedTrader.maxDrawdown || 0}%</p>
                 </div>
-                <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
+                <div className="bg-gradient-to-br from-[#1C1C1C] to-[#252525] rounded-xl p-4 border border-[#333] hover:border-orange-500/50 transition-all duration-300">
                   <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.currentDrawdown')}</p>
-                  <p className="text-lg font-medium text-red-400">-6.3%</p>
+                  <p className="text-lg font-medium text-red-400">-{selectedTrader.currentDrawdown || 0}%</p>
                 </div>
-                <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
+                <div className="bg-gradient-to-br from-[#1C1C1C] to-[#252525] rounded-xl p-4 border border-[#333] hover:border-blue-500/50 transition-all duration-300">
                   <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.maxDuration')}</p>
-                  <p className="text-lg font-medium text-white">12 {t('copyTrading.time.days')}</p>
+                  <p className="text-lg font-medium text-white">{selectedTrader.maxDrawdownDuration || 0} {t('copyTrading.time.days')}</p>
                 </div>
-                <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
+                <div className="bg-gradient-to-br from-[#1C1C1C] to-[#252525] rounded-xl p-4 border border-[#333] hover:border-yellow-500/50 transition-all duration-300">
                   <p className="text-sm text-gray-400 mb-1">{t('copyTrading.stats.recovery')}</p>
-                  <p className="text-lg font-medium text-yellow-500">{t('copyTrading.status.inProgress')}</p>
+                  <p className="text-lg font-medium text-yellow-500">
+                    {selectedTrader.recoveryStatus || t('copyTrading.status.inProgress')}
+                  </p>
                 </div>
               </div>
             </div>
