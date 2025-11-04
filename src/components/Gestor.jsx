@@ -87,7 +87,18 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
 
         // Actualizar estadísticas del trader
         if (statsData) {
-          setIsMasterTrader(true);
+          console.log('[Gestor] Checking if user is master trader...', {
+            hasStatsData: !!statsData,
+            hasMasterConfig: !!statsData.master_config,
+            hasOverview: !!statsData.overview,
+            isConfigured: statsData.is_configured || statsData.master_config?.is_active
+          });
+
+          // Verificar si realmente está configurado como master trader
+          const isMaster = !!(statsData.master_config || statsData.is_configured);
+          setIsMasterTrader(isMaster);
+
+          console.log('[Gestor] User is master trader:', isMaster);
 
           setTraderStats({
             overview: {
@@ -108,7 +119,10 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
 
           // Extraer la configuración del Master Trader si está disponible
           if (statsData.master_config) {
+            console.log('[Gestor] Master config found:', statsData.master_config);
             setMasterConfig(statsData.master_config);
+          } else {
+            console.log('[Gestor] No master config in response');
           }
 
           // Usar la lista de inversores del API si está disponible
@@ -337,6 +351,64 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
 
   // Dashboard View
   if (view === 'dashboard') {
+    // Skeleton Loading State
+    if (isLoading) {
+      return (
+        <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333]">
+          {/* Header Skeleton */}
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex-1">
+                <div className="h-8 bg-[#333] rounded w-64 mb-2 animate-pulse"></div>
+                <div className="h-4 bg-[#333] rounded w-96 animate-pulse"></div>
+              </div>
+              <div className="h-12 bg-[#333] rounded-xl w-48 animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Portfolio Skeleton */}
+          <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-8 animate-pulse">
+            <div className="h-6 bg-[#333] rounded w-32 mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-[#333] rounded-xl"></div>
+                    <div className="w-5 h-5 bg-[#333] rounded"></div>
+                  </div>
+                  <div className="h-8 bg-[#333] rounded w-32 mb-1"></div>
+                  <div className="h-4 bg-[#333] rounded w-24 mb-2"></div>
+                  <div className="h-3 bg-[#333] rounded w-28"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Accounts Skeleton */}
+          <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-8 animate-pulse">
+            <div className="h-6 bg-[#333] rounded w-48 mb-6"></div>
+            <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-[#333] rounded-full"></div>
+                <div className="flex-1">
+                  <div className="h-5 bg-[#333] rounded w-48 mb-2"></div>
+                  <div className="h-4 bg-[#333] rounded w-32"></div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i}>
+                    <div className="h-3 bg-[#333] rounded w-20 mb-2"></div>
+                    <div className="h-6 bg-[#333] rounded w-24"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333]">
         {/* Header */}
@@ -351,7 +423,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               className="bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-3 px-6 rounded-xl hover:opacity-90 transition-opacity font-medium flex items-center gap-2"
             >
               <Settings size={20} />
-              {t('copyTrading.manager.createCopyTrading')} 
+              {t('copyTrading.manager.createCopyTrading')}
             </button>
           </div>
         </div>
