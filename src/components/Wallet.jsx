@@ -268,18 +268,27 @@ const Wallet = () => {
         .eq('user_id', currentUser.id)
         .eq('status', 'active');
       
+      // Normalizar cuentas para asegurar que tengan account_number
+      const normalizeAccounts = (accounts) => {
+        return accounts.map(acc => ({
+          ...acc,
+          account_number: acc.account_number || acc.login || acc.accountNumber || acc.id,
+          account_name: acc.account_name || acc.name || `Account ${acc.login || acc.id}`
+        }));
+      };
+
       if (!error && data && data.length > 0) {
-        setMt5Accounts(data);
+        setMt5Accounts(normalizeAccounts(data));
       } else {
         // Si no hay cuentas en broker_accounts, usar trading_accounts
         const accounts = getAllAccounts();
-        setMt5Accounts(accounts);
-        
+        setMt5Accounts(normalizeAccounts(accounts));
+
         // Si estamos en transferir, preseleccionar cuenta con balance
         if (activeTab === 'transferir') {
           const accountsWithBalance = accounts.filter(acc => (acc.balance || 0) > 0);
           if (accountsWithBalance.length > 0) {
-            setTransferFromAccount(accountsWithBalance[0]);
+            setTransferFromAccount(normalizeAccounts([accountsWithBalance[0]])[0]);
           }
         }
       }
@@ -287,7 +296,7 @@ const Wallet = () => {
       console.error('Error loading MT5 accounts:', error);
       // Fallback a getAllAccounts
       const accounts = getAllAccounts();
-      setMt5Accounts(accounts);
+      setMt5Accounts(normalizeAccounts(accounts));
     }
   };
   
@@ -1237,8 +1246,8 @@ const Wallet = () => {
     const sourceBalance = transferFromAccount 
       ? (transferFromAccount.balance || 0)
       : brokerBalance;
-    const sourceName = transferFromAccount 
-      ? `${transferFromAccount.account_name} (${transferFromAccount.account_number})`
+    const sourceName = transferFromAccount
+      ? `${transferFromAccount.account_name || 'Account'} (${transferFromAccount.account_number || transferFromAccount.login || 'N/A'})`
       : t('common.generalBalance');
     
     // Cuentas con balance para origen
@@ -1343,7 +1352,7 @@ const Wallet = () => {
                   {transferToAccount
                     ? (transferToAccount.id === 'general-wallet'
                         ? t('common.generalBalance')
-                        : `${transferToAccount.account_name} (${transferToAccount.account_number})`)
+                        : `${transferToAccount.account_name || 'Account'} (${transferToAccount.account_number || transferToAccount.login || 'N/A'})`)
                     : 'Seleccionar destino'}
                 </span>
               </div>
