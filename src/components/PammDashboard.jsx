@@ -337,19 +337,15 @@ const PammDashboardView = ({
     formatPercentage,
     formatAUM,
     onExploreFunds,
-    chartPeriod,
-    setChartPeriod,
     onViewFundDetails,
     handleWithdrawFromFund,
-    showDropdown,
-    toggleDropdown,
     t,
     myFunds = { summary: {}, funds: [] },
     isLoadingMyFunds = false
 }) => {
     // Usar datos dinámicos del prop myFunds
     const portfolioData = myFunds.summary || initialPammPortfolioData;
-    const investedFunds = myFunds.funds || [];
+    const investedFundsArray = myFunds.funds || [];
 
     // Generar datos mock para el gráfico si no hay datos reales
     const generateMockHistoricalData = () => {
@@ -468,7 +464,7 @@ const PammDashboardView = ({
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {investedFunds.map((fund) => (
+                        {investedFundsArray.map((fund) => (
                             <div key={fund.id} className="bg-[#1C1C1C] rounded-xl border border-[#333] overflow-hidden hover:border-cyan-600/50 transition-all duration-200">
                                 {/* Header */}
                                 <div className="p-5 border-b border-[#333]">
@@ -481,7 +477,7 @@ const PammDashboardView = ({
                                                 <h3 className="text-lg font-semibold text-white mb-1">{fund.fund_name || fund.name || 'Sin nombre'}</h3>
                                                 <p className="text-sm text-gray-400 flex items-center gap-1">
                                                     <User size={14} />
-                                                    {fund.manager?.name || fund.manager?.display_name || 'Manager'}
+                                                    {typeof fund.manager === 'string' ? fund.manager : (fund.manager?.name || fund.manager?.display_name || 'Manager')}
                                                 </p>
                                             </div>
                                         </div>
