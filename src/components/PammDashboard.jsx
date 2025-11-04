@@ -437,25 +437,25 @@ const PammDashboardView = ({
                                 {/* Fund Info */}
                                 <div className="flex items-center gap-3">
                                     <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center">
-                                        <span className="text-white font-semibold">{fund.name.charAt(0)}</span>
+                                        <span className="text-white font-semibold">{(fund.fund_name || fund.name || 'F').charAt(0)}</span>
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-white">{fund.name}</h3>
+                                        <h3 className="font-semibold text-white">{fund.fund_name || fund.name || 'Sin nombre'}</h3>
                                         <p className="text-sm text-gray-400">{t('pamm.fund.manager')}: {fund.manager?.name || fund.manager?.display_name || 'Manager'}</p>
-                                        <p className="text-sm text-gray-400">{t('pamm.invested')}: {formatCurrency(fund.investedAmount)}</p>
+                                        <p className="text-sm text-gray-400">{t('pamm.invested')}: {formatCurrency(fund.invested_amount || fund.investedAmount || 0)}</p>
                                     </div>
                                 </div>
-                                
+
                                 {/* Performance */}
                                 <div className="flex items-center gap-4">
                                     <div className="text-right">
                                         <p className="text-sm text-gray-400">{t('pamm.investor.performance')}</p>
                                         <div className="flex items-center gap-2">
-                                            <p className={`font-semibold ${(fund.personalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                                {formatCurrency(fund.personalPnL || 0)}
+                                            <p className={`font-semibold ${(fund.profit_loss || fund.personalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                {formatCurrency(fund.profit_loss || fund.personalPnL || 0)}
                                             </p>
-                                            <span className={`text-sm ${(fund.personalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                                ({formatPercentage(fund.personalPnLPercentage || 0)})
+                                            <span className={`text-sm ${(fund.profit_loss || fund.personalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                ({formatPercentage(fund.profit_loss_percentage || fund.personalPnLPercentage || 0)})
                                             </span>
                                         </div>
                                     </div>
