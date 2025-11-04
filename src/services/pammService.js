@@ -121,14 +121,21 @@ export const getManagerStats = async () => {
  */
 export const joinPammFund = async (fundId, mt5AccountId, investedAmount) => {
   try {
+    console.log('[pammService] joinPammFund called with:', { fundId, mt5AccountId, investedAmount });
+
     const response = await logicApiClient.post('/api/v1/pamm/join', {
       fund_id: fundId,
       investor_mt5_account_id: mt5AccountId,
       invested_amount: investedAmount
     });
+
+    console.log('[pammService] joinPammFund response:', response.data);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { error: 'Error al unirse al fondo PAMM' };
+    console.error('[pammService] joinPammFund error:', error.response?.data || error.message);
+    const errorData = error.response?.data || { error: 'Error al unirse al fondo PAMM' };
+    // Return error object instead of throwing to allow modal to handle it
+    return { success: false, error: errorData.error || errorData.message || 'Error al unirse al fondo PAMM' };
   }
 };
 

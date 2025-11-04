@@ -26,6 +26,8 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
 
   const [errors, setErrors] = useState({});
   const [showCalculadora, setShowCalculadora] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState(null); // { success: boolean, message: string }
 
   const tiposInversion = ['Fija', 'Variable'];
   const periodosInversion = ['1 mes', '3 meses', '6 meses', '1 año'];
@@ -65,12 +67,49 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      onConfirm(formData);
-      onClose();
+    if (!validateForm()) {
+      return;
     }
+
+    setIsSubmitting(true);
+    setSubmitResult(null);
+
+    try {
+      const result = await onConfirm(formData);
+
+      if (result && result.success !== false) {
+        setSubmitResult({
+          success: true,
+          message: '¡Inversión realizada exitosamente!'
+        });
+
+        // Cerrar modal después de 2 segundos
+        setTimeout(() => {
+          handleClose();
+        }, 2000);
+      } else {
+        setSubmitResult({
+          success: false,
+          message: result?.error || 'Error al procesar la inversión'
+        });
+      }
+    } catch (error) {
+      setSubmitResult({
+        success: false,
+        message: error.message || 'Error al procesar la inversión'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setIsSubmitting(false);
+    setSubmitResult(null);
+    setErrors({});
+    onClose();
   };
 
   // Calculadora de rendimiento estimado
@@ -118,8 +157,9 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-[#333] rounded-lg transition-colors"
+            disabled={isSubmitting}
           >
             <X className="text-gray-400" size={20} />
           </button>
@@ -416,20 +456,40 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
           </div>
         </div>
 
+        {/* Result Message */}
+        {submitResult && (
+          <div className={`mx-6 mb-4 p-4 rounded-lg ${
+            submitResult.success
+              ? 'bg-green-900/30 border border-green-500/50 text-green-400'
+              : 'bg-red-900/30 border border-red-500/50 text-red-400'
+          }`}>
+            <p className="text-sm font-medium">{submitResult.message}</p>
+          </div>
+        )}
+
         {/* Botones */}
         <div className="flex gap-3 p-6 border-t border-[#333]">
           <button
             type="button"
-            onClick={onClose}
-            className="flex-1 px-4 py-3 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="flex-1 px-4 py-3 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>
           <button
             onClick={handleSubmit}
-            className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-lg transition-colors font-medium"
+            disabled={isSubmitting}
+            className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Confirmar Inversión
+            {isSubmitting ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Procesando...
+              </>
+            ) : (
+              'Confirmar Inversión'
+            )}
           </button>
         </div>
       </div>

@@ -256,35 +256,42 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
                 onConfirm={async (formData) => {
                     try {
                         console.log('[PammDashboard] Confirming investment with data:', formData);
+                        console.log('[PammDashboard] Selected fund:', selectedFundForInvest);
+
                         if (!selectedFundForInvest) {
-                            alert('Error: No se seleccionó ningún fondo');
-                            return;
+                            return { success: false, error: 'No se seleccionó ningún fondo' };
                         }
 
+                        const fundId = selectedFundForInvest.id || selectedFundForInvest.fund_id;
+                        const accountId = parseInt(formData.cuentaMT5Seleccionada);
+                        const amount = parseFloat(formData.montoInversion);
+
+                        console.log('[PammDashboard] Calling joinPammFund with:', {
+                            fundId,
+                            accountId,
+                            amount
+                        });
+
                         // Usar joinPammFund para PAMM (no followMaster que es para copy trading)
-                        const response = await joinPammFund(
-                            selectedFundForInvest.id || selectedFundForInvest.fund_id,
-                            parseInt(formData.cuentaMT5Seleccionada || formData.accountId),
-                            parseFloat(formData.montoInversion || formData.invested_amount)
-                        );
+                        const response = await joinPammFund(fundId, accountId, amount);
 
-                        if (response.message || response.investment) {
-                            alert('¡Inversión realizada exitosamente en el fondo PAMM!');
-                            setShowInvertirModal(false);
-                            setSelectedFundForInvest(null);
+                        console.log('[PammDashboard] Join response:', response);
 
+                        if (response.message || response.investment || response.success) {
                             // Marcar fondo como invertido
                             setInvestedFunds(prev => new Set([...prev, selectedFundForInvest.id]));
 
                             // Recargar mis fondos
                             const updatedFunds = await getMyFunds();
                             setMyFunds(updatedFunds);
+
+                            return { success: true };
                         } else {
-                            throw new Error(response.error || 'Error al invertir en el fondo PAMM');
+                            return { success: false, error: response.error || 'Error al invertir en el fondo PAMM' };
                         }
                     } catch (error) {
-                        console.error('Error invirtiendo en PAMM:', error);
-                        alert('Error al invertir: ' + (error.message || 'Error desconocido'));
+                        console.error('[PammDashboard] Error invirtiendo en PAMM:', error);
+                        return { success: false, error: error.message || 'Error desconocido' };
                     }
                 }}
             />
