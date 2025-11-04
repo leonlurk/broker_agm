@@ -323,7 +323,8 @@ const PammDashboardView = ({
     showDropdown,
     toggleDropdown,
     t,
-    myFunds = { summary: {}, funds: [] }
+    myFunds = { summary: {}, funds: [] },
+    isLoadingMyFunds = false
 }) => {
     // Usar datos dinámicos del prop myFunds
     const portfolioData = myFunds.summary || initialPammPortfolioData;
