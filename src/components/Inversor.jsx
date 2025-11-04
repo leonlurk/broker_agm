@@ -1556,48 +1556,63 @@ const Inversor = () => {
           {activeTab === 'drawdown' && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-cyan-400">{t('copyTrading.tabs.drawdown')}</h3>
-              
-              <div className="h-64 mb-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={traderProfileData?.performance?.chartData || []}>
-                    <defs>
-                      <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.05}/>
-                      </linearGradient>
-                    </defs>
-                    <XAxis 
-                      dataKey="date" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 10, fill: '#9CA3AF' }}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 10, fill: '#9CA3AF' }}
-                      tickFormatter={(value) => `${value}%`}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1C1C1C', 
-                        border: '1px solid #333', 
-                        borderRadius: '8px',
-                        color: '#fff'
-                      }}
-                      labelStyle={{ color: '#9CA3AF' }}
-                      formatter={(value) => [`${value}%`, t('copyTrading.tabs.drawdown')]}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="drawdown" 
-                      stroke="#ef4444" 
-                      strokeWidth={2}
-                      fill="url(#drawdownGradient)" 
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+
+              {traderProfileData?.performance?.chartData && traderProfileData.performance.chartData.length > 0 &&
+               traderProfileData.performance.chartData.some(d => d.drawdown !== undefined) ? (
+                <div className="h-64 mb-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={traderProfileData.performance.chartData}>
+                      <defs>
+                        <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0.05}/>
+                        </linearGradient>
+                      </defs>
+                      <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                        tickFormatter={(value) => `${value}%`}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#1C1C1C',
+                          border: '1px solid #333',
+                          borderRadius: '8px',
+                          color: '#fff'
+                        }}
+                        labelStyle={{ color: '#9CA3AF' }}
+                        formatter={(value) => [`${value}%`, t('copyTrading.tabs.drawdown')]}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="drawdown"
+                        stroke="#ef4444"
+                        strokeWidth={2}
+                        fill="url(#drawdownGradient)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-64 mb-4 bg-gradient-to-br from-[#1C1C1C] to-[#252525] rounded-xl border border-[#333] flex flex-col items-center justify-center">
+                  <div className="text-center p-8">
+                    <div className="w-20 h-20 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <TrendingDown size={40} className="text-red-400/50" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-300 mb-2">Sin Datos de Drawdown</h4>
+                    <p className="text-sm text-gray-500 max-w-md">
+                      El historial de drawdown se mostrará una vez que el trader tenga suficiente actividad de trading.
+                    </p>
+                  </div>
+                </div>
+              )}
               
               {/* Estadísticas de drawdown */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
