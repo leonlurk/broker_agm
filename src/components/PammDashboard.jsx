@@ -852,7 +852,7 @@ const PammExplorerView = ({
                                 {fund.markets && fund.markets.length > 0 ? (
                                     fund.markets.map((market, index) => (
                                         <span key={index} className="bg-[#1C1C1C] px-2 py-1 rounded text-xs">
-                                            {market}
+                                            {typeof market === 'string' ? market : JSON.stringify(market)}
                                         </span>
                                     ))
                                 ) : (
@@ -1230,7 +1230,7 @@ const PammFundProfileView = ({
                                     {fund.markets && fund.markets.length > 0 ? (
                                         fund.markets.map((market, index) => (
                                             <div key={index} className="bg-[#333] px-3 py-2 rounded-lg text-sm">
-                                                {market}
+                                                {typeof market === 'string' ? market : JSON.stringify(market)}
                                             </div>
                                         ))
                                     ) : (
@@ -1302,7 +1302,7 @@ const PammFundProfileView = ({
                                     {fund.markets && fund.markets.length > 0 ? (
                                         fund.markets.map((market, index) => (
                                             <span key={index} className="bg-[#333] px-3 py-1 rounded-lg text-sm">
-                                                {market}
+                                                {typeof market === 'string' ? market : JSON.stringify(market)}
                                             </span>
                                         ))
                                     ) : (
