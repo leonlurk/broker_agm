@@ -21,7 +21,12 @@
       "selectMT5Account": "Select an MT5 account to publish as master",
       "needRealAccount": "You need at least one Real MT5 account to be a master trader",
       "configError": "Error configuring as master trader",
-      "saveError": "Error saving configuration"
+      "saveError": "Error saving configuration",
+      "nameRequired": "Name is required",
+      "bioRequired": "Bio is required",
+      "bioMinLength": "Bio must be at least 30 characters",
+      "minInvestmentLessThanMax": "Minimum investment must be less than maximum",
+      "fixValidationErrors": "Please fix validation errors"
     },
     "navigation": {
       "backToDashboard": "Back to Dashboard",
@@ -132,7 +137,40 @@
         "Solo sesión europea": "European session only",
         "Solo sesión americana": "American session only"
       },
-      "successMessage": "Master Trader profile configured successfully!"
+      "successMessage": "Master Trader profile configured successfully!",
+      "profileUpdatedSuccessfully": "Profile updated successfully",
+      "editTraderProfile": "Edit Trader Profile",
+      "configureHowInvestorsSeeYou": "Configure how investors will see your profile",
+      "information": "Information",
+      "profilePhoto": "Profile Photo",
+      "professionalImage400x400": "Professional 400x400 pixel image",
+      "changeImage": "Change Image",
+      "name": "Name",
+      "namePlaceholder": "e.g., FX Master Pro",
+      "bio": "Bio",
+      "bioPlaceholder": "Describe your experience, strategy and trading approach...",
+      "strategy": "Strategy",
+      "strategyPlaceholder": "e.g., EUR/USD Scalping",
+      "risk": "Risk Level",
+      "experience": "Experience",
+      "timeZone": "Time Zone",
+      "timeZonePlaceholder": "e.g., GMT-3 (Buenos Aires)",
+      "tradingHours": "Trading Hours",
+      "tradingHoursPlaceholder": "e.g., 09:00 - 17:00",
+      "configuration": "Configuration",
+      "minInvestment": "Min Investment",
+      "maxInvestment": "Max Investment",
+      "commission": "Commission",
+      "profitPercentage": "% of Profit",
+      "onlyChargeCommissionOnProfits": "Only charge commission on profits",
+      "specializations": "Specializations",
+      "privacySettings": "Privacy Settings",
+      "publicProfile": "Public Profile",
+      "othersCanSeeProfile": "Other users can see your profile",
+      "allowCopyTrading": "Allow Copy Trading",
+      "investorsCanCopyTrades": "Investors can copy your trades",
+      "preview": "Preview",
+      "minInvestmentShort": "Min Investment"
     },
     "search": {
       "placeholder": "Search traders...",
@@ -183,7 +221,16 @@
       "comment": "Comment",
       "viewDetails": "View Details",
       "sendMessage": "Send Message",
-      "activateCopy": "Activate Copy"
+      "activateCopy": "Activate Copy",
+      "saveChanges": "Save Changes",
+      "cancel": "Cancel",
+      "saving": "Saving..."
+    },
+    "experience": {
+      "oneToTwo": "1-2 years",
+      "threeToFive": "3-5 years",
+      "fivePlus": "5+ years",
+      "tenPlus": "10+ years"
     },
     "notifications": {
       "commentSubmitted": "Comment submitted successfully",

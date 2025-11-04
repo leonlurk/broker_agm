@@ -225,6 +225,42 @@ export const configureMaster = async (masterData) => {
 };
 
 /**
+ * Actualiza el perfil de un master trader
+ * @param {object} profileData - Datos del perfil a actualizar
+ * @returns {Promise<object>} El perfil actualizado
+ */
+export const updateMasterProfile = async (profileData) => {
+  try {
+    console.log('[updateMasterProfile] Sending profile data:', profileData);
+
+    const payload = {
+      display_name: profileData.displayName,
+      bio: profileData.bio,
+      strategy: profileData.strategy,
+      risk_level: profileData.riskLevel,
+      trading_experience: profileData.tradingExperience,
+      time_zone: profileData.timeZone,
+      trading_hours: profileData.tradingHours,
+      min_investment: profileData.minInvestment,
+      max_investment: profileData.maxInvestment,
+      commission_rate: profileData.commissionRate,
+      specializations: profileData.specializations,
+      is_public: profileData.isPublic,
+      allow_copying: profileData.allowCopying
+    };
+
+    const response = await logicApiClient.put('/api/v1/copy/update-master-profile', payload);
+
+    console.log('[updateMasterProfile] Backend response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('[updateMasterProfile] Error:', error);
+    console.error('[updateMasterProfile] Error response:', error.response?.data);
+    throw error.response?.data || { error: 'Error al actualizar el perfil' };
+  }
+};
+
+/**
  * Envía un comentario y calificación para un trader.
  * @param {object} commentData - Datos del comentario
  * @param {string} commentData.trader_id - ID del trader a comentar

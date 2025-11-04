@@ -21,7 +21,12 @@
       "selectMT5Account": "Selecciona una cuenta MT5 para publicar como master",
       "needRealAccount": "Necesitas al menos una cuenta MT5 Real para ser master trader",
       "configError": "Error al configurar como master trader",
-      "saveError": "Error al guardar la configuración"
+      "saveError": "Error al guardar la configuración",
+      "nameRequired": "El nombre es requerido",
+      "bioRequired": "La biografía es requerida",
+      "bioMinLength": "La biografía debe tener al menos 30 caracteres",
+      "minInvestmentLessThanMax": "La inversión mínima debe ser menor que la máxima",
+      "fixValidationErrors": "Por favor corrige los errores de validación"
     },
     "navigation": {
       "backToDashboard": "Volver al Tablero",
@@ -131,7 +136,40 @@
         "Solo sesión europea": "Solo sesión europea",
         "Solo sesión americana": "Solo sesión americana"
       },
-      "successMessage": "¡Perfil de Master Trader configurado exitosamente!"
+      "successMessage": "¡Perfil de Master Trader configurado exitosamente!",
+      "profileUpdatedSuccessfully": "Perfil actualizado exitosamente",
+      "editTraderProfile": "Editar Perfil de Trader",
+      "configureHowInvestorsSeeYou": "Configura cómo los inversores verán tu perfil",
+      "information": "Información",
+      "profilePhoto": "Foto de Perfil",
+      "professionalImage400x400": "Imagen profesional de 400x400 píxeles",
+      "changeImage": "Cambiar Imagen",
+      "name": "Nombre",
+      "namePlaceholder": "Ej: Maestro FX Pro",
+      "bio": "Biografía",
+      "bioPlaceholder": "Describe tu experiencia, estrategia y enfoque de trading...",
+      "strategy": "Estrategia",
+      "strategyPlaceholder": "Ej: Scalping EUR/USD",
+      "risk": "Nivel de Riesgo",
+      "experience": "Experiencia",
+      "timeZone": "Zona Horaria",
+      "timeZonePlaceholder": "Ej: GMT-3 (Buenos Aires)",
+      "tradingHours": "Horario de Trading",
+      "tradingHoursPlaceholder": "Ej: 09:00 - 17:00",
+      "configuration": "Configuración",
+      "minInvestment": "Inversión Mínima",
+      "maxInvestment": "Inversión Máxima",
+      "commission": "Comisión",
+      "profitPercentage": "% de Ganancias",
+      "onlyChargeCommissionOnProfits": "Solo se cobra comisión sobre ganancias",
+      "specializations": "Especializaciones",
+      "privacySettings": "Configuración de Privacidad",
+      "publicProfile": "Perfil Público",
+      "othersCanSeeProfile": "Otros usuarios pueden ver tu perfil",
+      "allowCopyTrading": "Permitir Copy Trading",
+      "investorsCanCopyTrades": "Los inversores pueden copiar tus operaciones",
+      "preview": "Vista Previa",
+      "minInvestmentShort": "Inversión Mín"
     },
     "search": {
       "placeholder": "Buscar traders...",
@@ -182,7 +220,16 @@
       "comment": "Comentar",
       "viewDetails": "Ver Detalles",
       "sendMessage": "Enviar Mensaje",
-      "activateCopy": "Activar Copia"
+      "activateCopy": "Activar Copia",
+      "saveChanges": "Guardar Cambios",
+      "cancel": "Cancelar",
+      "saving": "Guardando..."
+    },
+    "experience": {
+      "oneToTwo": "1-2 años",
+      "threeToFive": "3-5 años",
+      "fivePlus": "5+ años",
+      "tenPlus": "10+ años"
     },
     "notifications": {
       "commentSubmitted": "Comentario enviado exitosamente",

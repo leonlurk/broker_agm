@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Users, DollarSign, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Eye, Settings, BarChart3, Activity, Award, Calendar, Copy, MoreHorizontal, Edit, Camera, Save, X, Info, Shield, Target, Briefcase, Search, Filter, SlidersHorizontal, Pause, StopCircle, MessageCircle, UserCheck } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell } from 'recharts';
-import { getFollowers, getTraderStats } from '../services/copytradingService';
+import { getFollowers, getTraderStats, updateMasterProfile } from '../services/copytradingService';
 import ConfigurarGestorModal from './ConfigurarGestorModal';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { useTranslation } from 'react-i18next';
@@ -240,38 +240,47 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
   const handleSaveProfile = async () => {
     setIsSaving(true);
     setProfileErrors({});
-    
+
     // Validaciones básicas
     const errors = {};
     if (!profileData.displayName.trim()) {
-      errors.displayName = 'El nombre de display es requerido';
+      errors.displayName = t('copyTrading.errors.nameRequired') || 'El nombre es requerido';
     }
     if (!profileData.bio.trim()) {
-      errors.bio = 'La biografía es requerida';
+      errors.bio = t('copyTrading.errors.bioRequired') || 'La biografía es requerida';
+    }
+    if (profileData.bio.length < 30) {
+      errors.bio = t('copyTrading.errors.bioMinLength') || 'La biografía debe tener al menos 30 caracteres';
     }
     if (profileData.minInvestment >= profileData.maxInvestment) {
-      errors.minInvestment = 'La inversión mínima debe ser menor que la máxima';
+      errors.minInvestment = t('copyTrading.errors.minInvestmentLessThanMax') || 'La inversión mínima debe ser menor que la máxima';
     }
     if (profileData.commissionRate < 0 || profileData.commissionRate > 50) {
-      errors.commissionRate = 'La comisión debe estar entre 0% y 50%';
+      errors.commissionRate = t('copyTrading.errors.commissionRange') || 'La comisión debe estar entre 0% y 50%';
     }
 
     if (Object.keys(errors).length > 0) {
       setProfileErrors(errors);
       setIsSaving(false);
+      toast.error(t('copyTrading.errors.fixValidationErrors') || 'Por favor corrige los errores');
       return;
     }
 
     try {
-      // Simular guardado
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('Perfil guardado:', profileData);
-      // Aquí iría la lógica real de guardado
-      toast.success(t('settings.profile.messages.profileUpdated'));
+      console.log('[Gestor] Saving profile data...');
+      const response = await updateMasterProfile(profileData);
+      console.log('[Gestor] Profile saved successfully:', response);
+
+      toast.success(t('copyTrading.manager.profileUpdatedSuccessfully') || 'Perfil actualizado exitosamente');
+
+      // Refrescar datos del trader
+      await fetchTraderData();
+
+      // Volver al dashboard
       setView('dashboard');
     } catch (error) {
-      console.error('Error guardando perfil:', error);
-      toast.error(t('settings.profile.messages.saveError'));
+      console.error('[Gestor] Error guardando perfil:', error);
+      toast.error(error.error || t('copyTrading.errors.saveError') || 'Error al guardar');
     } finally {
       setIsSaving(false);
     }
