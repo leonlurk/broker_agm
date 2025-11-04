@@ -748,7 +748,7 @@ const PammExplorerView = ({
                     <div>
                         <h3 className="text-lg font-medium">{fund.name}</h3>
                         <p className="text-green-500 text-sm">{formatPercentage(fund.monthlyReturn)} {t('pamm.explorer.lastMonth')}</p>
-                        <p className="text-gray-400 text-sm mt-1">{t('pamm.fund.manager')}: {fund.manager?.name || fund.manager?.display_name || 'Manager'} • {t('pamm.fund.inception')}: {fund.since}</p>
+                        <p className="text-gray-400 text-sm mt-1">{t('pamm.fund.manager')}: {typeof fund.manager === 'string' ? fund.manager : (fund.manager?.name || fund.manager?.display_name || 'Manager')} • {t('pamm.fund.inception')}: {fund.since}</p>
                     </div>
                     <div className={`${getTypeColor(fund.type)} text-xs px-2 py-1 rounded text-white`}>
                         {fund.type}
@@ -1106,7 +1106,7 @@ const PammFundProfileView = ({
                     </button>
                     <div>
                         <h1 className="text-2xl font-semibold">{fund.name}</h1>
-                        <p className="text-gray-400">{t('pamm.fund.manager')}: {fund.manager?.name || fund.manager?.display_name || 'Manager'}</p>
+                        <p className="text-gray-400">{t('pamm.fund.manager')}: {typeof fund.manager === 'string' ? fund.manager : (fund.manager?.name || fund.manager?.display_name || 'Manager')}</p>
                     </div>
                 </div>
                 <button
