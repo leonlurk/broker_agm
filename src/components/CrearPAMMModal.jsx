@@ -289,21 +289,23 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
           const fundDataForBackend = {
             name: formData.nombreFondo,
             description: formData.descripcion,
-            strategy_type: formData.tipoEstrategia,
-            management_fee: formData.managementFee,
-            performance_fee: formData.performanceFee,
-            lockup_period: formData.lockupPeriod,
+            manager_mt5_account_id: formData.cuentaMT5Seleccionada, // ✅ Parámetro correcto
             min_investment: formData.inversionMinima,
+            max_investment: formData.capitalMaximo,
+            performance_fee: formData.performanceFee / 100, // ✅ Convertir a decimal (20 → 0.2)
+            management_fee: formData.managementFee / 100, // ✅ Convertir a decimal (2 → 0.02)
+            is_public: true,
+            // Campos adicionales para metadata (opcional)
+            strategy_type: formData.tipoEstrategia,
+            lockup_period: formData.lockupPeriod,
             max_risk: formData.riesgoMaximo,
             markets: formData.mercados,
-            trading_hours: formData.horarioOperacion,
-            pamm_mt5_account: formData.cuentaMT5Seleccionada,
-            min_capital: formData.capitalMinimo,
-            max_capital: formData.capitalMaximo
+            trading_hours: formData.horarioOperacion
           };
 
+          console.log('[CrearPAMMModal] Creating fund with data:', fundDataForBackend);
           const fundResult = await createPammFund(fundDataForBackend);
-          console.log('Fund created successfully:', fundResult);
+          console.log('[CrearPAMMModal] Fund created successfully:', fundResult);
 
           // Enhanced success feedback
           const fundSuccessNotification = document.createElement('div');
@@ -668,46 +670,51 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
                 
                 {realAccounts.length > 0 ? (
                   <div className="space-y-3">
-                    {realAccounts.map((account) => (
-                      <label
-                        key={account.id}
-                        className={`flex items-center p-4 rounded-lg border cursor-pointer transition-colors ${
-                          formData.cuentaMT5Seleccionada === account.accountNumber
-                            ? 'border-purple-500 bg-purple-500/10'
-                            : 'border-[#333] bg-[#1a1a1a] hover:border-[#444]'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="cuentaMT5PAMM"
-                          value={account.accountNumber}
-                          checked={formData.cuentaMT5Seleccionada === account.accountNumber}
-                          onChange={(e) => handleInputChange('cuentaMT5Seleccionada', e.target.value)}
-                          className="sr-only"
-                        />
-                        <div className="flex items-center justify-between w-full">
-                          <div>
-                            <h4 className="font-semibold text-white">{account.accountName}</h4>
-                            <p className="text-sm text-gray-400">#{account.accountNumber}</p>
-                            <p className="text-xs text-gray-500">{account.accountTypeSelection} • Apalancamiento 1:{account.leverage}</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="flex items-center gap-1 text-white font-semibold">
-                              <DollarSign size={14} />
-                              <span>{account.balance?.toLocaleString() || '0'}</span>
+                    {realAccounts.map((account) => {
+                      // Extraer el login MT5 correcto
+                      const mt5Login = String(account.accountNumber || account.account_number || account.login || '');
+                      
+                      return (
+                        <label
+                          key={account.id}
+                          className={`flex items-center p-4 rounded-lg border cursor-pointer transition-colors ${
+                            formData.cuentaMT5Seleccionada === mt5Login
+                              ? 'border-purple-500 bg-purple-500/10'
+                              : 'border-[#333] bg-[#1a1a1a] hover:border-[#444]'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="cuentaMT5PAMM"
+                            value={mt5Login}
+                            checked={formData.cuentaMT5Seleccionada === mt5Login}
+                            onChange={(e) => handleInputChange('cuentaMT5Seleccionada', e.target.value)}
+                            className="sr-only"
+                          />
+                          <div className="flex items-center justify-between w-full">
+                            <div>
+                              <h4 className="font-semibold text-white">{account.accountName || account.name || `Account ${mt5Login}`}</h4>
+                              <p className="text-sm text-gray-400">#{mt5Login}</p>
+                              <p className="text-xs text-gray-500">{account.accountTypeSelection || account.account_type || 'Real'} • Apalancamiento 1:{account.leverage || 100}</p>
                             </div>
-                            <p className="text-xs text-gray-400">{t('pamm.balance')} USD</p>
-                          </div>
-                        </div>
-                        {formData.cuentaMT5Seleccionada === account.accountNumber && (
-                          <div className="ml-3">
-                            <div className="w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            <div className="text-right">
+                              <div className="flex items-center gap-1 text-white font-semibold">
+                                <DollarSign size={14} />
+                                <span>{account.balance?.toLocaleString() || '0'}</span>
+                              </div>
+                              <p className="text-xs text-gray-400">{t('pamm.balance')} USD</p>
                             </div>
                           </div>
-                        )}
-                      </label>
-                    ))}
+                          {formData.cuentaMT5Seleccionada === mt5Login && (
+                            <div className="ml-3">
+                              <div className="w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                              </div>
+                            </div>
+                          )}
+                        </label>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-6">
