@@ -102,11 +102,11 @@ class TransactionService {
       logger.info('[TransactionService] Creating transfer request', transferData);
       
       const { data, error } = await supabase.rpc('create_transfer_request', {
+        p_amount: transferData.amount,
         p_from_account_id: transferData.from_account_id,
         p_from_account_name: transferData.from_account_name,
         p_to_account_id: transferData.to_account_id,
-        p_to_account_name: transferData.to_account_name,
-        p_amount: transferData.amount
+        p_to_account_name: transferData.to_account_name
       });
 
       if (error) {
