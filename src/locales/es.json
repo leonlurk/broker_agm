@@ -245,6 +245,10 @@
       "manage": "Gestionar",
       "pauseCopy": "Pausar Copia",
       "stopCopy": "Detener Copia"
+    },
+    "notifications": {
+      "commentSubmitted": "Comentario enviado exitosamente",
+      "commentError": "Error al enviar el comentario. Intenta nuevamente."
     }
   },
   "pamm": {

@@ -178,9 +178,14 @@
       "viewProfile": "View Profile",
       "copyTrader": "Copy Trader",
       "addComment": "Add Comment",
+      "comment": "Comment",
       "viewDetails": "View Details",
       "sendMessage": "Send Message",
       "activateCopy": "Activate Copy"
+    },
+    "notifications": {
+      "commentSubmitted": "Comment submitted successfully",
+      "commentError": "Error submitting comment. Please try again."
     },
     "stats": {
       "performance": "Performance",

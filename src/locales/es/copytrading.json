@@ -177,9 +177,14 @@
       "viewProfile": "Ver Perfil",
       "copyTrader": "Copiar Trader",
       "addComment": "Agregar Comentario",
+      "comment": "Comentar",
       "viewDetails": "Ver Detalles",
       "sendMessage": "Enviar Mensaje",
       "activateCopy": "Activar Copia"
+    },
+    "notifications": {
+      "commentSubmitted": "Comentario enviado exitosamente",
+      "commentError": "Error al enviar el comentario. Intenta nuevamente."
     },
     "stats": {
       "performance": "Rendimiento",

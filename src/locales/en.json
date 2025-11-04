@@ -261,6 +261,10 @@
       "manage": "Manage",
       "pauseCopy": "Pause Copy",
       "stopCopy": "Stop Copy"
+    },
+    "notifications": {
+      "commentSubmitted": "Comment submitted successfully",
+      "commentError": "Error submitting comment. Please try again."
     }
   },
   "pamm": {

@@ -445,7 +445,7 @@ const Inversor = () => {
       });
 
       console.log('Comentario guardado exitosamente en Supabase:', result);
-      toast.success('Comentario enviado exitosamente');
+      toast.success(t('notifications.commentSubmitted'));
 
       // Actualizar la lista local de comentarios
       const newComment = {
@@ -460,7 +460,7 @@ const Inversor = () => {
       setComments(prev => [newComment, ...prev]);
     } catch (error) {
       console.error('Error al guardar comentario:', error);
-      toast.error('Error al enviar el comentario. Intenta nuevamente.');
+      toast.error(t('notifications.commentError'));
       throw error;
     }
   };
@@ -1255,7 +1255,7 @@ const Inversor = () => {
                   className="group py-3 px-6 rounded-xl transition-all duration-300 font-medium flex items-center gap-2 border-2 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10 hover:shadow-lg hover:shadow-yellow-500/20 hover:scale-105"
                 >
                   <MessageSquare size={18} className="group-hover:rotate-12 transition-transform" />
-                  <span>{t('copyTrading.actions.comment')}</span>
+                  <span>{t('actions.comment')}</span>
                 </button>
               </div>
             </div>
