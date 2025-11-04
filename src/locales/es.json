@@ -238,7 +238,14 @@
     "totalReturn": "Rendimiento Total",
     "maxDrawdown": "Retracción Máxima",
     "accept": "Aceptar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "actions": {
+      "comment": "Comentar",
+      "copyTrader": "Copiar Trader",
+      "manage": "Gestionar",
+      "pauseCopy": "Pausar Copia",
+      "stopCopy": "Detener Copia"
+    }
   },
   "pamm": {
     "management": "Gestión PAMM",

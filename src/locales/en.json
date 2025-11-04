@@ -254,7 +254,14 @@
     "loss": "Loss",
     "totalReturn": "Total Return",
     "accept": "Accept",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "actions": {
+      "comment": "Comment",
+      "copyTrader": "Copy Trader",
+      "manage": "Manage",
+      "pauseCopy": "Pause Copy",
+      "stopCopy": "Stop Copy"
+    }
   },
   "pamm": {
     "title": "PAMM",

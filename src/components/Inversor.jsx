@@ -6,7 +6,7 @@ import CommentsRatingModal from './CommentsRatingModal';
 import { useAccounts } from '../contexts/AccountsContext';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { useTranslation } from 'react-i18next';
-import { getMasterTraders, getMySubscriptions, getInvestorPortfolio, followMaster, unfollowMaster } from '../services/copytradingService';
+import { getMasterTraders, getMySubscriptions, getInvestorPortfolio, followMaster, unfollowMaster, submitTraderComment } from '../services/copytradingService';
 import toast from 'react-hot-toast';
 
 // Estados iniciales vacíos para datos dinámicos
@@ -437,21 +437,32 @@ const Inversor = () => {
   };
 
   const handleSubmitComment = async (commentData) => {
-    // Simular un envío a API
-    const newComment = {
-      id: comments.length + 1,
-      user: 'Usuario Actual', // En producción vendría del contexto de usuario
-      avatar: '/current-user.png',
-      date: new Date().toISOString().split('T')[0],
-      rating: commentData.rating,
-      comment: commentData.comment
-    };
+    try {
+      const result = await submitTraderComment({
+        trader_id: commentData.traderId,
+        rating: commentData.rating,
+        comment: commentData.comment
+      });
 
-    setComments(prev => [newComment, ...prev]);
-    console.log('Comentario enviado:', commentData);
-    
-    // Aquí se integraría con la API real
-    // await submitTraderComment(commentData);
+      console.log('Comentario guardado exitosamente en Supabase:', result);
+      toast.success(t('comments.commentSubmitted'));
+
+      // Actualizar la lista local de comentarios
+      const newComment = {
+        id: result.id,
+        user: commentData.traderName || 'Usuario',
+        avatar: '/current-user.png',
+        date: new Date().toISOString().split('T')[0],
+        rating: commentData.rating,
+        comment: commentData.comment
+      };
+
+      setComments(prev => [newComment, ...prev]);
+    } catch (error) {
+      console.error('Error al guardar comentario:', error);
+      toast.error(t('comments.submitError'));
+      throw error;
+    }
   };
 
   // Datos del perfil del trader - completamente dinámicos desde la API
@@ -1275,9 +1286,6 @@ const Inversor = () => {
                 >
                   <Icon size={18} className={`transition-transform ${isActive ? 'scale-110' : ''}`} />
                   <span>{tab.label}</span>
-                  {isActive && (
-                    <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                  )}
                 </button>
               );
             })}

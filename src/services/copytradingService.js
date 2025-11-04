@@ -214,3 +214,96 @@ export const configureMaster = async (masterData) => {
     throw error.response?.data || { error: 'Error al configurar como master trader' };
   }
 };
+
+/**
+ * Envía un comentario y calificación para un trader.
+ * @param {object} commentData - Datos del comentario
+ * @param {string} commentData.trader_id - ID del trader a comentar
+ * @param {number} commentData.rating - Calificación (1-5)
+ * @param {string} commentData.comment - Texto del comentario
+ * @returns {Promise<object>} El comentario creado
+ */
+export const submitTraderComment = async ({ trader_id, rating, comment }) => {
+  try {
+    const { supabase } = await import('../supabase/config');
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error('Usuario no autenticado');
+    }
+
+    // Verificar si el usuario ya tiene un comentario para este trader
+    const { data: existing, error: checkError } = await supabase
+      .from('trader_comments')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('trader_id', trader_id)
+      .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      throw checkError;
+    }
+
+    let result;
+    if (existing) {
+      // Actualizar comentario existente
+      const { data, error } = await supabase
+        .from('trader_comments')
+        .update({
+          rating,
+          comment,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      result = data;
+    } else {
+      // Crear nuevo comentario
+      const { data, error } = await supabase
+        .from('trader_comments')
+        .insert({
+          user_id: user.id,
+          trader_id,
+          rating,
+          comment
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      result = data;
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error submitting comment:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene los comentarios de un trader.
+ * @param {string} trader_id - ID del trader
+ * @returns {Promise<Array>} Lista de comentarios con información del usuario
+ */
+export const getTraderComments = async (trader_id) => {
+  try {
+    const { supabase } = await import('../supabase/config');
+
+    const { data, error } = await supabase
+      .from('trader_comments_with_users')
+      .select('*')
+      .eq('trader_id', trader_id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    return [];
+  }
+};
