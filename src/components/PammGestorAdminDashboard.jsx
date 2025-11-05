@@ -71,23 +71,29 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   useEffect(() => {
     const fetchGestorData = async () => {
       try {
+        console.log('[PammGestorAdmin] Fetching manager stats...');
         setIsLoading(true);
         setError(null);
         // ✅ ACTIVADO: Cargar datos REALES desde la API
         const { getManagerStats } = await import('../services/pammService');
         const response = await getManagerStats();
 
+        console.log('[PammGestorAdmin] Manager stats response:', response);
+
         if (response && response.overview) {
           // Mapear la respuesta del backend al formato del frontend
           const investors = response.investors || [];
           const traders = response.funds || [];
+
+          console.log('[PammGestorAdmin] Funds found:', traders.length);
+          console.log('[PammGestorAdmin] Investors found:', investors.length);
 
           // Actualizar estado con datos reales (se usarán en dashboardData más abajo)
           setInvestors(investors);
           setTradersDisponibles(traders);
         }
       } catch (error) {
-        console.error('Error loading PAMM gestor data:', error);
+        console.error('[PammGestorAdmin] Error loading PAMM gestor data:', error);
         setError(error.message);
       } finally {
         setIsLoading(false);
