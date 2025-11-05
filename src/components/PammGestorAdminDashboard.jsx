@@ -64,6 +64,8 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   const [showFundConfigModal, setShowFundConfigModal] = useState(false);
   const [selectedFundForConfig, setSelectedFundForConfig] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [fundDetails, setFundDetails] = useState(null);
+  const [loadingFundDetails, setLoadingFundDetails] = useState(false);
 
   const data = gestorData;
 
@@ -132,9 +134,23 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
     setShowCrearFondoModal(true);
   };
 
-  const handleManageFund = (fund) => {
+  const handleManageFund = async (fund) => {
+    console.log('[PammGestorAdmin] Loading fund details for:', fund.id);
+    setLoadingFundDetails(true);
     setSelectedInvestor(fund);
     setView('fundDetail');
+    
+    try {
+      const { getManagerFundDetails } = await import('../services/pammService');
+      const details = await getManagerFundDetails(fund.id);
+      console.log('[PammGestorAdmin] Fund details loaded:', details);
+      setFundDetails(details);
+    } catch (error) {
+      console.error('[PammGestorAdmin] Error loading fund details:', error);
+      setFundDetails(null);
+    } finally {
+      setLoadingFundDetails(false);
+    }
   };
 
   const handleConfigureFund = (fund) => {
@@ -175,7 +191,9 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   console.log('[PammGestorAdmin] Rendering with accountsData:', accountsData.length, 'funds');
 
   if (view === 'fundDetail' && selectedInvestor) {
-    const fund = selectedInvestor;
+    // Use real fund details if available, otherwise use basic fund data
+    const fund = fundDetails || selectedInvestor;
+    const isLoading = loadingFundDetails;
     return (
       <div className="p-4 md:p-6 bg-[#232323] text-white border border-[#333] rounded-3xl space-y-6">
         {/* Header */}
@@ -208,7 +226,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               <span className="text-sm text-gray-400">AUM</span>
               <DollarSign className="text-cyan-500" size={16} />
             </div>
-            <div className="text-xl font-bold">{formatCurrency(fund.balance)}</div>
+            <div className="text-xl font-bold">{formatCurrency(fund.current_aum || fund.aum || 0)}</div>
           </div>
           
           <div className="bg-[#2a2a2a] p-4 rounded-xl">
@@ -216,7 +234,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               <span className="text-sm text-gray-400">{t('pamm.manager.fundDetail.totalReturn')}</span>
               <TrendingUp className="text-green-500" size={16} />
             </div>
-            <div className="text-xl font-bold text-green-500">{formatPercentage(fund.totalReturn)}</div>
+            <div className="text-xl font-bold text-green-500">{formatPercentage(fund.total_return_percentage || 0)}</div>
           </div>
           
           <div className="bg-[#2a2a2a] p-4 rounded-xl">
@@ -224,7 +242,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               <span className="text-sm text-gray-400">{t('pamm.manager.fundDetail.investors')}</span>
               <Users className="text-blue-500" size={16} />
             </div>
-            <div className="text-xl font-bold">{fund.investors}</div>
+            <div className="text-xl font-bold">{fund.total_investors || fund.investors_count || 0}</div>
           </div>
           
           <div className="bg-[#2a2a2a] p-4 rounded-xl">
@@ -232,7 +250,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               <span className="text-sm text-gray-400">{t('pamm.manager.fundDetail.successRate')}</span>
               <Award className="text-yellow-500" size={16} />
             </div>
-            <div className="text-xl font-bold">{fund.winRate}%</div>
+            <div className="text-xl font-bold">{(fund.win_rate || 0).toFixed(1)}%</div>
           </div>
         </div>
 
@@ -243,38 +261,38 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.strategy')}</span>
-                <span className="font-medium">{fund.strategy}</span>
+                <span className="font-medium">{fund.strategy || 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.riskLevel')}</span>
                 <span className={`font-medium ${
-                  fund.riskLevel === 'Alto' ? 'text-red-400' :
-                  fund.riskLevel === 'Medio' ? 'text-yellow-400' : 'text-green-400'
-                }`}>{fund.riskLevel}</span>
+                  fund.risk_level === 'Alto' ? 'text-red-400' :
+                  fund.risk_level === 'Medio' ? 'text-yellow-400' : 'text-green-400'
+                }`}>{fund.risk_level || 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.maxDrawdown')}</span>
-                <span className="font-medium text-red-400">{fund.maxDrawdown}%</span>
+                <span className="font-medium text-red-400">{(fund.max_drawdown || 0).toFixed(2)}%</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.sharpeRatio')}</span>
-                <span className="font-medium">{fund.sharpeRatio}</span>
+                <span className="font-medium">{(fund.sharpe_ratio || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.totalTrades')}</span>
-                <span className="font-medium">{fund.totalTrades}</span>
+                <span className="font-medium">{fund.total_trades || 0}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.creationDate')}</span>
-                <span className="font-medium">{new Date(fund.createdDate).toLocaleDateString()}</span>
+                <span className="font-medium">{fund.created_at ? new Date(fund.created_at).toLocaleDateString() : 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.tradedVolume')}</span>
-                <span className="font-medium">{formatCurrency(250000)}</span>
+                <span className="font-medium">{formatCurrency(fund.traded_volume || 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.successfulTrades')}</span>
-                <span className="font-medium">142/{fund.totalTrades}</span>
+                <span className="font-medium">{fund.successful_trades || 0}/{fund.total_trades || 0}</span>
               </div>
             </div>
           </div>
@@ -284,23 +302,23 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.managementFee')}</span>
-                <span className="font-medium">{fund.managementFee}% {t('pamm.manager.fundDetail.annual')}</span>
+                <span className="font-medium">{(fund.management_fee || 0).toFixed(2)}% {t('pamm.manager.fundDetail.annual')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.performanceFee')}</span>
-                <span className="font-medium">{fund.performanceFee}% {t('pamm.manager.fundDetail.profits')}</span>
+                <span className="font-medium">{(fund.performance_fee || 0).toFixed(2)}% {t('pamm.manager.fundDetail.profits')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.lockupPeriod')}</span>
-                <span className="font-medium">{fund.lockupPeriod} {t('pamm.manager.fundDetail.days')}</span>
+                <span className="font-medium">{fund.lockup_period || 0} {t('pamm.manager.fundDetail.days')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.minInvestment')}</span>
-                <span className="font-medium">{formatCurrency(fund.minInvestment)}</span>
+                <span className="font-medium">{formatCurrency(fund.min_investment || 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.maxInvestment')}</span>
-                <span className="font-medium">{formatCurrency(50000)}</span>
+                <span className="font-medium">{formatCurrency(fund.max_investment || 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.highWaterMark')}</span>
@@ -312,7 +330,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.nextClosure')}</span>
-                <span className="font-medium">15/01/2025</span>
+                <span className="font-medium">{fund.next_closure ? new Date(fund.next_closure).toLocaleDateString() : 'N/A'}</span>
               </div>
             </div>
           </div>
@@ -335,20 +353,20 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#333]">
-                {investors.filter(inv => inv.id <= fund.investors).map((investor) => (
+                {(fund.investors || []).map((investor) => (
                   <tr key={investor.id} className="hover:bg-[#333] transition-colors">
-                    <td className="py-3 font-medium">{investor.nombre}</td>
-                    <td className="py-3">{formatCurrency(investor.montoInvertido)}</td>
-                    <td className="py-3 text-green-500">{formatCurrency(investor.gananciaActual)}</td>
-                    <td className="py-3 text-green-500">{formatPercentage(investor.rendimientoPersonal)}</td>
-                    <td className="py-3 text-gray-400">{new Date(investor.fechaEntrada).toLocaleDateString()}</td>
+                    <td className="py-3 font-medium">{investor.name}</td>
+                    <td className="py-3">{formatCurrency(investor.invested_amount)}</td>
+                    <td className="py-3 text-green-500">{formatCurrency(investor.profit_loss)}</td>
+                    <td className="py-3 text-green-500">{formatPercentage(investor.profit_loss_percentage)}</td>
+                    <td className="py-3 text-gray-400">{new Date(investor.joined_date).toLocaleDateString()}</td>
                     <td className="py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        investor.estado === 'Activo' 
+                        investor.status === 'active' 
                           ? 'bg-green-500 bg-opacity-20 text-green-400' 
                           : 'bg-gray-500 bg-opacity-20 text-gray-400'
                       }`}>
-                        {investor.estado}
+                        {investor.status}
                       </span>
                     </td>
                     <td className="py-3">
@@ -369,9 +387,9 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
             <h3 className="text-lg font-semibold mb-4">{t('pamm.manager.fundDetail.monthlyPerformance')}</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data.rendimientoMensual.map((value, index) => ({
-                  mes: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][index],
-                  rendimiento: value
+                <AreaChart data={(fund.monthly_performance || []).map((item) => ({
+                  mes: new Date(item.month).toLocaleDateString('es', { month: 'short' }),
+                  rendimiento: item.return
                 }))}>
                   <defs>
                     <linearGradient id="colorRendimiento" x1="0" y1="0" x2="0" y2="1">
@@ -403,11 +421,11 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={[
-                      { name: 'Forex', value: 45, color: '#0F7490' },
-                      { name: 'Criptomonedas', value: 30, color: '#FFB800' },
-                      { name: 'Acciones', value: 25, color: '#10B981' }
-                    ]}
+                    data={(fund.market_distribution || []).map((market, idx) => ({
+                      name: market.name,
+                      value: market.percentage,
+                      color: ['#0F7490', '#FFB800', '#10B981', '#8B5CF6'][idx % 4]
+                    }))}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -416,12 +434,8 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {[
-                      { name: 'Forex', value: 45, color: '#0F7490' },
-                      { name: 'Criptomonedas', value: 30, color: '#FFB800' },
-                      { name: 'Acciones', value: 25, color: '#10B981' }
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {(fund.market_distribution || []).map((market, index) => (
+                      <Cell key={`cell-${index}`} fill={['#0F7490', '#FFB800', '#10B981', '#8B5CF6'][index % 4]} />
                     ))}
                   </Pie>
                   <Tooltip />

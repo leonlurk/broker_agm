@@ -113,6 +113,20 @@ export const getManagerStats = async () => {
 };
 
 /**
+ * Obtiene los detalles completos de un fondo PAMM como manager.
+ * @param {string} fundId - El ID del fondo PAMM.
+ * @returns {Promise<object>} Los detalles completos del fondo.
+ */
+export const getManagerFundDetails = async (fundId) => {
+  try {
+    const response = await logicApiClient.get(`/api/v1/pamm/manager/fund/${fundId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener detalles del fondo' };
+  }
+};
+
+/**
  * Permite al usuario unirse a un fondo PAMM.
  * @param {string} fundId - El ID del fondo PAMM.
  * @param {string} mt5AccountId - El ID de la cuenta MT5 del inversor.
