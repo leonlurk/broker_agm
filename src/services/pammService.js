@@ -37,7 +37,7 @@ logicApiClient.interceptors.request.use(
         }
       }
     } catch (error) {
-      console.warn('Error getting auth token:', error);
+      console.error('Error getting auth token:', error);
     }
     return config;
   },
@@ -123,6 +123,74 @@ export const getManagerFundDetails = async (fundId) => {
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al obtener detalles del fondo' };
+  }
+};
+
+/**
+ * Obtener actividades de un fondo
+ */
+export const getFundActivities = async (fundId, limit = 10) => {
+  try {
+    const response = await logicApiClient.get(`/api/v1/pamm/fund/${fundId}/activities`, {
+      params: { limit }
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener actividades' };
+  }
+};
+
+/**
+ * Obtener mensajes de un fondo
+ */
+export const getFundMessages = async (fundId, limit = 50) => {
+  try {
+    const response = await logicApiClient.get(`/api/v1/pamm/fund/${fundId}/messages`, {
+      params: { limit }
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener mensajes' };
+  }
+};
+
+/**
+ * Enviar mensaje
+ */
+export const sendMessage = async (fundId, message, parentMessageId = null) => {
+  try {
+    const response = await logicApiClient.post('/api/v1/pamm/messages', {
+      fundId,
+      message,
+      parentMessageId
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al enviar mensaje' };
+  }
+};
+
+/**
+ * Marcar mensajes como leídos
+ */
+export const markMessagesAsRead = async (fundId) => {
+  try {
+    const response = await logicApiClient.put(`/api/v1/pamm/fund/${fundId}/messages/read`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al marcar mensajes' };
+  }
+};
+
+/**
+ * Obtener conteo de mensajes no leídos
+ */
+export const getUnreadMessagesCount = async () => {
+  try {
+    const response = await logicApiClient.get('/api/v1/pamm/messages/unread');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener mensajes no leídos' };
   }
 };
 

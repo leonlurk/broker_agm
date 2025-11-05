@@ -353,7 +353,28 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#333]">
-                {(fund.investors || []).length > 0 ? (
+                {isLoading ? (
+                  // Skeleton loader
+                  [...Array(3)].map((_, idx) => (
+                    <tr key={idx} className="animate-pulse">
+                      <td className="py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gray-700"></div>
+                          <div className="space-y-2">
+                            <div className="h-4 w-32 bg-gray-700 rounded"></div>
+                            <div className="h-3 w-24 bg-gray-700 rounded"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3"><div className="h-4 w-20 bg-gray-700 rounded"></div></td>
+                      <td className="py-3"><div className="h-4 w-20 bg-gray-700 rounded"></div></td>
+                      <td className="py-3"><div className="h-4 w-16 bg-gray-700 rounded"></div></td>
+                      <td className="py-3"><div className="h-4 w-24 bg-gray-700 rounded"></div></td>
+                      <td className="py-3"><div className="h-6 w-16 bg-gray-700 rounded-full"></div></td>
+                      <td className="py-3"><div className="h-6 w-6 bg-gray-700 rounded"></div></td>
+                    </tr>
+                  ))
+                ) : (fund.investors || []).length > 0 ? (
                   (fund.investors || []).map((investor) => (
                     <tr key={investor.id} className="hover:bg-[#333] transition-colors">
                       <td className="py-3">
