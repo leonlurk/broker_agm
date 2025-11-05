@@ -353,29 +353,61 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#333]">
-                {(fund.investors || []).map((investor) => (
-                  <tr key={investor.id} className="hover:bg-[#333] transition-colors">
-                    <td className="py-3 font-medium">{investor.name}</td>
-                    <td className="py-3">{formatCurrency(investor.invested_amount)}</td>
-                    <td className="py-3 text-green-500">{formatCurrency(investor.profit_loss)}</td>
-                    <td className="py-3 text-green-500">{formatPercentage(investor.profit_loss_percentage)}</td>
-                    <td className="py-3 text-gray-400">{new Date(investor.joined_date).toLocaleDateString()}</td>
-                    <td className="py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        investor.status === 'active' 
-                          ? 'bg-green-500 bg-opacity-20 text-green-400' 
-                          : 'bg-gray-500 bg-opacity-20 text-gray-400'
-                      }`}>
-                        {investor.status}
-                      </span>
-                    </td>
-                    <td className="py-3">
-                      <button className="p-1 hover:bg-[#444] rounded transition-colors">
-                        <MoreHorizontal size={16} />
-                      </button>
+                {(fund.investors || []).length > 0 ? (
+                  (fund.investors || []).map((investor) => (
+                    <tr key={investor.id} className="hover:bg-[#333] transition-colors">
+                      <td className="py-3">
+                        <div className="flex items-center gap-3">
+                          {investor.avatar ? (
+                            <img 
+                              src={investor.avatar} 
+                              alt={investor.name}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                              {investor.name?.charAt(0)?.toUpperCase() || 'I'}
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-medium">{investor.name}</p>
+                            {investor.email && <p className="text-xs text-gray-400">{investor.email}</p>}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3">{formatCurrency(investor.invested_amount)}</td>
+                      <td className={`py-3 ${investor.profit_loss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {formatCurrency(investor.profit_loss)}
+                      </td>
+                      <td className={`py-3 ${investor.profit_loss_percentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {formatPercentage(investor.profit_loss_percentage)}
+                      </td>
+                      <td className="py-3 text-gray-400">{new Date(investor.joined_date).toLocaleDateString()}</td>
+                      <td className="py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          investor.status === 'active' 
+                            ? 'bg-green-500 bg-opacity-20 text-green-400' 
+                            : 'bg-gray-500 bg-opacity-20 text-gray-400'
+                        }`}>
+                          {investor.status === 'active' ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      <td className="py-3">
+                        <button className="p-1 hover:bg-[#444] rounded transition-colors">
+                          <MoreHorizontal size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="py-8 text-center text-gray-400">
+                      <Users className="mx-auto mb-2 text-gray-500" size={32} />
+                      <p>No hay inversores en este fondo aún</p>
+                      <p className="text-sm mt-1">Los inversores aparecerán aquí cuando se unan al fondo</p>
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -401,7 +433,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                   <YAxis stroke="#666" />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
-                    formatter={(value) => [`${value}%`, t('pamm.manager.fundDetail.performance')]}
+                    formatter={(value) => [`${parseFloat(value).toFixed(2)}%`, t('pamm.manager.fundDetail.performance')]}
                   />
                   <Area 
                     type="monotone" 
@@ -445,62 +477,20 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           </div>
         </div>
 
-        {/* Activity & Messages */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-[#2a2a2a] p-6 rounded-xl">
-            <h3 className="text-lg font-semibold mb-4">{t('pamm.manager.fundDetail.recentActivity')}</h3>
-            <div className="space-y-3">
-              {[
-                { action: t('pamm.manager.fundDetail.newInvestment'), user: 'Carlos Rodriguez', amount: '$5,000', time: t('pamm.manager.fundDetail.hoursAgo', { hours: 2 }) },
-                { action: t('pamm.manager.fundDetail.partialWithdrawal'), user: 'Ana Martínez', amount: '$1,200', time: t('pamm.manager.fundDetail.hoursAgo', { hours: 5 }) },
-                { action: t('pamm.manager.fundDetail.commissionCharged'), user: t('pamm.manager.fundDetail.system'), amount: '$420', time: t('pamm.manager.fundDetail.daysAgo', { days: 1 }) },
-                { action: t('pamm.manager.fundDetail.newInvestment'), user: 'Pedro García', amount: '$3,500', time: t('pamm.manager.fundDetail.daysAgo', { days: 2 }) }
-              ].map((activity, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-[#333] rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Activity size={16} className="text-cyan-500" />
-                    <div>
-                      <p className="text-sm font-medium">{activity.action}</p>
-                      <p className="text-xs text-gray-400">{activity.user}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{activity.amount}</p>
-                    <p className="text-xs text-gray-400">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
+        {/* Coming Soon: Activity & Messaging System */}
+        {fund.total_investors > 0 && (
+          <div className="bg-[#2a2a2a] p-8 rounded-xl text-center">
+            <MessageCircle className="mx-auto mb-4 text-gray-500" size={48} />
+            <h3 className="text-xl font-semibold mb-2">Sistema de Mensajería</h3>
+            <p className="text-gray-400 mb-4">
+              Próximamente: Comunícate directamente con tus inversores, recibe notificaciones de actividad y mantén una comunicación transparente.
+            </p>
+            <div className="inline-flex items-center gap-2 text-sm text-cyan-500">
+              <span className="inline-block w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>
+              En desarrollo
             </div>
           </div>
-
-          <div className="bg-[#2a2a2a] p-6 rounded-xl">
-            <h3 className="text-lg font-semibold mb-4">{t('pamm.manager.fundDetail.investorMessages')}</h3>
-            <div className="space-y-3">
-              {[
-                { from: 'Carlos Rodriguez', message: t('pamm.manager.fundDetail.whenIsNextClosure'), time: t('pamm.manager.fundDetail.hourAgo'), unread: true },
-                { from: 'Maria González', message: t('pamm.manager.fundDetail.excellentPerformance'), time: t('pamm.manager.fundDetail.hoursAgo', { hours: 3 }), unread: false },
-                { from: 'Roberto Silva', message: t('pamm.manager.fundDetail.requestAdditionalInfo'), time: t('pamm.manager.fundDetail.hoursAgo', { hours: 5 }), unread: true }
-              ].map((msg, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-[#333] rounded-lg hover:bg-[#444] cursor-pointer transition-colors">
-                  <div className="flex items-center gap-3">
-                    <MessageCircle size={16} className={msg.unread ? 'text-cyan-500' : 'text-gray-400'} />
-                    <div>
-                      <p className="text-sm font-medium">{msg.from}</p>
-                      <p className="text-xs text-gray-400 truncate max-w-[200px]">{msg.message}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-400">{msg.time}</p>
-                    {msg.unread && <span className="inline-block w-2 h-2 bg-cyan-500 rounded-full mt-1"></span>}
-                  </div>
-                </div>
-              ))}
-              <button className="w-full py-2 bg-[#333] hover:bg-[#444] rounded-lg text-sm text-gray-400 transition-colors">
-                {t('pamm.manager.fundDetail.viewAllMessages')}
-              </button>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     );
   }
@@ -774,52 +764,47 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold">{account.name}</h3>
-                  <span className="text-sm text-gray-400">{account.type} • {account.strategy}</span>
+                  <span className="text-sm text-gray-400">
+                    {account.description ? account.description.substring(0, 50) + '...' : 'Fondo PAMM'}
+                  </span>
                 </div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  account.status === 'Activo' 
+                  account.status === 'active' 
                     ? 'bg-green-500 bg-opacity-20 text-green-400' 
                     : 'bg-gray-500 bg-opacity-20 text-gray-400'
                 }`}>
-                  {account.status}
+                  {account.status === 'active' ? 'Activo' : 'Inactivo'}
                 </span>
               </div>
               
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-400">AUM:</span>
-                  <span className="font-medium">{formatCurrency(account.balance)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">{t('pamm.manager.monthlyReturn')}</span>
-                  <span className="font-medium text-green-500">{formatPercentage(account.monthlyReturn)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">{t('pamm.manager.totalReturn')}</span>
-                  <span className="font-medium text-green-500">{formatPercentage(account.totalReturn)}</span>
+                  <span className="font-medium">{formatCurrency(account.aum || 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">{t('pamm.manager.investorsCount')}</span>
-                  <span className="font-medium">{account.investors}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">{t('pamm.manager.winRate')}</span>
-                  <span className="font-medium">{account.winRate}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">{t('pamm.manager.maxDrawdown')}</span>
-                  <span className="font-medium text-red-400">{account.maxDrawdown}%</span>
+                  <span className="font-medium">{account.investors_count || 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">{t('pamm.manager.commission')}</span>
-                  <span className="font-medium">{account.managementFee}% + {account.performanceFee}%</span>
+                  <span className="font-medium">
+                    {(parseFloat(account.management_fee) || 0).toFixed(1)}% + {(parseFloat(account.performance_fee) || 0).toFixed(1)}%
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">{t('pamm.manager.riskLevel')}</span>
-                  <span className={`font-medium ${
-                    account.riskLevel === 'Alto' ? 'text-red-400' :
-                    account.riskLevel === 'Medio' ? 'text-yellow-400' : 'text-green-400'
-                  }`}>{account.riskLevel}</span>
+                  <span className="text-gray-400">Comisiones Mensuales:</span>
+                  <span className="font-medium text-cyan-500">{formatCurrency(account.monthly_commissions || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Inversión Mínima:</span>
+                  <span className="font-medium">{formatCurrency(account.min_investment || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Creado:</span>
+                  <span className="font-medium text-gray-400">
+                    {account.created_at ? new Date(account.created_at).toLocaleDateString() : 'N/A'}
+                  </span>
                 </div>
               </div>
               
