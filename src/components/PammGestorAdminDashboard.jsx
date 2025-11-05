@@ -250,7 +250,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               <span className="text-sm text-gray-400">{t('pamm.manager.fundDetail.successRate')}</span>
               <Award className="text-yellow-500" size={16} />
             </div>
-            <div className="text-xl font-bold">{(fund.win_rate || 0).toFixed(1)}%</div>
+            <div className="text-xl font-bold">{(parseFloat(fund.win_rate) || 0).toFixed(1)}%</div>
           </div>
         </div>
 
@@ -272,11 +272,11 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.maxDrawdown')}</span>
-                <span className="font-medium text-red-400">{(fund.max_drawdown || 0).toFixed(2)}%</span>
+                <span className="font-medium text-red-400">{(parseFloat(fund.max_drawdown) || 0).toFixed(2)}%</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.sharpeRatio')}</span>
-                <span className="font-medium">{(fund.sharpe_ratio || 0).toFixed(2)}</span>
+                <span className="font-medium">{(parseFloat(fund.sharpe_ratio) || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.totalTrades')}</span>
@@ -302,11 +302,11 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.managementFee')}</span>
-                <span className="font-medium">{(fund.management_fee || 0).toFixed(2)}% {t('pamm.manager.fundDetail.annual')}</span>
+                <span className="font-medium">{(parseFloat(fund.management_fee) || 0).toFixed(2)}% {t('pamm.manager.fundDetail.annual')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.performanceFee')}</span>
-                <span className="font-medium">{(fund.performance_fee || 0).toFixed(2)}% {t('pamm.manager.fundDetail.profits')}</span>
+                <span className="font-medium">{(parseFloat(fund.performance_fee) || 0).toFixed(2)}% {t('pamm.manager.fundDetail.profits')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">{t('pamm.manager.fundDetail.lockupPeriod')}</span>
