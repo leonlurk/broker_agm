@@ -191,14 +191,15 @@ export const markMessagesAsRead = async (fundId) => {
 };
 
 /**
- * Obtener conteo de mensajes no leídos
+ * Obtener contador de mensajes no leídos por chat
  */
-export const getUnreadCount = async () => {
+export const getUnreadCount = async (fundId) => {
   try {
-    const response = await logicApiClient.get('/api/v1/pamm/messages/unread');
+    const response = await logicApiClient.get(`/api/v1/pamm/fund/${fundId}/messages/unread`);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { error: 'Error al obtener conteo de no leídos' };
+    console.error('Error getting unread count:', error);
+    throw error;
   }
 };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, Send, Loader2, Users, User } from 'lucide-react';
-import { getFundMessages, sendMessage, markMessagesAsRead } from '../services/pammService';
+import { getFundMessages, sendMessage, markMessagesAsRead, getUnreadCount } from '../services/pammService';
 
 const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) => {
   const [activeChat, setActiveChat] = useState('group'); // 'group' or investor_id
@@ -8,7 +8,7 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState({});
+  const [unreadCounts, setUnreadCounts] = useState({ group: 0, private: {} });
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -18,11 +18,24 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
 
   useEffect(() => {
     loadMessages(activeChat);
+    loadUnreadCounts();
   }, [fundId, activeChat]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages[activeChat]]);
+
+  const loadUnreadCounts = async () => {
+    try {
+      if (!fundId) return;
+      const response = await getUnreadCount(fundId);
+      if (response.success) {
+        setUnreadCounts(response.counts);
+      }
+    } catch (error) {
+      console.error('Error loading unread counts:', error);
+    }
+  };
 
   const loadMessages = async (chatId) => {
     try {
@@ -38,14 +51,10 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
         
         // Marcar como leídos
         if (response.messages.length > 0) {
-          await markMessagesAsRead(fundId, recipientId);
+          await markMessagesAsRead(fundId);
+          // Actualizar contadores
+          loadUnreadCounts();
         }
-        
-        // Actualizar contador de no leídos
-        setUnreadCounts(prev => ({
-          ...prev,
-          [chatId]: 0
-        }));
       }
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -119,7 +128,7 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
                 <p className="text-xs text-gray-400">Todos los inversores</p>
               </div>
               {unreadCounts.group > 0 && (
-                <span className="px-2 py-1 bg-cyan-500 text-white text-xs rounded-full">
+                <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full font-semibold min-w-[24px] text-center">
                   {unreadCounts.group}
                 </span>
               )}
@@ -151,9 +160,9 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
                   <p className="font-medium truncate">{investor.name}</p>
                   <p className="text-xs text-gray-400">{investor.email}</p>
                 </div>
-                {unreadCounts[investor.investor_id || investor.id] > 0 && (
-                  <span className="px-2 py-1 bg-purple-500 text-white text-xs rounded-full">
-                    {unreadCounts[investor.investor_id || investor.id]}
+                {unreadCounts.private?.[investor.investor_id || investor.id] > 0 && (
+                  <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full font-semibold min-w-[24px] text-center">
+                    {unreadCounts.private[investor.investor_id || investor.id]}
                   </span>
                 )}
               </div>

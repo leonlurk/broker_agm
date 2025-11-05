@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, Send, Loader2, User, Users } from 'lucide-react';
-import { getFundMessages, sendMessage, markMessagesAsRead } from '../services/pammService';
+import { getFundMessages, sendMessage, markMessagesAsRead, getUnreadCount } from '../services/pammService';
 
 const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
   const [activeTab, setActiveTab] = useState('group'); // 'group' o 'private'
@@ -9,6 +9,7 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState({ group: 0, private: { manager: 0 } });
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -18,11 +19,24 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
 
   useEffect(() => {
     loadMessages();
+    loadUnreadCounts();
   }, [fundId, activeTab]);
 
   useEffect(() => {
     scrollToBottom();
   }, [groupMessages, privateMessages]);
+
+  const loadUnreadCounts = async () => {
+    try {
+      if (!fundId) return;
+      const response = await getUnreadCount(fundId);
+      if (response.success) {
+        setUnreadCounts(response.counts);
+      }
+    } catch (error) {
+      console.error('Error loading unread counts:', error);
+    }
+  };
 
   const loadMessages = async () => {
     try {
@@ -54,7 +68,9 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
           
           // Marcar como leídos
           if (response.messages.length > 0) {
-            await markMessagesAsRead(fundId, managerId);
+            await markMessagesAsRead(fundId);
+            // Actualizar contadores
+            loadUnreadCounts();
           }
         }
       }
@@ -117,7 +133,7 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('group')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors relative ${
               activeTab === 'group'
                 ? 'bg-cyan-600 text-white'
                 : 'bg-[#333] text-gray-400 hover:bg-[#3a3a3a]'
@@ -125,10 +141,15 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
           >
             <Users size={16} />
             <span className="text-sm">Chat Grupal</span>
+            {unreadCounts.group > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                {unreadCounts.group}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('private')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors relative ${
               activeTab === 'private'
                 ? 'bg-cyan-600 text-white'
                 : 'bg-[#333] text-gray-400 hover:bg-[#3a3a3a]'
@@ -136,6 +157,11 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
           >
             <User size={16} />
             <span className="text-sm">Chat Privado</span>
+            {unreadCounts.private?.manager > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                {unreadCounts.private.manager}
+              </span>
+            )}
           </button>
         </div>
       </div>
