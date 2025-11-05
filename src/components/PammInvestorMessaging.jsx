@@ -25,6 +25,15 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
   const loadMessages = async () => {
     try {
       setLoading(true);
+      
+      // Verificar que tengamos los datos necesarios
+      if (!fundId || !managerId) {
+        console.warn('Missing fundId or managerId for messages');
+        setMessages([]);
+        setLoading(false);
+        return;
+      }
+      
       // Cargar mensajes privados con el manager
       const response = await getFundMessages(fundId, 50, managerId);
       
@@ -38,6 +47,7 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
       }
     } catch (error) {
       console.error('Error loading messages:', error);
+      // No mostrar error al usuario, solo dejar vacío
       setMessages([]);
     } finally {
       setLoading(false);

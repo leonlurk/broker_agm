@@ -88,17 +88,25 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
         try {
             if (fund && fund.id) {
                 setView('fundProfile');
-                setSelectedFund({ ...fund, loading: true });
                 
-                // Cargar datos reales del fondo desde el backend
-                try {
-                    const fundDetails = await getFundDetails(fund.id);
-                    setSelectedFund(fundDetails.fund);
-                } catch (error) {
-                    console.error('Error loading fund details:', error);
-                    // Mantener datos básicos si falla la carga
-                    setSelectedFund(fund);
-                }
+                // Usar datos del fondo directamente (ya vienen del explorador o dashboard)
+                // Enriquecer con datos calculados si es necesario
+                const enrichedFund = {
+                    ...fund,
+                    // Asegurar que existan todos los campos necesarios
+                    aum: fund.current_aum || fund.aum || 0,
+                    totalReturn: fund.total_return || fund.totalReturn || 0,
+                    investors: fund.investor_count || fund.investors || 0,
+                    riskLevel: fund.risk_level || fund.riskLevel || 'Medium',
+                    managementFee: fund.management_fee || fund.managementFee || 2,
+                    performanceFee: fund.performance_fee || fund.performanceFee || 20,
+                    monthlyReturn: fund.monthly_return || fund.monthlyReturn || 0,
+                    maxDrawdown: fund.max_drawdown || fund.maxDrawdown || 0,
+                    sharpeRatio: fund.sharpe_ratio || fund.sharpeRatio || 0,
+                    winRate: fund.win_rate || fund.winRate || 0
+                };
+                
+                setSelectedFund(enrichedFund);
             } else {
                 console.error('Invalid fund data:', fund);
             }
