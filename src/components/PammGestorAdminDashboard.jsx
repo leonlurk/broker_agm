@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Star, Users, DollarSign, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Eye, Settings, BarChart3, Activity, Award, Calendar, Copy, MoreHorizontal, Edit, Camera, Save, X, Info, Shield, Target, Briefcase, Search, Filter, SlidersHorizontal, Pause, StopCircle, MessageCircle, UserCheck, Plus, RefreshCw, AlertTriangle } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell } from 'recharts';
+import { ArrowUp, DollarSign, TrendingUp, Users, Award, Activity, MessageCircle, Eye, Settings, Plus, MoreHorizontal, Loader2 } from 'lucide-react';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import CrearPAMMModal from './CrearPAMMModal';
-import CopiarEstrategiaModal from './CopiarEstrategiaModal';
+import ConfigurarContratoModal from './ConfigurarContratoModal';
+import PammMessagingPanel from './PammMessagingPanel';
+import { getManagerStats, getFundActivities } from '../services/pammService';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 
 // Datos iniciales vacíos - se cargarán dinámicamente desde la API
@@ -66,6 +68,8 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [fundDetails, setFundDetails] = useState(null);
   const [loadingFundDetails, setLoadingFundDetails] = useState(false);
+  const [activities, setActivities] = useState([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
 
   const data = gestorData;
 
@@ -137,6 +141,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   const handleManageFund = async (fund) => {
     console.log('[PammGestorAdmin] Loading fund details for:', fund.id);
     setLoadingFundDetails(true);
+    setLoadingActivities(true);
     setSelectedInvestor(fund);
     setView('fundDetail');
     
@@ -145,11 +150,19 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
       const details = await getManagerFundDetails(fund.id);
       console.log('[PammGestorAdmin] Fund details loaded:', details);
       setFundDetails(details);
+      
+      // Cargar actividades
+      const activitiesResponse = await getFundActivities(fund.id, 10);
+      if (activitiesResponse.success) {
+        setActivities(activitiesResponse.activities);
+      }
     } catch (error) {
       console.error('[PammGestorAdmin] Error loading fund details:', error);
       setFundDetails(null);
+      setActivities([]);
     } finally {
       setLoadingFundDetails(false);
+      setLoadingActivities(false);
     }
   };
 
@@ -498,20 +511,90 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           </div>
         </div>
 
-        {/* Coming Soon: Activity & Messaging System */}
-        {fund.total_investors > 0 && (
-          <div className="bg-[#2a2a2a] p-8 rounded-xl text-center">
-            <MessageCircle className="mx-auto mb-4 text-gray-500" size={48} />
-            <h3 className="text-xl font-semibold mb-2">Sistema de Mensajería</h3>
-            <p className="text-gray-400 mb-4">
-              Próximamente: Comunícate directamente con tus inversores, recibe notificaciones de actividad y mantén una comunicación transparente.
-            </p>
-            <div className="inline-flex items-center gap-2 text-sm text-cyan-500">
-              <span className="inline-block w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>
-              En desarrollo
+        {/* Activity & Messaging System */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Activity */}
+          <div className="bg-[#2a2a2a] p-6 rounded-xl">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Activity className="text-cyan-500" size={20} />
+              Actividad Reciente
+            </h3>
+            <div className="space-y-3">
+              {loadingActivities ? (
+                [...Array(3)].map((_, idx) => (
+                  <div key={idx} className="animate-pulse flex items-center gap-3 p-3 bg-[#333] rounded-lg">
+                    <div className="w-10 h-10 rounded-full bg-gray-700"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-32 bg-gray-700 rounded"></div>
+                      <div className="h-3 w-24 bg-gray-700 rounded"></div>
+                    </div>
+                    <div className="h-4 w-16 bg-gray-700 rounded"></div>
+                  </div>
+                ))
+              ) : activities.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <Activity size={32} className="mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No hay actividad reciente</p>
+                </div>
+              ) : (
+                activities.map((activity) => {
+                  const getActivityIcon = (type) => {
+                    switch (type) {
+                      case 'investment': return '💰';
+                      case 'withdrawal': return '💸';
+                      case 'partial_withdrawal': return '📤';
+                      case 'commission_charged': return '💵';
+                      case 'fund_created': return '🎉';
+                      case 'performance_update': return '📈';
+                      default: return '📋';
+                    }
+                  };
+
+                  const getActivityColor = (type) => {
+                    switch (type) {
+                      case 'investment': return 'text-green-400';
+                      case 'withdrawal': return 'text-red-400';
+                      case 'commission_charged': return 'text-cyan-400';
+                      case 'fund_created': return 'text-yellow-400';
+                      case 'performance_update': return 'text-blue-400';
+                      default: return 'text-gray-400';
+                    }
+                  };
+
+                  return (
+                    <div key={activity.id} className="flex items-center gap-3 p-3 bg-[#333] rounded-lg hover:bg-[#3a3a3a] transition-colors">
+                      <div className="flex-shrink-0">
+                        {activity.user_avatar ? (
+                          <img 
+                            src={activity.user_avatar} 
+                            alt={activity.user_name}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-xl">
+                            {getActivityIcon(activity.type)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{activity.description}</p>
+                        <p className="text-xs text-gray-400">{activity.user_name} • {activity.time_ago}</p>
+                      </div>
+                      {activity.amount && (
+                        <div className={`text-sm font-semibold ${getActivityColor(activity.type)}`}>
+                          {activity.amount > 0 ? '+' : ''}{formatCurrency(activity.amount)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
-        )}
+
+          {/* Messaging Panel */}
+          <PammMessagingPanel fundId={fund.id} userType="manager" />
+        </div>
       </div>
     );
   }
