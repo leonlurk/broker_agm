@@ -9,7 +9,7 @@ import { createPammFund } from '../services/pammService';
 
 const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData = null, onFundCreated = null }) => {
   const { getAllAccounts } = useAccounts();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const { t } = useTranslation();
   const getInitialFormData = () => {
     if (mode === 'configure' && fundData) {
@@ -236,14 +236,15 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
 
     setIsSubmitting(true);
     try {
+      const userId = currentUser?.id || currentUser?.uid;
       console.log('[CrearPAMMModal] handleSubmit called', {
         convertirseEnManager: formData.convertirseEnManager,
-        userId: user?.id,
+        userId: userId,
         cuentaMT5: formData.cuentaMT5Seleccionada
       });
 
       // Si el usuario quiere convertirse en PAMM manager, actualizar Supabase
-      if (formData.convertirseEnManager && user?.id) {
+      if (formData.convertirseEnManager && userId) {
         console.log('[CrearPAMMModal] Updating profile to PAMM manager...');
         const { error } = await supabase
           .from('profiles')
@@ -266,7 +267,7 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
               created_at: new Date().toISOString()
             }
           })
-          .eq('id', user.id);
+          .eq('id', userId);
           
         if (error) {
           console.error('[CrearPAMMModal] Error updating PAMM manager status:', error);
@@ -346,7 +347,7 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
           return;
         }
       } else {
-        console.log('[CrearPAMMModal] Skipping fund creation - convertirseEnManager:', formData.convertirseEnManager, 'user.id:', user?.id);
+        console.log('[CrearPAMMModal] Skipping fund creation - convertirseEnManager:', formData.convertirseEnManager, 'userId:', userId);
       }
 
       onConfirm(formData);
