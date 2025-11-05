@@ -236,8 +236,15 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
 
     setIsSubmitting(true);
     try {
+      console.log('[CrearPAMMModal] handleSubmit called', {
+        convertirseEnManager: formData.convertirseEnManager,
+        userId: user?.id,
+        cuentaMT5: formData.cuentaMT5Seleccionada
+      });
+
       // Si el usuario quiere convertirse en PAMM manager, actualizar Supabase
       if (formData.convertirseEnManager && user?.id) {
+        console.log('[CrearPAMMModal] Updating profile to PAMM manager...');
         const { error } = await supabase
           .from('profiles')
           .update({
@@ -262,10 +269,13 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
           .eq('id', user.id);
           
         if (error) {
-          console.error('Error updating PAMM manager status:', error);
+          console.error('[CrearPAMMModal] Error updating PAMM manager status:', error);
           alert('Error al configurar como PAMM manager: ' + error.message);
+          setIsSubmitting(false);
           return;
         }
+
+        console.log('[CrearPAMMModal] Profile updated successfully, creating fund...');
 
         // Show success notification with enhanced UI feedback
         const successNotification = document.createElement('div');
@@ -330,16 +340,19 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
           }
 
         } catch (fundError) {
-          console.error('Error creating PAMM fund:', fundError);
+          console.error('[CrearPAMMModal] Error creating PAMM fund:', fundError);
           alert('Error al crear el fondo PAMM: ' + (fundError.message || 'Error desconocido'));
+          setIsSubmitting(false);
           return;
         }
+      } else {
+        console.log('[CrearPAMMModal] Skipping fund creation - convertirseEnManager:', formData.convertirseEnManager, 'user.id:', user?.id);
       }
 
       onConfirm(formData);
       onClose();
     } catch (error) {
-      console.error('Error in handleSubmit:', error);
+      console.error('[CrearPAMMModal] Error in handleSubmit:', error);
       alert('Error al crear el fondo PAMM: ' + error.message);
     } finally {
       setIsSubmitting(false);
