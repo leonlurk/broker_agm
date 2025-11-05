@@ -820,12 +820,12 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
       <CrearPAMMModal
         isOpen={showCrearFondoModal}
         onClose={() => setShowCrearFondoModal(false)}
-        mode="configure"
-        onConfirm={(formData) => {
-          console.log('Contrato PAMM configurado:', formData);
-          // Aquí integrarías con tu API para configurar el contrato
-        }}
+        mode="create"
         onFundCreated={handleFundCreated}
+        onConfirm={(formData) => {
+          console.log('[PammGestorAdmin] Fondo PAMM creado:', formData);
+          setShowCrearFondoModal(false);
+        }}
       />
 
       {/* Modal de Copiar Estrategia */}
