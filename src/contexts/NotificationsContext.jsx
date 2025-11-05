@@ -1,4 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { 
+  getUserNotifications, 
+  markNotificationAsRead as markAsReadService,
+  markAllNotificationsAsRead as markAllAsReadService,
+  deleteNotification as deleteNotificationService,
+  clearAllNotifications as clearAllService,
+  subscribeToNotifications
+} from '../services/notificationsService';
 
 const NotificationsContext = createContext();
 
@@ -41,28 +50,66 @@ export const NOTIFICATION_ICONS = {
 };
 
 export const NotificationsProvider = ({ children }) => {
+  const { currentUser } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  // Cargar notificaciones del localStorage al inicializar
+  // Cargar notificaciones desde Supabase
   useEffect(() => {
-    const savedNotifications = localStorage.getItem('agm_notifications');
-    if (savedNotifications) {
-      const parsed = JSON.parse(savedNotifications);
-      setNotifications(parsed);
-      setUnreadCount(parsed.filter(n => !n.read).length);
-    }
-  }, []);
+    const loadNotifications = async () => {
+      if (!currentUser?.id) return;
+      
+      setLoading(true);
+      const result = await getUserNotifications(currentUser.id);
+      
+      if (result.success) {
+        const formattedNotifications = result.notifications.map(n => ({
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          message: n.message,
+          timestamp: n.created_at,
+          read: n.read || false,
+          actionType: n.type,
+          actionData: n.data,
+          actionUrl: n.action_url
+        }));
+        
+        setNotifications(formattedNotifications);
+        setUnreadCount(formattedNotifications.filter(n => !n.read).length);
+      }
+      setLoading(false);
+    };
 
-  // Guardar notificaciones en localStorage cuando cambien
+    loadNotifications();
+  }, [currentUser?.id]);
+
+  // Suscribirse a notificaciones en tiempo real
   useEffect(() => {
-    if (notifications.length > 0) {
-      localStorage.setItem('agm_notifications', JSON.stringify(notifications));
-    } else {
-      // Si no hay notificaciones, asegurarse de limpiar el localStorage
-      localStorage.removeItem('agm_notifications');
-    }
-  }, [notifications]);
+    if (!currentUser?.id) return;
+
+    const subscription = subscribeToNotifications(currentUser.id, (newNotification) => {
+      const formattedNotification = {
+        id: newNotification.id,
+        type: newNotification.type,
+        title: newNotification.title,
+        message: newNotification.message,
+        timestamp: newNotification.created_at,
+        read: false,
+        actionType: newNotification.type,
+        actionData: newNotification.data,
+        actionUrl: newNotification.action_url
+      };
+
+      setNotifications(prev => [formattedNotification, ...prev]);
+      setUnreadCount(prev => prev + 1);
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [currentUser?.id]);
 
   // Función para agregar una nueva notificación
   const addNotification = (notification) => {
@@ -80,7 +127,8 @@ export const NotificationsProvider = ({ children }) => {
   };
 
   // Función para marcar una notificación como leída
-  const markAsRead = (notificationId) => {
+  const markAsRead = async (notificationId) => {
+    // Actualizar localmente primero
     setNotifications(prev => 
       prev.map(notification => 
         notification.id === notificationId 
@@ -89,37 +137,55 @@ export const NotificationsProvider = ({ children }) => {
       )
     );
     setUnreadCount(prev => Math.max(0, prev - 1));
+
+    // Actualizar en Supabase
+    await markAsReadService(notificationId);
   };
 
   // Función para marcar todas como leídas
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    if (!currentUser?.id) return;
+
+    // Actualizar localmente primero
     setNotifications(prev => 
       prev.map(notification => ({ ...notification, read: true }))
     );
     setUnreadCount(0);
+
+    // Actualizar en Supabase
+    await markAllAsReadService(currentUser.id);
   };
 
   // Función para eliminar una notificación
-  const deleteNotification = (notificationId) => {
-    console.log('Deleting notification:', notificationId); // Para debug
+  const deleteNotification = async (notificationId) => {
+    console.log('Deleting notification:', notificationId);
+    
+    // Actualizar localmente primero
     setNotifications(prev => {
       const notification = prev.find(n => n.id === notificationId);
       if (notification && !notification.read) {
         setUnreadCount(current => Math.max(0, current - 1));
       }
       const newNotifications = prev.filter(n => n.id !== notificationId);
-      console.log('Remaining notifications:', newNotifications.length); // Para debug
+      console.log('Remaining notifications:', newNotifications.length);
       return newNotifications;
     });
+
+    // Eliminar en Supabase
+    await deleteNotificationService(notificationId);
   };
 
   // Función para limpiar todas las notificaciones
-  const clearAllNotifications = () => {
-    console.log('Clearing all notifications...'); // Para debug
+  const clearAllNotifications = async () => {
+    if (!currentUser?.id) return;
+
+    console.log('Clearing all notifications...');
     setNotifications([]);
     setUnreadCount(0);
-    localStorage.removeItem('agm_notifications');
-    console.log('All notifications cleared successfully'); // Para debug
+
+    // Eliminar en Supabase
+    await clearAllService(currentUser.id);
+    console.log('All notifications cleared successfully');
   };
 
   // Funciones de conveniencia para diferentes tipos de notificaciones
