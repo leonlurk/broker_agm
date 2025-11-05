@@ -62,7 +62,7 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
       biografia: '',
       cuentaCopiar: '',
       cuentaMT5Seleccionada: '',
-      convertirseEnManager: false,
+      convertirseEnManager: mode === 'create', // ✅ Activado por defecto en modo 'create'
       profitSplit: 80,
       tradingExperience: '',
       riskManagement: '',
