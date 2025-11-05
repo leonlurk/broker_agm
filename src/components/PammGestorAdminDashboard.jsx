@@ -101,7 +101,17 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           console.log('[PammGestorAdmin] Funds found:', traders.length);
           console.log('[PammGestorAdmin] Investors found:', investors.length);
 
-          // Actualizar estado con datos reales (se usarán en dashboardData más abajo)
+          // Actualizar gestorData con datos reales del overview
+          setGestorData({
+            totalCapital: response.overview.total_aum || 0,
+            rendimiento: response.overview.total_return_percentage || 0,
+            numeroInversores: response.overview.total_investors || 0,
+            comisionesGeneradas: response.overview.total_commissions || 0,
+            drawdownMaximo: response.overview.max_drawdown || 0,
+            sharpeRatio: response.overview.sharpe_ratio || 0
+          });
+
+          // Actualizar estado con datos reales
           setInvestors(investors);
           setTradersDisponibles(traders);
           
