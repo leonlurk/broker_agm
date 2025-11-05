@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowUp, DollarSign, TrendingUp, Users, Award, Activity, MessageCircle, Eye, Settings, Plus, MoreHorizontal, Loader2 } from 'lucide-react';
+import { ArrowUp, DollarSign, TrendingUp, Users, Award, Activity, MessageCircle, Eye, Settings, Plus, MoreHorizontal, Loader2, RefreshCw } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import CrearPAMMModal from './CrearPAMMModal';
 import PammMessagingPanel from './PammMessagingPanel';
