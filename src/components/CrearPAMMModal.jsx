@@ -231,13 +231,18 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateStep(maxSteps)) return;
+    if (e) e.preventDefault();
+    
+    console.log('[CrearPAMMModal] handleSubmit called - validating step', maxSteps);
+    if (!validateStep(maxSteps)) {
+      console.log('[CrearPAMMModal] Validation failed');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       const userId = currentUser?.id || currentUser?.uid;
-      console.log('[CrearPAMMModal] handleSubmit called', {
+      console.log('[CrearPAMMModal] handleSubmit - validation passed', {
         convertirseEnManager: formData.convertirseEnManager,
         userId: userId,
         cuentaMT5: formData.cuentaMT5Seleccionada
