@@ -4,6 +4,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, Area
 import { getPammFunds, getMyFunds, leavePammFund, joinPammFund } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
 import RetirarPAMMModal from './RetirarPAMMModal';
+import PammInvestorMessaging from './PammInvestorMessaging';
 import { useAccounts } from '../contexts/AccountsContext';
 import { useTranslation } from 'react-i18next';
 import { followMaster } from '../services/copytradingService';
@@ -1159,7 +1160,7 @@ const PammFundProfileView = ({
             
             {/* Tabs */}
             <div className="flex border-b border-[#333] overflow-x-auto">
-                {['performance', 'strategy', 'fees'].map((tab) => (
+                {['performance', 'strategy', 'fees', 'messages'].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -1170,7 +1171,9 @@ const PammFundProfileView = ({
                         }`}
                     >
                         {tab === 'performance' ? t('pamm.investor.performance') : 
-                         tab === 'strategy' ? t('pamm.investor.strategy') : t('pamm.investor.fees')}
+                         tab === 'strategy' ? t('pamm.investor.strategy') : 
+                         tab === 'fees' ? t('pamm.investor.fees') :
+                         'Mensajes'}
                     </button>
                 ))}
             </div>
@@ -1384,6 +1387,16 @@ const PammFundProfileView = ({
                                 </div>
                             </div>
                         </div>
+                    </div>
+                )}
+                
+                {activeTab === 'messages' && (
+                    <div className="mt-6">
+                        <PammInvestorMessaging 
+                            fundId={fund.id}
+                            fundName={fund.name}
+                            managerId={fund.manager_id}
+                        />
                     </div>
                 )}
             </div>
