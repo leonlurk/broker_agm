@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, User, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
-import { getPammFunds, getMyFunds, leavePammFund, joinPammFund } from '../services/pammService';
+import { getPammFunds, getMyFunds, leavePammFund, joinPammFund, getFundDetails } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
 import RetirarPAMMModal from './RetirarPAMMModal';
 import PammInvestorMessaging from './PammInvestorMessaging';
@@ -83,12 +83,22 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
         setSelectedFund(null);
     };
 
-    const handleViewFundDetails = (fund) => {
+    const handleViewFundDetails = async (fund) => {
         console.log('Viewing fund details:', fund);
         try {
             if (fund && fund.id) {
-                setSelectedFund(fund);
                 setView('fundProfile');
+                setSelectedFund({ ...fund, loading: true });
+                
+                // Cargar datos reales del fondo desde el backend
+                try {
+                    const fundDetails = await getFundDetails(fund.id);
+                    setSelectedFund(fundDetails.fund);
+                } catch (error) {
+                    console.error('Error loading fund details:', error);
+                    // Mantener datos básicos si falla la carga
+                    setSelectedFund(fund);
+                }
             } else {
                 console.error('Invalid fund data:', fund);
             }
