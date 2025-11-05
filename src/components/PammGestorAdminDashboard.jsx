@@ -6,7 +6,8 @@ import CrearPAMMModal from './CrearPAMMModal';
 import CopiarEstrategiaModal from './CopiarEstrategiaModal';
 import PammMessagingSystem from './PammMessagingSystem';
 import InvestorActionsMenu from './InvestorActionsMenu';
-import { getManagerStats, getFundActivities } from '../services/pammService';
+import { getManagerStats, getFundActivities, getFundWithdrawals } from '../services/pammService';
+import PAMMWithdrawalApprovalModal from './PAMMWithdrawalApprovalModal';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 
 // Datos iniciales vacíos - se cargarán dinámicamente desde la API
@@ -73,7 +74,9 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [selectedInvestorForMessage, setSelectedInvestorForMessage] = useState(null);
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
-  const [selectedInvestorForWithdrawal, setSelectedInvestorForWithdrawal] = useState(null);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
+  const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
+  const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
 
   const data = gestorData;
 
@@ -101,6 +104,11 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           // Actualizar estado con datos reales (se usarán en dashboardData más abajo)
           setInvestors(investors);
           setTradersDisponibles(traders);
+          
+          // Cargar solicitudes de retiro pendientes para todos los fondos
+          if (traders.length > 0) {
+            loadPendingWithdrawals(traders);
+          }
         }
       } catch (error) {
         console.error('[PammGestorAdmin] Error loading PAMM gestor data:', error);
@@ -112,6 +120,27 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
 
     fetchGestorData();
   }, [refreshTrigger]);
+
+  // Cargar solicitudes de retiro pendientes
+  const loadPendingWithdrawals = async (funds) => {
+    try {
+      setLoadingWithdrawals(true);
+      const allWithdrawals = [];
+      
+      for (const fund of funds) {
+        const response = await getFundWithdrawals(fund.id, 'pending');
+        if (response.success && response.withdrawals) {
+          allWithdrawals.push(...response.withdrawals);
+        }
+      }
+      
+      setPendingWithdrawals(allWithdrawals);
+    } catch (error) {
+      console.error('[PammGestorAdmin] Error loading withdrawals:', error);
+    } finally {
+      setLoadingWithdrawals(false);
+    }
+  };
 
   // Efecto para hacer scroll hacia arriba cuando cambie la vista
   useEffect(() => {
@@ -755,6 +784,53 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
         </div>
       </div>
 
+      {/* Pending Withdrawals Alert */}
+      {pendingWithdrawals.length > 0 && (
+        <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 p-4 rounded-xl">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-yellow-500/20 rounded-lg">
+              <DollarSign className="text-yellow-400" size={20} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-yellow-400 font-semibold mb-1">
+                {pendingWithdrawals.length} Solicitud{pendingWithdrawals.length > 1 ? 'es' : ''} de Retiro Pendiente{pendingWithdrawals.length > 1 ? 's' : ''}
+              </h3>
+              <p className="text-sm text-gray-300 mb-3">
+                Tienes solicitudes de retiro que requieren tu aprobación.
+              </p>
+              <div className="space-y-2">
+                {pendingWithdrawals.slice(0, 3).map((withdrawal) => (
+                  <div key={withdrawal.id} className="flex items-center justify-between bg-[#2a2a2a] p-3 rounded-lg">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white">
+                        {withdrawal.investor_profile?.display_name || withdrawal.investor_profile?.email || 'Inversor'}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {withdrawal.withdrawal_type === 'full' ? 'Retiro Total' : 'Retiro Parcial'} • {formatCurrency(withdrawal.requested_amount)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedWithdrawal(withdrawal);
+                        setShowWithdrawalModal(true);
+                      }}
+                      className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-lg transition-colors"
+                    >
+                      Revisar
+                    </button>
+                  </div>
+                ))}
+                {pendingWithdrawals.length > 3 && (
+                  <p className="text-xs text-gray-400 text-center pt-2">
+                    +{pendingWithdrawals.length - 3} más
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Portfolio Section */}
       <div className="bg-[#2a2a2a] p-6 rounded-2xl border border-[#333]">
         <h2 className="text-xl font-semibold mb-6">{t('pamm.manager.portfolio')}</h2>
@@ -958,6 +1034,33 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           setShowCrearFondoModal(false);
         }}
       />
+
+      {/* Modal de Aprobación de Retiros */}
+      {showWithdrawalModal && selectedWithdrawal && (
+        <PAMMWithdrawalApprovalModal
+          withdrawal={selectedWithdrawal}
+          onClose={() => {
+            setShowWithdrawalModal(false);
+            setSelectedWithdrawal(null);
+          }}
+          onApproved={() => {
+            setShowWithdrawalModal(false);
+            setSelectedWithdrawal(null);
+            // Recargar solicitudes de retiro
+            if (tradersDisponibles.length > 0) {
+              loadPendingWithdrawals(tradersDisponibles);
+            }
+          }}
+          onRejected={() => {
+            setShowWithdrawalModal(false);
+            setSelectedWithdrawal(null);
+            // Recargar solicitudes de retiro
+            if (tradersDisponibles.length > 0) {
+              loadPendingWithdrawals(tradersDisponibles);
+            }
+          }}
+        />
+      )}
 
       {/* Modal de Copiar Estrategia */}
       <CopiarEstrategiaModal 
