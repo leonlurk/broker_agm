@@ -169,7 +169,10 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   });
 
   // Dynamic accounts data from PAMM manager dashboard API
-  const accountsData = gestorData?.accounts || [];
+  // Use tradersDisponibles which is populated from response.funds
+  const accountsData = tradersDisponibles || [];
+  
+  console.log('[PammGestorAdmin] Rendering with accountsData:', accountsData.length, 'funds');
 
   if (view === 'fundDetail' && selectedInvestor) {
     const fund = selectedInvestor;
