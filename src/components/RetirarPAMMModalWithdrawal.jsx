@@ -22,26 +22,41 @@ const RetirarPAMMModalWithdrawal = ({ isOpen, onClose, fund, investment, onSucce
   const [pendingWithdrawal, setPendingWithdrawal] = useState(null);
 
   useEffect(() => {
-    if (isOpen && currentUser) {
+    const userId = currentUser?.uid || currentUser?.id;
+    if (isOpen && userId) {
       check2FAStatus();
+    } else if (isOpen && !currentUser) {
+      console.warn('[RetirarPAMMModal] currentUser is undefined');
     }
   }, [isOpen, currentUser]);
 
   const check2FAStatus = async () => {
     try {
-      const status = await twoFactorService.get2FAStatus(currentUser.uid);
+      // Support both uid and id from different auth providers
+      const userId = currentUser?.uid || currentUser?.id;
+      
+      if (!userId) {
+        console.error('[RetirarPAMMModal] No user ID available', currentUser);
+        setTwoFactorEnabled(false);
+        return;
+      }
+
+      const status = await twoFactorService.get2FAStatus(userId);
+      console.log('[RetirarPAMMModal] 2FA status:', status);
       setTwoFactorEnabled(status.enabled);
+      
       if (status.enabled) {
         setTwoFactorMethods({
-          userId: currentUser.uid,
+          userId: userId,
           email: currentUser.email,
-          name: currentUser.displayName || currentUser.email,
+          name: currentUser.displayName || currentUser.display_name || currentUser.email,
           methods: status.methods || [],
           secret: status.secret
         });
       }
     } catch (error) {
-      console.error('Error checking 2FA status:', error);
+      console.error('[RetirarPAMMModal] Error checking 2FA status:', error);
+      setTwoFactorEnabled(false);
     }
   };
 
