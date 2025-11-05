@@ -143,10 +143,14 @@ export const getFundActivities = async (fundId, limit = 10) => {
 /**
  * Obtener mensajes de un fondo
  */
-export const getFundMessages = async (fundId, limit = 50) => {
+export const getFundMessages = async (fundId, limit = 50, recipientId = null) => {
   try {
+    const params = { limit };
+    if (recipientId) {
+      params.recipient_id = recipientId;
+    }
     const response = await logicApiClient.get(`/api/v1/pamm/fund/${fundId}/messages`, {
-      params: { limit }
+      params
     });
     return response.data;
   } catch (error) {
@@ -157,13 +161,17 @@ export const getFundMessages = async (fundId, limit = 50) => {
 /**
  * Enviar mensaje
  */
-export const sendMessage = async (fundId, message, parentMessageId = null) => {
+export const sendMessage = async (fundId, message, parentMessageId = null, recipientId = null) => {
   try {
-    const response = await logicApiClient.post('/api/v1/pamm/messages', {
+    const payload = {
       fundId,
       message,
       parentMessageId
-    });
+    };
+    if (recipientId) {
+      payload.recipientId = recipientId;
+    }
+    const response = await logicApiClient.post('/api/v1/pamm/messages', payload);
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: 'Error al enviar mensaje' };

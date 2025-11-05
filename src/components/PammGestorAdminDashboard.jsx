@@ -4,7 +4,8 @@ import { ArrowUp, DollarSign, TrendingUp, Users, Award, Activity, MessageCircle,
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import CrearPAMMModal from './CrearPAMMModal';
 import CopiarEstrategiaModal from './CopiarEstrategiaModal';
-import PammMessagingPanel from './PammMessagingPanel';
+import PammMessagingSystem from './PammMessagingSystem';
+import InvestorActionsMenu from './InvestorActionsMenu';
 import { getManagerStats, getFundActivities } from '../services/pammService';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 
@@ -70,6 +71,9 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   const [loadingFundDetails, setLoadingFundDetails] = useState(false);
   const [activities, setActivities] = useState([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
+  const [selectedInvestorForMessage, setSelectedInvestorForMessage] = useState(null);
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
+  const [selectedInvestorForWithdrawal, setSelectedInvestorForWithdrawal] = useState(null);
 
   const data = gestorData;
 
@@ -432,9 +436,15 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                         </span>
                       </td>
                       <td className="py-3">
-                        <button className="p-1 hover:bg-[#444] rounded transition-colors">
-                          <MoreHorizontal size={16} />
-                        </button>
+                        <InvestorActionsMenu
+                          investor={investor}
+                          onSendMessage={(inv) => setSelectedInvestorForMessage(inv)}
+                          onViewDetails={(inv) => console.log('View details:', inv)}
+                          onRequestWithdrawal={(inv) => {
+                            setSelectedInvestorForWithdrawal(inv);
+                            setShowWithdrawalModal(true);
+                          }}
+                        />
                       </td>
                     </tr>
                   ))
@@ -517,7 +527,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
         </div>
 
         {/* Activity & Messaging System */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-6">
           {/* Recent Activity */}
           <div className="bg-[#2a2a2a] p-6 rounded-xl">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -597,8 +607,12 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
             </div>
           </div>
 
-          {/* Messaging Panel */}
-          <PammMessagingPanel fundId={fund.id} userType="manager" />
+          {/* Messaging System */}
+          <PammMessagingSystem 
+            fundId={fund.id} 
+            userType="manager" 
+            investors={fund.investors || []}
+          />
         </div>
       </div>
     );
