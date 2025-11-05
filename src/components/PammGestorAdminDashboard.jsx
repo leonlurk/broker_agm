@@ -152,9 +152,14 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
       setFundDetails(details);
       
       // Cargar actividades
-      const activitiesResponse = await getFundActivities(fund.id, 10);
-      if (activitiesResponse.success) {
-        setActivities(activitiesResponse.activities);
+      try {
+        const activitiesResponse = await getFundActivities(fund.id, 10);
+        if (activitiesResponse.success) {
+          setActivities(activitiesResponse.activities);
+        }
+      } catch (actError) {
+        console.error('[PammGestorAdmin] Error loading activities (endpoint may not be deployed yet):', actError);
+        setActivities([]);
       }
     } catch (error) {
       console.error('[PammGestorAdmin] Error loading fund details:', error);

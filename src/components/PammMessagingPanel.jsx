@@ -39,6 +39,9 @@ const PammMessagingPanel = ({ fundId, userType = 'manager' }) => {
       }
     } catch (error) {
       console.error('Error loading messages:', error);
+      // Si el endpoint no existe (404), simplemente mostrar vacío
+      setMessages([]);
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }
