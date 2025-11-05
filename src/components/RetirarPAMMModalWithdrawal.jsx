@@ -46,13 +46,41 @@ const RetirarPAMMModalWithdrawal = ({ isOpen, onClose, fund, investment, onSucce
       setTwoFactorEnabled(status.enabled);
       
       if (status.enabled) {
+        // Get 2FA method to determine available verification methods
+        const method = await twoFactorService.get2FAMethod(userId);
+        console.log('[RetirarPAMMModal] 2FA method:', method);
+        
+        // Build methods array based on what's available
+        const availableMethods = [];
+        if (method === 'app' || method === 'totp') {
+          availableMethods.push('totp');
+        }
+        if (method === 'email' || method === 'both') {
+          availableMethods.push('email');
+        }
+        
+        // If method is 'both', add both methods
+        if (method === 'both') {
+          availableMethods.push('totp');
+          if (!availableMethods.includes('email')) {
+            availableMethods.push('email');
+          }
+        }
+        
+        // Default to totp if no method specified but 2FA is enabled
+        if (availableMethods.length === 0 && status.enabled) {
+          availableMethods.push('totp');
+        }
+        
         setTwoFactorMethods({
           userId: userId,
           email: currentUser.email,
           name: currentUser.displayName || currentUser.display_name || currentUser.email,
-          methods: status.methods || [],
+          methods: availableMethods,
           secret: status.secret
         });
+        
+        console.log('[RetirarPAMMModal] 2FA methods configured:', availableMethods);
       }
     } catch (error) {
       console.error('[RetirarPAMMModal] Error checking 2FA status:', error);
