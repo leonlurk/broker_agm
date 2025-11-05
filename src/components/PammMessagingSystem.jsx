@@ -92,7 +92,7 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
   };
 
   const currentMessages = messages[activeChat] || [];
-  const activeInvestor = investors.find(inv => inv.id === activeChat);
+  const activeInvestor = investors.find(inv => (inv.investor_id || inv.id) === activeChat);
 
   return (
     <div className="bg-[#2a2a2a] rounded-xl flex h-[600px]">
@@ -130,9 +130,9 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
           {investors.map(investor => (
             <button
               key={investor.id}
-              onClick={() => setActiveChat(investor.id)}
+              onClick={() => setActiveChat(investor.investor_id || investor.id)}
               className={`w-full p-4 text-left hover:bg-[#333] transition-colors border-b border-[#333] ${
-                activeChat === investor.id ? 'bg-[#333]' : ''
+                activeChat === (investor.investor_id || investor.id) ? 'bg-[#333]' : ''
               }`}
             >
               <div className="flex items-center gap-3">
@@ -151,9 +151,9 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
                   <p className="font-medium truncate">{investor.name}</p>
                   <p className="text-xs text-gray-400">{investor.email}</p>
                 </div>
-                {unreadCounts[investor.id] > 0 && (
+                {unreadCounts[investor.investor_id || investor.id] > 0 && (
                   <span className="px-2 py-1 bg-purple-500 text-white text-xs rounded-full">
-                    {unreadCounts[investor.id]}
+                    {unreadCounts[investor.investor_id || investor.id]}
                   </span>
                 )}
               </div>
