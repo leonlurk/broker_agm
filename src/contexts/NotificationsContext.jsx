@@ -30,6 +30,10 @@ export const NOTIFICATION_TYPES = {
   PAYMENT: 'payment',
   PAMM: 'pamm',
   PAMM_WITHDRAWAL: 'pamm_withdrawal',
+  PAMM_WITHDRAWAL_REQUESTED: 'pamm_withdrawal_requested',
+  PAMM_WITHDRAWAL_PENDING: 'pamm_withdrawal_pending',
+  PAMM_WITHDRAWAL_APPROVED: 'pamm_withdrawal_approved',
+  PAMM_WITHDRAWAL_REJECTED: 'pamm_withdrawal_rejected',
   PAMM_INVESTMENT: 'pamm_investment',
   PAMM_MESSAGE: 'pamm_message'
 };
@@ -45,6 +49,10 @@ export const NOTIFICATION_ICONS = {
   [NOTIFICATION_TYPES.PAYMENT]: '/Money.png',
   [NOTIFICATION_TYPES.PAMM]: '/graph.png',
   [NOTIFICATION_TYPES.PAMM_WITHDRAWAL]: '/Money.png',
+  [NOTIFICATION_TYPES.PAMM_WITHDRAWAL_REQUESTED]: '/Money.png',
+  [NOTIFICATION_TYPES.PAMM_WITHDRAWAL_PENDING]: '/Bell.svg',
+  [NOTIFICATION_TYPES.PAMM_WITHDRAWAL_APPROVED]: '/trophy_competition.png',
+  [NOTIFICATION_TYPES.PAMM_WITHDRAWAL_REJECTED]: '/shield.png',
   [NOTIFICATION_TYPES.PAMM_INVESTMENT]: '/coins.png',
   [NOTIFICATION_TYPES.PAMM_MESSAGE]: '/Bell.svg'
 };
