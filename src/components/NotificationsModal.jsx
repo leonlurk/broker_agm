@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Trash2, Check, AlertTriangle } from 'lucide-react';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useTranslation } from 'react-i18next';
+import PAMMWithdrawalApprovalModal from './PAMMWithdrawalApprovalModal';
 
 const NotificationsModal = ({ onClose }) => {
   const { t } = useTranslation('notifications');
@@ -16,6 +17,7 @@ const NotificationsModal = ({ onClose }) => {
 
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [deletingNotificationId, setDeletingNotificationId] = useState(null);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
 
   const handleMarkAsRead = (notificationId) => {
     markAsRead(notificationId);
@@ -46,6 +48,32 @@ const NotificationsModal = ({ onClose }) => {
     if (notifications.length === 0) return;
     setDeletingNotificationId(null); // null indica eliminar todas
     setShowConfirmDelete(true);
+  };
+
+  const handleNotificationClick = (notification) => {
+    // Marcar como leída
+    if (!notification.read) {
+      markAsRead(notification.id);
+    }
+
+    // Manejar acciones según el tipo
+    if (notification.actionType === 'pamm_withdrawal_approval' && notification.actionData) {
+      setSelectedWithdrawal(notification.actionData);
+    } else if (notification.actionType === 'pamm_message' && notification.actionData) {
+      // TODO: Abrir modal de mensajería
+      console.log('Open message:', notification.actionData);
+    } else if (notification.actionType === 'pamm_new_investment' && notification.actionData) {
+      // TODO: Navegar a detalles de inversión
+      console.log('View investment:', notification.actionData);
+    }
+  };
+
+  const handleWithdrawalApproved = (withdrawal) => {
+    deleteNotification(notifications.find(n => n.actionData?.id === withdrawal.id)?.id);
+  };
+
+  const handleWithdrawalRejected = (withdrawal, reason) => {
+    deleteNotification(notifications.find(n => n.actionData?.id === withdrawal.id)?.id);
   };
 
   const formatTimestamp = (timestamp) => {
@@ -133,9 +161,10 @@ const NotificationsModal = ({ onClose }) => {
             notifications.map((notification) => (
               <div 
                 key={notification.id} 
+                onClick={() => handleNotificationClick(notification)}
                 className={`p-4 border-b border-[#333] hover:bg-[#2a2a2a] transition-colors relative ${
                   !notification.read ? 'bg-[#2a2a2a]/50' : ''
-                }`}
+                } ${notification.actionRequired ? 'cursor-pointer' : ''}`}
               >
                 {/* Indicador de no leída */}
                 {!notification.read && (
@@ -188,6 +217,16 @@ const NotificationsModal = ({ onClose }) => {
           )}
         </div>
       </div>
+
+      {/* PAMM Withdrawal Approval Modal */}
+      {selectedWithdrawal && (
+        <PAMMWithdrawalApprovalModal
+          withdrawal={selectedWithdrawal}
+          onClose={() => setSelectedWithdrawal(null)}
+          onApproved={handleWithdrawalApproved}
+          onRejected={handleWithdrawalRejected}
+        />
+      )}
 
       {/* Modal de confirmación de eliminación */}
       {showConfirmDelete && (

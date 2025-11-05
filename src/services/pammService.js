@@ -193,12 +193,110 @@ export const markMessagesAsRead = async (fundId) => {
 /**
  * Obtener conteo de mensajes no leídos
  */
-export const getUnreadMessagesCount = async () => {
+export const getUnreadCount = async () => {
   try {
     const response = await logicApiClient.get('/api/v1/pamm/messages/unread');
     return response.data;
   } catch (error) {
-    throw error.response?.data || { error: 'Error al obtener mensajes no leídos' };
+    throw error.response?.data || { error: 'Error al obtener conteo de no leídos' };
+  }
+};
+
+/**
+ * Solicitar retiro de inversión PAMM
+ */
+export const requestWithdrawal = async (investmentId, amount, withdrawalType, reason, paymentMethod, paymentDetails) => {
+  try {
+    const response = await logicApiClient.post('/api/v1/pamm/withdrawals/request', {
+      investmentId,
+      amount,
+      withdrawalType,
+      reason,
+      paymentMethod,
+      paymentDetails
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al solicitar retiro' };
+  }
+};
+
+/**
+ * Obtener mis solicitudes de retiro
+ */
+export const getMyWithdrawals = async (status = null, limit = 50) => {
+  try {
+    const params = { limit };
+    if (status) params.status = status;
+    const response = await logicApiClient.get('/api/v1/pamm/withdrawals/my', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener retiros' };
+  }
+};
+
+/**
+ * Obtener solicitudes de retiro del fondo (manager)
+ */
+export const getFundWithdrawals = async (fundId, status = null, limit = 50) => {
+  try {
+    const params = { limit };
+    if (status) params.status = status;
+    const response = await logicApiClient.get(`/api/v1/pamm/fund/${fundId}/withdrawals`, { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener retiros del fondo' };
+  }
+};
+
+/**
+ * Actualizar estado de solicitud de retiro (aprobar/rechazar)
+ */
+export const updateWithdrawalStatus = async (withdrawalId, status, managerNotes = null) => {
+  try {
+    const response = await logicApiClient.put(`/api/v1/pamm/withdrawals/${withdrawalId}/status`, {
+      status,
+      managerNotes
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al actualizar estado de retiro' };
+  }
+};
+
+/**
+ * Procesar retiro aprobado
+ */
+export const processWithdrawal = async (withdrawalId) => {
+  try {
+    const response = await logicApiClient.post(`/api/v1/pamm/withdrawals/${withdrawalId}/process`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al procesar retiro' };
+  }
+};
+
+/**
+ * Obtener reglas del fondo
+ */
+export const getFundRules = async (fundId) => {
+  try {
+    const response = await logicApiClient.get(`/api/v1/pamm/fund/${fundId}/rules`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener reglas del fondo' };
+  }
+};
+
+/**
+ * Actualizar reglas del fondo (manager)
+ */
+export const updateFundRules = async (fundId, rules) => {
+  try {
+    const response = await logicApiClient.put(`/api/v1/pamm/fund/${fundId}/rules`, rules);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al actualizar reglas del fondo' };
   }
 };
 

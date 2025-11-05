@@ -18,7 +18,11 @@ export const NOTIFICATION_TYPES = {
   ERROR: 'error',
   TRADING: 'trading',
   ACCOUNT: 'account',
-  PAYMENT: 'payment'
+  PAYMENT: 'payment',
+  PAMM: 'pamm',
+  PAMM_WITHDRAWAL: 'pamm_withdrawal',
+  PAMM_INVESTMENT: 'pamm_investment',
+  PAMM_MESSAGE: 'pamm_message'
 };
 
 // Iconos para cada tipo de notificación
@@ -29,7 +33,11 @@ export const NOTIFICATION_ICONS = {
   [NOTIFICATION_TYPES.ERROR]: '/shield.png',
   [NOTIFICATION_TYPES.TRADING]: '/graph.png',
   [NOTIFICATION_TYPES.ACCOUNT]: '/coins.png',
-  [NOTIFICATION_TYPES.PAYMENT]: '/Money.png'
+  [NOTIFICATION_TYPES.PAYMENT]: '/Money.png',
+  [NOTIFICATION_TYPES.PAMM]: '/graph.png',
+  [NOTIFICATION_TYPES.PAMM_WITHDRAWAL]: '/Money.png',
+  [NOTIFICATION_TYPES.PAMM_INVESTMENT]: '/coins.png',
+  [NOTIFICATION_TYPES.PAMM_MESSAGE]: '/Bell.svg'
 };
 
 export const NotificationsProvider = ({ children }) => {
@@ -197,6 +205,68 @@ export const NotificationsProvider = ({ children }) => {
     });
   };
 
+  // PAMM Notification Functions
+  const notifyPAMMWithdrawalRequest = (investorName, amount, fundName, withdrawalData) => {
+    return addNotification({
+      type: NOTIFICATION_TYPES.PAMM_WITHDRAWAL,
+      title: 'Nueva Solicitud de Retiro PAMM',
+      message: `${investorName} solicita retirar $${amount.toFixed(2)} del fondo "${fundName}"`,
+      icon: NOTIFICATION_ICONS[NOTIFICATION_TYPES.PAMM_WITHDRAWAL],
+      actionRequired: true,
+      actionType: 'pamm_withdrawal_approval',
+      actionData: withdrawalData
+    });
+  };
+
+  const notifyPAMMWithdrawalApproved = (amount, fundName) => {
+    return addNotification({
+      type: NOTIFICATION_TYPES.SUCCESS,
+      title: 'Retiro PAMM Aprobado',
+      message: `Tu solicitud de retiro de $${amount.toFixed(2)} del fondo "${fundName}" ha sido aprobada`,
+      icon: NOTIFICATION_ICONS[NOTIFICATION_TYPES.SUCCESS]
+    });
+  };
+
+  const notifyPAMMWithdrawalRejected = (amount, fundName, reason) => {
+    return addNotification({
+      type: NOTIFICATION_TYPES.WARNING,
+      title: 'Retiro PAMM Rechazado',
+      message: `Tu solicitud de retiro de $${amount.toFixed(2)} del fondo "${fundName}" ha sido rechazada. Razón: ${reason}`,
+      icon: NOTIFICATION_ICONS[NOTIFICATION_TYPES.WARNING]
+    });
+  };
+
+  const notifyPAMMWithdrawalCompleted = (amount, fundName) => {
+    return addNotification({
+      type: NOTIFICATION_TYPES.SUCCESS,
+      title: 'Retiro PAMM Completado',
+      message: `Tu retiro de $${amount.toFixed(2)} del fondo "${fundName}" ha sido procesado exitosamente`,
+      icon: NOTIFICATION_ICONS[NOTIFICATION_TYPES.SUCCESS]
+    });
+  };
+
+  const notifyPAMMNewInvestment = (investorName, amount, fundName, investmentData) => {
+    return addNotification({
+      type: NOTIFICATION_TYPES.PAMM_INVESTMENT,
+      title: 'Nueva Inversión en tu Fondo PAMM',
+      message: `${investorName} ha invertido $${amount.toFixed(2)} en "${fundName}"`,
+      icon: NOTIFICATION_ICONS[NOTIFICATION_TYPES.PAMM_INVESTMENT],
+      actionType: 'pamm_new_investment',
+      actionData: investmentData
+    });
+  };
+
+  const notifyPAMMNewMessage = (senderName, fundName, messageData) => {
+    return addNotification({
+      type: NOTIFICATION_TYPES.PAMM_MESSAGE,
+      title: 'Nuevo Mensaje PAMM',
+      message: `${senderName} te ha enviado un mensaje en "${fundName}"`,
+      icon: NOTIFICATION_ICONS[NOTIFICATION_TYPES.PAMM_MESSAGE],
+      actionType: 'pamm_message',
+      actionData: messageData
+    });
+  };
+
   const value = {
     notifications,
     unreadCount,
@@ -215,7 +285,14 @@ export const NotificationsProvider = ({ children }) => {
     // KYC notifications
     notifyKYCSubmitted,
     notifyKYCApproved,
-    notifyKYCRejected
+    notifyKYCRejected,
+    // PAMM notifications
+    notifyPAMMWithdrawalRequest,
+    notifyPAMMWithdrawalApproved,
+    notifyPAMMWithdrawalRejected,
+    notifyPAMMWithdrawalCompleted,
+    notifyPAMMNewInvestment,
+    notifyPAMMNewMessage
   };
 
   return (
