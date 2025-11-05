@@ -3,16 +3,18 @@ import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, User,
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
 import { getPammFunds, getMyFunds, leavePammFund, joinPammFund, getFundDetails } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
-import RetirarPAMMModal from './RetirarPAMMModal';
+import RetirarPAMMModalWithdrawal from './RetirarPAMMModalWithdrawal';
 import PammInvestorMessaging from './PammInvestorMessaging';
 import { useAccounts } from '../contexts/AccountsContext';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 import { followMaster } from '../services/copytradingService';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { MasterAccountBadge, PerformanceStatusIndicator, MasterAccountSummaryCard } from './StatusIndicators';
 
 const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
     const { t } = useTranslation('pamm');
+    const { currentUser } = useAuth();
     const [view, setView] = useState('dashboard'); // dashboard, explorer, fundProfile
     const [selectedFund, setSelectedFund] = useState(null);
     const [chartPeriod, setChartPeriod] = useState('1M');
@@ -330,14 +332,22 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
             />
 
             {/* Modal de Retirar de PAMM - Always rendered */}
-            <RetirarPAMMModal
+            <RetirarPAMMModalWithdrawal
                 isOpen={showWithdrawModal}
                 onClose={() => {
                     setShowWithdrawModal(false);
                     setSelectedFundForWithdraw(null);
                 }}
                 fund={selectedFundForWithdraw}
-                onConfirm={handleConfirmWithdraw}
+                investment={selectedFundForWithdraw}
+                currentUser={currentUser}
+                onSuccess={async () => {
+                    // Recargar mis fondos
+                    const updatedFunds = await getMyFunds();
+                    setMyFunds(updatedFunds);
+                    setShowWithdrawModal(false);
+                    setSelectedFundForWithdraw(null);
+                }}
             />
         </>
     );
@@ -2015,14 +2025,22 @@ const PammDetailView = ({ trader, onBack, investedFunds, setInvestedFunds }) => 
             />
 
             {/* Modal de Retirar de PAMM */}
-            <RetirarPAMMModal
+            <RetirarPAMMModalWithdrawal
                 isOpen={showWithdrawModal}
                 onClose={() => {
                     setShowWithdrawModal(false);
                     setSelectedFundForWithdraw(null);
                 }}
                 fund={selectedFundForWithdraw}
-                onConfirm={handleConfirmWithdraw}
+                investment={selectedFundForWithdraw}
+                currentUser={currentUser}
+                onSuccess={async () => {
+                    // Recargar mis fondos
+                    const updatedFunds = await getMyFunds();
+                    setMyFunds(updatedFunds);
+                    setShowWithdrawModal(false);
+                    setSelectedFundForWithdraw(null);
+                }}
             />
         </div>
     );
