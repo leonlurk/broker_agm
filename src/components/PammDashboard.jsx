@@ -1411,9 +1411,9 @@ const PammFundProfileView = ({
                 {activeTab === 'messages' && (
                     <div className="mt-6">
                         <PammInvestorMessaging 
-                            fundId={fund.id}
-                            fundName={fund.name}
-                            managerId={fund.manager_id}
+                            fundId={fund.fund_id || fund.id}
+                            fundName={fund.fund_name || fund.name}
+                            managerId={fund.manager_id || fund.manager?.id}
                         />
                     </div>
                 )}
