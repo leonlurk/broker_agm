@@ -3,12 +3,12 @@ import { MessageCircle, Send, Loader2, Users, User } from 'lucide-react';
 import { getFundMessages, sendMessage, markMessagesAsRead, getUnreadCount } from '../services/pammService';
 
 const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) => {
-  const [activeChat, setActiveChat] = useState('group'); // 'group' or investor_id
+  const [activeChat, setActiveChat] = useState(investors[0]?.investor_id || investors[0]?.id || null);
   const [messages, setMessages] = useState({});
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState({ group: 0, private: {} });
+  const [unreadCounts, setUnreadCounts] = useState({ private: {} });
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -39,9 +39,14 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
 
   const loadMessages = async (chatId) => {
     try {
+      if (!chatId) {
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
-      const recipientId = chatId === 'group' ? null : chatId;
-      const response = await getFundMessages(fundId, 50, recipientId);
+      // Solo mensajes privados con el inversor seleccionado
+      const response = await getFundMessages(fundId, 50, chatId);
       
       if (response.success) {
         setMessages(prev => ({
@@ -69,12 +74,12 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || sending) return;
+    if (!newMessage.trim() || sending || !activeChat) return;
 
     setSending(true);
     try {
-      const recipientId = activeChat === 'group' ? null : activeChat;
-      const response = await sendMessage(fundId, newMessage.trim(), null, recipientId);
+      // Enviar mensaje privado al inversor seleccionado
+      const response = await sendMessage(fundId, newMessage.trim(), null, activeChat);
       
       if (response.success) {
         setMessages(prev => ({
@@ -108,35 +113,19 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
       {/* Sidebar - Lista de Chats */}
       <div className="w-64 border-r border-[#333] flex flex-col">
         <div className="p-4 border-b border-[#333]">
-          <h3 className="font-semibold">Mensajes</h3>
+          <h3 className="font-semibold">Inversores</h3>
+          <p className="text-xs text-gray-400 mt-1">{investors.length} conversaciones</p>
         </div>
         
         <div className="flex-1 overflow-y-auto">
-          {/* Chat Grupal */}
-          <button
-            onClick={() => setActiveChat('group')}
-            className={`w-full p-4 text-left hover:bg-[#333] transition-colors border-b border-[#333] ${
-              activeChat === 'group' ? 'bg-[#333]' : ''
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
-                <Users size={20} className="text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">Chat Grupal</p>
-                <p className="text-xs text-gray-400">Todos los inversores</p>
-              </div>
-              {unreadCounts.group > 0 && (
-                <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full font-semibold min-w-[24px] text-center">
-                  {unreadCounts.group}
-                </span>
-              )}
+          {/* Chats Privados con Inversores */}
+          {investors.length === 0 ? (
+            <div className="p-4 text-center text-gray-400">
+              <MessageCircle size={32} className="mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No hay inversores aún</p>
             </div>
-          </button>
-
-          {/* Chats Privados */}
-          {investors.map(investor => (
+          ) : (
+            investors.map(investor => (
             <button
               key={investor.id}
               onClick={() => setActiveChat(investor.investor_id || investor.id)}
@@ -167,7 +156,7 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
                 )}
               </div>
             </button>
-          ))}
+          )))}
         </div>
       </div>
 
@@ -176,22 +165,22 @@ const PammMessagingSystem = ({ fundId, userType = 'manager', investors = [] }) =
         {/* Header */}
         <div className="p-4 border-b border-[#333] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {activeChat === 'group' ? (
-              <>
-                <Users className="text-cyan-500" size={20} />
-                <div>
-                  <h3 className="font-semibold">Chat Grupal</h3>
-                  <p className="text-xs text-gray-400">
-                    {investors.length} inversores
-                  </p>
-                </div>
-              </>
-            ) : (
+            {activeInvestor ? (
               <>
                 <User className="text-purple-500" size={20} />
                 <div>
                   <h3 className="font-semibold">{activeInvestor?.name}</h3>
                   <p className="text-xs text-gray-400">Chat privado</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <MessageCircle className="text-gray-500" size={20} />
+                <div>
+                  <h3 className="font-semibold">Selecciona un inversor</h3>
+                  <p className="text-xs text-gray-400">
+                    Para iniciar una conversación
+                  </p>
                 </div>
               </>
             )}

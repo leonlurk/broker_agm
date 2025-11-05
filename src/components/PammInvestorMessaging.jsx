@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Send, Loader2, User, Users } from 'lucide-react';
-import { getFundMessages, sendMessage, markMessagesAsRead, getUnreadCount } from '../services/pammService';
+import { MessageCircle, Send, Loader2 } from 'lucide-react';
+import { getFundMessages, sendMessage, markMessagesAsRead } from '../services/pammService';
 
 const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
-  const [activeTab, setActiveTab] = useState('group'); // 'group' o 'private'
-  const [groupMessages, setGroupMessages] = useState([]);
-  const [privateMessages, setPrivateMessages] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState({ group: 0, private: { manager: 0 } });
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -19,59 +16,30 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
 
   useEffect(() => {
     loadMessages();
-    loadUnreadCounts();
-  }, [fundId, activeTab]);
+  }, [fundId, managerId]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [groupMessages, privateMessages]);
-
-  const loadUnreadCounts = async () => {
-    try {
-      if (!fundId) return;
-      const response = await getUnreadCount(fundId);
-      if (response.success) {
-        setUnreadCounts(response.counts);
-      }
-    } catch (error) {
-      console.error('Error loading unread counts:', error);
-    }
-  };
+  }, [messages]);
 
   const loadMessages = async () => {
     try {
       setLoading(true);
       
-      if (!fundId) {
-        console.warn('Missing fundId for messages');
+      if (!fundId || !managerId) {
+        console.warn('Missing fundId or managerId for messages');
         setLoading(false);
         return;
       }
       
-      if (activeTab === 'group') {
-        // Cargar mensajes grupales (sin recipient_id)
-        const response = await getFundMessages(fundId, 50);
-        if (response.success) {
-          setGroupMessages(response.messages);
-        }
-      } else {
-        // Cargar mensajes privados con el manager
-        if (!managerId) {
-          console.warn('Missing managerId for private messages');
-          setLoading(false);
-          return;
-        }
+      // Cargar solo mensajes privados con el manager
+      const response = await getFundMessages(fundId, 50, managerId);
+      if (response.success) {
+        setMessages(response.messages);
         
-        const response = await getFundMessages(fundId, 50, managerId);
-        if (response.success) {
-          setPrivateMessages(response.messages);
-          
-          // Marcar como leídos
-          if (response.messages.length > 0) {
-            await markMessagesAsRead(fundId);
-            // Actualizar contadores
-            loadUnreadCounts();
-          }
+        // Marcar como leídos
+        if (response.messages.length > 0) {
+          await markMessagesAsRead(fundId);
         }
       }
     } catch (error) {
@@ -87,15 +55,11 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
 
     setSending(true);
     try {
-      const recipientId = activeTab === 'private' ? managerId : null;
-      const response = await sendMessage(fundId, newMessage.trim(), null, recipientId);
+      // Enviar mensaje privado al manager
+      const response = await sendMessage(fundId, newMessage.trim(), null, managerId);
       
       if (response.success) {
-        if (activeTab === 'group') {
-          setGroupMessages(prev => [...prev, response.message]);
-        } else {
-          setPrivateMessages(prev => [...prev, response.message]);
-        }
+        setMessages(prev => [...prev, response.message]);
         setNewMessage('');
         scrollToBottom();
       }
@@ -115,54 +79,14 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
     }
   };
 
-  const currentMessages = activeTab === 'group' ? groupMessages : privateMessages;
-
   return (
     <div className="bg-[#2a2a2a] rounded-xl flex flex-col h-[600px]">
       {/* Header */}
-      <div className="p-4 border-b border-[#333]">
-        <div className="flex items-center gap-3 mb-3">
-          <MessageCircle className="text-cyan-500" size={20} />
-          <div>
-            <h3 className="font-semibold">Mensajes del Fondo</h3>
-            <p className="text-xs text-gray-400">{fundName}</p>
-          </div>
-        </div>
-        
-        {/* Tabs */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab('group')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors relative ${
-              activeTab === 'group'
-                ? 'bg-cyan-600 text-white'
-                : 'bg-[#333] text-gray-400 hover:bg-[#3a3a3a]'
-            }`}
-          >
-            <Users size={16} />
-            <span className="text-sm">Chat Grupal</span>
-            {unreadCounts.group > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                {unreadCounts.group}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('private')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors relative ${
-              activeTab === 'private'
-                ? 'bg-cyan-600 text-white'
-                : 'bg-[#333] text-gray-400 hover:bg-[#3a3a3a]'
-            }`}
-          >
-            <User size={16} />
-            <span className="text-sm">Chat Privado</span>
-            {unreadCounts.private?.manager > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                {unreadCounts.private.manager}
-              </span>
-            )}
-          </button>
+      <div className="p-4 border-b border-[#333] flex items-center gap-3">
+        <MessageCircle className="text-cyan-500" size={20} />
+        <div>
+          <h3 className="font-semibold">Chat con el Manager</h3>
+          <p className="text-xs text-gray-400">{fundName}</p>
         </div>
       </div>
 
@@ -172,18 +96,14 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
           <div className="h-full flex items-center justify-center">
             <Loader2 className="animate-spin text-cyan-500" size={32} />
           </div>
-        ) : currentMessages.length === 0 ? (
+        ) : messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-gray-400">
             <MessageCircle size={48} className="mb-3 opacity-50" />
             <p className="text-sm">No hay mensajes aún</p>
-            <p className="text-xs mt-1">
-              {activeTab === 'group' 
-                ? 'Los mensajes grupales aparecerán aquí' 
-                : 'Inicia la conversación con el manager'}
-            </p>
+            <p className="text-xs mt-1">Inicia la conversación con el manager</p>
           </div>
         ) : (
-          currentMessages.map((msg) => (
+          messages.map((msg) => (
             <div
               key={msg.id}
               className={`flex ${msg.is_own ? 'justify-end' : 'justify-start'}`}
@@ -238,7 +158,7 @@ const PammInvestorMessaging = ({ fundId, fundName, managerId }) => {
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={activeTab === 'group' ? 'Mensaje al grupo...' : 'Mensaje al manager...'}
+            placeholder="Mensaje al manager..."
             className="flex-1 bg-[#333] text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
             disabled={sending}
           />
