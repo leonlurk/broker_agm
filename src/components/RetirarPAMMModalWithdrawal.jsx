@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, AlertTriangle, TrendingDown, DollarSign, Calendar, AlertCircle, Shield } from 'lucide-react';
 import { requestWithdrawal } from '../services/pammService';
-import { get2FAStatus } from '../services/twoFactorService';
+import twoFactorService from '../services/twoFactorService';
 import TwoFactorWithdrawModal from './TwoFactorWithdrawModal';
 import { toast } from 'react-hot-toast';
 
@@ -29,7 +29,7 @@ const RetirarPAMMModalWithdrawal = ({ isOpen, onClose, fund, investment, onSucce
 
   const check2FAStatus = async () => {
     try {
-      const status = await get2FAStatus(currentUser.uid);
+      const status = await twoFactorService.get2FAStatus(currentUser.uid);
       setTwoFactorEnabled(status.enabled);
       if (status.enabled) {
         setTwoFactorMethods({
