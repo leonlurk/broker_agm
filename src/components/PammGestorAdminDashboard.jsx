@@ -1043,17 +1043,35 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
             setShowWithdrawalModal(false);
             setSelectedWithdrawal(null);
           }}
-          onApproved={() => {
+          onApproved={async () => {
             setShowWithdrawalModal(false);
             setSelectedWithdrawal(null);
-            // Recargar solicitudes de retiro
-            if (tradersDisponibles.length > 0) {
-              loadPendingWithdrawals(tradersDisponibles);
+            
+            // Recargar TODOS los datos del gestor (incluyendo AUM actualizado)
+            try {
+              const { getManagerStats } = await import('../services/pammService');
+              const response = await getManagerStats();
+              
+              if (response && response.overview) {
+                const investors = response.investors || [];
+                const traders = response.funds || [];
+                
+                setInvestors(investors);
+                setTradersDisponibles(traders);
+                
+                // Recargar solicitudes de retiro
+                if (traders.length > 0) {
+                  loadPendingWithdrawals(traders);
+                }
+              }
+            } catch (error) {
+              console.error('[PammGestorAdmin] Error reloading data after approval:', error);
             }
           }}
-          onRejected={() => {
+          onRejected={async () => {
             setShowWithdrawalModal(false);
             setSelectedWithdrawal(null);
+            
             // Recargar solicitudes de retiro
             if (tradersDisponibles.length > 0) {
               loadPendingWithdrawals(tradersDisponibles);
