@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowUp, DollarSign, TrendingUp, Users, Award, Activity, MessageCircle, Eye, Settings, Plus, MoreHorizontal, Loader2, RefreshCw } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import CrearPAMMModal from './CrearPAMMModal';
+import CopiarEstrategiaModal from './CopiarEstrategiaModal';
 import PammMessagingPanel from './PammMessagingPanel';
 import { getManagerStats, getFundActivities } from '../services/pammService';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
