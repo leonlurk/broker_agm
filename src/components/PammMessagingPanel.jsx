@@ -17,8 +17,9 @@ const PammMessagingPanel = ({ fundId, userType = 'manager' }) => {
 
   useEffect(() => {
     loadMessages();
-    const interval = setInterval(loadMessages, 10000); // Poll cada 10s
-    return () => clearInterval(interval);
+    // Deshabilitado temporalmente el polling para evitar scroll automático
+    // const interval = setInterval(loadMessages, 10000);
+    // return () => clearInterval(interval);
   }, [fundId]);
 
   useEffect(() => {
