@@ -1,46 +1,77 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import toast from 'react-hot-toast';
+import { 
+  getLeaderboardData, 
+  formatTraderName, 
+  getCountryFlag, 
+  formatPnL, 
+  formatPnLPercentage, 
+  getMedalEmoji,
+  formatLastUpdated,
+  formatBalanceHistoryForChart
+} from '../services/leaderboardService';
 
 // Modal del Leaderboard
 const LeaderboardModal = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState('Todo');
+  const [activeTab, setActiveTab] = useState('month');
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [totalParticipants, setTotalParticipants] = useState(0);
+  const [competitionPeriod, setCompetitionPeriod] = useState('');
   
-  // Datos para el gráfico de rendimiento
-  const rendimientoData = [
-    { name: 'Jan', value: 25000 },
-    { name: 'Feb', value: 15000 },
-    { name: 'Mar', value: 30000 },
-    { name: 'Apr', value: 22000 },
-    { name: 'May', value: 45000 },
-    { name: 'Jun', value: 52000 },
-    { name: 'Jul', value: 70000 },
-    { name: 'Aug', value: 34000 },
-    { name: 'Sep', value: 62000 },
-    { name: 'Oct', value: 90000 },
-    { name: 'Nov', value: 75000 },
-    { name: 'Dec', value: 110000 }
-  ];
+  // Efecto para cargar datos cuando se abre el modal o cambia el tab
+  useEffect(() => {
+    if (isOpen) {
+      fetchLeaderboard();
+    }
+  }, [isOpen, activeTab]);
 
-  // Datos para la tabla y destacados
-  const topTraders = [
-    { id: 1, nombre: 'Dylan A.', ganancia: '$25,000', porcentaje: '+24.7%', pais: 'US', medalla: '🥇', flag: '🇺🇸' },
-    { id: 2, nombre: 'Santi E.', ganancia: '$24,000', porcentaje: '+23.7%', pais: 'ES', medalla: '🥈', flag: '🇪🇸' },
-    { id: 3, nombre: 'Sofia B.', ganancia: '$22,000', porcentaje: '+20.7%', pais: 'AR', medalla: '🥉', flag: '🇦🇷' }
-  ];
+  // Función para obtener datos del leaderboard
+  const fetchLeaderboard = async () => {
+    setLoading(true);
+    try {
+      const result = await getLeaderboardData(activeTab, 10);
+      
+      if (result.success) {
+        setLeaderboardData(result.data.leaderboard || []);
+        setTotalParticipants(result.data.total_participants || 0);
+        setCompetitionPeriod(result.data.competition_period || '');
+        setLastUpdated(result.data.last_updated);
+      } else {
+        toast.error(result.error || 'Error al cargar el leaderboard');
+        setLeaderboardData([]);
+      }
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+      toast.error('Error al cargar el leaderboard');
+      setLeaderboardData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const tableData = [
-    { id: 4, nombre: 'User145', ganancia: '19.850', pais: '🇳🇱' },
-    { id: 5, nombre: 'User145', ganancia: '19.850', pais: '🇳🇱' },
-    { id: 6, nombre: 'User145', ganancia: '19.850', pais: '🇳🇱' },
-    { id: 7, nombre: 'User145', ganancia: '19.850', pais: '🇳🇱' },
-    { id: 8, nombre: 'User145', ganancia: '19.850', pais: '🇳🇱' },
-    { id: 9, nombre: 'User145', ganancia: '19.850', pais: '🇳🇱' },
-    { id: 10, nombre: 'User145', ganancia: '19.850', pais: '🇳🇱' }
-  ];
+  // Separar top 3 del resto
+  const topTraders = leaderboardData.slice(0, 3);
+  const tableData = leaderboardData.slice(3, 10);
   
-  // Función para cambiar entre pestañas de monto
+  // Datos para el gráfico del trader seleccionado (primer lugar por defecto)
+  const selectedTrader = leaderboardData[0];
+  const rendimientoData = selectedTrader 
+    ? formatBalanceHistoryForChart(selectedTrader.balance_history)
+    : [];
+  
+  // Función para cambiar entre pestañas de periodo
   const handleTabChange = (tab) => {
     setActiveTab(tab);
+  };
+
+  // Mapeo de tabs a labels
+  const tabLabels = {
+    'week': 'Semana',
+    'month': 'Mes',
+    'all': 'Todo'
   };
 
   if (!isOpen) return null;
@@ -50,7 +81,12 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
       <div className="bg-[#1a1a1a] rounded-xl w-full max-w-5xl max-h-[90vh] overflow-auto">
         {/* Header con título y botón de cierre */}
         <div className="flex justify-between items-center p-4 md:p-6 border-b border-[#333]">
-          <h1 className="text-xl md:text-2xl font-bold text-white">APE Funded Leaderboard</h1>
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-white">Demo Competition Leaderboard</h1>
+            {competitionPeriod && (
+              <p className="text-sm text-gray-400 mt-1">{competitionPeriod}</p>
+            )}
+          </div>
           <button 
             onClick={onClose}
             className="text-gray-400 hover:text-white focus:outline-none"
@@ -62,9 +98,9 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
         </div>
 
         <div className="p-4 md:p-6">
-          {/* Pestañas de filtrado por monto */}
+          {/* Pestañas de filtrado por periodo */}
           <div className="flex flex-wrap gap-2 md:gap-4 mb-6 overflow-x-auto pb-2">
-            {['Todo', '25k', '50k', '100k', '150k', '200k'].map((tab) => (
+            {['week', 'month', 'all'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => handleTabChange(tab)}
@@ -74,7 +110,7 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
                     : 'bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-gray-300 hover:border-cyan-500'
                 } transition-colors`}
               >
-                {tab}
+                {tabLabels[tab] || tab}
               </button>
             ))}
           </div>
@@ -83,56 +119,135 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {/* Columna izquierda - Clasificación */}
             <div className="bg-[#232323] rounded-xl p-4">
-              <h2 className="text-xl font-bold mb-4 text-white">Clasificación</h2>
-              
-              {/* Top 3 traders cards */}
-              <div className="grid grid-cols-3 gap-2 mb-6">
-                {topTraders.map((trader) => (
-                  <div key={trader.id} className="bg-[#1e3a4c] rounded-lg p-3 relative overflow-hidden">
-                    <div className="flex items-center gap-1 mb-1">
-                      <span className="text-lg">{trader.medalla}</span>
-                      <span className="text-sm text-gray-300">{trader.nombre}</span>
-                    </div>
-                    <div className="text-gray-400 text-xs mb-1">Ganancia</div>
-                    <div className="flex justify-between items-center">
-                      <div className="font-bold text-white">{trader.ganancia.replace('$', '')}</div>
-                      <div className="text-xs text-green-400 bg-green-900/30 px-2 py-0.5 rounded">
-                        {trader.porcentaje}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-white">Clasificación</h2>
+                {lastUpdated && (
+                  <span className="text-xs text-gray-400">
+                    {formatLastUpdated(lastUpdated)}
+                  </span>
+                )}
               </div>
               
-              {/* Tabla de clasificación */}
-              <table className="w-full text-white">
-                <thead>
-                  <tr className="text-left text-gray-400 border-b border-gray-700">
-                    <th className="py-2 px-2 font-medium">#</th>
-                    <th className="py-2 font-medium">Nombre</th>
-                    <th className="py-2 font-medium text-right">Ganancia</th>
-                    <th className="py-2 font-medium text-center">País</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableData.map((row) => (
-                    <tr key={row.id} className="border-b border-gray-800 text-sm">
-                      <td className="py-3 px-2">{row.id}</td>
-                      <td className="py-3">{row.nombre}</td>
-                      <td className="py-3 text-right">{row.ganancia}</td>
-                      <td className="py-3 text-center">{row.pais}</td>
+              {loading && (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
+                </div>
+              )}
+              
+              {!loading && leaderboardData.length === 0 && (
+                <div className="text-center py-8 text-gray-400">
+                  <p>No hay datos disponibles</p>
+                  <p className="text-sm mt-2">Inicia una cuenta demo para participar</p>
+                </div>
+              )}
+              
+              {!loading && leaderboardData.length > 0 && (
+              
+              <>
+                {/* Top 3 traders cards */}
+                <div className="grid grid-cols-3 gap-2 mb-6">
+                  {topTraders.map((trader) => {
+                    const pnlFormatted = formatPnL(trader.pnl);
+                    const pnlPercentage = formatPnLPercentage(trader.pnl_percentage);
+                    
+                    return (
+                      <div key={trader.rank} className="bg-[#1e3a4c] rounded-lg p-3 relative overflow-hidden">
+                        <div className="flex items-center gap-1 mb-1">
+                          <span className="text-lg">{getMedalEmoji(trader.rank)}</span>
+                          <span className="text-sm text-gray-300 truncate">
+                            {formatTraderName(trader.trader_name, trader.account_number)}
+                          </span>
+                        </div>
+                        <div className="text-gray-400 text-xs mb-1">Ganancia</div>
+                        <div className="flex justify-between items-center">
+                          <div className={`font-bold text-sm ${pnlFormatted.className}`}>
+                            {pnlFormatted.value}
+                          </div>
+                          <div className={`text-xs px-2 py-0.5 rounded ${pnlPercentage.className}`}>
+                            {pnlPercentage.value}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              
+                {/* Tabla de clasificación */}
+                <table className="w-full text-white">
+                  <thead>
+                    <tr className="text-left text-gray-400 border-b border-gray-700">
+                      <th className="py-2 px-2 font-medium">#</th>
+                      <th className="py-2 font-medium">Nombre</th>
+                      <th className="py-2 font-medium text-right">PnL</th>
+                      <th className="py-2 font-medium text-center">País</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {tableData.map((row) => {
+                      const pnlFormatted = formatPnL(row.pnl);
+                      const flag = getCountryFlag(row.country);
+                      
+                      return (
+                        <tr key={row.rank} className="border-b border-gray-800 text-sm hover:bg-gray-800/30 transition-colors">
+                          <td className="py-3 px-2">{row.rank}</td>
+                          <td className="py-3 truncate max-w-[120px]">
+                            {formatTraderName(row.trader_name, row.account_number)}
+                          </td>
+                          <td className={`py-3 text-right font-medium ${pnlFormatted.className}`}>
+                            {pnlFormatted.value}
+                          </td>
+                          <td className="py-3 text-center text-lg">{flag}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </>
+              )}
             </div>
 
             {/* Columna derecha - Gráfico de rendimiento */}
             <div className="bg-[#232323] rounded-xl p-4">
-              <h2 className="text-xl font-bold mb-6 text-white">Rendimiento</h2>
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-white">Rendimiento</h2>
+                {selectedTrader && (
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-400">
+                      {formatTraderName(selectedTrader.trader_name, selectedTrader.account_number)}
+                    </p>
+                    <div className="flex gap-4 mt-2 text-xs">
+                      <div>
+                        <span className="text-gray-400">Trades: </span>
+                        <span className="text-white font-medium">{selectedTrader.total_trades}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Win Rate: </span>
+                        <span className="text-white font-medium">{selectedTrader.win_rate.toFixed(1)}%</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Live: </span>
+                        <span className="text-cyan-400 font-medium">{selectedTrader.live_trades?.length || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
               
               {/* Gráfico de área */}
               <div className="h-72">
+                {loading && (
+                  <div className="flex justify-center items-center h-full">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
+                  </div>
+                )}
+                
+                {!loading && rendimientoData.length === 0 && (
+                  <div className="flex justify-center items-center h-full text-gray-400">
+                    <p>No hay datos de rendimiento disponibles</p>
+                  </div>
+                )}
+                
+                {!loading && rendimientoData.length > 0 && (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
                     data={rendimientoData}
@@ -151,9 +266,8 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
                       tick={false} 
                     />
                     <YAxis 
-                      domain={['0', '200000']}
-                      ticks={[0, 25000, 50000, 100000, 150000, 200000]} 
-                      tickFormatter={(value) => value === 0 ? '0k' : `${value/1000}k`}
+                      domain={['auto', 'auto']}
+                      tickFormatter={(value) => `$${(value/1000).toFixed(0)}k`}
                       axisLine={false}
                       tickLine={false}
                       tick={{ fill: '#9CA3AF', fontSize: 12 }}
@@ -169,8 +283,8 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
                       }}
                       labelStyle={{ color: '#ffffff' }}
                       itemStyle={{ color: '#ffffff' }}
-                      formatter={(value) => [`$${value.toLocaleString()}`, 'Rendimiento']}
-                      labelFormatter={(label) => `Mes: ${label}`}
+                      formatter={(value) => [`$${value.toLocaleString()}`, 'Equity']}
+                      labelFormatter={(label) => label}
                     />
                     <Area
                       type="monotone"
@@ -182,6 +296,7 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
                     />
                   </AreaChart>
                 </ResponsiveContainer>
+                )}
               </div>
             </div>
           </div>
