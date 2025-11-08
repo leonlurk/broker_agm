@@ -183,7 +183,7 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
                 onClick={() => handleTabChange(tab)}
                 className={`focus:outline-none px-5 md:px-7 py-2.5 rounded-xl text-sm md:text-base font-medium transition-all duration-300 ${
                   activeTab === tab
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/50 scale-105'
+                    ? 'bg-gray-800/80 text-white border-2 border-cyan-500'
                     : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 hover:text-white border border-gray-700/50'
                 }`}
               >
