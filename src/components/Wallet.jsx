@@ -748,9 +748,6 @@ const Wallet = () => {
               }
             );
 
-            // Notificar transferencia
-            notifyTransfer(amountNum, transferFromAccount.account_name, t('common.generalBalance'));
-
             // 📧 Enviar email de transferencia completada
             try {
               await emailServiceProxy.sendTransferCompletedEmail({
@@ -826,9 +823,6 @@ const Wallet = () => {
                 icon: '🔄'
               }
             );
-
-            // Notificar transferencia
-            notifyTransfer(amountNum, transferFromAccount.account_name, transferToAccount.account_name);
 
             // 📧 Enviar email de transferencia completada
             try {
