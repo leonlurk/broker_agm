@@ -989,11 +989,8 @@ const Wallet = () => {
         } catch (emailError) {
           console.error('[Wallet] Error sending withdrawal email:', emailError);
         }
-      } else if (activeTab === 'transferir') {
-        const transferAmount = parseFloat(amount);
-        toast.success(t('transfer.successMessage'));
-        notifyTransfer(transferAmount, t('common.generalBalance'), transferToAccount.account_name);
       }
+      // Nota: Las transferencias ya muestran su propio toast específico según el tipo
 
       // Limpiar formulario
       resetForm();
