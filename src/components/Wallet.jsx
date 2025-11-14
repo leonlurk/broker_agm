@@ -2139,20 +2139,6 @@ const Wallet = () => {
       {/* Header unificado con tabs */}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
-          {currentOperation && (
-            <div className="flex-shrink-0">
-              <img 
-                src="/Back.svg" 
-                alt="Back" 
-                onClick={() => {
-                  finishWalletOperation();
-                  resetForm();
-                  scrollToTop();
-                }}
-                className="w-10 h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
-              />
-            </div>
-          )}
           <h1 className="text-2xl font-semibold">{t('title')}</h1>
         </div>
         
