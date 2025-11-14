@@ -1252,11 +1252,13 @@ const Wallet = () => {
     
     // Cuentas con balance para origen
     const accountsWithBalance = mt5Accounts.filter(acc => (acc.balance || 0) > 0);
-    
-    // Cuentas disponibles para destino (excluir origen)
-    const availableDestinationAccounts = mt5Accounts.filter(acc => 
-      !transferFromAccount || acc.id !== transferFromAccount.id
-    );
+
+    // Cuentas disponibles para destino (solo reales, excluir origen)
+    const availableDestinationAccounts = mt5Accounts.filter(acc => {
+      const isRealAccount = acc.account_type?.toLowerCase() === 'real';
+      const isNotSource = !transferFromAccount || acc.id !== transferFromAccount.id;
+      return isRealAccount && isNotSource;
+    });
     
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
