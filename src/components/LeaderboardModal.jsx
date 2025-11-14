@@ -34,8 +34,14 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       const result = await getLeaderboardData(activeTab, 10);
-      
+
       if (result.success) {
+        // Debug: Log raw data from API
+        console.log('[LEADERBOARD DEBUG] Raw API data:', result.data.leaderboard);
+        result.data.leaderboard?.forEach((trader, idx) => {
+          console.log(`[LEADERBOARD DEBUG] Trader ${idx + 1}: ${trader.trader_name} - win_rate=${trader.win_rate}, total_trades=${trader.total_trades}`);
+        });
+
         setLeaderboardData(result.data.leaderboard || []);
         setTotalParticipants(result.data.total_participants || 0);
         setCompetitionPeriod(result.data.competition_period || '');
