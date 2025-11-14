@@ -49,7 +49,9 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   });
   const [accountFilter, setAccountFilter] = useState('all'); // 'all', 'real', 'demo'
   const [kycCardDismissed, setKycCardDismissed] = useState(() => {
-    return localStorage.getItem('kycCardDismissed') === 'true';
+    if (!user?.id) return false;
+    const key = `kycApprovedDismissed_${user.id}`;
+    return localStorage.getItem(key) === 'true';
   });
   const [accountsMetrics, setAccountsMetrics] = useState({});
   const [metricsLoading, setMetricsLoading] = useState({});
@@ -91,8 +93,10 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
 
   // Función para cerrar permanentemente el cartel KYC aprobado
   const dismissKycCard = () => {
+    if (!user?.id) return;
+    const key = `kycApprovedDismissed_${user.id}`;
     setKycCardDismissed(true);
-    localStorage.setItem('kycCardDismissed', 'true');
+    localStorage.setItem(key, 'true');
   };
 
   // Función para renderizar el cartel KYC según su estado
