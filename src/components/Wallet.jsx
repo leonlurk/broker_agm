@@ -1235,9 +1235,17 @@ const Wallet = () => {
   // Contenido para transferencias
   const renderTransferContent = () => {
     // Filtrar solo cuentas MT5 reales (no demo) con balance > 0
-    const realMT5AccountsWithBalance = mt5Accounts.filter(acc => 
-      acc.account_type?.toLowerCase() === 'real' && (acc.balance || 0) > 0
-    );
+    const realMT5AccountsWithBalance = mt5Accounts.filter(acc => {
+      const accountTypeValue = (acc.account_type || acc.accountType || acc.type || '').toString().toLowerCase();
+      const groupValue = (acc.group_name || acc.group || '').toString().toLowerCase();
+
+      const isRealAccount = accountTypeValue.includes('real') ||
+                           groupValue.includes('real') ||
+                           (!accountTypeValue.includes('demo') && !groupValue.includes('demo'));
+
+      const hasBalance = (acc.balance || 0) > 0;
+      return isRealAccount && hasBalance;
+    });
     
     // Determinar si mostrar opción MT5-to-MT5 (mínimo 2 cuentas reales con balance)
     const showMT5ToMT5Option = realMT5AccountsWithBalance.length >= 2;
@@ -1255,7 +1263,18 @@ const Wallet = () => {
 
     // Cuentas disponibles para destino (solo reales, excluir origen)
     const availableDestinationAccounts = mt5Accounts.filter(acc => {
-      const isRealAccount = acc.account_type?.toLowerCase() === 'real';
+      // Verificar si es cuenta real de múltiples formas
+      const accountTypeValue = (acc.account_type || acc.accountType || acc.type || '').toString().toLowerCase();
+      const groupValue = (acc.group_name || acc.group || '').toString().toLowerCase();
+
+      // Es cuenta real si:
+      // 1. account_type contiene 'real'
+      // 2. group contiene 'real'
+      // 3. NO es demo
+      const isRealAccount = accountTypeValue.includes('real') ||
+                           groupValue.includes('real') ||
+                           (!accountTypeValue.includes('demo') && !groupValue.includes('demo'));
+
       const isNotSource = !transferFromAccount || acc.id !== transferFromAccount.id;
       return isRealAccount && isNotSource;
     });
