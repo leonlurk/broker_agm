@@ -1238,8 +1238,8 @@ const Wallet = () => {
       return isRealAccount && hasBalance;
     });
     
-    // Determinar si mostrar opción MT5-to-MT5 (mínimo 2 cuentas reales con balance)
-    const showMT5ToMT5Option = realMT5AccountsWithBalance.length >= 2;
+    // Determinar si mostrar opción de selección de origen (mínimo 1 cuenta real con balance)
+    const showMT5ToMT5Option = realMT5AccountsWithBalance.length >= 1;
     
     // Determinar origen y balance
     const sourceBalance = transferFromAccount 
