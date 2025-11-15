@@ -661,35 +661,40 @@ const loadAccountMetrics = useCallback(async (account) => {
   
   try {
     // ENFOQUE HÍBRIDO: Combinar datos en tiempo real + históricos
-    
-    // PASO 1: Obtener datos en TIEMPO REAL del MT5 Manager (balance, equity, margin)
-    console.log('[TradingAccounts] Obteniendo datos en tiempo real del MT5...');
-    let realtimeData = null;
-    try {
-      const accountInfoResponse = await brokerApi.get(`/accounts/${account.account_number}`);
-      realtimeData = accountInfoResponse.data;
-      console.log('[TradingAccounts] Datos en tiempo real obtenidos:', realtimeData);
-    } catch (error) {
-      console.warn('[TradingAccounts] No se pudieron obtener datos en tiempo real:', error);
-    }
-    
-    // PASO 2: Obtener posiciones ABIERTAS en tiempo real
-    console.log('[TradingAccounts] Obteniendo posiciones abiertas...');
-    let openPositions = [];
-    try {
-      const positionsResponse = await brokerApi.get(`/accounts/${account.account_number}/positions`);
-      openPositions = positionsResponse.data || [];
-      console.log('[TradingAccounts] Posiciones abiertas:', openPositions.length);
-    } catch (error) {
-      console.warn('[TradingAccounts] No se pudieron obtener posiciones abiertas:', error);
-    }
-    
-    // PASO 3: Obtener datos HISTÓRICOS del dashboard (gráficos y operaciones cerradas)
-    console.log('[TradingAccounts] Obteniendo datos históricos...');
-    const dashboardData = await accountMetricsOptimized.getDashboardData(
-      account.account_number,
-      'month'
-    );
+
+    // OPTIMIZACIÓN: Ejecutar los 3 requests en PARALELO con Promise.all (ahorro ~1 segundo)
+    console.log('[TradingAccounts] Obteniendo datos en paralelo (tiempo real + posiciones + históricos)...');
+
+    const [accountInfoResult, positionsResult, dashboardData] = await Promise.all([
+      // PASO 1: Datos en TIEMPO REAL del MT5 Manager (balance, equity, margin)
+      brokerApi.get(`/accounts/${account.account_number}`)
+        .then(response => ({ success: true, data: response.data }))
+        .catch(error => {
+          console.warn('[TradingAccounts] No se pudieron obtener datos en tiempo real:', error);
+          return { success: false, data: null };
+        }),
+
+      // PASO 2: Posiciones ABIERTAS en tiempo real
+      brokerApi.get(`/accounts/${account.account_number}/positions`)
+        .then(response => ({ success: true, data: response.data || [] }))
+        .catch(error => {
+          console.warn('[TradingAccounts] No se pudieron obtener posiciones abiertas:', error);
+          return { success: false, data: [] };
+        }),
+
+      // PASO 3: Datos HISTÓRICOS del dashboard (gráficos y operaciones cerradas)
+      accountMetricsOptimized.getDashboardData(account.account_number, 'month')
+    ]);
+
+    // Extraer resultados
+    const realtimeData = accountInfoResult.success ? accountInfoResult.data : null;
+    const openPositions = positionsResult.success ? positionsResult.data : [];
+
+    console.log('[TradingAccounts] Datos obtenidos en paralelo:', {
+      realtimeData: !!realtimeData,
+      openPositions: openPositions.length,
+      dashboardData: !!dashboardData
+    });
     
     // Historial de balance: usar solo el que viene en el dashboard (ya incluido en la respuesta)
     const balanceHistory = Array.isArray(dashboardData?.balance_history) 
@@ -1223,10 +1228,11 @@ const loadAccountMetrics = useCallback(async (account) => {
     });
   };
 
-  // Solo mostrar operaciones reales - sin datos mock
-  const historialData = realTradingOperations ?
-    transformTradingOperations(realTradingOperations) :
-    [];
+  // OPTIMIZACIÓN: Memoizar transformación de operaciones (reduce re-renders)
+  const historialData = useMemo(() => {
+    if (!realTradingOperations) return [];
+    return transformTradingOperations(realTradingOperations);
+  }, [realTradingOperations, t]);
 
   // Funciones de filtrado del historial
   const updateHistoryFilter = (filterType, value) => {
@@ -1236,8 +1242,8 @@ const loadAccountMetrics = useCallback(async (account) => {
     }));
   };
 
-  // Función para filtrar los datos del historial
-  const getFilteredHistorialData = () => {
+  // OPTIMIZACIÓN: Memoizar filtrado de historial para evitar recálculos innecesarios
+  const filteredHistorialData = useMemo(() => {
     // Usar datos reales si están disponibles, sino usar datos de ejemplo
     const dataSource = realHistory?.operations || historialData;
     return dataSource.filter(item => {
@@ -1250,17 +1256,17 @@ const loadAccountMetrics = useCallback(async (account) => {
           return false;
         }
       }
-      
+
       // Filtro por tipo
       if (historyFilters.type !== 'all') {
-        const translatedType = historyFilters.type === 'buy' ? t('positions.types.buy') : 
-                               historyFilters.type === 'sell' ? t('positions.types.sell') : 
+        const translatedType = historyFilters.type === 'buy' ? t('positions.types.buy') :
+                               historyFilters.type === 'sell' ? t('positions.types.sell') :
                                historyFilters.type;
         if (item.tipo !== translatedType) {
           return false;
         }
       }
-      
+
       // Filtro por ganancia/pérdida
       if (historyFilters.profitLoss === 'profit' && item.ganancia <= 0) {
         return false;
@@ -1268,25 +1274,23 @@ const loadAccountMetrics = useCallback(async (account) => {
       if (historyFilters.profitLoss === 'loss' && item.ganancia >= 0) {
         return false;
       }
-      
+
       // Filtros de fecha
       if (historyFilters.dateFrom && item.fechaISO) {
         if (item.fechaISO < historyFilters.dateFrom) {
           return false;
         }
       }
-      
+
       if (historyFilters.dateTo && item.fechaISO) {
         if (item.fechaISO > historyFilters.dateTo) {
           return false;
         }
       }
-      
+
       return true;
     });
-  };
-
-  const filteredHistorialData = getFilteredHistorialData();
+  }, [realHistory?.operations, historialData, historyFilters, t]);
 
   // Función para generar datos del gráfico de beneficio total con optimización móvil
   const generateBenefitChartData = () => {
@@ -2085,8 +2089,8 @@ const loadAccountMetrics = useCallback(async (account) => {
   };
 
   // Memoizar datos dinámicos para evitar recálculos innecesarios
-  const dynamicInstrumentsData = useMemo(() => generateInstrumentsData(), [realInstruments, historialData]);
-  const dynamicRendimientoData = useMemo(() => generateRendimientoData(), [realPerformance, rendimientoFilters]);
+  const dynamicInstrumentsData = useMemo(() => generateInstrumentsData(), [realInstruments, historialData, t]);
+  const dynamicRendimientoData = useMemo(() => generateRendimientoData(), [realBalanceHistory, realMetrics, rendimientoFilters, t]);
   
   // Actualizar las variables con los datos dinámicos generados
   instrumentosData = dynamicInstrumentsData;
