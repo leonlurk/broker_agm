@@ -183,12 +183,13 @@ const Inversor = () => {
           id: sub.id,
           master_id: sub.master_user_id || sub.master_id, // IMPORTANTE: Preservar para sincronizar copiedTraders
           master_user_id: sub.master_user_id || sub.master_id, // También guardar master_user_id
-          name: sub.master?.name || sub.master?.username || 'Unknown Trader',
-          avatar: sub.master?.photo_url || '/Avatar1.png',
+          name: sub.master_name || sub.master?.name || sub.master?.username || sub.master_profile?.display_name || sub.master_email || 'Unknown Trader',
+          avatar: sub.master?.photo_url || sub.master_profile?.photo_url || '/Avatar1.png',
           personalPnL: sub.pnl || 0,
           personalPnLPercentage: sub.pnl_percentage || 0,
-          assignedCapital: sub.assigned_capital || 0,
-          status: sub.status || 'active'
+          assignedCapital: sub.assigned_capital || sub.master_config?.min_capital || 0,
+          status: sub.status || 'active',
+          master_config: sub.master_config || {}
         }));
 
         console.log('[Inversor] 💾 Setting subscriptions to state:', formattedSubs);
@@ -400,12 +401,13 @@ const Inversor = () => {
         id: sub.id,
         master_id: sub.master_user_id || sub.master_id,
         master_user_id: sub.master_user_id || sub.master_id,
-        name: sub.master?.name || sub.master?.username || 'Unknown Trader',
-        avatar: sub.master?.photo_url || '/Avatar1.png',
+        name: sub.master_name || sub.master?.name || sub.master?.username || sub.master_profile?.display_name || sub.master_email || 'Unknown Trader',
+        avatar: sub.master?.photo_url || sub.master_profile?.photo_url || '/Avatar1.png',
         personalPnL: sub.pnl || 0,
         personalPnLPercentage: sub.pnl_percentage || 0,
-        assignedCapital: sub.assigned_capital || 0,
-        status: sub.status || 'active'
+        assignedCapital: sub.assigned_capital || sub.master_config?.min_capital || 0,
+        status: sub.status || 'active',
+        master_config: sub.master_config || {}
       }));
 
       setSubscriptions(formattedSubs);
@@ -433,12 +435,13 @@ const Inversor = () => {
         id: sub.id,
         master_id: sub.master_user_id || sub.master_id,
         master_user_id: sub.master_user_id || sub.master_id,
-        name: sub.master?.name || sub.master?.username || 'Unknown Trader',
-        avatar: sub.master?.photo_url || '/Avatar1.png',
+        name: sub.master_name || sub.master?.name || sub.master?.username || sub.master_profile?.display_name || sub.master_email || 'Unknown Trader',
+        avatar: sub.master?.photo_url || sub.master_profile?.photo_url || '/Avatar1.png',
         personalPnL: sub.pnl || 0,
         personalPnLPercentage: sub.pnl_percentage || 0,
-        assignedCapital: sub.assigned_capital || 0,
-        status: sub.status || 'active'
+        assignedCapital: sub.assigned_capital || sub.master_config?.min_capital || 0,
+        status: sub.status || 'active',
+        master_config: sub.master_config || {}
       }));
 
       setSubscriptions(formattedSubs);
