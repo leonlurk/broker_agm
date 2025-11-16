@@ -685,7 +685,7 @@ const Inversor = () => {
                   {/* Trader Info */}
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold">{trader.name.charAt(0)}</span>
+                      <span className="text-white font-semibold">{(trader.name || 'T').charAt(0)}</span>
                     </div>
                     <div>
                       <h3 className="font-semibold text-white">{trader.name}</h3>
@@ -1025,7 +1025,7 @@ const Inversor = () => {
               {/* Trader Header */}
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center relative">
-                  <span className="text-white font-semibold">{trader.name.charAt(0)}</span>
+                  <span className="text-white font-semibold">{(trader.name || 'T').charAt(0)}</span>
                   {trader.isVerified && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                       <span className="text-white text-xs">✓</span>
@@ -1655,7 +1655,7 @@ const Inversor = () => {
                   <div key={comment.id} className="bg-[#1C1C1C] rounded-xl p-6 border border-[#333]">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center">
-                        <span className="text-white font-semibold text-sm">{comment.user.charAt(0)}</span>
+                        <span className="text-white font-semibold text-sm">{(comment.user || 'U').charAt(0)}</span>
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">

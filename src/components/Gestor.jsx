@@ -780,7 +780,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">{investor.name.charAt(0)}</span>
+                          <span className="text-white font-semibold text-sm">{(investor.name || 'I').charAt(0)}</span>
                         </div>
                         <div>
                           <p className="font-medium text-white">{investor.name}</p>
@@ -954,7 +954,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                 <div className="flex items-center gap-6">
                   <div className="relative">
                     <div className="w-20 h-20 bg-cyan-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-2xl">{profileData.displayName.charAt(0)}</span>
+                      <span className="text-white font-bold text-2xl">{(profileData.displayName || 'M').charAt(0)}</span>
                     </div>
                     <button className="absolute -bottom-2 -right-2 w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center hover:bg-cyan-700 transition-colors">
                       <Camera size={16} className="text-white" />
@@ -1209,7 +1209,7 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold">{profileData.displayName.charAt(0)}</span>
+                    <span className="text-white font-semibold">{(profileData.displayName || 'M').charAt(0)}</span>
                   </div>
                   <div>
                     <h3 className="font-semibold text-white">{profileData.displayName}</h3>
