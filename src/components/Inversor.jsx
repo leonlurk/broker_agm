@@ -117,57 +117,65 @@ const Inversor = () => {
         console.log('[Inversor] Subscription fields:', Object.keys(subsData[0] || {}));
 
         // Formatear los traders para el componente
-        const formattedTraders = tradersData.map(trader => ({
-          // IDs y básicos
-          id: trader.id,
-          name: trader.name || trader.username || 'Trader',
-          nombre: trader.name || trader.username || 'Trader', // Alias para compatibilidad
-          avatar: trader.photo_url || '/Avatar1.png',
+        const formattedTraders = tradersData.map(trader => {
+          // Extract master_config data if available
+          const config = trader.master_config || {};
 
-          // Performance y métricas principales
-          monthlyPerformance: trader.performance?.monthly_pnl_percentage || 0,
-          totalProfitabilityPercent: trader.performance?.total_pnl_percentage || trader.performance?.monthly_pnl_percentage || 0,
-          totalProfitabilityValue: trader.performance?.total_pnl || 0,
+          return {
+            // IDs y básicos
+            id: trader.id,
+            name: config.strategy_name || trader.display_name || trader.name || trader.username || trader.email?.split('@')[0] || 'Trader',
+            nombre: config.strategy_name || trader.display_name || trader.name || trader.username || trader.email?.split('@')[0] || 'Trader',
+            avatar: trader.photo_url || '/Avatar1.png',
 
-          // Estadísticas de trading
-          winRate: trader.win_rate || 0,
-          totalTrades: trader.total_trades || trader.operations_count || 0,
-          winningTrades: trader.winning_trades || Math.floor((trader.total_trades || 0) * ((trader.win_rate || 0) / 100)),
+            // Performance y métricas principales
+            monthlyPerformance: trader.performance?.monthly_pnl_percentage || 0,
+            totalProfitabilityPercent: trader.performance?.total_pnl_percentage || trader.performance?.monthly_pnl_percentage || 0,
+            totalProfitabilityValue: trader.performance?.total_pnl || 0,
 
-          // Seguidores y capital
-          followers: trader.follower_count || 0,
-          followersChangePercent: trader.followers_change_percentage || 0,
-          aum: trader.aum || 0,
-          managedCapital: trader.aum || trader.managed_capital || 0,
+            // Estadísticas de trading
+            winRate: trader.win_rate || 0,
+            totalTrades: trader.total_trades || trader.operations_count || 0,
+            winningTrades: trader.winning_trades || Math.floor((trader.total_trades || 0) * ((trader.win_rate || 0) / 100)),
 
-          // Riesgo y drawdown
-          riskLevel: trader.risk_level || 'Moderado',
-          maxDrawdown: trader.max_drawdown || 0,
+            // Seguidores y capital
+            followers: trader.follower_count || 0,
+            followersChangePercent: trader.followers_change_percentage || 0,
+            aum: trader.aum || 0,
+            managedCapital: trader.aum || trader.managed_capital || 0,
 
-          // Información de cuenta
-          accountNumber: trader.mt5_account || trader.account_number || 'N/A',
-          server: trader.server || 'MT5',
-          accountType: trader.account_type || 'CopyFX MT5 Prime',
-          balance: trader.balance || 0,
-          leverage: trader.leverage || 300,
+            // Riesgo y drawdown - Map experience_level to risk display
+            riskLevel: config.experience_level || trader.risk_level || 'Moderado',
+            maxDrawdown: config.max_drawdown || trader.max_drawdown || 0,
 
-          // Estrategia y configuración
-          strategy: trader.strategy || trader.strategy_name || 'N/A',
-          strategyName: trader.strategy_name || trader.strategy || 'N/A',
-          minDeposit: trader.min_deposit || trader.min_capital || 100,
-          commissionType: trader.commission_type || trader.commission_rate ? `${trader.commission_rate}%` : '20%',
-          paymentFrequency: trader.payment_frequency || '1 semana',
-          copyMode: trader.copy_mode || 'Proporcional',
+            // Información de cuenta
+            accountNumber: config.master_mt5_account || trader.mt5_account || trader.account_number || 'N/A',
+            server: trader.server || 'MT5',
+            accountType: trader.account_type || 'CopyFX MT5 Prime',
+            balance: trader.balance || 0,
+            leverage: trader.leverage || 300,
 
-          // Otros
-          avgHoldTime: trader.avg_hold_time || 'N/A',
-          rating: trader.rating || 0,
-          isVerified: trader.is_verified || false,
-          verified: trader.is_verified || false, // Alias para compatibilidad
-          activeSince: trader.active_since || trader.created_at ?
-            Math.floor((Date.now() - new Date(trader.created_at).getTime()) / (1000 * 60 * 60 * 24)) + ' días' :
-            'N/A'
-        }));
+            // Estrategia y configuración
+            strategy: config.strategy_name || config.description || trader.strategy || 'N/A',
+            strategyName: config.strategy_name || trader.strategy_name || 'N/A',
+            minDeposit: config.min_capital || trader.min_deposit || 100,
+            commissionType: config.commission_rate ? `${config.commission_rate}%` : (trader.commission_rate ? `${trader.commission_rate}%` : '20%'),
+            paymentFrequency: trader.payment_frequency || '1 semana',
+            copyMode: trader.copy_mode || 'Proporcional',
+
+            // Otros
+            avgHoldTime: trader.avg_hold_time || 'N/A',
+            rating: trader.rating || 0,
+            isVerified: trader.is_verified || false,
+            verified: trader.is_verified || false,
+            activeSince: trader.active_since || trader.created_at ?
+              Math.floor((Date.now() - new Date(trader.created_at).getTime()) / (1000 * 60 * 60 * 24)) + ' días' :
+              'N/A',
+
+            // Preserve original master_config for reference
+            master_config: config
+          };
+        });
 
         console.log('[Inversor] Formatted traders:', formattedTraders);
         console.log('[Inversor] Follower counts:', formattedTraders.map(t => ({ name: t.name, followers: t.followers })));
