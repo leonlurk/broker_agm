@@ -22,7 +22,7 @@ const ConfigurarGestorModal = ({ isOpen, onClose, onConfirm }) => {
     capitalMinimo: 100,
     maximoSeguidores: 100,
     cuentaMT5Seleccionada: '',
-    convertirseEnMaster: false
+    convertirseEnMaster: true  // Default to true - if user opens this modal, they want to become master
   });
 
   const [errors, setErrors] = useState({});
