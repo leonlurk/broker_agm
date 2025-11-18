@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, User, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, User, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
 import { getPammFunds, getMyFunds, leavePammFund, joinPammFund, getFundDetails } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
 import RetirarPAMMModalWithdrawal from './RetirarPAMMModalWithdrawal';
-import PammInvestorMessaging from './PammInvestorMessaging';
 import { useAccounts } from '../contexts/AccountsContext';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -1194,7 +1193,7 @@ const PammFundProfileView = ({
             
             {/* Tabs */}
             <div className="flex border-b border-[#333] overflow-x-auto">
-                {['performance', 'strategy', 'fees', 'messages'].map((tab) => (
+                {['performance', 'strategy', 'fees'].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -1421,16 +1420,6 @@ const PammFundProfileView = ({
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
-                
-                {activeTab === 'messages' && (
-                    <div className="mt-6">
-                        <PammInvestorMessaging 
-                            fundId={fund.fund_id || fund.id}
-                            fundName={fund.fund_name || fund.name}
-                            managerId={fund.manager_id || fund.manager?.id}
-                        />
                     </div>
                 )}
             </div>

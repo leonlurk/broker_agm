@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowUp, DollarSign, TrendingUp, Users, Award, Activity, MessageCircle, Eye, Settings, Plus, MoreHorizontal, Loader2, RefreshCw, Briefcase } from 'lucide-react';
+import { ArrowUp, DollarSign, TrendingUp, Users, Award, Activity, Eye, Settings, Plus, MoreHorizontal, Loader2, RefreshCw, Briefcase } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import CrearPAMMModal from './CrearPAMMModal';
 import CopiarEstrategiaModal from './CopiarEstrategiaModal';
-import PammMessagingSystem from './PammMessagingSystem';
 import InvestorActionsMenu from './InvestorActionsMenu';
 import { getManagerStats, getFundActivities, getFundWithdrawals } from '../services/pammService';
 import PAMMWithdrawalApprovalModal from './PAMMWithdrawalApprovalModal';
@@ -645,13 +644,6 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               )}
             </div>
           </div>
-
-          {/* Messaging System */}
-          <PammMessagingSystem 
-            fundId={fund.id} 
-            userType="manager" 
-            investors={fund.investors || []}
-          />
         </div>
       </div>
     );
