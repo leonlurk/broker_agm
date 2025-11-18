@@ -300,26 +300,44 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
           document.body.removeChild(successNotification);
         }, 5000);
 
-        // Crear el fondo PAMM a través del backend
+        // Crear el fondo PAMM a través del backend - ENVIAR TODOS LOS CAMPOS
         try {
           const fundDataForBackend = {
+            // ✅ Campos básicos
             name: formData.nombreFondo,
             description: formData.descripcion,
-            manager_mt5_account_id: formData.cuentaMT5Seleccionada, // ✅ Parámetro correcto
+            manager_mt5_account_id: formData.cuentaMT5Seleccionada,
             min_investment: formData.inversionMinima,
             max_investment: formData.capitalMaximo,
-            performance_fee: formData.performanceFee / 100, // ✅ Convertir a decimal (20 → 0.2)
-            management_fee: formData.managementFee / 100, // ✅ Convertir a decimal (2 → 0.02)
+            performance_fee: formData.performanceFee / 100, // Convertir a decimal (20 → 0.2)
+            management_fee: formData.managementFee / 100, // Convertir a decimal (2 → 0.02)
             is_public: true,
-            // Campos adicionales para metadata (opcional)
-            strategy_type: formData.tipoEstrategia,
-            lockup_period: formData.lockupPeriod,
-            max_risk: formData.riesgoMaximo,
-            markets: formData.mercados,
-            trading_hours: formData.horarioOperacion
+
+            // ✅ Configuración del fondo
+            strategy_type: formData.tipoEstrategia, // "Conservador", "Moderado", "Agresivo"
+            lockup_period: formData.lockupPeriod, // 30, 60, 90 días
+            max_risk: formData.riesgoMaximo, // 5-15%
+            markets: formData.mercados, // ["Forex", "Crypto", etc]
+            trading_hours: formData.horarioOperacion, // "24/7", "London Session", etc
+
+            // ✅ Información del manager
+            biography: formData.biografia || '',
+            trading_experience: formData.tradingExperience || '',
+            risk_management: formData.riskManagement || '',
+            experience_level: formData.experienciaRequerida || 'Principiante',
+
+            // ✅ Configuración del contrato
+            contract_type: formData.tipoContrato || 'PAMM Standard',
+            profit_split: formData.profitSplit || 80, // % para el inversor
+            copy_ratio: formData.copyRatio || 1.0,
+            min_balance: formData.minBalance || 10000,
+            max_investors: formData.maxInvestors || 50,
+
+            // ✅ Tipo de fondo para UI
+            fund_type: 'Nuevo' // Siempre "Nuevo" al crear, admin puede cambiarlo a Premium/Verificado
           };
 
-          console.log('[CrearPAMMModal] Creating fund with data:', fundDataForBackend);
+          console.log('[CrearPAMMModal] Creating fund with COMPLETE data:', fundDataForBackend);
           const fundResult = await createPammFund(fundDataForBackend);
           console.log('[CrearPAMMModal] Fund created successfully:', fundResult);
 
