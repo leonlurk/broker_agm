@@ -409,7 +409,18 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
           <div className="space-y-6">
             <div className="bg-[#2a2a2a] p-6 rounded-lg border border-[#333]">
               <h3 className="text-lg font-semibold text-white mb-4">Proyección de Rendimiento</h3>
-              
+
+              {/* Warning cuando rendimiento = 0 */}
+              {(gestor?.yearlyReturn || gestor?.yearly_return || gestor?.totalReturn || gestor?.total_return || 0) === 0 && (
+                <div className="mb-4 p-3 bg-yellow-500 bg-opacity-10 border border-yellow-500 border-opacity-30 rounded-lg flex items-start gap-2">
+                  <AlertTriangle className="text-yellow-500 flex-shrink-0 mt-0.5" size={16} />
+                  <div className="text-xs text-yellow-200">
+                    <p className="font-medium">Fondo sin historial de rendimiento</p>
+                    <p className="text-yellow-300 mt-1">Este fondo es nuevo y aún no tiene datos históricos de performance. La proyección se basa en 0% de rendimiento. El management fee se cobra sobre el capital invertido independientemente del rendimiento.</p>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400">Inversión inicial:</span>
