@@ -110,7 +110,19 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
                     type: fund.fund_type || fund.type || 'Nuevo',
                     markets: fund.markets || [],
                     tradingHours: fund.trading_hours || fund.tradingHours || '24/7',
-                    strategyType: fund.strategy_type || fund.strategyType || 'Moderado'
+                    strategyType: fund.strategy_type || fund.strategyType || 'Moderado',
+                    // Nuevos campos de metadata del gestor
+                    biography: fund.biography || '',
+                    tradingExperience: fund.trading_experience || '',
+                    riskManagement: fund.risk_management || '',
+                    experienceLevel: fund.experience_level || 'Principiante',
+                    // Nuevos campos de contrato
+                    contractType: fund.contract_type || 'PAMM Standard',
+                    profitSplit: fund.profit_split || 80,
+                    copyRatio: fund.copy_ratio || 1.0,
+                    minBalance: fund.min_balance || 10000,
+                    maxInvestors: fund.max_investors || 50,
+                    maxRisk: fund.max_risk || 10.0
                 };
                 
                 setSelectedFund(enrichedFund);
