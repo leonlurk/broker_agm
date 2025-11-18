@@ -724,7 +724,52 @@ const PammExplorerView = ({
             try {
                 setIsLoadingFunds(true);
                 const fundsData = await getPammFunds();
-                setFunds(fundsData);
+
+                // Mapear datos del backend (snake_case) al frontend (camelCase)
+                const mappedFunds = fundsData.map(fund => ({
+                    ...fund,
+                    // Basic fields
+                    id: fund.id || fund.fund_id,
+                    name: fund.name || fund.fund_name,
+                    aum: fund.current_aum || fund.aum || 0,
+                    totalReturn: fund.total_return || fund.totalReturn || 0,
+                    investors: fund.investor_count || fund.investors || 0,
+                    riskLevel: fund.risk_level || fund.riskLevel || 'Medio',
+                    // Fees (convert decimal to percentage)
+                    managementFee: (fund.management_fee ? fund.management_fee * 100 : fund.managementFee) || 2,
+                    performanceFee: (fund.performance_fee ? fund.performance_fee * 100 : fund.performanceFee) || 20,
+                    // Performance metrics
+                    monthlyReturn: fund.monthly_return || fund.monthlyReturn || 0,
+                    maxDrawdown: fund.max_drawdown || fund.maxDrawdown || 0,
+                    sharpeRatio: fund.sharpe_ratio || fund.sharpeRatio || 0,
+                    winRate: fund.win_rate || fund.winRate || 0,
+                    // Investment limits
+                    minInvestment: fund.min_investment || fund.minInvestment || 100,
+                    maxInvestment: fund.max_investment || fund.maxInvestment || null,
+                    // Configuration
+                    lockupDays: fund.lockup_period || fund.lockupDays || 30,
+                    type: fund.fund_type || fund.type || 'Nuevo',
+                    markets: fund.markets || [],
+                    tradingHours: fund.trading_hours || fund.tradingHours || '24/7',
+                    strategyType: fund.strategy_type || fund.strategyType || 'Moderado',
+                    strategy: fund.strategy_type || fund.strategy || 'Moderado',
+                    // Manager info
+                    since: fund.since || fund.created_at?.split('T')[0] || '2025-01-01',
+                    // Metadata
+                    biography: fund.biography || '',
+                    tradingExperience: fund.trading_experience || '',
+                    riskManagement: fund.risk_management || '',
+                    experienceLevel: fund.experience_level || 'Principiante',
+                    // Contract
+                    contractType: fund.contract_type || 'PAMM Standard',
+                    profitSplit: fund.profit_split || 80,
+                    copyRatio: fund.copy_ratio || 1.0,
+                    minBalance: fund.min_balance || 10000,
+                    maxInvestors: fund.max_investors || 50,
+                    maxRisk: fund.max_risk || 10.0
+                }));
+
+                setFunds(mappedFunds);
             } catch (error) {
                 console.error('Error loading PAMM funds:', error);
                 setFunds([]);
@@ -732,7 +777,7 @@ const PammExplorerView = ({
                 setIsLoadingFunds(false);
             }
         };
-        
+
         fetchAvailableFunds();
     }, []);
     
@@ -804,13 +849,18 @@ const PammExplorerView = ({
                 <div className="mb-4">
                     <div className="flex justify-between mb-1">
                         <span className="text-xs text-gray-400">{t('pamm.explorer.totalReturn')}</span>
-                        <span className="text-xs text-green-400">{formatPercentage(fund.totalReturn)}</span>
+                        <span className={`text-xs ${fund.totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {formatPercentage(fund.totalReturn)}
+                        </span>
                     </div>
                     <div className="w-full bg-[#333] h-2 rounded-full">
-                        <div className="bg-green-500 h-2 rounded-full" style={{ width: `${Math.min(fund.totalReturn, 100)}%` }}></div>
+                        <div
+                            className={`h-2 rounded-full ${fund.totalReturn >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                            style={{ width: `${Math.min(Math.abs(fund.totalReturn), 100)}%` }}
+                        ></div>
                     </div>
                 </div>
-                
+
                 <div className="mb-4">
                     <div className="flex justify-between mb-1">
                         <span className="text-xs text-gray-400">{t('pamm.explorer.riskLevel')}</span>
@@ -820,8 +870,8 @@ const PammExplorerView = ({
                         <div className={`${
                             fund.riskLevel === 'Alto' ? 'bg-red-500' :
                             fund.riskLevel === 'Moderado' ? 'bg-yellow-500' : 'bg-green-500'
-                        } h-2 rounded-full`} style={{ 
-                            width: fund.riskLevel === 'Alto' ? '80%' : fund.riskLevel === 'Moderado' ? '50%' : '30%' 
+                        } h-2 rounded-full`} style={{
+                            width: `${fund.maxRisk || 50}%`
                         }}></div>
                     </div>
                 </div>
