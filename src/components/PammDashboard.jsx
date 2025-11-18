@@ -742,6 +742,7 @@ const PammExplorerView = ({
                     performanceFee: (fund.performance_fee ? fund.performance_fee * 100 : fund.performanceFee) || 20,
                     // Performance metrics
                     monthlyReturn: fund.monthly_return || fund.monthlyReturn || 0,
+                    yearlyReturn: fund.yearly_return || fund.yearlyReturn || 0,
                     maxDrawdown: fund.max_drawdown || fund.maxDrawdown || 0,
                     sharpeRatio: fund.sharpe_ratio || fund.sharpeRatio || 0,
                     winRate: fund.win_rate || fund.winRate || 0,

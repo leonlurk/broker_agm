@@ -129,18 +129,20 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
 
   // Calculadora de rendimiento estimado
   const calcularRendimientoEstimado = () => {
-    const rendimientoAnual = gestor?.rendimiento || 18.5;
+    // Usar yearly_return si existe, si no usar total_return anualizado
+    const rendimientoAnual = gestor?.yearlyReturn || gestor?.yearly_return ||
+                             (gestor?.totalReturn || gestor?.total_return || 0);
     const meses = {
       '1 mes': 1,
       '3 meses': 3,
       '6 meses': 6,
       '1 año': 12
     };
-    
+
     const periodoMeses = meses[formData.periodoInversion];
     const rendimientoEstimado = (formData.montoInversion * (rendimientoAnual / 100) * (periodoMeses / 12));
-    const managementFee = formData.montoInversion * ((gestor?.managementFee || 2) / 100) * (periodoMeses / 12);
-    const performanceFee = rendimientoEstimado * ((gestor?.performanceFee || 20) / 100);
+    const managementFee = formData.montoInversion * ((gestor?.managementFee || gestor?.management_fee || 2) / 100) * (periodoMeses / 12);
+    const performanceFee = rendimientoEstimado * ((gestor?.performanceFee || gestor?.performance_fee || 20) / 100);
     const gananciaLimpia = rendimientoEstimado - performanceFee;
     const montoFinal = formData.montoInversion + gananciaLimpia - managementFee;
     
@@ -226,7 +228,7 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
                   />
                 </div>
                 <p className="text-xs text-gray-500">
-                  Mínimo: ${gestor?.inversionMinima || 1000} • Máximo: ${gestor?.capitalMaximo || 100000}
+                  Mínimo: ${gestor?.minInvestment || gestor?.min_investment || gestor?.inversionMinima || 1000} • Máximo: ${gestor?.maxInvestment || gestor?.max_investment || gestor?.capitalMaximo || 100000}
                 </p>
                 {errors.montoInversion && (
                   <p className="text-red-400 text-sm flex items-center gap-1">
@@ -324,7 +326,7 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
                   max="100"
                 />
                 <p className="text-xs text-gray-500">
-                  Drawdown máximo histórico del gestor: {gestor?.drawdown || -12.1}%
+                  Drawdown máximo histórico del gestor: {gestor?.maxDrawdown || gestor?.max_drawdown || gestor?.drawdown || 0}%
                 </p>
                 {errors.limiteRiesgo && (
                   <p className="text-red-400 text-sm flex items-center gap-1">
@@ -455,22 +457,22 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-400">Tipo de estrategia:</span>
-                  <span className="text-white">{gestor?.tipoEstrategia || 'Moderado'}</span>
+                  <span className="text-white">{gestor?.strategyType || gestor?.strategy_type || gestor?.tipoEstrategia || 'Moderado'}</span>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span className="text-gray-400">Sharpe Ratio:</span>
-                  <span className="text-white">{gestor?.sharpeRatio || 1.95}</span>
+                  <span className="text-white">{gestor?.sharpeRatio || gestor?.sharpe_ratio || 0}</span>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span className="text-gray-400">Inversores actuales:</span>
-                  <span className="text-white">{gestor?.inversores || 89}</span>
+                  <span className="text-white">{gestor?.investors || gestor?.investor_count || gestor?.inversores || 0}</span>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span className="text-gray-400">Capital total:</span>
-                  <span className="text-white">${(gestor?.capitalTotal || 1250000).toLocaleString()}</span>
+                  <span className="text-white">${(gestor?.aum || gestor?.current_aum || gestor?.capitalTotal || 0).toLocaleString()}</span>
                 </div>
               </div>
             </div>
