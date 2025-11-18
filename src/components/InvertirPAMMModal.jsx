@@ -183,18 +183,24 @@ const InvertirPAMMModal = ({ isOpen, onClose, gestor, onConfirm }) => {
         {/* Información del Gestor */}
         <div className="p-6 border-b border-[#333] bg-[#2a2a2a]">
           <div className="flex items-center gap-4">
-            <img 
-              src={gestor?.foto || '/default-avatar.png'} 
-              alt={gestor?.nombre || 'Gestor'} 
-              className="w-12 h-12 rounded-full border-2 border-green-500"
-            />
+            {gestor?.foto ? (
+              <img
+                src={gestor.foto}
+                alt={gestor?.nombreFondo || gestor?.name || 'Fondo'}
+                className="w-16 h-16 rounded-full object-cover border-2 border-green-500"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-2xl border-2 border-green-500">
+                {(gestor?.nombreFondo || gestor?.name || 'F').charAt(0)}
+              </div>
+            )}
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-white">{gestor?.nombreFondo || 'Fondo PAMM'}</h3>
-              <p className="text-sm text-gray-400">Gestor: {gestor?.nombre || 'Gestor'}</p>
+              <h3 className="text-lg font-semibold text-white">{gestor?.nombreFondo || gestor?.name || 'Fondo PAMM'}</h3>
+              <p className="text-sm text-gray-400">Gestor: {gestor?.nombre || gestor?.manager?.name || 'Gestor'}</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-400">Rendimiento</p>
-              <p className="text-lg font-semibold text-green-500">+{gestor?.rendimiento || 18.5}%</p>
+              <p className="text-lg font-semibold text-green-500">+{gestor?.rendimiento || gestor?.totalReturn || 0}%</p>
             </div>
           </div>
         </div>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, DollarSign, AlertTriangle, TrendingUp, Shield, Users, Clock, Target, Star, Settings, ChevronLeft, ChevronRight, Copy, Percent, User } from 'lucide-react';
+import { X, DollarSign, AlertTriangle, TrendingUp, Shield, Users, Clock, Target, Star, Settings, ChevronLeft, ChevronRight, Copy, Percent, User, Upload, Image as ImageIcon } from 'lucide-react';
 import { useAccounts } from '../contexts/AccountsContext';
 import { supabase } from '../supabase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { createPammFund } from '../services/pammService';
+import { uploadProfilePicture } from '../supabase/storage';
 
 const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData = null, onFundCreated = null }) => {
   const { getAllAccounts } = useAccounts();
@@ -78,6 +79,11 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const maxSteps = mode === 'configure' ? 3 : 4;
+
+  // Profile image states
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   
   // Obtener cuentas MT5 reales del usuario
   const accounts = getAllAccounts();
@@ -135,6 +141,54 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
         ? prev.mercados.filter(m => m !== mercado)
         : [...prev.mercados, mercado]
     }));
+  };
+
+  // Handle profile image selection
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setErrors(prev => ({
+        ...prev,
+        profileImage: 'Solo se permiten archivos JPG, PNG o WEBP'
+      }));
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors(prev => ({
+        ...prev,
+        profileImage: 'La imagen no puede superar los 5MB'
+      }));
+      return;
+    }
+
+    setProfileImage(file);
+    setProfileImagePreview(URL.createObjectURL(file));
+
+    // Clear error
+    if (errors.profileImage) {
+      setErrors(prev => ({
+        ...prev,
+        profileImage: null
+      }));
+    }
+  };
+
+  // Remove selected image
+  const handleRemoveImage = () => {
+    setProfileImage(null);
+    setProfileImagePreview(null);
+    if (errors.profileImage) {
+      setErrors(prev => ({
+        ...prev,
+        profileImage: null
+      }));
+    }
   };
 
   const validateStep = (step) => {
@@ -300,6 +354,27 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
           document.body.removeChild(successNotification);
         }, 5000);
 
+        // Upload profile image if selected
+        let fundProfileImageUrl = null;
+        if (profileImage) {
+          console.log('[CrearPAMMModal] Uploading fund profile image...');
+          setUploadingImage(true);
+          const uploadResult = await uploadProfilePicture(
+            `pamm_${userId}`,
+            profileImage,
+            `fund_${formData.nombreFondo.replace(/\s+/g, '_')}_${Date.now()}.${profileImage.name.split('.').pop()}`
+          );
+
+          if (uploadResult.success) {
+            fundProfileImageUrl = uploadResult.url;
+            console.log('[CrearPAMMModal] Profile image uploaded:', fundProfileImageUrl);
+          } else {
+            console.error('[CrearPAMMModal] Error uploading profile image:', uploadResult.error);
+            // Continue without image, don't block fund creation
+          }
+          setUploadingImage(false);
+        }
+
         // Crear el fondo PAMM a través del backend - ENVIAR TODOS LOS CAMPOS
         try {
           const fundDataForBackend = {
@@ -334,7 +409,10 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
             max_investors: formData.maxInvestors || 50,
 
             // ✅ Tipo de fondo para UI
-            fund_type: 'Nuevo' // Siempre "Nuevo" al crear, admin puede cambiarlo a Premium/Verificado
+            fund_type: 'Nuevo', // Siempre "Nuevo" al crear, admin puede cambiarlo a Premium/Verificado
+
+            // ✅ Imagen de perfil del fondo
+            fund_profile_image: fundProfileImageUrl || null
           };
 
           console.log('[CrearPAMMModal] Creating fund with COMPLETE data:', fundDataForBackend);
@@ -820,6 +898,64 @@ const CrearPAMMModal = ({ isOpen, onClose, onConfirm, mode = 'create', fundData 
                   <p className="text-red-400 text-sm flex items-center gap-1">
                     <AlertTriangle size={14} />
                     {errors.descripcion}
+                  </p>
+                )}
+              </div>
+
+              {/* Profile Image Upload */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Imagen de Perfil del Fondo
+                </label>
+                <div className="flex items-center gap-4">
+                  {profileImagePreview ? (
+                    <div className="relative">
+                      <img
+                        src={profileImagePreview}
+                        alt="Preview"
+                        className="w-24 h-24 rounded-full object-cover border-2 border-cyan-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <X size={16} className="text-white" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-[#2a2a2a] border-2 border-dashed border-[#444] flex items-center justify-center">
+                      <ImageIcon className="text-gray-500" size={32} />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <label className="cursor-pointer">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-lg transition-colors text-white text-sm font-medium w-fit">
+                        <Upload size={16} />
+                        Subir Imagen
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-xs text-gray-500 mt-2">
+                      JPG, PNG o WEBP. Máximo 5MB.
+                    </p>
+                  </div>
+                </div>
+                {errors.profileImage && (
+                  <p className="text-red-400 text-sm flex items-center gap-1">
+                    <AlertTriangle size={14} />
+                    {errors.profileImage}
+                  </p>
+                )}
+                {uploadingImage && (
+                  <p className="text-cyan-400 text-sm flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-cyan-400 border-t-transparent"></div>
+                    Subiendo imagen...
                   </p>
                 )}
               </div>

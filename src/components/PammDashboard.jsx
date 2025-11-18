@@ -735,6 +735,8 @@ const PammExplorerView = ({
                     totalReturn: fund.total_return || fund.totalReturn || 0,
                     investors: fund.investor_count || fund.investors || 0,
                     riskLevel: fund.risk_level || fund.riskLevel || 'Medio',
+                    // Profile image
+                    foto: fund.fund_profile_image || fund.foto || null,
                     // Fees (convert decimal to percentage)
                     managementFee: (fund.management_fee ? fund.management_fee * 100 : fund.managementFee) || 2,
                     performanceFee: (fund.performance_fee ? fund.performance_fee * 100 : fund.performanceFee) || 20,
@@ -836,10 +838,23 @@ const PammExplorerView = ({
         return (
             <div key={fund.id} className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl border border-[#333] mb-4">
                 <div className="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 className="text-lg font-medium">{fund.name}</h3>
-                        <p className="text-green-500 text-sm">{formatPercentage(fund.monthlyReturn)} {t('pamm.explorer.lastMonth')}</p>
-                        <p className="text-gray-400 text-sm mt-1">{t('pamm.fund.manager')}: {typeof fund.manager === 'string' ? fund.manager : (fund.manager?.name || fund.manager?.display_name || 'Manager')} • {t('pamm.fund.inception')}: {fund.since}</p>
+                    <div className="flex items-start gap-3">
+                        {fund.foto ? (
+                            <img
+                                src={fund.foto}
+                                alt={fund.name}
+                                className="w-12 h-12 rounded-full object-cover border-2 border-cyan-500"
+                            />
+                        ) : (
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                                {fund.name.charAt(0)}
+                            </div>
+                        )}
+                        <div>
+                            <h3 className="text-lg font-medium">{fund.name}</h3>
+                            <p className="text-green-500 text-sm">{formatPercentage(fund.monthlyReturn)} {t('pamm.explorer.lastMonth')}</p>
+                            <p className="text-gray-400 text-sm mt-1">{t('pamm.fund.manager')}: {typeof fund.manager === 'string' ? fund.manager : (fund.manager?.name || fund.manager?.display_name || 'Manager')} • {t('pamm.fund.inception')}: {fund.since}</p>
+                        </div>
                     </div>
                     <div className={`${getTypeColor(fund.type)} text-xs px-2 py-1 rounded text-white`}>
                         {fund.type}
