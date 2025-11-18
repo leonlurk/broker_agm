@@ -311,9 +311,9 @@ export const updateFundRules = async (fundId, rules) => {
 export const joinPammFund = async (fundId, mt5AccountId, investedAmount) => {
   try {
     const response = await logicApiClient.post('/api/v1/pamm/join', {
-      fundId,
-      mt5AccountId,
-      investedAmount
+      fund_id: fundId,
+      investor_mt5_account_id: mt5AccountId,
+      invested_amount: investedAmount
     });
     return response.data;
   } catch (error) {
