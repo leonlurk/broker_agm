@@ -100,12 +100,18 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
                     totalReturn: fund.total_return || fund.totalReturn || 0,
                     investors: fund.investor_count || fund.investors || 0,
                     riskLevel: fund.risk_level || fund.riskLevel || 'Medium',
-                    managementFee: fund.management_fee || fund.managementFee || 2,
-                    performanceFee: fund.performance_fee || fund.performanceFee || 20,
+                    managementFee: (fund.management_fee ? fund.management_fee * 100 : fund.managementFee) || 2,
+                    performanceFee: (fund.performance_fee ? fund.performance_fee * 100 : fund.performanceFee) || 20,
                     monthlyReturn: fund.monthly_return || fund.monthlyReturn || 0,
                     maxDrawdown: fund.max_drawdown || fund.maxDrawdown || 0,
                     sharpeRatio: fund.sharpe_ratio || fund.sharpeRatio || 0,
-                    winRate: fund.win_rate || fund.winRate || 0
+                    winRate: fund.win_rate || fund.winRate || 0,
+                    // Campos adicionales para vistas detalladas
+                    lockupDays: fund.lockup_period || fund.lockupDays || 30,
+                    type: fund.fund_type || fund.type || 'Nuevo',
+                    markets: fund.markets || [],
+                    tradingHours: fund.trading_hours || fund.tradingHours || '24/7',
+                    strategyType: fund.strategy_type || fund.strategyType || 'Moderado'
                 };
                 
                 setSelectedFund(enrichedFund);
