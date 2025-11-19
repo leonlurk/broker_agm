@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Crown, CheckCircle, Search, Filter, Star, Trend
 import TraderProfileDetail from './TraderProfileDetail';
 import SeguirTraderModal from './SeguirTraderModal';
 import AccountSelectionModal from './AccountSelectionModal';
+import EnhancedTraderCard from './EnhancedTraderCard';
 import { getMasterTraders, getMySubscriptions, followMaster, unfollowMaster, getFollowers, getCopyStats, getTraderStats } from '../services/copytradingService';
 import { useAccounts } from '../contexts/AccountsContext';
 import useTranslation from '../hooks/useTranslation';
@@ -834,7 +835,18 @@ const CopytradingDashboard = () => {
                 
                 return matchesSearch && matchesType && matchesRisk && matchesFollowFilter;
               })
-              .map(trader => renderTraderCard(trader))}
+              .map(trader => (
+                <EnhancedTraderCard
+                  key={trader.id}
+                  trader={trader}
+                  onCopy={handleCopyTrader}
+                  onView={handleViewTraderDetails}
+                  onExpand={toggleExpandTrader}
+                  isExpanded={expandedTrader === trader.id}
+                  isCopying={copiedTraders.has(trader.user_id || trader.id)}
+                  t={t}
+                />
+              ))}
           </div>
         </div>
       )}
