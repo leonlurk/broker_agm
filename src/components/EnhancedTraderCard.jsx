@@ -106,30 +106,42 @@ const WinRateCircle = ({ percentage }) => {
 };
 
 // KPI Badge component
-const KpiBadge = ({ icon: Icon, label, value, color = 'cyan', trend = null }) => (
-  <div className="flex flex-col items-center p-2 bg-[#232323]/50 rounded-lg backdrop-blur-sm border border-[#333]/50 hover:border-[#444] transition-all duration-300 hover:scale-105">
-    <div className={`flex items-center gap-1 text-${color}-400 mb-1`}>
-      <Icon size={12} />
-      <span className="text-[10px] uppercase tracking-wider text-gray-500">{label}</span>
+const KpiBadge = ({ icon: Icon, label, value, color = 'cyan', trend = null }) => {
+  const colorClasses = {
+    cyan: 'text-cyan-400',
+    blue: 'text-blue-400',
+    green: 'text-green-400',
+    red: 'text-red-400',
+    yellow: 'text-yellow-400',
+    purple: 'text-purple-400'
+  };
+  const textColor = colorClasses[color] || colorClasses.cyan;
+
+  return (
+    <div className="flex flex-col items-center p-2 bg-[#232323]/50 rounded-lg backdrop-blur-sm border border-[#333]/50 hover:border-[#444] transition-all duration-300 hover:scale-105">
+      <div className={`flex items-center gap-1 ${textColor} mb-1`}>
+        <Icon size={12} />
+        <span className="text-[10px] uppercase tracking-wider text-gray-500">{label}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className={`text-sm font-bold ${textColor}`}>{value}</span>
+        {trend && (
+          trend > 0 ?
+            <TrendingUp size={10} className="text-green-400" /> :
+            <TrendingDown size={10} className="text-red-400" />
+        )}
+      </div>
     </div>
-    <div className="flex items-center gap-1">
-      <span className={`text-sm font-bold text-${color}-400`}>{value}</span>
-      {trend && (
-        trend > 0 ?
-          <TrendingUp size={10} className="text-green-400" /> :
-          <TrendingDown size={10} className="text-red-400" />
-      )}
-    </div>
-  </div>
-);
+  );
+};
 
 // Risk indicator component
 const RiskIndicator = ({ level }) => {
   const levels = {
-    'Bajo': { color: 'green', width: '25%', bars: 1 },
-    'Medio': { color: 'yellow', width: '50%', bars: 2 },
-    'Medio-Alto': { color: 'orange', width: '75%', bars: 3 },
-    'Alto': { color: 'red', width: '100%', bars: 4 }
+    'Bajo': { bgColor: 'bg-green-500', textColor: 'text-green-400', bars: 1 },
+    'Medio': { bgColor: 'bg-yellow-500', textColor: 'text-yellow-400', bars: 2 },
+    'Medio-Alto': { bgColor: 'bg-orange-500', textColor: 'text-orange-400', bars: 3 },
+    'Alto': { bgColor: 'bg-red-500', textColor: 'text-red-400', bars: 4 }
   };
 
   const config = levels[level] || levels['Medio'];
@@ -141,15 +153,13 @@ const RiskIndicator = ({ level }) => {
           <div
             key={bar}
             className={`w-1 rounded-full transition-all duration-300 ${
-              bar <= config.bars
-                ? `bg-${config.color}-500 h-${bar + 1}`
-                : 'bg-[#333] h-2'
+              bar <= config.bars ? config.bgColor : 'bg-[#333]'
             }`}
             style={{ height: `${bar * 3 + 4}px` }}
           />
         ))}
       </div>
-      <span className={`text-xs text-${config.color}-400`}>{level}</span>
+      <span className={`text-xs ${config.textColor}`}>{level}</span>
     </div>
   );
 };
