@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { followMaster } from '../services/copytradingService';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { MasterAccountBadge, PerformanceStatusIndicator, MasterAccountSummaryCard } from './StatusIndicators';
+import EnhancedPAMMCard from './EnhancedPAMMCard';
 
 const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
     const { t } = useTranslation('pamm');
@@ -1170,7 +1171,22 @@ const PammExplorerView = ({
                         </div>
                     ))
                 ) : filteredFunds.length > 0 ? (
-                    filteredFunds.map(fund => renderFundCard(fund))
+                    filteredFunds.map(fund => (
+                        <EnhancedPAMMCard
+                            key={fund.id}
+                            fund={fund}
+                            onInvest={onInvestInFund}
+                            onWithdraw={() => {}}
+                            onView={onViewFundDetails}
+                            onExpand={toggleExpandFund}
+                            isExpanded={expandedFund === fund.id}
+                            isInvested={investedFunds.has(fund.id)}
+                            formatAUM={formatAUM}
+                            formatCurrency={formatCurrency}
+                            formatPercentage={formatPercentage}
+                            t={t}
+                        />
+                    ))
                 ) : (
                     <div className="col-span-full text-center py-8">
                         <p className="text-gray-400">{t('pamm.explorer.noFundsFound')}</p>
