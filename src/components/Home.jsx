@@ -537,22 +537,27 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
           if (dashboardData.statistics) {
             // Para el día actual, calcular desde el historial si está disponible
             if (dashboardData.balance_history && dashboardData.balance_history.length > 0) {
+              console.log(`[HOME-PNL] Using balance_history (${dashboardData.balance_history.length} points) for account ${account.account_number}`);
               // Pasar los KPIs para cálculos más precisos
               pnlToday = calculatePnlFromHistory(dashboardData.balance_history, 1, dashboardData.kpis);
               pnl7Days = calculatePnlFromHistory(dashboardData.balance_history, 7, dashboardData.kpis);
               pnl30Days = calculatePnlFromHistory(dashboardData.balance_history, 30, dashboardData.kpis);
             } else {
+              console.log(`[HOME-PNL] No balance_history available for account ${account.account_number}, using KPIs fallback`);
               // Fallback: calcular PNL usando balance inicial y actual de los KPIs
               if (dashboardData.kpis) {
                 const initialBalance = parseFloat(dashboardData.kpis.initial_balance) || 0;
                 const currentBalance = parseFloat(dashboardData.kpis.equity || dashboardData.kpis.balance) || 0;
                 const profit = currentBalance - initialBalance;
                 const percentage = initialBalance > 0 ? (profit / initialBalance) * 100 : 0;
-                
+
+                console.log(`[HOME-PNL-FALLBACK] Account ${account.account_number}: initial=${initialBalance}, current=${currentBalance}, profit=${profit}, percentage=${percentage}%`);
+
                 pnlToday = { percentage, amount: profit };
                 pnl7Days = { percentage, amount: profit }; // Sin historial, usar los mismos datos
                 pnl30Days = { percentage, amount: profit };
               } else {
+                console.log(`[HOME-PNL] No KPIs available for account ${account.account_number}, using statistics fallback`);
                 // Último fallback a usar statistics directamente
                 pnlToday = {
                   percentage: dashboardData.statistics.net_pnl_percentage || 0,
@@ -563,10 +568,12 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
               }
             }
           }
-          
+
           // Si tenemos profit_loss en KPIs, usar eso para el total
           const totalPnlPercentage = dashboardData.kpis?.profit_loss_percentage || 0;
           const totalPnlAmount = dashboardData.kpis?.profit_loss || 0;
+
+          console.log(`[HOME-PNL-TOTAL] Account ${account.account_number}: total PNL = ${totalPnlAmount} (${totalPnlPercentage}%)`);
           
           setAccountsMetrics(prev => ({
             ...prev,
