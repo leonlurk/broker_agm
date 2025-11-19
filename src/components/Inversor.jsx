@@ -3,6 +3,7 @@ import { ChevronDown, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell, Legend } from 'recharts';
 import CombinedCopyTradingModal from './CombinedCopyTradingModal';
 import CommentsRatingModal from './CommentsRatingModal';
+import EnhancedTraderCard from './EnhancedTraderCard';
 import { useAccounts } from '../contexts/AccountsContext';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { useTranslation } from 'react-i18next';
@@ -1032,103 +1033,18 @@ const Inversor = () => {
               const isCopied = copiedTraders.has(trader.id);
               console.log('[Inversor] 🔍 Checking trader:', trader.id, trader.name, 'isCopied?', isCopied, 'copiedTraders has:', Array.from(copiedTraders));
               return (
-            <div key={trader.id} className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 hover:border-cyan-500/50 transition-colors">
-              {/* Trader Header */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center relative">
-                  <span className="text-white font-semibold">{(trader.name || 'T').charAt(0)}</span>
-                  {trader.isVerified && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-white">{trader.name}</h3>
-                  <p className="text-sm text-gray-400">{trader.strategy}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Star size={14} className="text-yellow-400 fill-current" />
-                  <span className="text-sm text-gray-400">{trader.rating}</span>
-                </div>
-              </div>
-
-              {/* Performance Metrics */}
-              <div className="space-y-3 mb-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">{t('copyTrading.stats.performance')}</span>
-                  <span className={`font-semibold ${trader.monthlyPerformance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {formatPercentage(trader.monthlyPerformance)}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">{t('copyTrading.stats.riskLevel')}</span>
-                  <span className={`font-medium ${getRiskColor(trader.riskLevel)}`}>
-                    {trader.riskLevel}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">{t('copyTrading.stats.aum')}</span>
-                  <span className="font-medium text-white">{formatAUM(trader.aum)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">{t('copyTrading.stats.followers')}</span>
-                  <div className="flex items-center gap-1">
-                    <Users size={14} className="text-gray-400" />
-                    <span className="font-medium text-white">{trader.followers}</span>
-                  </div>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">{t('copyTrading.stats.drawdown')}</span>
-                  <span className="font-medium text-red-400">-{trader.maxDrawdown}%</span>
-                </div>
-              </div>
-
-              {/* Additional Stats */}
-              <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-[#1C1C1C] rounded-lg">
-                <div className="text-center">
-                  <p className="text-xs text-gray-400">{t('copyTrading.stats.winRate')}</p>
-                  <p className="font-semibold text-white">{trader.winRate}%</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-400">{t('copyTrading.stats.avgDuration')}</p>
-                  <p className="font-semibold text-white">{trader.avgHoldTime}</p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                {copiedTraders.has(trader.id) ? (
-                  <button
-                    onClick={() => handleUnfollowTrader(trader)}
-                    className="flex-1 py-2 px-4 rounded-lg transition-all text-sm font-medium flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-red-700"
-                  >
-                    <UserMinus size={16} />
-                    Dejar de seguir
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleCopyTrader(trader)}
-                    className="flex-1 py-2 px-4 rounded-lg transition-all text-sm font-medium flex items-center justify-center gap-2 bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white hover:opacity-90"
-                  >
-                    <Copy size={16} />
-                    {t('copyTrading.copyNow')}
-                  </button>
-                )}
-                <button
-                  onClick={() => handleViewTraderDetails(trader)}
-                  className="px-4 py-2 border border-[#333] text-gray-400 rounded-lg hover:text-white hover:border-gray-300 transition-colors text-sm flex items-center justify-center gap-2"
-                >
-                  <Eye size={16} />
-                  {t('copyTrading.actions.viewProfile')}
-                </button>
-              </div>
-            </div>
-          );
+                <EnhancedTraderCard
+                  key={trader.id}
+                  trader={trader}
+                  onCopy={handleCopyTrader}
+                  onUnfollow={handleUnfollowTrader}
+                  onView={handleViewTraderDetails}
+                  onExpand={() => {}}
+                  isExpanded={false}
+                  isCopying={isCopied}
+                  t={t}
+                />
+              );
             })}
           </div>
         )}

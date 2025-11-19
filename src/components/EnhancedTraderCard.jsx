@@ -167,6 +167,7 @@ const RiskIndicator = ({ level }) => {
 const EnhancedTraderCard = ({
   trader,
   onCopy,
+  onUnfollow,
   onView,
   onExpand,
   isExpanded,
@@ -319,27 +320,23 @@ const EnhancedTraderCard = ({
 
         {/* Action buttons */}
         <div className="flex gap-2">
-          <button
-            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-              isCopying
-                ? 'bg-green-600/80 cursor-not-allowed'
-                : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 hover:shadow-lg hover:shadow-cyan-500/25'
-            }`}
-            onClick={() => onCopy(trader)}
-            disabled={isCopying}
-          >
-            {isCopying ? (
-              <>
-                <CheckCircle size={16} />
-                Copiando
-              </>
-            ) : (
-              <>
-                <Copy size={16} />
-                Copiar
-              </>
-            )}
-          </button>
+          {isCopying ? (
+            <button
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700"
+              onClick={() => onUnfollow && onUnfollow(trader)}
+            >
+              <CheckCircle size={16} />
+              Dejar de seguir
+            </button>
+          ) : (
+            <button
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 hover:shadow-lg hover:shadow-cyan-500/25"
+              onClick={() => onCopy(trader)}
+            >
+              <Copy size={16} />
+              Copiar
+            </button>
+          )}
 
           <button
             className="px-4 py-2.5 bg-[#333]/50 hover:bg-[#444]/50 rounded-xl text-sm transition-all duration-300 flex items-center gap-2 border border-[#444]/50 hover:border-[#555]"
