@@ -762,13 +762,14 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
       }
     };
     
-    console.log('[HOME] useEffect triggered - isLoading:', isLoading, 'accounts.length:', accounts.length);
+    const allAccounts = getAllAccounts();
+    console.log('[HOME] useEffect triggered - isLoading:', isLoading, 'allAccounts.length:', allAccounts.length);
 
-    if (!isLoading && accounts.length > 0) {
+    if (!isLoading && allAccounts.length > 0) {
       console.log('[HOME] Calling loadAccountMetrics...');
       loadAccountMetrics();
     } else {
-      console.log('[HOME] Skipping metrics load - isLoading:', isLoading, 'accounts:', accounts.length);
+      console.log('[HOME] Skipping metrics load - isLoading:', isLoading, 'accounts:', allAccounts.length);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountFilter, accounts, isLoading]);
