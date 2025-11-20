@@ -8,6 +8,7 @@ import emailServiceProxy from '../services/emailServiceProxy';
 import { useTranslation } from 'react-i18next';
 import { resendVerificationEmail } from '../supabase/auth';
 import toast from 'react-hot-toast';
+import { supabase } from '../supabase/config';
 
 export default function TradingChallengeUI() {
   const { t } = useTranslation('trading');
@@ -20,10 +21,34 @@ export default function TradingChallengeUI() {
   const [leverage, setLeverage] = useState('');
   const [showLeverageDropdown, setShowLeverageDropdown] = useState(false);
   const [initialBalance, setInitialBalance] = useState('');  // Campo para balance inicial
-  
+  const [walletBalance, setWalletBalance] = useState(0);  // Wallet balance for tournament validation
+
   // Check if user is verified (both email and KYC)
   const isUserVerified = currentUser?.email_verified !== false;
   const isKYCApproved = userData?.kyc_status === 'approved';
+  const hasMinimumDeposit = walletBalance >= 50;  // Minimum $50 required for tournament
+
+  // Load wallet balance on mount
+  React.useEffect(() => {
+    const loadWalletBalance = async () => {
+      if (!currentUser) return;
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('broker_balance')
+          .eq('id', currentUser.id)
+          .single();
+
+        if (!error && data) {
+          setWalletBalance(data.broker_balance || 0);
+        }
+      } catch (error) {
+        console.error('Error loading wallet balance:', error);
+      }
+    };
+
+    loadWalletBalance();
+  }, [currentUser]);
   
   // Loading and feedback states
   const [isLoading, setIsLoading] = useState(false);
@@ -69,6 +94,12 @@ export default function TradingChallengeUI() {
     
     if (!currentUser) {
       setError(t('accounts.creation.validation.authRequired'));
+      return;
+    }
+
+    // Check tournament requirements
+    if (accountType === 'Torneo' && !hasMinimumDeposit) {
+      setError(t('accounts.creation.validation.minimumDepositRequired') || 'Se requiere un depósito mínimo de $50 en tu wallet para crear una cuenta de torneo');
       return;
     }
 
@@ -354,18 +385,35 @@ export default function TradingChallengeUI() {
                     className={`px-6 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-base font-regular border focus:outline-none transition-colors ${
                       accountType === 'Torneo'
                         ? 'border-yellow-500 bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 text-yellow-400'
+                        : !hasMinimumDeposit
+                        ? 'border-yellow-700/50 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-yellow-600 opacity-50 cursor-not-allowed'
                         : 'border-yellow-700/50 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-yellow-600 hover:text-yellow-500'
                     }`}
-                    onClick={() => setAccountType('Torneo')}
+                    onClick={() => {
+                      if (!hasMinimumDeposit) {
+                        toast.error(t('accounts.creation.minimumDepositRequired') || 'Se requiere un depósito mínimo de $50 en tu wallet para crear una cuenta de torneo');
+                        return;
+                      }
+                      setAccountType('Torneo');
+                    }}
                     disabled={isLoading}
+                    title={!hasMinimumDeposit ? 'Se requiere depósito mínimo de $50' : ''}
                   >
                     Torneo
+                    {!hasMinimumDeposit && (
+                      <span className="ml-1 text-xs text-yellow-500">*</span>
+                    )}
                   </button>
                 )}
                 </div>
                 {!isKYCApproved && (
                   <p className="text-yellow-500 text-sm">
                     * {t('accounts.creation.kycRequiredNote') || 'Complete KYC verification to create Real and Tournament accounts'}
+                  </p>
+                )}
+                {isKYCApproved && !hasMinimumDeposit && (
+                  <p className="text-yellow-500 text-sm">
+                    * {t('accounts.creation.minimumDepositNote') || `Deposita mínimo $50 en tu wallet para crear cuenta de torneo (Balance actual: $${walletBalance.toFixed(2)})`}
                   </p>
                 )}
               </div>

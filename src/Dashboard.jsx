@@ -12,6 +12,72 @@ import LeaderboardModal from './components/LeaderboardModal';
 import ScrollManager from './components/utils/ScrollManager';
 import { scrollToTopManual } from './hooks/useScrollToTop';
 import FloatingChatButton from './components/FloatingChatButton';
+import { supabase } from './supabase/config';
+import { Wallet as WalletIcon } from 'lucide-react';
+
+// Sticky Wallet Balance Component
+const StickyWalletBalance = ({ userId, onNavigateToWallet }) => {
+  const [balance, setBalance] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadBalance = async () => {
+      if (!userId) return;
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('broker_balance')
+          .eq('id', userId)
+          .single();
+
+        if (!error && data) {
+          setBalance(data.broker_balance || 0);
+        }
+      } catch (error) {
+        console.error('Error loading wallet balance:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBalance();
+
+    // Subscribe to real-time updates
+    const subscription = supabase
+      .channel('wallet-balance')
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
+        (payload) => {
+          if (payload.new.broker_balance !== undefined) {
+            setBalance(payload.new.broker_balance);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [userId]);
+
+  return (
+    <button
+      onClick={onNavigateToWallet}
+      className="fixed top-4 right-4 z-40 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-900/95 to-gray-800/95 backdrop-blur-xl border border-cyan-500/30 rounded-full shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 transition-all duration-300 hover:scale-105 group"
+    >
+      <div className="p-1.5 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full">
+        <WalletIcon className="w-4 h-4 text-cyan-400" />
+      </div>
+      <div className="flex flex-col items-end">
+        <span className="text-[10px] text-gray-400 uppercase tracking-wider">Balance</span>
+        <span className={`text-sm font-bold ${isLoading ? 'text-gray-400' : 'text-white'}`}>
+          {isLoading ? '...' : `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+        </span>
+      </div>
+      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+    </button>
+  );
+};
 
 import OperationsHistory from './components/OperationsHistory';
 import Descargas from './components/Descargas';
@@ -312,11 +378,26 @@ const Dashboard = ({ onLogout }) => {
     }
   };
 
+  // Handler for navigating to Wallet from sticky balance
+  const handleNavigateToWallet = () => {
+    setSelectedOption('Wallet');
+    navigate('/dashboard/wallet');
+  };
+
   return (
     <div className="flex h-screen w-full bg-[#232323] overflow-hidden">
       <ScrollManager navigationDependency={selectedOption} scrollContainerRef={mainContentRef} />
-      <Sidebar 
-        selectedOption={selectedOption} 
+
+      {/* Sticky Wallet Balance - always visible in top right */}
+      {currentUser && (
+        <StickyWalletBalance
+          userId={currentUser.id}
+          onNavigateToWallet={handleNavigateToWallet}
+        />
+      )}
+
+      <Sidebar
+        selectedOption={selectedOption}
         setSelectedOption={handleSidebarOptionChange}
         onLogout={onLogout}
         user={userData}
@@ -328,9 +409,9 @@ const Dashboard = ({ onLogout }) => {
       </main>
 
       {/* Modal del Leaderboard */}
-      <LeaderboardModal 
-        isOpen={isLeaderboardOpen} 
-        onClose={handleCloseLeaderboard} 
+      <LeaderboardModal
+        isOpen={isLeaderboardOpen}
+        onClose={handleCloseLeaderboard}
       />
 
       {/* Floating Chat Button */}
