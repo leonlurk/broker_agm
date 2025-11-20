@@ -46,14 +46,14 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
       const result = await getLeaderboardData(activeTab, 100);
 
       if (result.success) {
-        // TODO: Re-enable tournament filter when accounts exist
+        // Filter for tournament accounts only
         const allTraders = result.data.leaderboard || [];
-        // const tournamentTraders = allTraders.filter(trader =>
-        //   trader.is_tournament_account === true
-        // );
+        const tournamentTraders = allTraders.filter(trader =>
+          trader.is_tournament_account === true
+        );
 
-        setLeaderboardData(allTraders); // Temporarily show all traders
-        setTotalParticipants(result.data.total_participants || allTraders.length);
+        setLeaderboardData(tournamentTraders);
+        setTotalParticipants(result.data.total_participants || tournamentTraders.length);
         setCompetitionPeriod(result.data.competition_period || '');
         setLastUpdated(result.data.last_updated);
         setCurrentPage(1); // Reset to first page on new data
