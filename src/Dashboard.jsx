@@ -63,18 +63,18 @@ const StickyWalletBalance = ({ userId, onNavigateToWallet }) => {
   return (
     <button
       onClick={onNavigateToWallet}
-      className="fixed top-4 right-4 z-40 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-900/95 to-gray-800/95 backdrop-blur-xl border border-cyan-500/30 rounded-full shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 transition-all duration-300 hover:scale-105 group"
+      className="fixed top-4 right-4 z-40 flex items-center gap-2 bg-gradient-to-r from-gray-900/95 to-gray-800/95 backdrop-blur-xl border border-cyan-500/30 rounded-full shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 transition-all duration-300 hover:scale-105 group p-2 hover:px-4 hover:py-2"
     >
       <div className="p-1.5 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full">
         <WalletIcon className="w-4 h-4 text-cyan-400" />
       </div>
-      <div className="flex flex-col items-end">
+      <div className="hidden group-hover:flex flex-col items-end">
         <span className="text-[10px] text-gray-400 uppercase tracking-wider">Balance</span>
         <span className={`text-sm font-bold ${isLoading ? 'text-gray-400' : 'text-white'}`}>
           {isLoading ? '...' : `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
         </span>
       </div>
-      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+      <div className="hidden group-hover:block w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
     </button>
   );
 };
