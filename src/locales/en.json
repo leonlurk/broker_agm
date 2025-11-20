@@ -35,7 +35,10 @@
     "active": "Active",
     "inactive": "Inactive",
     "demo": "Demo",
-    "live": "Live"
+    "live": "Live",
+    "creation": {
+      "tournamentBalanceDescription": "Initial balance for your tournament account"
+    }
   },
   "wallet": {
     "deposit": "Deposit",

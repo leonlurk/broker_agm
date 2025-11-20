@@ -34,7 +34,10 @@
     "active": "Activa",
     "inactive": "Inactiva",
     "demo": "Demo",
-    "live": "Real"
+    "live": "Real",
+    "creation": {
+      "tournamentBalanceDescription": "Balance inicial para tu cuenta de torneo"
+    }
   },
   "wallet": {
     "deposit": "Depositar",

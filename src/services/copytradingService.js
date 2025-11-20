@@ -56,15 +56,32 @@ logicApiClient.interceptors.request.use(
  * @param {string} params.master_mt5_account_id - El ID de la cuenta MT5 del master
  * @param {string} params.follower_mt5_account_id - El ID de la cuenta MT5 del seguidor
  * @param {number} [params.risk_ratio=1.0] - El ratio de riesgo para la copia
+ * @param {number} [params.lot_multiplier=1.0] - Multiplicador del lote
+ * @param {boolean} [params.copy_sl=true] - Copiar Stop Loss del master
+ * @param {boolean} [params.copy_tp=true] - Copiar Take Profit del master
+ * @param {string} [params.allocation_method='proportional'] - Método de asignación
  * @returns {Promise<object>} La respuesta del servidor.
  */
-export const followMaster = async ({ master_user_id, master_mt5_account_id, follower_mt5_account_id, risk_ratio = 1.0 }) => {
+export const followMaster = async ({
+  master_user_id,
+  master_mt5_account_id,
+  follower_mt5_account_id,
+  risk_ratio = 1.0,
+  lot_multiplier = 1.0,
+  copy_sl = true,
+  copy_tp = true,
+  allocation_method = 'proportional'
+}) => {
   try {
     const response = await logicApiClient.post('/api/v1/copy/follow', {
       master_user_id,
       master_mt5_account_id,
       follower_mt5_account_id,
-      risk_ratio
+      risk_ratio,
+      lot_multiplier,
+      copy_sl,
+      copy_tp,
+      allocation_method
     });
     return response.data;
   } catch (error) {

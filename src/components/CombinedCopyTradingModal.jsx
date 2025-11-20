@@ -99,7 +99,11 @@ const CombinedCopyTradingModal = ({
         master_user_id: trader.id,
         master_mt5_account_id: masterMt5Account,
         follower_mt5_account_id: selectedAccount.account_number || selectedAccount.id,
-        risk_ratio: formData.multiplicadorLote || 1.0
+        risk_ratio: 1.0, // Base risk ratio
+        lot_multiplier: formData.multiplicadorLote || 1.0,
+        copy_sl: formData.copiarSL !== false,
+        copy_tp: formData.copiarTP !== false,
+        allocation_method: formData.metodoAsignacion === 'fijo' ? 'fixed' : 'proportional'
       };
 
       console.log('Debug - Request parameters being sent to backend:', requestParams);
