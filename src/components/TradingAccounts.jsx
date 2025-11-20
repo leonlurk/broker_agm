@@ -240,6 +240,16 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
 
+  // Estados para tracking de última actualización por sección
+  const [sectionUpdates, setSectionUpdates] = useState({
+    kpis: null,
+    balanceChart: null,
+    statistics: null,
+    instruments: null,
+    operations: null
+  });
+  const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
+
   // State for refresh button with rate limiting
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(0);
@@ -254,6 +264,76 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     const now = Date.now();
     const diffInMinutes = Math.floor((now - timestamp) / (1000 * 60));
     return diffInMinutes;
+  };
+
+  // Componente de timestamp "Actualizado hace X minutos"
+  const UpdatedTimestamp = ({ timestamp, isLoading, className = '' }) => {
+    const minutes = getTimeAgoInMinutes(timestamp);
+
+    if (isLoading) {
+      return (
+        <div className={`flex items-center gap-1.5 text-[10px] text-cyan-400 ${className}`}>
+          <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
+          <span>Actualizando...</span>
+        </div>
+      );
+    }
+
+    if (!timestamp || minutes === null) {
+      return (
+        <div className={`flex items-center gap-1.5 text-[10px] text-gray-500 ${className}`}>
+          <div className="w-1.5 h-1.5 bg-gray-500 rounded-full" />
+          <span>Sin datos</span>
+        </div>
+      );
+    }
+
+    const getTimeText = () => {
+      if (minutes < 1) return 'Justo ahora';
+      if (minutes === 1) return 'Hace 1 minuto';
+      if (minutes < 60) return `Hace ${minutes} minutos`;
+      const hours = Math.floor(minutes / 60);
+      if (hours === 1) return 'Hace 1 hora';
+      if (hours < 24) return `Hace ${hours} horas`;
+      const days = Math.floor(hours / 24);
+      if (days === 1) return 'Hace 1 día';
+      return `Hace ${days} días`;
+    };
+
+    const getStatusColor = () => {
+      if (minutes < 5) return 'text-green-400';
+      if (minutes < 30) return 'text-yellow-400';
+      return 'text-orange-400';
+    };
+
+    const getDotColor = () => {
+      if (minutes < 5) return 'bg-green-400';
+      if (minutes < 30) return 'bg-yellow-400';
+      return 'bg-orange-400';
+    };
+
+    return (
+      <div className={`flex items-center gap-1.5 text-[10px] ${getStatusColor()} ${className}`}>
+        <div className={`w-1.5 h-1.5 ${getDotColor()} rounded-full`} />
+        <span>{getTimeText()}</span>
+      </div>
+    );
+  };
+
+  // Componente de indicador de carga en background
+  const BackgroundLoadingIndicator = ({ isLoading }) => {
+    if (!isLoading) return null;
+
+    return (
+      <div className="fixed top-20 right-4 z-50 flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-gray-900/95 to-gray-800/95 backdrop-blur-xl border border-cyan-500/30 rounded-lg shadow-lg animate-fadeIn">
+        <div className="flex gap-1">
+          <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+          <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+          <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        </div>
+        <span className="text-xs text-gray-300">Sincronizando datos...</span>
+      </div>
+    );
   };
 
   // Función para obtener días desde la creación
@@ -649,9 +729,12 @@ const loadAccountMetrics = useCallback(async (account) => {
   loadingRef.current = true;
   lastLoadTimeRef.current = now;
 
-  // Mostrar loading solo en carga inicial
-  if (!realMetrics && !realStatistics) {
+  // Mostrar loading en background si ya hay datos, skeleton solo si no hay nada
+  const hasExistingData = realMetrics || realStatistics;
+  if (!hasExistingData) {
     setIsLoadingMetrics(true);
+  } else {
+    setIsBackgroundLoading(true);
   }
   
   try {
@@ -859,10 +942,21 @@ const loadAccountMetrics = useCallback(async (account) => {
     // Actualizar tiempo de última actualización
     setLastUpdated(new Date());
     
+    // Actualizar timestamps de todas las secciones
+    const now = Date.now();
+    setSectionUpdates({
+      kpis: now,
+      balanceChart: now,
+      statistics: now,
+      instruments: now,
+      operations: now
+    });
+
   } catch (error) {
     console.error('[TradingAccounts] Error cargando métricas:', error);
   } finally {
     setIsLoadingMetrics(false);
+    setIsBackgroundLoading(false);
     loadingRef.current = false;
     // Actualizar timestamp de última actualización
     setLastUpdated(Date.now());
@@ -924,12 +1018,30 @@ const loadAccountMetrics = useCallback(async (account) => {
     if (lastLoadedAccountRef.current !== selectedAccount.account_number) {
       loadingRef.current = false;
       lastLoadTimeRef.current = 0;
-      // Clear previous account data to show loading state
-      setRealMetrics(null);
+
+      // OPTIMIZACIÓN: Usar datos básicos de la cuenta inmediatamente
+      // en lugar de mostrar skeleton loader
+      const cachedMetrics = {
+        balance: selectedAccount.balance || selectedAccount.equity || 0,
+        equity: selectedAccount.equity || selectedAccount.balance || 0,
+        margin: selectedAccount.margin || 0,
+        free_margin: selectedAccount.free_margin || 0,
+        profit_loss: (selectedAccount.equity || 0) - 10000,
+        profit_loss_percentage: selectedAccount.equity ? (((selectedAccount.equity - 10000) / 10000) * 100) : 0,
+        initial_balance: 10000
+      };
+
+      // Mostrar datos cacheados inmediatamente
+      setRealMetrics(cachedMetrics);
+
+      // Solo limpiar datos que no tenemos en cache
       setRealStatistics(null);
       setRealInstruments(null);
       setRealHistory(null);
       setRealBalanceHistory(null);
+
+      // Marcar que estamos cargando en background
+      setIsBackgroundLoading(true);
     }
 
     // Cargar datos inmediatamente
@@ -2467,11 +2579,14 @@ const loadAccountMetrics = useCallback(async (account) => {
 
   return (
     <div className="flex flex-col p-3 sm:p-4 text-white overflow-x-hidden">
+      {/* Indicador de carga en background */}
+      <BackgroundLoadingIndicator isLoading={isBackgroundLoading} />
+
       {/* Back Button */}
       <div className="mb-3 sm:mb-4 flex items-center">
-        <img 
-          src="/Back.svg" 
-          alt={t('trading.navigation.back')} 
+        <img
+          src="/Back.svg"
+          alt={t('trading.navigation.back')}
           onClick={handleBackToOverview}
           className="w-8 h-8 sm:w-10 sm:h-10 cursor-pointer hover:brightness-75 transition-all duration-300"
         />
@@ -2823,9 +2938,12 @@ const loadAccountMetrics = useCallback(async (account) => {
             {/* Balance Card - Lado izquierdo (2 columnas - menos ancho) */}
             <div className={`${isMobile ? 'w-full' : 'lg:col-span-2'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl relative`}>
               <div className="flex justify-between items-start mb-3 sm:mb-4">
-                <CustomTooltip content={t('tooltips.balance')}>
-                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold cursor-help">{t('balance')}</h2>
-                </CustomTooltip>
+                <div className="flex flex-col gap-1">
+                  <CustomTooltip content={t('tooltips.balance')}>
+                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold cursor-help">{t('balance')}</h2>
+                  </CustomTooltip>
+                  <UpdatedTimestamp timestamp={sectionUpdates.balanceChart} isLoading={isBackgroundLoading} />
+                </div>
               </div>
               <div className="flex items-center mb-2 sm:mb-3">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3 text-white">
@@ -2963,9 +3081,12 @@ const loadAccountMetrics = useCallback(async (account) => {
             <div className={`${isMobile ? 'w-full grid grid-cols-1 gap-3' : 'lg:col-span-2 flex flex-col justify-between'} space-y-3 sm:space-y-4`}>
               {/* Profit/Loss */}
               <div className={`${isMobile ? '' : 'flex-1'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex flex-col justify-center`}>
-                <CustomTooltip content={t('tooltips.profitLoss')}>
-                  <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">{t('metrics.profitLoss')}</h3>
-                </CustomTooltip>
+                <div className="flex justify-between items-start mb-2">
+                  <CustomTooltip content={t('tooltips.profitLoss')}>
+                    <h3 className="text-lg sm:text-xl font-bold cursor-help">{t('metrics.profitLoss')}</h3>
+                  </CustomTooltip>
+                  <UpdatedTimestamp timestamp={sectionUpdates.kpis} isLoading={isBackgroundLoading} />
+                </div>
                   <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
                     ${(realMetrics?.profit_loss || 0).toFixed(2)}
@@ -3551,9 +3672,31 @@ const loadAccountMetrics = useCallback(async (account) => {
 
             {/* ===== Historial de Operaciones ===== */}
             <div className="p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl">
-              {/* Header con título */}
+              {/* Header con título y estado de actualización */}
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white">{t('operationsHistory')}</h2>
+                <div className="flex justify-between items-start mb-2">
+                  <h2 className="text-2xl font-bold text-white">{t('operationsHistory')}</h2>
+                  <UpdatedTimestamp timestamp={sectionUpdates.operations} isLoading={isBackgroundLoading} />
+                </div>
+
+                {/* Banner informativo de sincronización */}
+                {(!realHistory || realHistory.operations?.length === 0) && isBackgroundLoading ? (
+                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-cyan-900/20 to-blue-900/20 border border-cyan-500/30 rounded-lg">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                    <span className="text-sm text-cyan-300">Cargando historial de operaciones...</span>
+                  </div>
+                ) : !realHistory || realHistory.operations?.length === 0 ? (
+                  <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border border-yellow-500/30 rounded-lg">
+                    <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm text-yellow-300">Las posiciones cerradas se actualizan cada 5 minutos</span>
+                  </div>
+                ) : null}
               </div>
 
               {/* Botón toggle filtros móvil */}

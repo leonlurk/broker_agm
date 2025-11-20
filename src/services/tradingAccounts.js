@@ -153,25 +153,45 @@ export const createTradingAccount = async (userId, accountData) => {
       acc.account_number?.toString() === accountNumber
     );
     
-    // Save the MT5 passwords to the database if we found the account
-    if (createdAccount && (mt5Result.data.password || mt5Result.data.investor_password)) {
-      logger.info('Saving MT5 credentials to database', { 
-        accountId: createdAccount.id, 
-        accountNumber 
-      });
-      
-      const updateResult = await DatabaseAdapter.tradingAccounts.update(createdAccount.id, {
-        mt5_password: mt5Result.data.password,
-        mt5_investor_password: mt5Result.data.investor_password
-      });
-      
-      if (updateResult.error) {
-        logger.error('Failed to save MT5 credentials', updateResult.error);
-      } else {
-        logger.info('MT5 credentials saved successfully');
-        // Update the local object with the passwords
-        createdAccount.mt5_password = mt5Result.data.password;
-        createdAccount.mt5_investor_password = mt5Result.data.investor_password;
+    // Save the MT5 passwords and tournament flag to the database if we found the account
+    if (createdAccount) {
+      const updateData = {};
+
+      // Add passwords if available
+      if (mt5Result.data.password || mt5Result.data.investor_password) {
+        updateData.mt5_password = mt5Result.data.password;
+        updateData.mt5_investor_password = mt5Result.data.investor_password;
+      }
+
+      // Add tournament flag if this is a tournament account
+      if (accountData.is_tournament_account) {
+        updateData.is_tournament_account = true;
+        logger.info('Setting tournament account flag', { accountId: createdAccount.id });
+      }
+
+      // Only update if we have data to update
+      if (Object.keys(updateData).length > 0) {
+        logger.info('Updating account data in database', {
+          accountId: createdAccount.id,
+          accountNumber,
+          isTournament: !!accountData.is_tournament_account
+        });
+
+        const updateResult = await DatabaseAdapter.tradingAccounts.update(createdAccount.id, updateData);
+
+        if (updateResult.error) {
+          logger.error('Failed to update account data', updateResult.error);
+        } else {
+          logger.info('Account data updated successfully');
+          // Update the local object
+          if (updateData.mt5_password) {
+            createdAccount.mt5_password = mt5Result.data.password;
+            createdAccount.mt5_investor_password = mt5Result.data.investor_password;
+          }
+          if (updateData.is_tournament_account) {
+            createdAccount.is_tournament_account = true;
+          }
+        }
       }
     }
     
