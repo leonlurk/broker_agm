@@ -205,59 +205,117 @@ Responde como Flofy de manera natural y útil:`;
     }
   }
 
-  // Verificar si hay control humano activo
+  // Verificar si hay control humano activo (admin intervening)
   async checkHumanControl(userId) {
     try {
-      // For now, always return false since we don't have a chat_conversations table
-      // This prevents the error and allows the chat to work with AI responses
-      return false;
-      
-      /* Future implementation when chat_conversations table exists:
-      const { data, error } = await DatabaseAdapter.generic.get('chat_conversations', { user_id: userId });
-      
-      if (error || !data || !data[0]) {
+      // Get user's active ticket
+      const ticketResult = await DatabaseAdapter.generic.get('support_tickets', {
+        user_id: userId,
+        status: 'open'
+      });
+
+      if (!ticketResult || !ticketResult.data || !ticketResult.data[0]) {
         return false;
       }
 
-      return data[0].is_human_controlled || false;
-      */
+      const ticketId = ticketResult.data[0].id;
+
+      // Check for active admin intervention
+      const interventionResult = await DatabaseAdapter.generic.query(
+        'admin_interventions',
+        { ticket_id: ticketId },
+        { filter: { ended_at: null } }
+      );
+
+      if (interventionResult && interventionResult.data && interventionResult.data.length > 0) {
+        logger.info('[CHAT] Human control active for user:', userId);
+        return true;
+      }
+
+      return false;
     } catch (error) {
       logger.error('[CHAT] Error checking human control:', error);
       return false;
     }
   }
 
-  // Guardar mensaje en base de datos
-  async saveMessage(userId, messageData) {
+  // Get or create support ticket for user
+  async getOrCreateTicket(userId, userEmail, userName) {
     try {
-      const conversationId = `conversation_${userId}`;
-      
-      // Crear estructura del mensaje
-      const message = {
-        id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        conversation_id: conversationId,
+      // Check for existing open ticket
+      const existingResult = await DatabaseAdapter.generic.get('support_tickets', {
         user_id: userId,
-        sender: messageData.sender,
-        message: messageData.message,
-        timestamp: messageData.timestamp,
-        metadata: messageData.metadata || {}
-      };
+        status: 'open'
+      });
 
-      // TODO: Implement when chat_messages table is available
-      // For now, just log the message
-      logger.info('[CHAT] Message would be saved:', { userId, sender: messageData.sender });
-      
-      /* Future implementation:
-      const { error } = await DatabaseAdapter.generic.create('chat_messages', message);
-      
-      if (error) {
-        throw error;
+      if (existingResult && existingResult.data && existingResult.data[0]) {
+        return existingResult.data[0];
       }
 
-      // También actualizar última actividad de la conversación
-      await this.updateConversationActivity(conversationId, userId);
-      */
-      
+      // Create new ticket
+      const ticketData = {
+        user_id: userId,
+        user_email: userEmail || '',
+        user_name: userName || 'Usuario',
+        status: 'open',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        last_message_at: new Date().toISOString()
+      };
+
+      const createResult = await DatabaseAdapter.generic.create('support_tickets', ticketData);
+
+      if (createResult && createResult.data) {
+        return createResult.data;
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('[CHAT] Error getting/creating ticket:', error);
+      return null;
+    }
+  }
+
+  // Guardar mensaje en base de datos (support_messages)
+  async saveMessage(userId, messageData, ticketId = null) {
+    try {
+      // Get ticket ID if not provided
+      if (!ticketId) {
+        const ticket = await this.getOrCreateTicket(userId);
+        if (!ticket) {
+          logger.error('[CHAT] Could not get/create ticket for message');
+          return;
+        }
+        ticketId = ticket.id;
+      }
+
+      // Map sender to sender_type
+      const senderType = messageData.sender === 'user' ? 'user' : 'ai';
+
+      // Create message in support_messages
+      const message = {
+        ticket_id: ticketId,
+        sender_type: senderType,
+        sender_id: messageData.sender === 'user' ? userId : null,
+        sender_name: messageData.sender === 'user' ? 'Usuario' : 'Flofy (AI)',
+        content: messageData.message,
+        created_at: messageData.timestamp || new Date().toISOString()
+      };
+
+      const result = await DatabaseAdapter.generic.create('support_messages', message);
+
+      if (result && result.error) {
+        logger.error('[CHAT] Error saving message:', result.error);
+      } else {
+        // Update ticket's last_message_at
+        await DatabaseAdapter.generic.update('support_tickets', ticketId, {
+          last_message_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+        logger.info('[CHAT] Message saved:', { userId, sender: messageData.sender, ticketId });
+      }
+
     } catch (error) {
       logger.error('[CHAT] Error saving message:', error);
       // No throw error para no interrumpir flujo del chat
@@ -292,31 +350,46 @@ Responde como Flofy de manera natural y útil:`;
   // Obtener historial de conversación
   async getConversationHistory(userId, limit = 50) {
     try {
-      // TODO: Implement when chat_messages table is available
-      // For now, return empty history
-      return {
-        success: true,
-        messages: []
-      };
-      
-      /* Future implementation:
-      const conversationId = `conversation_${userId}`;
-      
-      const { data, error } = await DatabaseAdapter.generic.get(
-        'chat_messages', 
-        { conversation_id: conversationId },
-        { orderBy: 'timestamp', limit }
-      );
+      // Get user's active or most recent ticket
+      const ticketResult = await DatabaseAdapter.generic.query('support_tickets', {
+        user_id: userId
+      }, {
+        orderBy: { column: 'last_message_at', ascending: false },
+        limit: 1
+      });
 
-      if (error) {
-        throw error;
+      if (!ticketResult || !ticketResult.data || !ticketResult.data[0]) {
+        return { success: true, messages: [] };
       }
 
+      const ticketId = ticketResult.data[0].id;
+
+      // Get messages for this ticket
+      const messagesResult = await DatabaseAdapter.generic.query('support_messages', {
+        ticket_id: ticketId
+      }, {
+        orderBy: { column: 'created_at', ascending: true },
+        limit
+      });
+
+      if (!messagesResult || messagesResult.error) {
+        throw messagesResult?.error || new Error('Failed to fetch messages');
+      }
+
+      // Transform to expected format
+      const messages = (messagesResult.data || []).map(msg => ({
+        id: msg.id,
+        sender: msg.sender_type === 'user' ? 'user' : 'flofy',
+        message: msg.content,
+        timestamp: msg.created_at
+      }));
+
       return {
         success: true,
-        messages: data || []
+        messages,
+        ticketId,
+        ticketStatus: ticketResult.data[0].status
       };
-      */
 
     } catch (error) {
       logger.error('[CHAT] Error loading conversation history:', error);
@@ -325,6 +398,60 @@ Responde como Flofy de manera natural y útil:`;
         messages: [],
         error: error.message
       };
+    }
+  }
+
+  // Reopen an archived ticket
+  async reopenTicket(userId) {
+    try {
+      // Find archived ticket for user
+      const ticketResult = await DatabaseAdapter.generic.query('support_tickets', {
+        user_id: userId,
+        status: 'archived'
+      }, {
+        orderBy: { column: 'updated_at', ascending: false },
+        limit: 1
+      });
+
+      if (!ticketResult || !ticketResult.data || !ticketResult.data[0]) {
+        return { success: false, error: 'No archived ticket found' };
+      }
+
+      const ticketId = ticketResult.data[0].id;
+
+      // Update ticket status to open
+      await DatabaseAdapter.generic.update('support_tickets', ticketId, {
+        status: 'open',
+        updated_at: new Date().toISOString()
+      });
+
+      logger.info('[CHAT] Ticket reopened:', { userId, ticketId });
+
+      return { success: true, ticketId };
+
+    } catch (error) {
+      logger.error('[CHAT] Error reopening ticket:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Get user's tickets (for history view)
+  async getUserTickets(userId) {
+    try {
+      const result = await DatabaseAdapter.generic.query('support_tickets', {
+        user_id: userId
+      }, {
+        orderBy: { column: 'updated_at', ascending: false }
+      });
+
+      return {
+        success: true,
+        tickets: result?.data || []
+      };
+
+    } catch (error) {
+      logger.error('[CHAT] Error getting user tickets:', error);
+      return { success: false, tickets: [], error: error.message };
     }
   }
 
