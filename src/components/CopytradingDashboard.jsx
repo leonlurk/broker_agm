@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, Crown, CheckCircle, Search, Filter, Star, TrendingUp, Users, Target, Copy, BarChart3, PieChart, Calendar, Clock, AlertTriangle, DollarSign, Settings, Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import TraderProfileDetail from './TraderProfileDetail';
 import SeguirTraderModal from './SeguirTraderModal';
 import AccountSelectionModal from './AccountSelectionModal';
@@ -189,7 +190,7 @@ const CopytradingDashboard = () => {
                               finalTrader.mt5Account;
       
       if (!masterMt5Account) {
-        alert('Error: No se encontró la cuenta MT5 del master trader');
+        toast.error(t('copyTrading.messages.masterAccountNotFound') || 'Error: No se encontró la cuenta MT5 del master trader');
         return;
       }
 
@@ -202,7 +203,7 @@ const CopytradingDashboard = () => {
       });
 
       if (response.success || response.message) {
-        alert(t('copyTrading.messages.followSuccess') || 'Successfully following trader');
+        toast.success(t('copyTrading.messages.followSuccess') || 'Successfully following trader');
 
         // Marcar en UI como copiado usando el user_id correcto
         const traderId = finalTrader.user_id || finalTrader.id;
@@ -251,7 +252,7 @@ const CopytradingDashboard = () => {
       }
     } catch (error) {
       console.error('Error siguiendo trader:', error);
-      alert((t('copyTrading.messages.followError') || 'Error al seguir al trader') + ': ' + (error.message || 'Error desconocido'));
+      toast.error((t('copyTrading.messages.followError') || 'Error al seguir al trader') + ': ' + (error.message || 'Error desconocido'));
     } finally {
       setIsLoading(false);
     }
@@ -334,11 +335,11 @@ const CopytradingDashboard = () => {
         .map(sub => sub.master_user_id)
       );
       setCopiedTraders(followedIds);
-      
-      alert('Has dejado de copiar al trader exitosamente');
+
+      toast.success(t('copyTrading.messages.unfollowSuccess') || 'Has dejado de copiar al trader exitosamente');
     } catch (error) {
       console.error('Error al dejar de seguir:', error);
-      alert('Error al dejar de copiar al trader: ' + (error.message || 'Error desconocido'));
+      toast.error((t('copyTrading.messages.unfollowError') || 'Error al dejar de copiar al trader') + ': ' + (error.message || 'Error desconocido'));
     } finally {
       setIsLoading(false);
     }

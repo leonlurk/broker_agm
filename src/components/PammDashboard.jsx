@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, User, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
+import toast from 'react-hot-toast';
 import { getPammFunds, getMyFunds, leavePammFund, joinPammFund, getFundDetails, updateProfitPreference, getProfitHistory } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
 import RetirarPAMMModalWithdrawal from './RetirarPAMMModalWithdrawal';
@@ -215,7 +216,7 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
             setSelectedFundForWithdraw(null);
         } catch (error) {
             console.error('Error withdrawing from fund:', error);
-            alert(error.message || 'Error al retirar del fondo');
+            toast.error(error.message || 'Error al retirar del fondo');
         }
     };
 
@@ -458,7 +459,7 @@ const PammDashboardView = ({
             // Show success message or update UI
         } catch (error) {
             console.error('Error saving profit preferences:', error);
-            alert(error.error || 'Error al guardar preferencias');
+            toast.error(error.error || 'Error al guardar preferencias');
         } finally {
             setIsSavingSettings(prev => ({ ...prev, [investmentId]: false }));
         }
@@ -2357,7 +2358,7 @@ const PammDetailView = ({ trader, onBack, investedFunds, setInvestedFunds }) => 
                                                 trader.mt5Account;
                         
                         if (!masterMt5Account) {
-                            alert('Error: No se encontró la cuenta MT5 del PAMM manager');
+                            toast.error(t('pamm.messages.managerAccountNotFound') || 'Error: No se encontró la cuenta MT5 del PAMM manager');
                             return;
                         }
 
@@ -2370,14 +2371,14 @@ const PammDetailView = ({ trader, onBack, investedFunds, setInvestedFunds }) => 
                         });
                         
                         if (response.success || response.message) {
-                            alert(t('copyTrading.messages.followSuccess') || 'Successfully following PAMM fund');
+                            toast.success(t('pamm.messages.investSuccess') || 'Successfully invested in PAMM fund');
                             setShowInvertirModal(false);
                         } else {
                             throw new Error(response.error || 'Error following PAMM fund');
                         }
                     } catch (error) {
                         console.error('Error siguiendo PAMM fund:', error);
-                        alert(t('copyTrading.messages.followError') + ': ' + (error.message || 'Error desconocido'));
+                        toast.error((t('pamm.messages.investError') || 'Error al invertir en PAMM') + ': ' + (error.message || 'Error desconocido'));
                     }
                 }}
             />

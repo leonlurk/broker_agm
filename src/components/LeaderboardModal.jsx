@@ -46,14 +46,10 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
       const result = await getLeaderboardData(activeTab, 100);
 
       if (result.success) {
-        // Filter for tournament accounts only (if the field exists)
-        // Prepare for is_tournament_account filter - currently shows all
+        // Filter for tournament accounts only
         const allTraders = result.data.leaderboard || [];
         const tournamentTraders = allTraders.filter(trader =>
-          // When is_tournament_account column is added, use:
-          // trader.is_tournament_account === true
-          // For now, show all traders
-          true
+          trader.is_tournament_account === true
         );
 
         setLeaderboardData(tournamentTraders);
