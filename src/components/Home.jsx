@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Settings from './Settings';
 import UserInformationContent from './UserInformationContent';
 import NotificationsModal from './NotificationsModal';
-import { ChevronDown, ArrowDown, ArrowUp, SlidersHorizontal, Settings as SettingsIcon, Bell, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { ChevronDown, ArrowDown, ArrowUp, SlidersHorizontal, Settings as SettingsIcon, Bell, AlertCircle, CheckCircle, X, TrendingUp, TrendingDown, Target, Activity, BarChart2, Zap } from 'lucide-react';
 import { useAccounts, WALLET_OPERATIONS, ACCOUNT_CATEGORIES } from '../contexts/AccountsContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,6 +13,135 @@ import LanguageSelector from './LanguageSelector';
 import accountMetricsOptimized from '../services/accountMetricsOptimized';
 import { DashboardCardLoader, UserInfoLoader, KYCStatusLoader, useMinLoadingTime } from './WaveLoader';
 import { HomeDashboardLoader } from './ExactLayoutLoaders';
+import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
+
+// Rate limit: 10 minutes between refreshes per account
+const METRICS_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+// Mini sparkline chart component for account cards
+const AccountSparkline = ({ data, color = '#22d3ee', isLoading = false }) => {
+  if (isLoading) {
+    return (
+      <div className="h-16 w-full flex items-center justify-center">
+        <div className="flex gap-1">
+          <div className="w-1 h-8 bg-cyan-500/30 rounded animate-pulse" />
+          <div className="w-1 h-12 bg-cyan-500/30 rounded animate-pulse" style={{ animationDelay: '100ms' }} />
+          <div className="w-1 h-6 bg-cyan-500/30 rounded animate-pulse" style={{ animationDelay: '200ms' }} />
+          <div className="w-1 h-10 bg-cyan-500/30 rounded animate-pulse" style={{ animationDelay: '300ms' }} />
+          <div className="w-1 h-14 bg-cyan-500/30 rounded animate-pulse" style={{ animationDelay: '400ms' }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-16 w-full flex items-center justify-center">
+        <span className="text-[10px] text-gray-500">Sin historial</span>
+      </div>
+    );
+  }
+
+  // Format data for chart
+  const chartData = data.map((item, index) => ({
+    index,
+    value: parseFloat(item.equity || item.balance || item.value || 0)
+  }));
+
+  return (
+    <div className="h-16 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={`sparkGradient-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Tooltip
+            contentStyle={{
+              backgroundColor: '#191919',
+              border: '1px solid #333',
+              borderRadius: '8px',
+              fontSize: '11px',
+              padding: '6px 10px'
+            }}
+            formatter={(value) => [`$${value.toLocaleString()}`, '']}
+            labelFormatter={() => ''}
+          />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={color}
+            strokeWidth={2}
+            fill={`url(#sparkGradient-${color.replace('#', '')})`}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+// Win rate circular indicator
+const WinRateCircle = ({ percentage, size = 40 }) => {
+  const radius = (size / 2) - 4;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg className={`transform -rotate-90`} style={{ width: size, height: size }}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#333"
+          strokeWidth="3"
+          fill="transparent"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={percentage >= 50 ? '#22c55e' : '#ef4444'}
+          strokeWidth="3"
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <span className={`absolute text-[10px] font-bold ${percentage >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+        {percentage.toFixed(0)}%
+      </span>
+    </div>
+  );
+};
+
+// Timestamp component for last update
+const LastUpdatedBadge = ({ timestamp }) => {
+  if (!timestamp) return null;
+
+  const getTimeAgo = () => {
+    const minutes = Math.floor((Date.now() - timestamp) / (1000 * 60));
+    if (minutes < 1) return 'Ahora';
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h`;
+    return `${Math.floor(hours / 24)}d`;
+  };
+
+  const minutes = Math.floor((Date.now() - timestamp) / (1000 * 60));
+  const color = minutes < 5 ? 'text-green-400' : minutes < 30 ? 'text-yellow-400' : 'text-gray-400';
+
+  return (
+    <div className={`flex items-center gap-1 ${color}`}>
+      <div className={`w-1.5 h-1.5 rounded-full ${minutes < 5 ? 'bg-green-400' : minutes < 30 ? 'bg-yellow-400' : 'bg-gray-400'}`} />
+      <span className="text-[9px]">{getTimeAgo()}</span>
+    </div>
+  );
+};
 
 const fondoTarjetaUrl = "/fondoTarjeta.png";
 
@@ -512,10 +641,11 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
       const accountsToLoad = getFilteredAccounts();
       
       for (const account of accountsToLoad) {
-        // Evitar recargar si ya tenemos datos recientes (cache de 30 segundos)
+        // Evitar recargar si ya tenemos datos recientes (cache de 10 minutos)
         const cachedMetrics = accountsMetrics[account.account_number];
-        if (cachedMetrics && cachedMetrics.lastUpdated && 
-            (Date.now() - cachedMetrics.lastUpdated) < 30000) {
+        if (cachedMetrics && cachedMetrics.lastUpdated &&
+            (Date.now() - cachedMetrics.lastUpdated) < METRICS_CACHE_DURATION) {
+          console.log(`[HOME] Using cached metrics for ${account.account_number} (${Math.floor((Date.now() - cachedMetrics.lastUpdated) / 1000)}s old)`);
           continue;
         }
         
@@ -924,119 +1054,106 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
              {getFilteredAccounts().length > 0 ? getFilteredAccounts().map((account) => {
                const metrics = accountsMetrics[account.account_number];
                const isLoadingMetrics = metricsLoading[account.account_number];
-               // Usar datos dinámicos del backend o fallback a valores de la cuenta
-              const currentBalance = metrics?.kpis?.balance || account.balance || 0;
-              const totalPnlPercentage = metrics?.totalPnl?.percentage || metrics?.kpis?.profit_loss_percentage || 0;
-              const totalPnlAmount = metrics?.totalPnl?.amount || metrics?.kpis?.profit_loss || 0;
-               
+
+               // Datos de la cuenta mejorados
+               const currentBalance = metrics?.kpis?.equity || metrics?.kpis?.balance || account.balance || 0;
+               const totalPnlPercentage = metrics?.totalPnl?.percentage || metrics?.kpis?.profit_loss_percentage || 0;
+               const winRate = metrics?.statistics?.win_rate || 0;
+               const totalTrades = metrics?.statistics?.total_trades || 0;
+               const balanceHistory = metrics?.balance_history || [];
+               const chartColor = totalPnlPercentage >= 0 ? '#22c55e' : '#ef4444';
+               const accountType = account.account_type?.toUpperCase() || 'DEMO';
+
                return (
                  <div
-                     key={account.id}
-                   className="p-5 bg-[#1C1E1E] border border-gray-700 flex flex-col hover:border-sky-500 transition-colors rounded-2xl"
+                   key={account.id}
+                   className="group relative overflow-hidden bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] border border-[#2a2a2a] rounded-2xl transition-all duration-500 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 hover:scale-[1.02]"
                  >
-                   <div className="flex-grow">
-                     <h3 className="text-xl font-bold text-white mb-1 uppercase">
-                           {account.account_name}
-                         </h3>
-                     <p className="text-sm text-gray-300">{t('dashboard:totalBalance')}</p>
-                     <div className="flex items-baseline gap-2 mb-4">
-                       <p className="text-2xl text-white">
-                         ${currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                       </p>
-                       {isLoadingMetrics ? (
-                         <div className="animate-pulse h-4 w-12 bg-gray-700 rounded"></div>
-                       ) : (
-                         <span className={`text-sm font-semibold ${
-                           totalPnlPercentage >= 0 ? 'text-green-500' : 'text-red-500'
-                         }`}>
-                           {totalPnlPercentage >= 0 ? '+' : ''}{totalPnlPercentage.toFixed(2)}%
-                         </span>
-                       )}
+                   {/* Glow effect */}
+                   <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                   {/* Header */}
+                   <div className="relative p-4 pb-2">
+                     <div className="flex justify-between items-start mb-3">
+                       <div className="flex-1">
+                         <div className="flex items-center gap-2 mb-1">
+                           <h3 className="text-lg font-bold text-white truncate">{account.account_name}</h3>
+                           <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full ${accountType === 'REAL' ? 'bg-green-500/20 text-green-400' : 'bg-cyan-500/20 text-cyan-400'}`}>{accountType}</span>
+                         </div>
+                         <div className="flex items-center gap-2">
+                           <span className="text-2xl font-bold text-white">${currentBalance.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                           {isLoadingMetrics ? (
+                             <div className="animate-pulse h-5 w-14 bg-gray-700/50 rounded" />
+                           ) : (
+                             <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${totalPnlPercentage >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                               {totalPnlPercentage >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                               {totalPnlPercentage >= 0 ? '+' : ''}{totalPnlPercentage.toFixed(1)}%
+                             </span>
+                           )}
+                         </div>
+                       </div>
+                       <LastUpdatedBadge timestamp={metrics?.lastUpdated} />
                      </div>
-                     <div className="grid grid-cols-3 gap-2 text-center mb-4">
-                       <div>
-                         <p className="text-xs text-gray-300 mb-1">{t('dashboard:accountSummary.pnlToday')}</p>
-                         {isLoadingMetrics ? (
+
+                     {/* Sparkline Chart */}
+                     <div className="mt-2 -mx-2">
+                       <AccountSparkline data={balanceHistory} color={chartColor} isLoading={isLoadingMetrics} />
+                     </div>
+                   </div>
+
+                   {/* KPIs Grid */}
+                   <div className="relative px-4 pb-3">
+                     <div className="grid grid-cols-4 gap-2">
+                       <div className="flex flex-col items-center p-2 bg-[#1a1a1a]/80 rounded-lg border border-[#2a2a2a]">
+                         {isLoadingMetrics ? <div className="animate-pulse h-10 w-10 bg-gray-700/50 rounded-full" /> : <WinRateCircle percentage={winRate} size={36} />}
+                         <span className="text-[8px] text-gray-500 mt-1 uppercase">Win</span>
+                       </div>
+                       <div className="flex flex-col items-center justify-center p-2 bg-[#1a1a1a]/80 rounded-lg border border-[#2a2a2a]">
+                         {isLoadingMetrics ? <div className="animate-pulse h-4 w-10 bg-gray-700/50 rounded" /> : (
                            <>
-                             <div className="animate-pulse h-4 w-12 bg-gray-700 rounded mx-auto mb-1"></div>
-                             <div className="animate-pulse h-3 w-10 bg-gray-700 rounded mx-auto"></div>
-                           </>
-                         ) : (
-                           <>
-                             <p className={`text-sm font-semibold ${
-                               metrics?.pnlToday?.percentage >= 0 ? 'text-green-500' : 'text-red-500'
-                             }`}>
-                               {metrics?.pnlToday?.percentage >= 0 ? '+' : ''}
-                               {(metrics?.pnlToday?.percentage || 0).toFixed(2)}%
-                             </p>
-                             <p className="text-xs text-gray-200">
-                               {metrics?.pnlToday?.amount >= 0 ? '+' : ''}
-                               ${Math.abs(metrics?.pnlToday?.amount || 0).toFixed(2)}
-                             </p>
+                             <span className={`text-xs font-bold ${(metrics?.pnlToday?.percentage || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>{(metrics?.pnlToday?.percentage || 0) >= 0 ? '+' : ''}{(metrics?.pnlToday?.percentage || 0).toFixed(1)}%</span>
+                             <span className="text-[8px] text-gray-500 uppercase">Hoy</span>
                            </>
                          )}
                        </div>
-                       <div>
-                         <p className="text-xs text-gray-300 mb-1">{t('dashboard:accountSummary.pnl7Days')}</p>
-                         {isLoadingMetrics ? (
+                       <div className="flex flex-col items-center justify-center p-2 bg-[#1a1a1a]/80 rounded-lg border border-[#2a2a2a]">
+                         {isLoadingMetrics ? <div className="animate-pulse h-4 w-10 bg-gray-700/50 rounded" /> : (
                            <>
-                             <div className="animate-pulse h-4 w-12 bg-gray-700 rounded mx-auto mb-1"></div>
-                             <div className="animate-pulse h-3 w-10 bg-gray-700 rounded mx-auto"></div>
-                           </>
-                         ) : (
-                           <>
-                             <p className={`text-sm font-semibold ${
-                               metrics?.pnl7Days?.percentage >= 0 ? 'text-green-500' : 'text-red-500'
-                             }`}>
-                               {metrics?.pnl7Days?.percentage >= 0 ? '+' : ''}
-                               {(metrics?.pnl7Days?.percentage || 0).toFixed(2)}%
-                             </p>
-                             <p className="text-xs text-gray-200">
-                               {metrics?.pnl7Days?.amount >= 0 ? '+' : ''}
-                               ${Math.abs(metrics?.pnl7Days?.amount || 0).toFixed(2)}
-                             </p>
+                             <span className={`text-xs font-bold ${(metrics?.pnl7Days?.percentage || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>{(metrics?.pnl7Days?.percentage || 0) >= 0 ? '+' : ''}{(metrics?.pnl7Days?.percentage || 0).toFixed(1)}%</span>
+                             <span className="text-[8px] text-gray-500 uppercase">7D</span>
                            </>
                          )}
                        </div>
-                       <div>
-                         <p className="text-xs text-gray-300 mb-1">{t('dashboard:accountSummary.pnl30Days')}</p>
-                         {isLoadingMetrics ? (
+                       <div className="flex flex-col items-center justify-center p-2 bg-[#1a1a1a]/80 rounded-lg border border-[#2a2a2a]">
+                         {isLoadingMetrics ? <div className="animate-pulse h-4 w-8 bg-gray-700/50 rounded" /> : (
                            <>
-                             <div className="animate-pulse h-4 w-12 bg-gray-700 rounded mx-auto mb-1"></div>
-                             <div className="animate-pulse h-3 w-10 bg-gray-700 rounded mx-auto"></div>
-                           </>
-                         ) : (
-                           <>
-                             <p className={`text-sm font-semibold ${
-                               metrics?.pnl30Days?.percentage >= 0 ? 'text-green-500' : 'text-red-500'
-                             }`}>
-                               {metrics?.pnl30Days?.percentage >= 0 ? '+' : ''}
-                               {(metrics?.pnl30Days?.percentage || 0).toFixed(2)}%
-                             </p>
-                             <p className="text-xs text-gray-200">
-                               {metrics?.pnl30Days?.amount >= 0 ? '+' : ''}
-                               ${Math.abs(metrics?.pnl30Days?.amount || 0).toFixed(2)}
-                             </p>
+                             <span className="text-xs font-bold text-cyan-400">{totalTrades}</span>
+                             <span className="text-[8px] text-gray-500 uppercase">Trades</span>
                            </>
                          )}
                        </div>
                      </div>
                    </div>
+
+                   {/* Action Button */}
+                   <div className="relative px-4 pb-4">
                      <button
-                         onClick={() => {
-                             if (setSelectedOption) {
-                                 setSelectedOption("Cuentas", { 
-                                     accountId: account.id, 
-                                       viewMode: 'details',
-                                   directNavigation: true
-                                 });
-                             }
-                         }}
-                     className="w-full bg-transparent border border-sky-500 text-sky-500 py-2 rounded-full transition-colors hover:bg-sky-500 hover:text-white text-sm"
-                         style={{ outline: 'none' }}
+                       onClick={() => {
+                         if (setSelectedOption) {
+                           setSelectedOption("Cuentas", {
+                             accountId: account.id,
+                             viewMode: 'details',
+                             directNavigation: true
+                           });
+                         }
+                       }}
+                       className="w-full py-2.5 bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 text-cyan-400 rounded-xl font-medium text-sm transition-all duration-300 hover:from-cyan-600/40 hover:to-blue-600/40 hover:border-cyan-500/60 hover:text-white flex items-center justify-center gap-2"
+                       style={{ outline: 'none' }}
                      >
-                         {t('common:general.view')} {t('common:general.details')}
+                       <BarChart2 size={14} />
+                       {t('common:general.view')} {t('common:general.details')}
                      </button>
+                   </div>
                  </div>
                );
              }) : (
