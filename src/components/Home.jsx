@@ -639,7 +639,13 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   useEffect(() => {
     const loadAccountMetrics = async () => {
       const accountsToLoad = getFilteredAccounts();
-      
+      console.log('[HOME] Accounts to load metrics for:', accountsToLoad.map(a => a.account_number || a.login));
+
+      if (accountsToLoad.length === 0) {
+        console.log('[HOME] No accounts found to load metrics for');
+        return;
+      }
+
       for (const account of accountsToLoad) {
         // Evitar recargar si ya tenemos datos recientes (cache de 10 minutos)
         const cachedMetrics = accountsMetrics[account.account_number];
@@ -756,8 +762,13 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
       }
     };
     
+    console.log('[HOME] useEffect triggered - isLoading:', isLoading, 'accounts.length:', accounts.length);
+
     if (!isLoading && accounts.length > 0) {
+      console.log('[HOME] Calling loadAccountMetrics...');
       loadAccountMetrics();
+    } else {
+      console.log('[HOME] Skipping metrics load - isLoading:', isLoading, 'accounts:', accounts.length);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountFilter, accounts, isLoading]);
