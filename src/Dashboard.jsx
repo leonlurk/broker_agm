@@ -142,12 +142,8 @@ const Dashboard = ({ onLogout }) => {
       userDataExists: !!userData
     });
     
-    // Bloquear acceso a "Nueva Cuenta" si no tiene KYC aprobado o si userData no está cargado
-    if ((option === "Nueva Cuenta" || option === "New Account") && (!userData || userData?.kyc_status !== 'approved')) {
-      console.log("[Dashboard - src] Blocking Nueva Cuenta - KYC not approved or userData not loaded");
-      toast.error(t('kyc.verificationRequired'));
-      return;
-    }
+    // Allow "Nueva Cuenta" for all users - KYC restrictions are handled in the form itself
+    // Users without KYC can create DEMO accounts only
     
     if (option === "Leaderboard") {
       openLeaderboardModal();
@@ -169,11 +165,8 @@ const Dashboard = ({ onLogout }) => {
   const handleNavigationWithParams = (option, params = null) => {
     console.log("[Dashboard - src] handleNavigationWithParams:", option, params);
     
-    // Bloquear acceso a "Nueva Cuenta" si no tiene KYC aprobado o si userData no está cargado
-    if ((option === "Nueva Cuenta" || option === "New Account") && (!userData || userData?.kyc_status !== 'approved')) {
-      toast.error(t('kyc.verificationRequired'));
-      return;
-    }
+    // Allow "Nueva Cuenta" for all users - KYC restrictions are handled in the form itself
+    // Users without KYC can create DEMO accounts only
     
     setSelectedOption(option);
     setNavigationParams(params);
@@ -237,51 +230,13 @@ const Dashboard = ({ onLogout }) => {
           return <OperationsHistory />;
       case "Nueva Cuenta":
       case "New Account":
-          // Verificar KYC antes de mostrar el componente
-          console.log("[Dashboard - src] Rendering Nueva Cuenta - KYC check:", {
+          // Allow all users to access account creation
+          // KYC restrictions are now handled within the TradingChallenge component
+          console.log("[Dashboard - src] Rendering Nueva Cuenta - KYC status:", {
             userData_exists: !!userData,
             kyc_status: userData?.kyc_status,
-            kyc_status_type: typeof userData?.kyc_status,
-            isApproved: userData?.kyc_status === 'approved',
-            shouldShowWarning: !userData || userData?.kyc_status !== 'approved',
-            fullUserData: userData
+            isApproved: userData?.kyc_status === 'approved'
           });
-          
-          if (!userData || userData?.kyc_status !== 'approved') {
-            return (
-              <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
-                <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-2xl p-8 max-w-md text-center">
-                  <div className="text-yellow-500 mb-4">
-                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <h2 className="text-2xl font-bold text-white mb-3">Verificación KYC Requerida</h2>
-                  <p className="text-gray-300 mb-6">
-                    {!userData
-                      ? 'Cargando información del usuario...'
-                      : userData?.kyc_status === 'pending' 
-                      ? 'Tu documentación está en proceso de revisión. Una vez aprobada, podrás crear cuentas MT5.'
-                      : userData?.kyc_status === 'rejected'
-                      ? 'Tu documentación fue rechazada. Por favor, envíala nuevamente desde la sección de Configuración.'
-                      : 'Para crear cuentas MT5 y comenzar a operar, debes completar el proceso de verificación KYC.'}
-                  </p>
-                  <button
-                    onClick={() => handleSettingsClick(true, false)}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3 px-6 rounded-lg transition-colors"
-                  >
-                    {!userData
-                      ? 'Cargando...'
-                      : userData?.kyc_status === 'pending' 
-                      ? 'Ver Estado'
-                      : userData?.kyc_status === 'rejected'
-                      ? 'Reenviar Documentos'
-                      : 'Completar Verificación'}
-                  </button>
-                </div>
-              </div>
-            );
-          }
           return <TradingChallenge />;
       case "Calculadora":
           return <PipCalculator />;

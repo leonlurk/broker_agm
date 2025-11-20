@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, User, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
-import { getPammFunds, getMyFunds, leavePammFund, joinPammFund, getFundDetails } from '../services/pammService';
+import { getPammFunds, getMyFunds, leavePammFund, joinPammFund, getFundDetails, updateProfitPreference, getProfitHistory } from '../services/pammService';
 import InvertirPAMMModal from './InvertirPAMMModal';
 import RetirarPAMMModalWithdrawal from './RetirarPAMMModalWithdrawal';
 import { useAccounts } from '../contexts/AccountsContext';
@@ -11,6 +11,7 @@ import { followMaster } from '../services/copytradingService';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { MasterAccountBadge, PerformanceStatusIndicator, MasterAccountSummaryCard } from './StatusIndicators';
 import EnhancedPAMMCard from './EnhancedPAMMCard';
+import EquityStopAlert from './EquityStopAlert';
 
 const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
     const { t } = useTranslation('pamm');
@@ -392,6 +393,77 @@ const PammDashboardView = ({
     myFunds = { summary: {}, funds: [] },
     isLoadingMyFunds = false
 }) => {
+    // State for profit settings panel
+    const [expandedSettingsId, setExpandedSettingsId] = useState(null);
+    const [profitSettings, setProfitSettings] = useState({});
+    const [profitHistory, setProfitHistory] = useState({});
+    const [isLoadingHistory, setIsLoadingHistory] = useState({});
+    const [isSavingSettings, setIsSavingSettings] = useState({});
+
+    // Toggle settings panel for a fund
+    const toggleSettingsPanel = async (fundId, investmentId) => {
+        if (expandedSettingsId === fundId) {
+            setExpandedSettingsId(null);
+        } else {
+            setExpandedSettingsId(fundId);
+            // Load profit history if not already loaded
+            if (!profitHistory[investmentId]) {
+                setIsLoadingHistory(prev => ({ ...prev, [investmentId]: true }));
+                try {
+                    const history = await getProfitHistory(investmentId);
+                    setProfitHistory(prev => ({ ...prev, [investmentId]: history }));
+                } catch (error) {
+                    console.error('Error loading profit history:', error);
+                    setProfitHistory(prev => ({ ...prev, [investmentId]: [] }));
+                } finally {
+                    setIsLoadingHistory(prev => ({ ...prev, [investmentId]: false }));
+                }
+            }
+        }
+    };
+
+    // Initialize profit settings from fund data
+    const initializeProfitSettings = (fund) => {
+        if (!profitSettings[fund.investment_id]) {
+            setProfitSettings(prev => ({
+                ...prev,
+                [fund.investment_id]: {
+                    profitHandling: fund.profit_handling || 'compound',
+                    reinvestPercentage: fund.reinvest_percentage || 100
+                }
+            }));
+        }
+        return profitSettings[fund.investment_id] || {
+            profitHandling: fund.profit_handling || 'compound',
+            reinvestPercentage: fund.reinvest_percentage || 100
+        };
+    };
+
+    // Handle profit setting change
+    const handleProfitSettingChange = (investmentId, field, value) => {
+        setProfitSettings(prev => ({
+            ...prev,
+            [investmentId]: {
+                ...prev[investmentId],
+                [field]: value
+            }
+        }));
+    };
+
+    // Save profit preferences
+    const saveProfitPreferences = async (investmentId) => {
+        setIsSavingSettings(prev => ({ ...prev, [investmentId]: true }));
+        try {
+            await updateProfitPreference(investmentId, profitSettings[investmentId]);
+            // Show success message or update UI
+        } catch (error) {
+            console.error('Error saving profit preferences:', error);
+            alert(error.error || 'Error al guardar preferencias');
+        } finally {
+            setIsSavingSettings(prev => ({ ...prev, [investmentId]: false }));
+        }
+    };
+
     // Usar datos dinámicos del prop myFunds
     const portfolioData = myFunds.summary || initialPammPortfolioData;
     const investedFundsArray = myFunds.funds || [];
@@ -444,6 +516,18 @@ const PammDashboardView = ({
                     </div>
                 </div>
             </div>
+
+            {/* Equity Stop Alert Banner */}
+            <EquityStopAlert
+                subscriptionType="pamm"
+                onActionComplete={async (action) => {
+                    // Reload funds after action
+                    if (action === 'resumed' || action === 'cancelled') {
+                        const updatedFunds = await getMyFunds();
+                        // This will be passed up to the parent component
+                    }
+                }}
+            />
 
             {/* Widget 1: Resumen de Portafolio PAMM */}
             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
@@ -579,6 +663,17 @@ const PammDashboardView = ({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
+                                            onClick={() => toggleSettingsPanel(fund.id || fund.fund_id, fund.investment_id)}
+                                            className={`px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+                                                expandedSettingsId === (fund.id || fund.fund_id)
+                                                    ? 'bg-green-600 text-white'
+                                                    : 'bg-[#333] hover:bg-[#444] text-gray-300'
+                                            }`}
+                                        >
+                                            <Settings size={16} />
+                                            Ganancias
+                                        </button>
+                                        <button
                                             onClick={() => onViewFundDetails(fund)}
                                             className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
                                         >
@@ -593,6 +688,180 @@ const PammDashboardView = ({
                                         </button>
                                     </div>
                                 </div>
+
+                                {/* Profit Settings Panel */}
+                                {expandedSettingsId === (fund.id || fund.fund_id) && (() => {
+                                    const settings = initializeProfitSettings(fund);
+                                    const investmentId = fund.investment_id;
+                                    const history = profitHistory[investmentId] || [];
+
+                                    return (
+                                        <div className="p-5 bg-[#191919] border-t border-[#333]">
+                                            <h4 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                                                <DollarSign size={16} className="text-green-500" />
+                                                Configuración de Ganancias
+                                            </h4>
+
+                                            {/* Current Setting Display */}
+                                            <div className="mb-4 p-3 bg-[#232323] rounded-lg border border-[#333]">
+                                                <p className="text-xs text-gray-400 mb-1">Configuración actual:</p>
+                                                <p className="text-sm font-medium text-white">
+                                                    {settings.profitHandling === 'compound' && 'Interés Compuesto - Reinvertir todo'}
+                                                    {settings.profitHandling === 'withdraw' && 'Retirar Ganancias - Recibir todo'}
+                                                    {settings.profitHandling === 'partial' && `Parcial - Reinvertir ${settings.reinvestPercentage}%`}
+                                                </p>
+                                            </div>
+
+                                            {/* Change Preference */}
+                                            <div className="space-y-3 mb-4">
+                                                <p className="text-xs font-medium text-gray-300">Cambiar preferencia:</p>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                    <label className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                                                        settings.profitHandling === 'compound'
+                                                            ? 'border-green-500 bg-green-500/10'
+                                                            : 'border-[#333] bg-[#232323] hover:border-gray-500'
+                                                    }`}>
+                                                        <input
+                                                            type="radio"
+                                                            name={`profitHandling-${investmentId}`}
+                                                            value="compound"
+                                                            checked={settings.profitHandling === 'compound'}
+                                                            onChange={(e) => handleProfitSettingChange(investmentId, 'profitHandling', e.target.value)}
+                                                            className="accent-green-500"
+                                                        />
+                                                        <span className="text-xs text-white">Compuesto</span>
+                                                    </label>
+
+                                                    <label className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                                                        settings.profitHandling === 'withdraw'
+                                                            ? 'border-green-500 bg-green-500/10'
+                                                            : 'border-[#333] bg-[#232323] hover:border-gray-500'
+                                                    }`}>
+                                                        <input
+                                                            type="radio"
+                                                            name={`profitHandling-${investmentId}`}
+                                                            value="withdraw"
+                                                            checked={settings.profitHandling === 'withdraw'}
+                                                            onChange={(e) => handleProfitSettingChange(investmentId, 'profitHandling', e.target.value)}
+                                                            className="accent-green-500"
+                                                        />
+                                                        <span className="text-xs text-white">Retirar</span>
+                                                    </label>
+
+                                                    <label className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                                                        settings.profitHandling === 'partial'
+                                                            ? 'border-green-500 bg-green-500/10'
+                                                            : 'border-[#333] bg-[#232323] hover:border-gray-500'
+                                                    }`}>
+                                                        <input
+                                                            type="radio"
+                                                            name={`profitHandling-${investmentId}`}
+                                                            value="partial"
+                                                            checked={settings.profitHandling === 'partial'}
+                                                            onChange={(e) => handleProfitSettingChange(investmentId, 'profitHandling', e.target.value)}
+                                                            className="accent-green-500"
+                                                        />
+                                                        <span className="text-xs text-white">Parcial</span>
+                                                    </label>
+                                                </div>
+
+                                                {/* Slider for partial */}
+                                                {settings.profitHandling === 'partial' && (
+                                                    <div className="mt-3 p-3 bg-[#232323] rounded-lg border border-[#333]">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <span className="text-xs text-gray-300">Porcentaje a reinvertir</span>
+                                                            <span className="text-xs font-medium text-green-500">{settings.reinvestPercentage}%</span>
+                                                        </div>
+                                                        <input
+                                                            type="range"
+                                                            min="0"
+                                                            max="100"
+                                                            step="5"
+                                                            value={settings.reinvestPercentage}
+                                                            onChange={(e) => handleProfitSettingChange(investmentId, 'reinvestPercentage', Number(e.target.value))}
+                                                            className="w-full h-2 bg-[#333] rounded-lg appearance-none cursor-pointer accent-green-500"
+                                                        />
+                                                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                            <span>0%</span>
+                                                            <span>100%</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Save Button */}
+                                                <button
+                                                    onClick={() => saveProfitPreferences(investmentId)}
+                                                    disabled={isSavingSettings[investmentId]}
+                                                    className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    {isSavingSettings[investmentId] ? (
+                                                        <>
+                                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                            Guardando...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <CheckCircle size={16} />
+                                                            Guardar Preferencias
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+
+                                            {/* Profit Distribution History */}
+                                            <div className="mt-4 pt-4 border-t border-[#333]">
+                                                <h5 className="text-xs font-semibold text-gray-300 mb-3 flex items-center gap-2">
+                                                    <History size={14} />
+                                                    Historial de Distribuciones
+                                                </h5>
+
+                                                {isLoadingHistory[investmentId] ? (
+                                                    <div className="space-y-2">
+                                                        {[1, 2, 3].map(i => (
+                                                            <div key={i} className="h-12 bg-[#232323] rounded-lg animate-pulse"></div>
+                                                        ))}
+                                                    </div>
+                                                ) : history.length > 0 ? (
+                                                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                                                        {history.map((dist, index) => (
+                                                            <div key={index} className="flex items-center justify-between p-3 bg-[#232323] rounded-lg text-xs">
+                                                                <div>
+                                                                    <p className="text-white font-medium">
+                                                                        {new Date(dist.distribution_date || dist.created_at).toLocaleDateString('es-ES', {
+                                                                            year: 'numeric',
+                                                                            month: 'short',
+                                                                            day: 'numeric'
+                                                                        })}
+                                                                    </p>
+                                                                    <p className="text-gray-400">
+                                                                        {dist.handling_type === 'compound' && 'Reinvertido'}
+                                                                        {dist.handling_type === 'withdraw' && 'Retirado'}
+                                                                        {dist.handling_type === 'partial' && `Parcial (${dist.reinvested_percentage}%)`}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className="text-green-500 font-medium">
+                                                                        +{formatCurrency(dist.gross_profit || dist.amount || 0)}
+                                                                    </p>
+                                                                    {dist.withdrawn_amount > 0 && (
+                                                                        <p className="text-gray-400">
+                                                                            Retirado: {formatCurrency(dist.withdrawn_amount)}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-gray-500 text-center py-4">
+                                                        No hay distribuciones registradas
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         ))}
                     </div>

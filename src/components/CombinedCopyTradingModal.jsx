@@ -1,34 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { X, DollarSign, TrendingUp, Shield, Settings, ChevronRight } from 'lucide-react';
+import { X, DollarSign, TrendingUp, Shield, Settings, ChevronRight, ChevronDown } from 'lucide-react';
 import { useAccounts } from '../contexts/AccountsContext';
 import { useTranslation } from 'react-i18next';
 import { followMaster } from '../services/copytradingService';
 import { supabase } from '../supabase/config';
+import toast from 'react-hot-toast';
 
-const CombinedCopyTradingModal = ({ 
-  isOpen, 
-  onClose, 
-  trader, 
-  onConfirm 
+const CombinedCopyTradingModal = ({
+  isOpen,
+  onClose,
+  trader,
+  onConfirm
 }) => {
   const { t } = useTranslation('copytrading');
   const { accounts } = useAccounts();
-  
+
   // Modal steps: 'account-selection' -> 'copy-configuration'
   const [currentStep, setCurrentStep] = useState('account-selection');
   const [selectedAccount, setSelectedAccount] = useState(null);
-  
-  // Copy trading configuration
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Simplified copy trading configuration
   const [formData, setFormData] = useState({
-    capitalAsignado: 5000,
-    porcentajeRiesgo: 5,
-    limitePerdida: 1000,
-    limiteGanancia: 10000,
-    copiarTodas: true,
-    instrumentosSeleccionados: [],
+    montoInversion: 1000,
+    metodoAsignacion: 'proporcional', // 'proporcional' or 'fijo'
+    copyStopLoss: 40,
+    // Advanced settings (hidden by default)
     multiplicadorLote: 1.0,
-    detenerSiPerdida: true,
-    detenerSiGanancia: false
+    copiarSL: true,
+    copiarTP: true
   });
 
   // Reset modal when opening/closing
@@ -36,6 +36,7 @@ const CombinedCopyTradingModal = ({
     if (isOpen) {
       setCurrentStep('account-selection');
       setSelectedAccount(null);
+      setShowAdvanced(false);
     }
   }, [isOpen]);
 
@@ -55,9 +56,9 @@ const CombinedCopyTradingModal = ({
     console.log('Combined modal confirm - trader:', trader);
     console.log('Combined modal confirm - account:', selectedAccount);
     console.log('Combined modal confirm - formData:', formData);
-    
+
     if (!selectedAccount || !trader) {
-      alert('Por favor selecciona una cuenta válida');
+      toast.error('Por favor selecciona una cuenta valida');
       return;
     }
 
@@ -72,7 +73,7 @@ const CombinedCopyTradingModal = ({
 
       if (error) {
         console.error('Error fetching trader profile:', error);
-        alert('Error: No se pudo obtener la información del trader');
+        toast.error('Error: No se pudo obtener la informacion del trader');
         return;
       }
 
@@ -80,17 +81,17 @@ const CombinedCopyTradingModal = ({
       console.log('Debug - trader profile master_config:', traderProfile?.master_config);
 
       // Extract master MT5 account from the full profile data
-      const masterMt5Account = traderProfile?.master_config?.cuentaMT5Seleccionada || 
+      const masterMt5Account = traderProfile?.master_config?.cuentaMT5Seleccionada ||
                               traderProfile?.master_config?.master_mt5_account ||
                               traderProfile?.master_config?.master_account ||
                               traderProfile?.masterAccount ||
                               traderProfile?.mt5Account;
-      
+
       console.log('Debug - Extracted masterMt5Account from profile:', masterMt5Account);
-      
+
       if (!masterMt5Account) {
         console.error('Debug - No MT5 account found in trader profile:', traderProfile);
-        alert('Error: El trader no tiene configurada una cuenta MT5 como master');
+        toast.error('Error: El trader no tiene configurada una cuenta MT5 como master');
         return;
       }
 
@@ -100,22 +101,22 @@ const CombinedCopyTradingModal = ({
         follower_mt5_account_id: selectedAccount.account_number || selectedAccount.id,
         risk_ratio: formData.multiplicadorLote || 1.0
       };
-      
+
       console.log('Debug - Request parameters being sent to backend:', requestParams);
-      
+
       const response = await followMaster(requestParams);
-      
-      console.log('✅ Copy Trading activado desde modal combinado:', response);
-      alert(`✅ Ahora estás copiando a ${trader.name}`);
-      
+
+      console.log('Copy Trading activado desde modal combinado:', response);
+      toast.success(`Ahora estas copiando a ${trader.name}`);
+
       if (onConfirm) {
         onConfirm(formData, trader, selectedAccount);
       }
-      
+
       onClose();
     } catch (error) {
-      console.error('❌ Error al copiar trader:', error);
-      alert(`Error: ${error.error || error.message || 'No se pudo activar el copy trading'}`);
+      console.error('Error al copiar trader:', error);
+      toast.error(`Error: ${error.error || error.message || 'No se pudo activar el copy trading'}`);
     }
   };
 
@@ -132,20 +133,20 @@ const CombinedCopyTradingModal = ({
                 onClick={handleBackToAccountSelection}
                 className="text-cyan-400 hover:text-cyan-300 transition-colors"
               >
-                ← Atrás
+                ← Atras
               </button>
             )}
             <div>
               <h2 className="text-xl font-semibold text-white">
-                {currentStep === 'account-selection' 
-                  ? 'Seleccionar Cuenta' 
+                {currentStep === 'account-selection'
+                  ? 'Seleccionar Cuenta'
                   : `Copiar a ${trader.name}`
                 }
               </h2>
               <p className="text-gray-400 text-sm">
                 {currentStep === 'account-selection'
                   ? 'Elige la cuenta para copiar las operaciones'
-                  : 'Configura los parámetros de copy trading'
+                  : 'Configura los parametros de copy trading'
                 }
               </p>
             </div>
@@ -164,8 +165,8 @@ const CombinedCopyTradingModal = ({
             <div className="space-y-4">
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-3 mb-2">
-                  <img 
-                    src={trader.avatar} 
+                  <img
+                    src={trader.avatar}
                     alt={trader.name}
                     className="w-12 h-12 rounded-full"
                   />
@@ -242,95 +243,153 @@ const CombinedCopyTradingModal = ({
                 </div>
               </div>
 
-              {/* Copy Configuration */}
-              <div className="space-y-4">
+              {/* Simplified Copy Configuration */}
+              <div className="space-y-5">
+                {/* Investment Amount */}
                 <div>
                   <label className="block text-white font-medium mb-2">
-                    Capital Asignado (USD)
+                    Monto de Inversion (USD) *
                   </label>
-                  <input
-                    type="number"
-                    value={formData.capitalAsignado}
-                    onChange={(e) => setFormData(prev => ({...prev, capitalAsignado: Number(e.target.value)}))}
-                    className="w-full bg-[#2b2b2b] border border-[#333] rounded-lg px-4 py-2 text-white focus:border-cyan-400 focus:outline-none"
-                    min="100"
-                    step="100"
-                  />
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      type="number"
+                      value={formData.montoInversion}
+                      onChange={(e) => setFormData(prev => ({...prev, montoInversion: Number(e.target.value)}))}
+                      className="w-full pl-10 pr-4 py-3 bg-[#2b2b2b] border border-[#333] rounded-lg text-white focus:border-cyan-400 focus:outline-none"
+                      min="100"
+                      step="100"
+                      placeholder="1000"
+                    />
+                  </div>
+                  <p className="text-gray-500 text-xs mt-1">Minimo: $100</p>
                 </div>
 
+                {/* Allocation Method */}
                 <div>
                   <label className="block text-white font-medium mb-2">
-                    Multiplicador de Lote
+                    Metodo de Asignacion
                   </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({...prev, metodoAsignacion: 'proporcional'}))}
+                      className={`p-3 rounded-lg border transition-colors text-sm ${
+                        formData.metodoAsignacion === 'proporcional'
+                          ? 'border-cyan-500 bg-cyan-500 bg-opacity-20 text-cyan-400'
+                          : 'border-[#333] bg-[#2b2b2b] text-gray-300 hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="font-medium">Proporcional</div>
+                      <div className="text-xs text-gray-400 mt-1">Ajusta segun balance</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({...prev, metodoAsignacion: 'fijo'}))}
+                      className={`p-3 rounded-lg border transition-colors text-sm ${
+                        formData.metodoAsignacion === 'fijo'
+                          ? 'border-cyan-500 bg-cyan-500 bg-opacity-20 text-cyan-400'
+                          : 'border-[#333] bg-[#2b2b2b] text-gray-300 hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="font-medium">Monto Fijo</div>
+                      <div className="text-xs text-gray-400 mt-1">Mismo lote siempre</div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Copy Stop Loss Slider */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-white font-medium">
+                      Copy Stop Loss
+                    </label>
+                    <span className="text-cyan-400 font-medium">{formData.copyStopLoss}%</span>
+                  </div>
                   <input
-                    type="number"
-                    value={formData.multiplicadorLote}
-                    onChange={(e) => setFormData(prev => ({...prev, multiplicadorLote: Number(e.target.value)}))}
-                    className="w-full bg-[#2b2b2b] border border-[#333] rounded-lg px-4 py-2 text-white focus:border-cyan-400 focus:outline-none"
-                    min="0.1"
-                    max="10"
-                    step="0.1"
+                    type="range"
+                    min="10"
+                    max="100"
+                    step="5"
+                    value={formData.copyStopLoss}
+                    onChange={(e) => setFormData(prev => ({...prev, copyStopLoss: Number(e.target.value)}))}
+                    className="w-full h-2 bg-[#333] rounded-lg appearance-none cursor-pointer accent-cyan-500"
                   />
-                  <p className="text-gray-400 text-sm mt-1">
-                    Factor de multiplicación para el tamaño de las operaciones
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>10%</span>
+                    <span>100%</span>
+                  </div>
+                  <p className="text-gray-500 text-xs mt-2">
+                    Detiene el copiado si tu cuenta pierde este porcentaje del monto invertido
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-white font-medium mb-2">
-                    Porcentaje de Riesgo (%)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.porcentajeRiesgo}
-                    onChange={(e) => setFormData(prev => ({...prev, porcentajeRiesgo: Number(e.target.value)}))}
-                    className="w-full bg-[#2b2b2b] border border-[#333] rounded-lg px-4 py-2 text-white focus:border-cyan-400 focus:outline-none"
-                    min="1"
-                    max="20"
-                    step="1"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-white font-medium mb-2">
-                      Límite de Pérdida (USD)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.limitePerdida}
-                      onChange={(e) => setFormData(prev => ({...prev, limitePerdida: Number(e.target.value)}))}
-                      className="w-full bg-[#2b2b2b] border border-[#333] rounded-lg px-4 py-2 text-white focus:border-cyan-400 focus:outline-none"
-                      min="0"
-                      step="100"
+                {/* Advanced Settings Collapsible */}
+                <div className="border border-[#333] rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="w-full flex items-center justify-between p-4 bg-[#2b2b2b] hover:bg-[#333] transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Settings size={16} className="text-gray-400" />
+                      <span className="text-sm text-gray-300">Configuracion Avanzada</span>
+                    </div>
+                    <ChevronDown
+                      size={16}
+                      className={`text-gray-400 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
                     />
-                  </div>
-                  <div>
-                    <label className="block text-white font-medium mb-2">
-                      Límite de Ganancia (USD)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.limiteGanancia}
-                      onChange={(e) => setFormData(prev => ({...prev, limiteGanancia: Number(e.target.value)}))}
-                      className="w-full bg-[#2b2b2b] border border-[#333] rounded-lg px-4 py-2 text-white focus:border-cyan-400 focus:outline-none"
-                      min="0"
-                      step="100"
-                    />
-                  </div>
-                </div>
+                  </button>
 
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="copiarTodas"
-                    checked={formData.copiarTodas}
-                    onChange={(e) => setFormData(prev => ({...prev, copiarTodas: e.target.checked}))}
-                    className="w-4 h-4 text-cyan-400 bg-[#2b2b2b] border-[#333] rounded focus:ring-cyan-400"
-                  />
-                  <label htmlFor="copiarTodas" className="text-white">
-                    Copiar todas las operaciones del trader
-                  </label>
+                  {showAdvanced && (
+                    <div className="p-4 bg-[#1C1C1C] space-y-4">
+                      {/* Lot Multiplier */}
+                      <div>
+                        <label className="block text-sm text-gray-300 mb-2">
+                          Multiplicador de Lote
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.multiplicadorLote}
+                          onChange={(e) => setFormData(prev => ({...prev, multiplicadorLote: Number(e.target.value)}))}
+                          className="w-full px-4 py-2 bg-[#2b2b2b] border border-[#333] rounded-lg text-white text-sm focus:border-cyan-400 focus:outline-none"
+                          min="0.1"
+                          max="10"
+                          step="0.1"
+                        />
+                        <p className="text-gray-500 text-xs mt-1">
+                          Factor de multiplicacion para el tamano de las operaciones
+                        </p>
+                      </div>
+
+                      {/* Copy SL/TP */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-300">Copiar Stop Loss del trader</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.copiarSL}
+                            onChange={(e) => setFormData(prev => ({...prev, copiarSL: e.target.checked}))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-[#333] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-300">Copiar Take Profit del trader</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.copiarTP}
+                            onChange={(e) => setFormData(prev => ({...prev, copiarTP: e.target.checked}))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-[#333] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                        </label>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

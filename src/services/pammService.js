@@ -368,6 +368,57 @@ export const createPammFund = async (fundData) => {
   }
 };
 
+/**
+ * Actualiza las preferencias de manejo de ganancias de una inversión.
+ * @param {string} investmentId - El ID de la inversión.
+ * @param {object} preferences - Las preferencias de ganancias.
+ * @param {string} preferences.profitHandling - Tipo de manejo: 'compound', 'withdraw', 'partial'
+ * @param {number} preferences.reinvestPercentage - Porcentaje a reinvertir (0-100)
+ * @returns {Promise<object>} La respuesta del servidor.
+ */
+export const updateProfitPreference = async (investmentId, preferences) => {
+  try {
+    const response = await logicApiClient.put(`/api/v1/pamm/investments/${investmentId}/profit-preference`, {
+      profit_handling: preferences.profitHandling,
+      reinvest_percentage: preferences.reinvestPercentage
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al actualizar preferencias de ganancias' };
+  }
+};
+
+/**
+ * Obtiene el historial de distribución de ganancias de una inversión.
+ * @param {string} investmentId - El ID de la inversión.
+ * @param {number} limit - Límite de registros a obtener.
+ * @returns {Promise<Array<object>>} El historial de distribuciones.
+ */
+export const getProfitHistory = async (investmentId, limit = 50) => {
+  try {
+    const response = await logicApiClient.get(`/api/v1/pamm/investments/${investmentId}/profit-history`, {
+      params: { limit }
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener historial de ganancias' };
+  }
+};
+
+/**
+ * Obtiene los detalles de una inversión específica.
+ * @param {string} investmentId - El ID de la inversión.
+ * @returns {Promise<object>} Los detalles de la inversión.
+ */
+export const getInvestmentDetails = async (investmentId) => {
+  try {
+    const response = await logicApiClient.get(`/api/v1/pamm/investments/${investmentId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: 'Error al obtener detalles de la inversión' };
+  }
+};
+
 // Mantener compatibilidad con nombres antiguos
 export const joinPamm = joinPammFund;
 export const leavePamm = leavePammFund; 

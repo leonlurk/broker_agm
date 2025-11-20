@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, Legend, CartesianGrid, LabelList, Tooltip } from 'recharts';
 import { useAccounts, ACCOUNT_CATEGORIES } from '../contexts/AccountsContext';
-import { Copy, Eye, EyeOff, Check, X, Settings, Menu, Filter, ArrowUpRight, Star, Search as SearchIcon } from 'lucide-react';
+import { Copy, Eye, EyeOff, Check, X, Settings, Menu, Filter, ArrowUpRight, Star, Search as SearchIcon, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
@@ -239,6 +239,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const [realTradingOperations, setRealTradingOperations] = useState(null);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
+
+  // State for refresh button with rate limiting
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState(0);
+  const REFRESH_COOLDOWN = 30000; // 30 seconds rate limit
 
   // State for new instrument filter
   const [showInstrumentDropdown, setShowInstrumentDropdown] = useState(false);
@@ -598,19 +603,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   }, [navigationParams?.accountId]); // Solo re-ejecutar si el accountId cambia específicamente
   
   const handleCreateAccount = () => {
-    if (userData?.kyc_status !== 'approved') {
-      toast.error(t('common:kyc.verificationRequired'), {
-        duration: 4000,
-        position: 'top-right',
-        style: {
-          background: '#1f2937',
-          color: '#fff',
-          border: '1px solid #dc2626'
-        },
-        icon: '⚠️'
-      });
-      return;
-    }
+    // Allow all users to navigate to account creation
+    // KYC restrictions are handled in the TradingChallenge component
+    // Users without KYC can create DEMO accounts only
     setSelectedOption && setSelectedOption("Nueva Cuenta");
   };
 
@@ -878,13 +873,65 @@ const loadAccountMetrics = useCallback(async (account) => {
   }
 }, []);
 
+  // Función para refrescar datos manualmente con rate limiting
+  const handleRefreshData = useCallback(async () => {
+    if (!selectedAccountId) return;
+
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastRefreshTime;
+
+    // Check rate limit
+    if (timeSinceLastRefresh < REFRESH_COOLDOWN) {
+      const remainingSeconds = Math.ceil((REFRESH_COOLDOWN - timeSinceLastRefresh) / 1000);
+      toast.error(`Espera ${remainingSeconds} segundos antes de actualizar de nuevo`);
+      return;
+    }
+
+    const selectedAccount = getAllAccounts().find(acc => acc.id === selectedAccountId);
+    if (!selectedAccount || !selectedAccount.account_number) return;
+
+    setIsRefreshing(true);
+    setLastRefreshTime(now);
+
+    try {
+      // Clear cache for this account to force fresh data
+      accountMetricsOptimized.clearCache(selectedAccount.account_number);
+
+      // Reset loading ref to allow reload
+      loadingRef.current = false;
+      lastLoadTimeRef.current = 0;
+
+      // Reload data
+      await loadAccountMetrics(selectedAccount);
+
+      toast.success('Datos actualizados correctamente');
+    } catch (error) {
+      console.error('[TradingAccounts] Error refreshing data:', error);
+      toast.error('Error al actualizar datos');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [selectedAccountId, lastRefreshTime, getAllAccounts, loadAccountMetrics]);
+
   // useEffect para cargar datos reales de MT5 y suscribirse a actualizaciones en tiempo real
   useEffect(() => {
     if (!selectedAccountId) return;
-    
+
     const selectedAccount = getAllAccounts().find(acc => acc.id === selectedAccountId);
     if (!selectedAccount || !selectedAccount.account_number) return;
-    
+
+    // Reset loading states when switching accounts to prevent stale guards
+    if (lastLoadedAccountRef.current !== selectedAccount.account_number) {
+      loadingRef.current = false;
+      lastLoadTimeRef.current = 0;
+      // Clear previous account data to show loading state
+      setRealMetrics(null);
+      setRealStatistics(null);
+      setRealInstruments(null);
+      setRealHistory(null);
+      setRealBalanceHistory(null);
+    }
+
     // Cargar datos inmediatamente
     loadAccountMetrics(selectedAccount);
 
@@ -2182,14 +2229,12 @@ const loadAccountMetrics = useCallback(async (account) => {
           <h1 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">{t('accounts.title')}</h1>
           
           {/* Create Account Button */}
-          <button 
+          <button
             onClick={handleCreateAccount}
-            className={`relative w-full py-3 px-4 bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white rounded-lg transition flex items-center justify-center mb-4 sm:mb-6 text-sm sm:text-base ${
-              userData?.kyc_status !== 'approved' ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
-            }`}
+            className="relative w-full py-3 px-4 bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white rounded-lg transition flex items-center justify-center mb-4 sm:mb-6 text-sm sm:text-base hover:opacity-90"
           >
             {userData?.kyc_status !== 'approved' && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center" title="Only Demo accounts available without KYC">
                 <span className="text-black text-xs font-bold">!</span>
               </span>
             )}
@@ -2440,14 +2485,12 @@ const loadAccountMetrics = useCallback(async (account) => {
           <h1 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">{t('accounts.title')}</h1>
           
           {/* Create Account Button */}
-          <button 
+          <button
             onClick={handleCreateAccount}
-            className={`relative w-full py-3 px-4 bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white rounded-lg transition flex items-center justify-center mb-4 sm:mb-6 text-sm sm:text-base ${
-              userData?.kyc_status !== 'approved' ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
-            }`}
+            className="relative w-full py-3 px-4 bg-gradient-to-br from-[#0891b2] to-[#0c4a6e] text-white rounded-lg transition flex items-center justify-center mb-4 sm:mb-6 text-sm sm:text-base hover:opacity-90"
           >
             {userData?.kyc_status !== 'approved' && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center" title="Only Demo accounts available without KYC">
                 <span className="text-black text-xs font-bold">!</span>
               </span>
             )}
@@ -2551,14 +2594,39 @@ const loadAccountMetrics = useCallback(async (account) => {
                 <div className="mb-3 sm:mb-4">
                   <div className="flex justify-between items-start mb-2">
                     <h2 className="text-lg sm:text-xl font-semibold">{t('accounts.details.title')}</h2>
-                    <CustomTooltip content="Datos actualizados en tiempo real vía WebSocket">
-                      <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-md border border-gray-700/50 cursor-help">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <p className="text-gray-300 text-xs font-medium">
-                          Tiempo Real
-                        </p>
-                      </div>
-                    </CustomTooltip>
+                    <div className="flex items-center gap-2">
+                      {/* Refresh Button */}
+                      <CustomTooltip content={isRefreshing ? "Actualizando datos..." : "Actualizar datos (máx. 1 vez cada 30s)"}>
+                        <button
+                          onClick={handleRefreshData}
+                          disabled={isRefreshing || (Date.now() - lastRefreshTime < REFRESH_COOLDOWN)}
+                          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border transition-all ${
+                            isRefreshing
+                              ? 'bg-cyan-500/20 border-cyan-500/50 cursor-wait'
+                              : Date.now() - lastRefreshTime < REFRESH_COOLDOWN
+                              ? 'bg-gray-800/30 border-gray-700/30 cursor-not-allowed opacity-50'
+                              : 'bg-gray-800/50 border-gray-700/50 hover:bg-gray-700/50 hover:border-gray-600/50 cursor-pointer'
+                          }`}
+                        >
+                          <RefreshCw
+                            size={12}
+                            className={`text-gray-300 ${isRefreshing ? 'animate-spin' : ''}`}
+                          />
+                          <p className="text-gray-300 text-xs font-medium">
+                            {isRefreshing ? 'Actualizando...' : 'Actualizar'}
+                          </p>
+                        </button>
+                      </CustomTooltip>
+                      {/* Real-time indicator */}
+                      <CustomTooltip content="Datos actualizados en tiempo real vía WebSocket">
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-md border border-gray-700/50 cursor-help">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <p className="text-gray-300 text-xs font-medium">
+                            Tiempo Real
+                          </p>
+                        </div>
+                      </CustomTooltip>
+                    </div>
                   </div>
                   <p className="text-gray-400 text-xs sm:text-sm">{t('accounts.details.subtitle')}</p>
                 </div>

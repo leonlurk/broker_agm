@@ -75,12 +75,20 @@ export default function TradingChallengeUI() {
     setIsLoading(true);
 
     try {
+      // Determine if this is a tournament account
+      const isTournament = accountType === 'Torneo';
+      // Tournament accounts are created as DEMO type with special flag
+      const actualAccountType = isTournament ? 'DEMO' : accountType;
+
       const accountData = {
         accountName: accountName.trim(),
-        accountType,
+        accountType: actualAccountType,
         accountTypeSelection,
         leverage,
-        ...(accountType === 'DEMO' && initialBalance && { initialBalance: parseFloat(initialBalance) })
+        // Include initial balance for DEMO and Tournament accounts
+        ...((actualAccountType === 'DEMO') && initialBalance && { initialBalance: parseFloat(initialBalance) }),
+        // Add tournament flag if this is a tournament account
+        ...(isTournament && { is_tournament_account: true })
       };
 
       const result = await createTradingAccount(currentUser.id, accountData);
@@ -303,13 +311,13 @@ export default function TradingChallengeUI() {
               </div>
               )}
               
-              {/* Account Type Toggle (DEMO/Real) */}
+              {/* Account Type Toggle (DEMO/Real/Torneo) */}
               <div className="mb-6 md:mb-8">
-                <div className="flex space-x-2 mb-4">
-                <button 
+                <div className="flex flex-wrap gap-2 mb-4">
+                <button
                     className={`px-6 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-base font-regular border focus:outline-none transition-colors ${
-                      accountType === 'DEMO' 
-                        ? 'border-cyan-500 bg-transparent text-white' 
+                      accountType === 'DEMO'
+                        ? 'border-cyan-500 bg-transparent text-white'
                         : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-gray-400'
                     }`}
                     onClick={() => setAccountType('DEMO')}
@@ -317,18 +325,49 @@ export default function TradingChallengeUI() {
                   >
                     DEMO
                 </button>
-                <button 
+                <button
                     className={`px-6 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-base font-regular border focus:outline-none transition-colors ${
-                      accountType === 'Real' 
-                        ? 'border-cyan-500 bg-transparent text-white' 
+                      accountType === 'Real'
+                        ? 'border-cyan-500 bg-transparent text-white'
+                        : !isKYCApproved
+                        ? 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-gray-500 opacity-50 cursor-not-allowed'
                         : 'border-gray-700 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-gray-400'
                     }`}
-                    onClick={() => setAccountType('Real')}
+                    onClick={() => {
+                      if (!isKYCApproved) {
+                        toast.error(t('accounts.creation.kycRequiredForReal') || 'KYC verification required for Real accounts');
+                        return;
+                      }
+                      setAccountType('Real');
+                    }}
                     disabled={isLoading}
+                    title={!isKYCApproved ? 'KYC verification required for Real accounts' : ''}
                   >
                     Real
+                    {!isKYCApproved && (
+                      <span className="ml-1 text-xs text-yellow-500">*</span>
+                    )}
                 </button>
+                {/* Tournament Account - Only visible when KYC is approved */}
+                {isKYCApproved && (
+                  <button
+                    className={`px-6 md:px-8 py-2 md:py-3 rounded-full text-sm md:text-base font-regular border focus:outline-none transition-colors ${
+                      accountType === 'Torneo'
+                        ? 'border-yellow-500 bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 text-yellow-400'
+                        : 'border-yellow-700/50 bg-gradient-to-br from-[#232323] to-[#2d2d2d] text-yellow-600 hover:text-yellow-500'
+                    }`}
+                    onClick={() => setAccountType('Torneo')}
+                    disabled={isLoading}
+                  >
+                    Torneo
+                  </button>
+                )}
                 </div>
+                {!isKYCApproved && (
+                  <p className="text-yellow-500 text-sm">
+                    * {t('accounts.creation.kycRequiredNote') || 'Complete KYC verification to create Real and Tournament accounts'}
+                  </p>
+                )}
               </div>
               
               {/* Account Name Input */}
@@ -373,8 +412,8 @@ export default function TradingChallengeUI() {
                 </div>
                   </div>
                   
-              {/* Initial Balance Input - Solo para cuentas DEMO */}
-              {accountType === 'DEMO' && (
+              {/* Initial Balance Input - For DEMO and Tournament accounts */}
+              {(accountType === 'DEMO' || accountType === 'Torneo') && (
                 <div className="mb-6 md:mb-8">
                   <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">{t('accounts.fields.initialBalance')}</h3>
                   <input
@@ -385,10 +424,16 @@ export default function TradingChallengeUI() {
                     min="0"
                     step="100"
                     disabled={isLoading}
-                    className="w-full bg-transparent border border-gray-700 rounded-lg px-4 py-3 text-base md:text-lg focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-50"
+                    className={`w-full bg-transparent border rounded-lg px-4 py-3 text-base md:text-lg focus:outline-none transition-colors disabled:opacity-50 ${
+                      accountType === 'Torneo'
+                        ? 'border-yellow-700/50 focus:border-yellow-500'
+                        : 'border-gray-700 focus:border-cyan-500'
+                    }`}
                   />
                   <p className="text-gray-400 text-sm mt-2">
-                    {t('accounts.creation.initialBalanceDescription')}
+                    {accountType === 'Torneo'
+                      ? (t('accounts.creation.tournamentBalanceDescription') || 'Initial balance for your tournament account')
+                      : t('accounts.creation.initialBalanceDescription')}
                   </p>
                 </div>
               )}

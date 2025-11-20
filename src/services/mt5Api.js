@@ -127,7 +127,9 @@ export const createMT5Account = async (userId, accountData) => {
       leverage: parseInt(accountData.leverage?.split(':')[1]) || parseInt(accountData.leverage) || 100,
       account_type: accountData.accountType?.toLowerCase() === 'demo' ? 'demo' : 'real',
       // Set initial deposit - only add deposit if specifically provided
-      ...(accountData.initialBalance && { deposit: parseFloat(accountData.initialBalance) })
+      ...(accountData.initialBalance && { deposit: parseFloat(accountData.initialBalance) }),
+      // Pass tournament account flag if present
+      ...(accountData.is_tournament_account && { is_tournament_account: true })
     };
 
     logger.info('[MT5 API] Request data', requestData);

@@ -313,28 +313,15 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                     <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : 'my-4'}`}></div>
                     <button
                         onClick={() => {
-                            if (!user || user?.kyc_status !== 'approved') {
-                                toast.error(t('common:kyc.verificationRequired'), {
-                                    duration: 4000,
-                                    position: 'top-right',
-                                    style: {
-                                        background: '#1f2937',
-                                        color: '#fff',
-                                        border: '1px solid #dc2626'
-                                    },
-                                    icon: '⚠️'
-                                });
-                            } else {
-                                handleNavigation("Nueva Cuenta");
-                            }
+                            // Allow navigation to account creation for all users
+                            // KYC restriction will be handled in the account creation form itself
+                            handleNavigation("Nueva Cuenta");
                         }}
                         className={`flex items-center justify-center space-x-2 rounded-md w-full transition relative
-                                   ${!user || user?.kyc_status !== 'approved' 
-                                     ? 'bg-gray-600 opacity-50 cursor-not-allowed' 
-                                     : 'bg-gradient-to-r from-[#0F7490] to-[#0A5A72] hover:opacity-90'}
+                                   bg-gradient-to-r from-[#0F7490] to-[#0A5A72] hover:opacity-90
                                    ${isMobile ? 'py-2.5 px-3 text-base' : 'py-4 px-4 text-lg'}`}
                         style={{ outline: 'none' }}
-                        title={!user ? 'Cargando información del usuario...' : user?.kyc_status !== 'approved' ? 'Completa tu verificación KYC para crear cuentas MT5' : ''}
+                        title={!user ? 'Cargando información del usuario...' : user?.kyc_status !== 'approved' ? 'Solo puedes crear cuentas Demo sin KYC aprobado' : ''}
                     >
                         {(!user || user?.kyc_status !== 'approved') && (
                             <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">

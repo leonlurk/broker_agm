@@ -9,6 +9,7 @@ import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { useTranslation } from 'react-i18next';
 import { getMasterTraders, getMySubscriptions, getInvestorPortfolio, followMaster, unfollowMaster, submitTraderComment, getTraderComments } from '../services/copytradingService';
 import toast from 'react-hot-toast';
+import EquityStopAlert from './EquityStopAlert';
 
 // Estados iniciales vacíos para datos dinámicos
 const initialPortfolioData = {
@@ -659,6 +660,31 @@ const Inversor = () => {
             </div>
           </div>
         </div>
+
+        {/* Equity Stop Alert Banner */}
+        <EquityStopAlert
+          subscriptionType="copy"
+          onActionComplete={(action) => {
+            // Reload subscriptions after action
+            if (action === 'resumed' || action === 'cancelled') {
+              getMySubscriptions().then(subsData => {
+                const formattedSubs = subsData.map(sub => ({
+                  id: sub.id,
+                  master_id: sub.master_user_id || sub.master_id,
+                  master_user_id: sub.master_user_id || sub.master_id,
+                  name: sub.master_name || sub.master?.name || sub.master?.username || sub.master_profile?.display_name || sub.master_email || 'Unknown Trader',
+                  avatar: sub.master?.photo_url || sub.master_profile?.photo_url || '/Avatar1.png',
+                  personalPnL: sub.pnl || 0,
+                  personalPnLPercentage: sub.pnl_percentage || 0,
+                  assignedCapital: sub.assigned_capital || sub.master_config?.min_capital || 0,
+                  status: sub.status || 'active',
+                  master_config: sub.master_config || {}
+                }));
+                setSubscriptions(formattedSubs);
+              });
+            }
+          }}
+        />
 
         {/* Widget 1: Resumen de Portafolio */}
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">

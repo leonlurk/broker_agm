@@ -5,6 +5,7 @@ import { supabase } from '../supabase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { configureMaster } from '../services/copytradingService';
+import toast from 'react-hot-toast';
 
 const ConfigurarGestorModal = ({ isOpen, onClose, onConfirm }) => {
   const { getAllAccounts } = useAccounts();
@@ -135,10 +136,10 @@ const ConfigurarGestorModal = ({ isOpen, onClose, onConfirm }) => {
         try {
           const result = await configureMaster(formData);
           console.log('Master trader configured successfully:', result);
-          alert(t('copyTrading.manager.successMessage') || '¡Master trader configurado exitosamente!');
+          toast.success(t('copyTrading.manager.successMessage') || 'Master trader configurado exitosamente!');
         } catch (backendError) {
           console.error('Error configuring master trader:', backendError);
-          alert(t('copyTrading.errors.configError') + ': ' + (backendError.error || backendError.message || 'Error desconocido'));
+          toast.error(t('copyTrading.errors.configError') + ': ' + (backendError.error || backendError.message || 'Error desconocido'));
           return;
         }
       } else {
@@ -149,7 +150,7 @@ const ConfigurarGestorModal = ({ isOpen, onClose, onConfirm }) => {
       onClose();
     } catch (error) {
       console.error('Error in handleSubmit:', error);
-      alert(t('copyTrading.errors.saveError') + ': ' + error.message);
+      toast.error(t('copyTrading.errors.saveError') + ': ' + error.message);
     } finally {
       setIsSubmitting(false);
     }

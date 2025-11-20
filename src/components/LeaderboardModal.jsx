@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import toast from 'react-hot-toast';
-import { 
-  getLeaderboardData, 
-  formatTraderName, 
-  getCountryFlag, 
-  formatPnL, 
-  formatPnLPercentage, 
+import {
+  getLeaderboardData,
+  formatTraderName,
+  getCountryFlag,
+  formatPnL,
+  formatPnLPercentage,
   getMedalEmoji,
   formatLastUpdated,
   formatBalanceHistoryForChart
 } from '../services/leaderboardService';
+import EnhancedTraderProfileModal from './EnhancedTraderProfileModal';
 
 // Modal del Leaderboard
 const LeaderboardModal = ({ isOpen, onClose }) => {
@@ -21,6 +22,14 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
   const [totalParticipants, setTotalParticipants] = useState(0);
   const [competitionPeriod, setCompetitionPeriod] = useState('');
   const [selectedTraderIndex, setSelectedTraderIndex] = useState(0);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const tradersPerPage = 10;
+
+  // Trader profile modal state
+  const [showTraderProfile, setShowTraderProfile] = useState(false);
+  const [selectedTraderForProfile, setSelectedTraderForProfile] = useState(null);
   
   // Efecto para cargar datos cuando se abre el modal o cambia el tab
   useEffect(() => {
@@ -33,13 +42,25 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
-      const result = await getLeaderboardData(activeTab, 10);
+      // Fetch more traders for pagination (100 max)
+      const result = await getLeaderboardData(activeTab, 100);
 
       if (result.success) {
-        setLeaderboardData(result.data.leaderboard || []);
-        setTotalParticipants(result.data.total_participants || 0);
+        // Filter for tournament accounts only (if the field exists)
+        // Prepare for is_tournament_account filter - currently shows all
+        const allTraders = result.data.leaderboard || [];
+        const tournamentTraders = allTraders.filter(trader =>
+          // When is_tournament_account column is added, use:
+          // trader.is_tournament_account === true
+          // For now, show all traders
+          true
+        );
+
+        setLeaderboardData(tournamentTraders);
+        setTotalParticipants(result.data.total_participants || tournamentTraders.length);
         setCompetitionPeriod(result.data.competition_period || '');
         setLastUpdated(result.data.last_updated);
+        setCurrentPage(1); // Reset to first page on new data
       } else {
         toast.error(result.error || 'Error al cargar el leaderboard');
         setLeaderboardData([]);
@@ -53,9 +74,28 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
     }
   };
 
-  // Separar top 3 del resto
-  const topTraders = leaderboardData.slice(0, 3);
-  const tableData = leaderboardData.slice(3, 10);
+  // Pagination calculations
+  const totalPages = Math.ceil(leaderboardData.length / tradersPerPage);
+  const startIndex = (currentPage - 1) * tradersPerPage;
+  const endIndex = startIndex + tradersPerPage;
+  const currentPageData = leaderboardData.slice(startIndex, endIndex);
+
+  // Handle page changes
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  // Handle trader profile click
+  const handleTraderClick = (trader) => {
+    setSelectedTraderForProfile(trader);
+    setShowTraderProfile(true);
+  };
+
+  // Separar top 3 del resto (only on first page)
+  const topTraders = currentPage === 1 ? currentPageData.slice(0, 3) : [];
+  const tableData = currentPage === 1 ? currentPageData.slice(3) : currentPageData;
   
   // Datos para el gráfico del trader seleccionado
   const selectedTrader = leaderboardData[selectedTraderIndex];
@@ -221,16 +261,18 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
               {!loading && leaderboardData.length > 0 && (
               
               <>                {/* Top 3 traders cards */}
+                {currentPage === 1 && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
                   {topTraders.map((trader, idx) => {
                     const pnlFormatted = formatPnL(trader.pnl);
                     const pnlPercentage = formatPnLPercentage(trader.pnl_percentage);
                     const isSelected = selectedTraderIndex === idx;
-                    
+
                     return (
                       <button
                         key={trader.rank}
                         onClick={() => setSelectedTraderIndex(idx)}
+                        onDoubleClick={() => handleTraderClick(trader)}
                         className={`bg-gradient-to-br rounded-xl p-4 relative overflow-hidden transition-all duration-300 hover:scale-105 cursor-pointer group ${
                           trader.rank === 1 ? 'from-yellow-900/30 to-amber-900/30 border-2 border-yellow-500/50 shadow-lg shadow-yellow-500/20' :
                           trader.rank === 2 ? 'from-gray-700/30 to-gray-800/30 border-2 border-gray-400/50 shadow-lg shadow-gray-400/20' :
@@ -238,6 +280,7 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
                         } ${
                           isSelected ? 'ring-2 ring-cyan-500 ring-offset-2 ring-offset-[#232323]' : ''
                         }`}
+                        title="Double-click to view full profile"
                       >
                         <div className="absolute top-0 right-0 text-6xl opacity-10 transform translate-x-4 -translate-y-2">
                           {getMedalEmoji(trader.rank)}
@@ -274,6 +317,14 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
                     );
                   })}
                 </div>
+                )}
+
+                {/* Page indicator for non-first pages */}
+                {currentPage > 1 && (
+                  <div className="mb-4 text-sm text-gray-400">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                )}
               
                 {/* Tabla de clasificación */}
                 <div className="overflow-x-auto">
@@ -289,18 +340,20 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
                     <tbody>
                       {tableData.map((row, idx) => {
                         const pnlFormatted = formatPnL(row.pnl);
-                        const traderIdx = idx + 3;
+                        const traderIdx = currentPage === 1 ? idx + 3 : startIndex + idx;
                         const isSelected = selectedTraderIndex === traderIdx;
-                        
+
                         return (
-                          <tr 
-                            key={row.rank} 
+                          <tr
+                            key={row.rank}
                             onClick={() => setSelectedTraderIndex(traderIdx)}
+                            onDoubleClick={() => handleTraderClick(row)}
                             className={`border-b border-gray-800/50 text-sm transition-all duration-200 cursor-pointer ${
-                              isSelected 
-                                ? 'bg-cyan-900/20 border-l-4 border-l-cyan-500' 
+                              isSelected
+                                ? 'bg-cyan-900/20 border-l-4 border-l-cyan-500'
                                 : 'hover:bg-gray-800/30'
                             }`}
+                            title="Double-click to view full profile"
                           >
                             <td className="py-4 px-2">
                               <div className="flex items-center gap-2">
@@ -335,6 +388,73 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-gray-800/50">
+                    <div className="text-sm text-gray-400">
+                      Showing {startIndex + 1}-{Math.min(endIndex, leaderboardData.length)} of {leaderboardData.length} traders
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          currentPage === 1
+                            ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed'
+                            : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => goToPage(pageNum)}
+                              className={`w-8 h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                currentPage === pageNum
+                                  ? 'bg-cyan-600 text-white'
+                                  : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          currentPage === totalPages
+                            ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed'
+                            : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </>
               )}
             </div>
@@ -522,6 +642,16 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
           </div>
         </div>
       </div>
+
+      {/* Enhanced Trader Profile Modal */}
+      <EnhancedTraderProfileModal
+        isOpen={showTraderProfile}
+        onClose={() => {
+          setShowTraderProfile(false);
+          setSelectedTraderForProfile(null);
+        }}
+        trader={selectedTraderForProfile}
+      />
     </div>
   );
 };

@@ -325,6 +325,39 @@ export const calculateMetrics = (dashboardData) => {
   };
 };
 
+/**
+ * Clears all caches for a specific account or all accounts
+ * @param {string} accountNumber - Optional account number to clear specific cache
+ */
+export const clearCache = (accountNumber = null) => {
+  if (accountNumber) {
+    // Clear specific account from all caches
+    if (getDashboardData._cache) {
+      for (const key of getDashboardData._cache.keys()) {
+        if (key.startsWith(`${accountNumber}:`)) {
+          getDashboardData._cache.delete(key);
+        }
+      }
+    }
+    if (getBalanceHistory._cache) {
+      for (const key of getBalanceHistory._cache.keys()) {
+        if (key.startsWith(`${accountNumber}:`)) {
+          getBalanceHistory._cache.delete(key);
+        }
+      }
+    }
+  } else {
+    // Clear all caches
+    if (getDashboardData._cache) {
+      getDashboardData._cache.clear();
+    }
+    if (getBalanceHistory._cache) {
+      getBalanceHistory._cache.clear();
+    }
+  }
+  logger.info('[API] Cache cleared', { accountNumber: accountNumber || 'all' });
+};
+
 export default {
   getDashboardData,
   getAccountKPIs,
@@ -332,5 +365,6 @@ export default {
   getOperationsHistory,
   syncAccount,
   getAccountInfo,
-  calculateMetrics
+  calculateMetrics,
+  clearCache
 };
