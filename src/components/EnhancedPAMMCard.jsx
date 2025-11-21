@@ -404,3 +404,4 @@ const EnhancedPAMMCard = ({
 };
 
 export default EnhancedPAMMCard;
+export { PerformanceSparkline, ReturnCircle, KpiBadge, RiskIndicator };

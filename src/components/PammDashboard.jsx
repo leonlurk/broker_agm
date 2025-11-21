@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, User, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, User, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, BarChart2, Activity, History, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus, Info } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
 import toast from 'react-hot-toast';
 import { getPammFunds, getMyFunds, leavePammFund, joinPammFund, getFundDetails, updateProfitPreference, getProfitHistory } from '../services/pammService';
@@ -11,7 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { followMaster } from '../services/copytradingService';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { MasterAccountBadge, PerformanceStatusIndicator, MasterAccountSummaryCard } from './StatusIndicators';
-import EnhancedPAMMCard from './EnhancedPAMMCard';
+import EnhancedPAMMCard, { PerformanceSparkline, ReturnCircle, KpiBadge, RiskIndicator } from './EnhancedPAMMCard';
 import EquityStopAlert from './EquityStopAlert';
 
 const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
@@ -1508,27 +1508,51 @@ const PammFundProfileView = ({
     const historicalData = fund.historicalData || [];
     
     return (
-        <div className="p-4 md:p-6 bg-[#232323] text-white rounded-3xl border border-[#333] space-y-6">
-            {/* Header */}
+        <div className="p-4 md:p-6 bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] text-white rounded-3xl border border-[#333]/50 space-y-6 backdrop-blur-sm">
+            {/* Header Mejorado */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={onBackToDashboard}
-                        className="p-2 bg-[#333] hover:bg-[#444] rounded-lg transition-colors"
+                        className="p-2.5 bg-[#333]/50 hover:bg-[#444]/70 rounded-xl transition-all duration-300 hover:scale-105 backdrop-blur-sm border border-[#444]/30"
                     >
                         <ArrowUp className="rotate-[-90deg]" size={20} />
                     </button>
+
+                    {/* Avatar con gradiente y glow */}
+                    <div className="relative">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-500 to-purple-600 p-0.5 shadow-lg shadow-cyan-500/20">
+                            <div className="w-full h-full rounded-2xl bg-[#1a1a2e] flex items-center justify-center">
+                                <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                                    {fund.name?.charAt(0) || 'P'}
+                                </span>
+                            </div>
+                        </div>
+                        {/* Indicador de estado */}
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-green-500 border-2 border-[#1a1a2e] flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+                        </div>
+                    </div>
+
                     <div>
-                        <h1 className="text-2xl font-semibold">{fund.name}</h1>
-                        <p className="text-gray-400">{t('pamm.fund.manager')}: {typeof fund.manager === 'string' ? fund.manager : (fund.manager?.name || fund.manager?.display_name || 'Manager')}</p>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">{fund.name}</h1>
+                            {/* Badge de tipo de fondo mejorado */}
+                            <span className="px-3 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 border border-cyan-500/30 backdrop-blur-sm">
+                                {fund.strategy || 'PAMM'}
+                            </span>
+                        </div>
+                        <p className="text-gray-400 mt-1">{t('pamm.fund.manager')}: {typeof fund.manager === 'string' ? fund.manager : (fund.manager?.name || fund.manager?.display_name || 'Manager')}</p>
                     </div>
                 </div>
+
+                {/* Botón de invertir mejorado */}
                 <button
                     onClick={() => onInvestInFund(fund)}
-                    className={`py-2 px-6 rounded-lg transition-all ${
+                    className={`py-3 px-8 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
                         investedFunds.has(fund.id)
-                            ? 'bg-green-600 text-white hover:bg-green-700'
-                            : 'bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white hover:opacity-90'
+                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/30'
+                            : 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500 shadow-lg shadow-cyan-500/30'
                     }`}
                     disabled={investedFunds.has(fund.id)}
                 >
@@ -1536,57 +1560,87 @@ const PammFundProfileView = ({
                 </button>
             </div>
             
-            {/* Fund Overview */}
+            {/* Fund Overview - KPIs con glassmorphism */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-4 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
+                {/* AUM Card */}
+                <div className="group bg-gradient-to-br from-[#232323]/80 to-[#2b2b2b]/60 p-5 rounded-2xl border border-[#333]/50 backdrop-blur-sm hover:border-cyan-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-cyan-500/10">
+                    <div className="flex items-center justify-between mb-3">
                         <span className="text-sm text-gray-400">{t('pamm.manager.totalAUM')}</span>
-                        <DollarSign className="text-cyan-500" size={16} />
+                        <div className="p-2 rounded-lg bg-cyan-500/10 group-hover:bg-cyan-500/20 transition-colors">
+                            <DollarSign className="text-cyan-400" size={16} />
+                        </div>
                     </div>
-                    <div className="text-xl font-bold">{formatAUM(fund.aum)}</div>
+                    <div className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">{formatAUM(fund.aum)}</div>
+                    <div className="mt-3 h-10">
+                        <PerformanceSparkline data={historicalData.map((d, i) => ({ day: i, value: d.value / 1000 }))} color="#22d3ee" />
+                    </div>
                 </div>
-                
-                <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-4 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
+
+                {/* Total Return Card con ReturnCircle */}
+                <div className="group bg-gradient-to-br from-[#232323]/80 to-[#2b2b2b]/60 p-5 rounded-2xl border border-[#333]/50 backdrop-blur-sm hover:border-green-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-green-500/10">
+                    <div className="flex items-center justify-between mb-3">
                         <span className="text-sm text-gray-400">{t('pamm.manager.totalReturn')}</span>
-                        <TrendingUp className="text-green-500" size={16} />
+                        <div className="p-2 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                            <TrendingUp className="text-green-400" size={16} />
+                        </div>
                     </div>
-                    <div className="text-xl font-bold text-green-500">{formatPercentage(fund.totalReturn)}</div>
+                    <div className="flex items-center justify-between">
+                        <div className="text-2xl font-bold text-green-400">{formatPercentage(fund.totalReturn)}</div>
+                        <ReturnCircle percentage={fund.totalReturn || 0} size="large" />
+                    </div>
                 </div>
-                
-                <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-4 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
+
+                {/* Investors Card */}
+                <div className="group bg-gradient-to-br from-[#232323]/80 to-[#2b2b2b]/60 p-5 rounded-2xl border border-[#333]/50 backdrop-blur-sm hover:border-blue-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-blue-500/10">
+                    <div className="flex items-center justify-between mb-3">
                         <span className="text-sm text-gray-400">{t('pamm.manager.investors')}</span>
-                        <Users className="text-blue-500" size={16} />
+                        <div className="p-2 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                            <Users className="text-blue-400" size={16} />
+                        </div>
                     </div>
-                    <div className="text-xl font-bold">{fund.investors}</div>
+                    <div className="text-2xl font-bold text-blue-400">{fund.investors}</div>
+                    <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
+                        <TrendingUp size={12} className="text-green-400" />
+                        <span className="text-green-400">+5</span>
+                        <span>este mes</span>
+                    </div>
                 </div>
-                
-                <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-4 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
+
+                {/* Risk Level Card con RiskIndicator */}
+                <div className="group bg-gradient-to-br from-[#232323]/80 to-[#2b2b2b]/60 p-5 rounded-2xl border border-[#333]/50 backdrop-blur-sm hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/10">
+                    <div className="flex items-center justify-between mb-3">
                         <span className="text-sm text-gray-400">{t('pamm.explorer.riskLevel')}</span>
-                        <Shield className={getRiskColor(fund.riskLevel).replace('text-', '')} size={16} />
+                        <div className="p-2 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                            <Shield className="text-purple-400" size={16} />
+                        </div>
                     </div>
-                    <div className={`text-xl font-bold ${getRiskColor(fund.riskLevel)}`}>{fund.riskLevel}</div>
+                    <div className="flex items-center justify-between">
+                        <div className={`text-xl font-bold ${getRiskColor(fund.riskLevel)}`}>{fund.riskLevel}</div>
+                        <RiskIndicator level={fund.riskLevel} />
+                    </div>
                 </div>
             </div>
             
-            {/* Tabs */}
-            <div className="flex border-b border-[#333] overflow-x-auto">
+            {/* Tabs mejoradas */}
+            <div className="flex border-b border-[#333]/50 overflow-x-auto bg-[#232323]/30 rounded-t-xl backdrop-blur-sm">
                 {['performance', 'strategy', 'fees'].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`py-3 px-6 whitespace-nowrap ${
+                        className={`relative py-4 px-8 whitespace-nowrap font-medium transition-all duration-300 ${
                             activeTab === tab
-                                ? 'text-cyan-400 border-b-2 border-cyan-400'
-                                : 'text-gray-400 hover:text-white'
+                                ? 'text-cyan-400'
+                                : 'text-gray-400 hover:text-white hover:bg-[#333]/30'
                         }`}
                     >
-                        {tab === 'performance' ? t('pamm.investor.performance') : 
-                         tab === 'strategy' ? t('pamm.investor.strategy') : 
+                        {tab === 'performance' ? t('pamm.investor.performance') :
+                         tab === 'strategy' ? t('pamm.investor.strategy') :
                          tab === 'fees' ? t('pamm.investor.fees') :
                          'Mensajes'}
+                        {/* Indicador activo animado */}
+                        {activeTab === tab && (
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full" />
+                        )}
                     </button>
                 ))}
             </div>
@@ -1596,56 +1650,74 @@ const PammFundProfileView = ({
                 {activeTab === 'performance' && (
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl">
-                                <h3 className="text-lg font-semibold mb-4">{t('pamm.investor.performanceMetrics')}</h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between">
+                            {/* Performance Metrics Card */}
+                            <div className="group bg-gradient-to-br from-[#232323]/80 to-[#2b2b2b]/60 p-6 rounded-2xl border border-[#333]/50 backdrop-blur-sm hover:border-cyan-500/30 transition-all duration-300">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <Activity className="text-cyan-400" size={18} />
+                                    {t('pamm.investor.performanceMetrics')}
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-[#333]/30 transition-colors">
                                         <span className="text-gray-400">{t('pamm.investor.monthlyReturn')}</span>
-                                        <span className="font-medium text-green-500">{formatPercentage(fund.monthlyReturn)}</span>
+                                        <div className="flex items-center gap-2">
+                                            <TrendingUp size={14} className="text-green-400" />
+                                            <span className="font-medium text-green-400">{formatPercentage(fund.monthlyReturn)}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between">
+                                    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-[#333]/30 transition-colors">
                                         <span className="text-gray-400">{t('pamm.investor.maxDrawdownLabel')}</span>
-                                        <span className="font-medium text-red-400">{fund.maxDrawdown}%</span>
+                                        <div className="flex items-center gap-2">
+                                            <TrendingDown size={14} className="text-red-400" />
+                                            <span className="font-medium text-red-400">{fund.maxDrawdown}%</span>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between">
+                                    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-[#333]/30 transition-colors">
                                         <span className="text-gray-400">{t('pamm.investor.sharpeRatio')}</span>
-                                        <span className="font-medium">{fund.sharpeRatio}</span>
+                                        <span className="font-medium text-cyan-400">{fund.sharpeRatio}</span>
                                     </div>
-                                    <div className="flex justify-between">
+                                    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-[#333]/30 transition-colors">
                                         <span className="text-gray-400">{t('pamm.explorer.successRate')}</span>
                                         <span className="font-medium text-green-400">{fund.winRate}%</span>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl">
-                                <h3 className="text-lg font-semibold mb-4">{t('pamm.investor.fundInformation')}</h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between">
+
+                            {/* Fund Information Card */}
+                            <div className="group bg-gradient-to-br from-[#232323]/80 to-[#2b2b2b]/60 p-6 rounded-2xl border border-[#333]/50 backdrop-blur-sm hover:border-blue-500/30 transition-all duration-300">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <Info className="text-blue-400" size={18} />
+                                    {t('pamm.investor.fundInformation')}
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-[#333]/30 transition-colors">
                                         <span className="text-gray-400">{t('pamm.investor.startDate')}</span>
                                         <span className="font-medium">{fund.since}</span>
                                     </div>
-                                    <div className="flex justify-between">
+                                    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-[#333]/30 transition-colors">
                                         <span className="text-gray-400">{t('pamm.investor.lockupPeriod')}</span>
-                                        <span className="font-medium">{fund.lockupDays} días</span>
+                                        <span className="font-medium">{fund.lockupDays} dias</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-400">Min. Inversión:</span>
-                                        <span className="font-medium">{formatCurrency(fund.minInvestment)}</span>
+                                    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-[#333]/30 transition-colors">
+                                        <span className="text-gray-400">Min. Inversion:</span>
+                                        <span className="font-medium text-cyan-400">{formatCurrency(fund.minInvestment)}</span>
                                     </div>
-                                    <div className="flex justify-between">
+                                    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-[#333]/30 transition-colors">
                                         <span className="text-gray-400">Total Inversores:</span>
-                                        <span className="font-medium">{fund.investors}</span>
+                                        <span className="font-medium text-blue-400">{fund.investors}</span>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl">
-                                <h3 className="text-lg font-semibold mb-4">{t('pamm.investor.markets')}</h3>
+
+                            {/* Markets Card */}
+                            <div className="group bg-gradient-to-br from-[#232323]/80 to-[#2b2b2b]/60 p-6 rounded-2xl border border-[#333]/50 backdrop-blur-sm hover:border-purple-500/30 transition-all duration-300">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <BarChart2 className="text-purple-400" size={18} />
+                                    {t('pamm.investor.markets')}
+                                </h3>
                                 <div className="space-y-2">
                                     {fund.markets && fund.markets.length > 0 ? (
                                         fund.markets.map((market, index) => (
-                                            <div key={index} className="bg-[#333] px-3 py-2 rounded-lg text-sm">
+                                            <div key={index} className="bg-gradient-to-r from-[#333]/50 to-[#333]/30 px-4 py-3 rounded-xl text-sm border border-[#444]/30 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02]">
                                                 {typeof market === 'string' ? market : JSON.stringify(market)}
                                             </div>
                                         ))
@@ -1656,9 +1728,12 @@ const PammFundProfileView = ({
                             </div>
                         </div>
                         
-                        {/* Historical Chart */}
-                        <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl">
-                            <h3 className="text-lg font-semibold mb-4">{t('pamm.investor.fundEvolution')}</h3>
+                        {/* Historical Chart Mejorado */}
+                        <div className="bg-gradient-to-br from-[#232323]/80 to-[#2b2b2b]/60 p-6 rounded-2xl border border-[#333]/50 backdrop-blur-sm">
+                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                <TrendingUp className="text-green-400" size={18} />
+                                {t('pamm.investor.fundEvolution')}
+                            </h3>
                             <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={historicalData}>
@@ -1699,25 +1774,30 @@ const PammFundProfileView = ({
                 )}
                 
                 {activeTab === 'strategy' && (
-                    <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl">
-                        <h3 className="text-lg font-semibold mb-4">{t('pamm.investor.investmentStrategy')}</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <h4 className="font-medium mb-2">{t('pamm.investor.investmentDescription')}</h4>
-                                <p className="text-gray-300">{fund.description}</p>
+                    <div className="bg-gradient-to-br from-[#232323]/80 to-[#2b2b2b]/60 p-6 rounded-2xl border border-[#333]/50 backdrop-blur-sm">
+                        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                            <Shield className="text-purple-400" size={18} />
+                            {t('pamm.investor.investmentStrategy')}
+                        </h3>
+                        <div className="space-y-6">
+                            <div className="p-4 rounded-xl bg-[#333]/30 border border-[#444]/30">
+                                <h4 className="font-medium mb-3 text-cyan-400">{t('pamm.investor.investmentDescription')}</h4>
+                                <p className="text-gray-300 leading-relaxed">{fund.description}</p>
                             </div>
-                            
-                            <div>
-                                <h4 className="font-medium mb-2">{t('pamm.investor.strategyType')}</h4>
-                                <span className="bg-[#333] px-3 py-1 rounded-lg text-sm">{fund.strategy}</span>
+
+                            <div className="p-4 rounded-xl bg-[#333]/30 border border-[#444]/30">
+                                <h4 className="font-medium mb-3 text-cyan-400">{t('pamm.investor.strategyType')}</h4>
+                                <span className="inline-flex px-4 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 border border-cyan-500/30">
+                                    {fund.strategy}
+                                </span>
                             </div>
-                            
-                            <div>
-                                <h4 className="font-medium mb-2">{t('pamm.investor.operatedMarkets')}</h4>
+
+                            <div className="p-4 rounded-xl bg-[#333]/30 border border-[#444]/30">
+                                <h4 className="font-medium mb-3 text-cyan-400">{t('pamm.investor.operatedMarkets')}</h4>
                                 <div className="flex flex-wrap gap-2">
                                     {fund.markets && fund.markets.length > 0 ? (
                                         fund.markets.map((market, index) => (
-                                            <span key={index} className="bg-[#333] px-3 py-1 rounded-lg text-sm">
+                                            <span key={index} className="px-4 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-400 border border-purple-500/30 hover:scale-105 transition-transform cursor-default">
                                                 {typeof market === 'string' ? market : JSON.stringify(market)}
                                             </span>
                                         ))
@@ -1726,20 +1806,26 @@ const PammFundProfileView = ({
                                     )}
                                 </div>
                             </div>
-                            
-                            <div>
-                                <h4 className="font-medium mb-2">{t('pamm.investor.riskManagement')}</h4>
+
+                            <div className="p-4 rounded-xl bg-[#333]/30 border border-[#444]/30">
+                                <h4 className="font-medium mb-4 text-cyan-400">{t('pamm.investor.riskManagement')}</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="bg-[#333] p-4 rounded-lg">
-                                        <div className="text-sm text-gray-400">{t('pamm.investor.riskLevel')}</div>
-                                        <div className={`text-lg font-medium ${getRiskColor(fund.riskLevel)}`}>
-                                            {fund.riskLevel}
+                                    <div className="group bg-gradient-to-br from-[#333]/50 to-[#333]/30 p-5 rounded-xl border border-[#444]/30 hover:border-green-500/30 transition-all duration-300">
+                                        <div className="text-sm text-gray-400 mb-2">{t('pamm.investor.riskLevel')}</div>
+                                        <div className="flex items-center justify-between">
+                                            <div className={`text-lg font-bold ${getRiskColor(fund.riskLevel)}`}>
+                                                {fund.riskLevel}
+                                            </div>
+                                            <RiskIndicator level={fund.riskLevel} />
                                         </div>
                                     </div>
-                                    <div className="bg-[#333] p-4 rounded-lg">
-                                        <div className="text-sm text-gray-400">{t('pamm.investor.maxDrawdown')}</div>
-                                        <div className="text-lg font-medium text-red-400">
-                                            {fund.maxDrawdown}%
+                                    <div className="group bg-gradient-to-br from-[#333]/50 to-[#333]/30 p-5 rounded-xl border border-[#444]/30 hover:border-red-500/30 transition-all duration-300">
+                                        <div className="text-sm text-gray-400 mb-2">{t('pamm.investor.maxDrawdown')}</div>
+                                        <div className="flex items-center gap-2">
+                                            <TrendingDown size={16} className="text-red-400" />
+                                            <div className="text-lg font-bold text-red-400">
+                                                {fund.maxDrawdown}%
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1749,51 +1835,64 @@ const PammFundProfileView = ({
                 )}
                 
                 {activeTab === 'fees' && (
-                    <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] p-6 rounded-xl">
-                        <h3 className="text-lg font-semibold mb-6">{t('pamm.investor.feeStructure')}</h3>
+                    <div className="bg-gradient-to-br from-[#232323]/80 to-[#2b2b2b]/60 p-6 rounded-2xl border border-[#333]/50 backdrop-blur-sm">
+                        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                            <DollarSign className="text-yellow-400" size={18} />
+                            {t('pamm.investor.feeStructure')}
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-[#333] p-6 rounded-xl">
+                            {/* Management Fee Card */}
+                            <div className="group bg-gradient-to-br from-[#333]/50 to-[#333]/30 p-6 rounded-2xl border border-[#444]/30 hover:border-cyan-500/30 transition-all duration-300 hover:scale-[1.02]">
                                 <div className="flex items-center justify-between mb-4">
                                     <h4 className="font-medium">{t('pamm.managementFee')}</h4>
-                                    <DollarSign className="text-cyan-500" size={20} />
+                                    <div className="p-2 rounded-lg bg-cyan-500/10 group-hover:bg-cyan-500/20 transition-colors">
+                                        <DollarSign className="text-cyan-400" size={20} />
+                                    </div>
                                 </div>
-                                <div className="text-3xl font-bold mb-2">{fund.managementFee}%</div>
+                                <div className="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">{fund.managementFee}%</div>
                                 <p className="text-sm text-gray-400">{t('pamm.investor.annualManagementFee')}</p>
                             </div>
-                            
-                            <div className="bg-[#333] p-6 rounded-xl">
+
+                            {/* Performance Fee Card */}
+                            <div className="group bg-gradient-to-br from-[#333]/50 to-[#333]/30 p-6 rounded-2xl border border-[#444]/30 hover:border-green-500/30 transition-all duration-300 hover:scale-[1.02]">
                                 <div className="flex items-center justify-between mb-4">
                                     <h4 className="font-medium">{t('pamm.performanceFee')}</h4>
-                                    <TrendingUp className="text-green-500" size={20} />
+                                    <div className="p-2 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                                        <TrendingUp className="text-green-400" size={20} />
+                                    </div>
                                 </div>
-                                <div className="text-3xl font-bold mb-2">{fund.performanceFee}%</div>
+                                <div className="text-4xl font-bold mb-2 bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">{fund.performanceFee}%</div>
                                 <p className="text-sm text-gray-400">{t('pamm.investor.performanceFeeDescription')}</p>
                             </div>
                         </div>
-                        
-                        <div className="mt-6 p-4 bg-[#333] rounded-xl">
-                            <h4 className="font-medium mb-3">{t('pamm.investor.calculationExample')}</h4>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
+
+                        {/* Calculation Example */}
+                        <div className="mt-6 p-5 bg-gradient-to-br from-[#333]/50 to-[#333]/30 rounded-2xl border border-[#444]/30">
+                            <h4 className="font-medium mb-4 flex items-center gap-2">
+                                <Info className="text-blue-400" size={16} />
+                                {t('pamm.investor.calculationExample')}
+                            </h4>
+                            <div className="space-y-3 text-sm">
+                                <div className="flex justify-between items-center p-2 rounded-lg hover:bg-[#333]/30 transition-colors">
                                     <span className="text-gray-400">{t('pamm.investor.initialInvestment')}</span>
-                                    <span>$10,000</span>
+                                    <span className="font-medium">$10,000</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex justify-between items-center p-2 rounded-lg hover:bg-[#333]/30 transition-colors">
                                     <span className="text-gray-400">{t('pamm.investor.annualManagementFeeLabel')}</span>
-                                    <span>${(10000 * fund.managementFee / 100).toFixed(0)}</span>
+                                    <span className="font-medium text-cyan-400">${(10000 * fund.managementFee / 100).toFixed(0)}</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex justify-between items-center p-2 rounded-lg hover:bg-[#333]/30 transition-colors">
                                     <span className="text-gray-400">{t('pamm.investor.estimatedGain')}</span>
-                                    <span className="text-green-400">$1,500</span>
+                                    <span className="font-medium text-green-400">$1,500</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex justify-between items-center p-2 rounded-lg hover:bg-[#333]/30 transition-colors">
                                     <span className="text-gray-400">{t('pamm.investor.performanceFeeLabel')}</span>
-                                    <span>${(1500 * fund.performanceFee / 100).toFixed(0)}</span>
+                                    <span className="font-medium text-yellow-400">${(1500 * fund.performanceFee / 100).toFixed(0)}</span>
                                 </div>
-                                <div className="border-t border-[#444] pt-2 mt-2">
-                                    <div className="flex justify-between font-medium">
-                                        <span>{t('pamm.investor.estimatedNetGain')}</span>
-                                        <span className="text-green-400">
+                                <div className="border-t border-[#444]/50 pt-3 mt-3">
+                                    <div className="flex justify-between items-center p-2 bg-green-500/10 rounded-lg">
+                                        <span className="font-medium">{t('pamm.investor.estimatedNetGain')}</span>
+                                        <span className="font-bold text-lg text-green-400">
                                             ${(1500 - (1500 * fund.performanceFee / 100) - (10000 * fund.managementFee / 100)).toFixed(0)}
                                         </span>
                                     </div>
