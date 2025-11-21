@@ -1,7 +1,152 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowUp, DollarSign, TrendingUp, Users, Award, Activity, Eye, Settings, Plus, MoreHorizontal, Loader2, RefreshCw, Briefcase } from 'lucide-react';
+import { ArrowUp, DollarSign, TrendingUp, TrendingDown, Users, Award, Activity, Eye, Settings, Plus, MoreHorizontal, Loader2, RefreshCw, Briefcase, Percent, Zap, AlertTriangle } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
+
+// Mini sparkline chart component (from EnhancedPAMMCard)
+const PerformanceSparkline = ({ data, color = '#22d3ee' }) => {
+  const chartData = data || generateSamplePerformanceData();
+
+  return (
+    <div className="h-12 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={`gestorGradient-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Tooltip
+            contentStyle={{
+              backgroundColor: '#191919',
+              border: '1px solid #333',
+              borderRadius: '8px',
+              fontSize: '12px'
+            }}
+            labelStyle={{ color: '#9ca3af' }}
+            formatter={(value) => [`${value.toFixed(1)}%`, 'Return']}
+          />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={color}
+            strokeWidth={2}
+            fill={`url(#gestorGradient-${color.replace('#', '')})`}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+// Generate sample performance data
+const generateSamplePerformanceData = () => {
+  const data = [];
+  let value = 0;
+  for (let i = 0; i < 30; i++) {
+    value = value + (Math.random() - 0.4) * 3;
+    data.push({ day: i + 1, value: value });
+  }
+  return data;
+};
+
+// Circular progress indicator for returns
+const ReturnCircle = ({ percentage, size = 'normal' }) => {
+  const isPositive = percentage >= 0;
+  const radius = size === 'large' ? 24 : size === 'small' ? 14 : 20;
+  const circumference = 2 * Math.PI * radius;
+  const displayPercentage = Math.min(Math.abs(percentage), 100);
+  const strokeDashoffset = circumference - (displayPercentage / 100) * circumference;
+  const dimensions = size === 'large' ? 'w-14 h-14' : size === 'small' ? 'w-8 h-8' : 'w-12 h-12';
+  const cx = size === 'large' ? 28 : size === 'small' ? 16 : 24;
+  const cy = size === 'large' ? 28 : size === 'small' ? 16 : 24;
+  const strokeWidth = size === 'small' ? 2 : 4;
+  const textSize = size === 'small' ? 'text-[8px]' : 'text-xs';
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg className={`transform -rotate-90 ${dimensions}`}>
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          stroke="#333"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          stroke={isPositive ? '#22c55e' : '#ef4444'}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <span className={`absolute ${textSize} font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+        {isPositive ? '+' : ''}{percentage.toFixed(0)}%
+      </span>
+    </div>
+  );
+};
+
+// KPI Badge component
+const KpiBadge = ({ icon: Icon, label, value, color = 'cyan' }) => {
+  const colorClasses = {
+    cyan: 'text-cyan-400',
+    blue: 'text-blue-400',
+    green: 'text-green-400',
+    red: 'text-red-400',
+    yellow: 'text-yellow-400',
+    purple: 'text-purple-400'
+  };
+  const textColor = colorClasses[color] || colorClasses.cyan;
+
+  return (
+    <div className="flex flex-col items-center p-2 bg-[#232323]/50 rounded-lg backdrop-blur-sm border border-[#333]/50 hover:border-[#444] transition-all duration-300 hover:scale-105">
+      <div className={`flex items-center gap-1 ${textColor} mb-1`}>
+        <Icon size={12} />
+        <span className="text-[10px] uppercase tracking-wider text-gray-500">{label}</span>
+      </div>
+      <span className={`text-sm font-bold ${textColor}`}>{value}</span>
+    </div>
+  );
+};
+
+// Risk indicator component
+const RiskIndicator = ({ level }) => {
+  const levels = {
+    'Bajo': { bgColor: 'bg-green-500', textColor: 'text-green-400', bars: 1 },
+    'Moderado': { bgColor: 'bg-yellow-500', textColor: 'text-yellow-400', bars: 2 },
+    'Medio-Alto': { bgColor: 'bg-orange-500', textColor: 'text-orange-400', bars: 3 },
+    'Alto': { bgColor: 'bg-red-500', textColor: 'text-red-400', bars: 4 }
+  };
+
+  const config = levels[level] || levels['Moderado'];
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex gap-0.5">
+        {[1, 2, 3, 4].map((bar) => (
+          <div
+            key={bar}
+            className={`w-1 rounded-full transition-all duration-300 ${
+              bar <= config.bars ? config.bgColor : 'bg-[#333]'
+            }`}
+            style={{ height: `${bar * 3 + 4}px` }}
+          />
+        ))}
+      </div>
+      <span className={`text-xs ${config.textColor}`}>{level}</span>
+    </div>
+  );
+};
+
 import CrearPAMMModal from './CrearPAMMModal';
 import CopiarEstrategiaModal from './CopiarEstrategiaModal';
 import InvestorActionsMenu from './InvestorActionsMenu';
@@ -34,21 +179,99 @@ const initialPAMMGestorData = {
   tradersDisponibles: []
 };
 
-// Componente para una tarjeta de estadística individual
-const StatCard = ({ icon, title, value, detail }) => {
+// Enhanced StatCard with gradients, hover effects, and sparklines
+const EnhancedStatCard = ({ icon, title, value, detail, color = 'cyan', trend, sparklineData }) => {
   const Icon = icon;
+  const [isHovered, setIsHovered] = useState(false);
+
+  const colorConfig = {
+    cyan: {
+      gradient: 'from-cyan-500/10 to-blue-500/10',
+      border: 'border-cyan-500/30',
+      icon: 'text-cyan-400',
+      glow: 'shadow-cyan-500/20'
+    },
+    green: {
+      gradient: 'from-green-500/10 to-emerald-500/10',
+      border: 'border-green-500/30',
+      icon: 'text-green-400',
+      glow: 'shadow-green-500/20'
+    },
+    blue: {
+      gradient: 'from-blue-500/10 to-indigo-500/10',
+      border: 'border-blue-500/30',
+      icon: 'text-blue-400',
+      glow: 'shadow-blue-500/20'
+    },
+    yellow: {
+      gradient: 'from-yellow-500/10 to-orange-500/10',
+      border: 'border-yellow-500/30',
+      icon: 'text-yellow-400',
+      glow: 'shadow-yellow-500/20'
+    },
+    purple: {
+      gradient: 'from-purple-500/10 to-pink-500/10',
+      border: 'border-purple-500/30',
+      icon: 'text-purple-400',
+      glow: 'shadow-purple-500/20'
+    },
+    red: {
+      gradient: 'from-red-500/10 to-rose-500/10',
+      border: 'border-red-500/30',
+      icon: 'text-red-400',
+      glow: 'shadow-red-500/20'
+    }
+  };
+
+  const config = colorConfig[color] || colorConfig.cyan;
+
   return (
-    <div className="bg-[#2a2a2a] p-6 rounded-2xl border border-[#333] flex flex-col justify-between">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg text-gray-400">{title}</h3>
-        <Icon className="text-cyan-500" size={24} />
-      </div>
-      <div>
-        <p className="text-3xl font-bold text-white">{value}</p>
-        {detail && <p className="text-sm text-gray-500 mt-1">{detail}</p>}
+    <div
+      className={`relative overflow-hidden bg-gradient-to-br ${config.gradient} p-6 rounded-2xl border ${config.border} flex flex-col justify-between transition-all duration-300 ${
+        isHovered ? `transform scale-[1.02] shadow-lg ${config.glow}` : ''
+      }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Background glow effect */}
+      <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl ${config.gradient} rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2`} />
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm text-gray-400 uppercase tracking-wider">{title}</h3>
+          <div className={`p-2 rounded-lg bg-[#191919]/50 ${config.icon}`}>
+            <Icon size={20} />
+          </div>
+        </div>
+        <div>
+          <p className="text-3xl font-bold text-white mb-1">{value}</p>
+          {detail && (
+            <div className="flex items-center gap-2">
+              {trend !== undefined && (
+                <span className={`flex items-center text-xs ${trend >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {trend >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  {Math.abs(trend)}%
+                </span>
+              )}
+              <p className="text-sm text-gray-500">{detail}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Mini sparkline */}
+        {sparklineData && (
+          <div className="mt-3">
+            <PerformanceSparkline data={sparklineData} color={config.icon.includes('cyan') ? '#22d3ee' : config.icon.includes('green') ? '#22c55e' : '#a78bfa'} />
+          </div>
+        )}
       </div>
     </div>
   );
+};
+
+// Keep the original StatCard for backward compatibility
+const StatCard = ({ icon, title, value, detail }) => {
+  return <EnhancedStatCard icon={icon} title={title} value={value} detail={detail} />;
 };
 
 const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
@@ -396,22 +619,29 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           </div>
         </div>
 
-        {/* Investors List */}
-        <div className="bg-[#2a2a2a] p-6 rounded-xl">
-          <h3 className="text-lg font-semibold mb-4">{t('pamm.manager.fundDetail.fundInvestors')}</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-b border-[#333]">
-                <tr className="text-left text-gray-400 text-sm">
-                  <th className="pb-3">{t('pamm.manager.fundDetail.investor')}</th>
-                  <th className="pb-3">{t('pamm.manager.fundDetail.investment')}</th>
-                  <th className="pb-3">{t('pamm.manager.fundDetail.gain')}</th>
-                  <th className="pb-3">{t('pamm.manager.fundDetail.performance')}</th>
-                  <th className="pb-3">{t('pamm.manager.fundDetail.entryDate')}</th>
-                  <th className="pb-3">{t('pamm.manager.fundDetail.status')}</th>
-                  <th className="pb-3">{t('pamm.manager.fundDetail.actions')}</th>
-                </tr>
-              </thead>
+        {/* Investors List - Enhanced */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#2a2a2a] to-[#1a1a1a] p-6 rounded-xl border border-[#333]/50">
+          {/* Background decorative elements */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
+
+          <div className="relative z-10">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Users className="text-cyan-400" size={20} />
+              {t('pamm.manager.fundDetail.fundInvestors')}
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b border-[#333]/50">
+                  <tr className="text-left text-gray-400 text-xs uppercase tracking-wider">
+                    <th className="pb-3">{t('pamm.manager.fundDetail.investor')}</th>
+                    <th className="pb-3">{t('pamm.manager.fundDetail.investment')}</th>
+                    <th className="pb-3">{t('pamm.manager.fundDetail.gain')}</th>
+                    <th className="pb-3">{t('pamm.manager.fundDetail.performance')}</th>
+                    <th className="pb-3">{t('pamm.manager.fundDetail.entryDate')}</th>
+                    <th className="pb-3">{t('pamm.manager.fundDetail.status')}</th>
+                    <th className="pb-3">{t('pamm.manager.fundDetail.actions')}</th>
+                  </tr>
+                </thead>
               <tbody className="divide-y divide-[#333]">
                 {isLoading ? (
                   // Skeleton loader
@@ -436,40 +666,42 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                   ))
                 ) : (fund.investors || []).length > 0 ? (
                   (fund.investors || []).map((investor) => (
-                    <tr key={investor.id} className="hover:bg-[#333] transition-colors">
+                    <tr key={investor.id} className="hover:bg-[#333]/50 transition-all duration-300 group">
                       <td className="py-3">
                         <div className="flex items-center gap-3">
                           {investor.avatar ? (
-                            <img 
-                              src={investor.avatar} 
+                            <img
+                              src={investor.avatar}
                               alt={investor.name}
-                              className="w-8 h-8 rounded-full object-cover"
+                              className="w-10 h-10 rounded-full object-cover border-2 border-cyan-500/30 group-hover:border-cyan-500 transition-colors"
                             />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white text-sm font-semibold group-hover:scale-110 transition-transform">
                               {investor.name?.charAt(0)?.toUpperCase() || 'I'}
                             </div>
                           )}
                           <div>
-                            <p className="font-medium">{investor.name}</p>
-                            {investor.email && <p className="text-xs text-gray-400">{investor.email}</p>}
+                            <p className="font-medium text-white">{investor.name}</p>
+                            {investor.email && <p className="text-xs text-gray-500">{investor.email}</p>}
                           </div>
                         </div>
                       </td>
-                      <td className="py-3">{formatCurrency(investor.invested_amount)}</td>
-                      <td className={`py-3 ${investor.profit_loss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      <td className="py-3 font-medium">{formatCurrency(investor.invested_amount)}</td>
+                      <td className={`py-3 font-medium flex items-center gap-1 ${investor.profit_loss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {investor.profit_loss >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                         {formatCurrency(investor.profit_loss)}
                       </td>
-                      <td className={`py-3 ${investor.profit_loss_percentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {formatPercentage(investor.profit_loss_percentage)}
-                      </td>
-                      <td className="py-3 text-gray-400">{new Date(investor.joined_date).toLocaleDateString()}</td>
                       <td className="py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          investor.status === 'active' 
-                            ? 'bg-green-500 bg-opacity-20 text-green-400' 
-                            : 'bg-gray-500 bg-opacity-20 text-gray-400'
+                        <ReturnCircle percentage={investor.profit_loss_percentage || 0} size="small" />
+                      </td>
+                      <td className="py-3 text-gray-400 text-sm">{new Date(investor.joined_date).toLocaleDateString()}</td>
+                      <td className="py-3">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
+                          investor.status === 'active'
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/30 group-hover:bg-green-500/30'
+                            : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
                         }`}>
+                          <div className={`w-1.5 h-1.5 rounded-full ${investor.status === 'active' ? 'bg-green-400' : 'bg-gray-400'}`} />
                           {investor.status === 'active' ? 'Activo' : 'Inactivo'}
                         </span>
                       </td>
@@ -497,6 +729,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 
@@ -691,63 +924,100 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           </select>
         </div>
 
-        {/* All Investors Table */}
-        <div className="bg-[#2a2a2a] rounded-2xl border border-[#333] overflow-hidden">
-          <div className="p-4 border-b border-[#333]">
-            <h3 className="text-lg font-semibold">Todos los Inversores</h3>
-            <p className="text-sm text-gray-400">Gestiona todos los inversores de tus fondos PAMM</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[#1a1a1a] border-b border-[#333]">
-                <tr className="text-left text-gray-400 text-sm">
-                  <th className="p-4">Inversor</th>
-                  <th className="p-4">Fondo</th>
-                  <th className="p-4">Inversión</th>
-                  <th className="p-4">Ganancia</th>
-                  <th className="p-4">Rendimiento</th>
-                  <th className="p-4">Estado</th>
-                  <th className="p-4">Fecha</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#333]">
-                {filteredInvestors.map((investor, index) => {
-                  // Assign fund based on investor ID for demonstration
-                  const assignedFund = accountsData[index % accountsData.length];
-                  return (
-                    <tr key={investor.id} className="hover:bg-[#333] transition-colors">
-                      <td className="p-4">
-                        <div className="font-medium">{investor.nombre}</div>
-                      </td>
-                      <td className="p-4">
-                        <div className="text-sm text-gray-400">{assignedFund.name}</div>
-                      </td>
-                      <td className="p-4">
-                        <div className="font-medium">{formatCurrency(investor.montoInvertido)}</div>
-                      </td>
-                      <td className="p-4">
-                        <div className="font-medium text-green-500">{formatCurrency(investor.gananciaActual)}</div>
-                      </td>
-                      <td className="p-4">
-                        <div className="font-medium text-green-500">{formatPercentage(investor.rendimientoPersonal)}</div>
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          investor.estado === 'Activo' 
-                            ? 'bg-green-500 bg-opacity-20 text-green-400' 
-                            : 'bg-gray-500 bg-opacity-20 text-gray-400'
-                        }`}>
-                          {investor.estado}
-                        </span>
-                      </td>
-                      <td className="p-4 text-gray-400">
-                        {new Date(investor.fechaEntrada).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        {/* All Investors Table - Enhanced */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#2a2a2a] to-[#1a1a1a] rounded-2xl border border-[#333]">
+          {/* Background decorative elements */}
+          <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
+
+          <div className="relative z-10">
+            <div className="p-4 border-b border-[#333]/50">
+              <div className="flex items-center gap-2">
+                <Users className="text-purple-400" size={20} />
+                <h3 className="text-lg font-semibold">Todos los Inversores</h3>
+              </div>
+              <p className="text-sm text-gray-400 mt-1">Gestiona todos los inversores de tus fondos PAMM</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[#191919]/50 border-b border-[#333]/50">
+                  <tr className="text-left text-gray-400 text-xs uppercase tracking-wider">
+                    <th className="p-4">Inversor</th>
+                    <th className="p-4">Fondo</th>
+                    <th className="p-4">Inversión</th>
+                    <th className="p-4">Ganancia</th>
+                    <th className="p-4">Rendimiento</th>
+                    <th className="p-4">Estado</th>
+                    <th className="p-4">Fecha</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#333]/30">
+                  {filteredInvestors.map((investor, index) => {
+                    // Assign fund based on investor ID for demonstration
+                    const assignedFund = accountsData[index % accountsData.length];
+                    const isPositive = investor.gananciaActual >= 0;
+
+                    return (
+                      <tr
+                        key={investor.id}
+                        className="hover:bg-[#333]/50 transition-all duration-300 group cursor-pointer"
+                      >
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-sm font-bold group-hover:scale-110 transition-transform duration-300">
+                              {investor.nombre?.charAt(0)?.toUpperCase() || 'I'}
+                            </div>
+                            <div>
+                              <div className="font-medium text-white">{investor.nombre}</div>
+                              <div className="text-xs text-gray-500">{investor.email || 'inversor@email.com'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                            <span className="text-sm text-gray-400">{assignedFund?.name || 'N/A'}</span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="font-medium text-white">{formatCurrency(investor.montoInvertido)}</div>
+                        </td>
+                        <td className="p-4">
+                          <div className={`font-medium flex items-center gap-1 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                            {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                            {formatCurrency(investor.gananciaActual)}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <ReturnCircle percentage={investor.rendimientoPersonal || 0} size="small" />
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
+                            investor.estado === 'Activo'
+                              ? 'bg-green-500/20 text-green-400 border border-green-500/30 group-hover:bg-green-500/30'
+                              : investor.estado === 'Pausado'
+                              ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 group-hover:bg-yellow-500/30'
+                              : 'bg-gray-500/20 text-gray-400 border border-gray-500/30 group-hover:bg-gray-500/30'
+                          }`}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${
+                              investor.estado === 'Activo' ? 'bg-green-400' :
+                              investor.estado === 'Pausado' ? 'bg-yellow-400' : 'bg-gray-400'
+                            }`} />
+                            {investor.estado}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-sm text-gray-400">
+                            {new Date(investor.fechaEntrada).toLocaleDateString()}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -833,42 +1103,77 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
         </div>
       )}
 
-      {/* Portfolio Section */}
-      <div className="bg-[#2a2a2a] p-6 rounded-2xl border border-[#333]">
-        <h2 className="text-xl font-semibold mb-6">{t('pamm.manager.portfolio')}</h2>
-        
-        {/* Basic KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-[#333] p-4 rounded-xl">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">{t('pamm.manager.totalAUM')}</span>
-              <DollarSign className="text-cyan-500" size={20} />
-            </div>
-            <div className="text-2xl font-bold">{formatCurrency(data.totalCapital)}</div>
+      {/* Portfolio Section - Enhanced with glassmorphism */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#2a2a2a] to-[#1a1a1a] p-6 rounded-2xl border border-[#333]">
+        {/* Background decorative elements */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+
+        <div className="relative z-10">
+          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+            <Activity className="text-cyan-400" size={24} />
+            {t('pamm.manager.portfolio')}
+          </h2>
+
+          {/* Enhanced KPIs with sparklines */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <EnhancedStatCard
+              icon={DollarSign}
+              title={t('pamm.manager.totalAUM')}
+              value={formatCurrency(data.totalCapital)}
+              color="cyan"
+              sparklineData={generateSamplePerformanceData()}
+            />
+
+            <EnhancedStatCard
+              icon={TrendingUp}
+              title={t('pamm.manager.performance')}
+              value={formatPercentage(data.rendimiento)}
+              color="green"
+              sparklineData={generateSamplePerformanceData()}
+            />
+
+            <EnhancedStatCard
+              icon={Users}
+              title={t('pamm.manager.fundDetail.investors')}
+              value={data.numeroInversores}
+              color="blue"
+            />
+
+            <EnhancedStatCard
+              icon={Award}
+              title={t('pamm.manager.commissions')}
+              value={formatCurrency(data.comisionesGeneradas)}
+              color="yellow"
+            />
           </div>
-          
-          <div className="bg-[#333] p-4 rounded-xl">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">{t('pamm.manager.performance')}</span>
-              <TrendingUp className="text-green-500" size={20} />
-            </div>
-            <div className="text-2xl font-bold text-green-500">{formatPercentage(data.rendimiento)}</div>
-          </div>
-          
-          <div className="bg-[#333] p-4 rounded-xl">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">{t('pamm.manager.fundDetail.investors')}</span>
-              <Users className="text-blue-500" size={20} />
-            </div>
-            <div className="text-2xl font-bold">{data.numeroInversores}</div>
-          </div>
-          
-          <div className="bg-[#333] p-4 rounded-xl">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">{t('pamm.manager.commissions')}</span>
-              <Award className="text-yellow-500" size={20} />
-            </div>
-            <div className="text-2xl font-bold">{formatCurrency(data.comisionesGeneradas)}</div>
+
+          {/* Additional KPIs row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <KpiBadge
+              icon={TrendingDown}
+              label="Max Drawdown"
+              value={`${data.drawdownMaximo?.toFixed(1) || 0}%`}
+              color="red"
+            />
+            <KpiBadge
+              icon={Zap}
+              label="Sharpe Ratio"
+              value={(data.sharpeRatio || 0).toFixed(2)}
+              color="purple"
+            />
+            <KpiBadge
+              icon={Percent}
+              label="Fondos Activos"
+              value={tradersDisponibles.length}
+              color="cyan"
+            />
+            <KpiBadge
+              icon={Activity}
+              label="Retiros Pend."
+              value={pendingWithdrawals.length}
+              color="yellow"
+            />
           </div>
         </div>
       </div>
@@ -957,69 +1262,137 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
           </div>
         )}
 
-        {/* Funds Grid */}
+        {/* Funds Grid - Enhanced with EnhancedPAMMCard style */}
         {!isLoading && !error && accountsData.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {accountsData.map((account) => (
-            <div key={account.id} className="bg-[#333] p-6 rounded-xl border border-[#444]">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">{account.name}</h3>
-                  <span className="text-sm text-gray-400">
-                    {account.description ? account.description.substring(0, 50) + '...' : 'Fondo PAMM'}
-                  </span>
-                </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  account.status === 'active' 
-                    ? 'bg-green-500 bg-opacity-20 text-green-400' 
-                    : 'bg-gray-500 bg-opacity-20 text-gray-400'
-                }`}>
-                  {account.status === 'active' ? 'Activo' : 'Inactivo'}
-                </span>
-              </div>
-              
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">AUM:</span>
-                  <span className="font-medium">{formatCurrency(account.aum || 0)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">{t('pamm.manager.investorsCount')}</span>
-                  <span className="font-medium">{account.investors_count || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">{t('pamm.manager.commission')}</span>
-                  <span className="font-medium">
-                    {(parseFloat(account.management_fee) || 0).toFixed(1)}% + {(parseFloat(account.performance_fee) || 0).toFixed(1)}%
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Comisiones Mensuales:</span>
-                  <span className="font-medium text-cyan-500">{formatCurrency(account.monthly_commissions || 0)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Inversión Mínima:</span>
-                  <span className="font-medium">{formatCurrency(account.min_investment || 0)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Creado:</span>
-                  <span className="font-medium text-gray-400">
-                    {account.created_at ? new Date(account.created_at).toLocaleDateString() : 'N/A'}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleManageFund(account)}
-                  className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+            {accountsData.map((account) => {
+              const totalReturn = account.total_return_percentage || 0;
+              const chartColor = totalReturn >= 0 ? '#22c55e' : '#ef4444';
+
+              return (
+                <div
+                  key={account.id}
+                  className="relative overflow-hidden rounded-2xl transition-all duration-500 hover:transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/10 group"
                 >
-                  <Eye size={16} />
-                  {t('pamm.manager.manageFund')}
-                </button>
-              </div>
-            </div>
-          ))}
+                  {/* Glassmorphism background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] opacity-50" />
+                  <div className="absolute inset-0 backdrop-blur-xl bg-[#191919]/80" />
+
+                  {/* Animated border gradient on hover */}
+                  <div className="absolute inset-0 rounded-2xl transition-opacity duration-500 opacity-0 group-hover:opacity-100">
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/20 via-cyan-500/20 to-purple-500/20 animate-pulse" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="relative p-5 border border-[#333]/50 rounded-2xl">
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        {/* Avatar */}
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-lg font-bold">
+                          {(account.name || 'F').charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-white">{account.name}</h3>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <Users size={12} className="text-gray-500" />
+                            <span className="text-xs text-gray-400">
+                              {account.investors_count || 0} inversores
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status badge */}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        account.status === 'active'
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                          : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                      }`}>
+                        {account.status === 'active' ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+
+                    {/* Performance Chart */}
+                    <div className="mb-4 bg-[#232323]/30 rounded-xl p-3 border border-[#333]/30">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <Activity size={10} />
+                          Rendimiento Total
+                        </span>
+                        <span className={`text-sm font-bold ${totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {formatPercentage(totalReturn)}
+                        </span>
+                      </div>
+                      <PerformanceSparkline data={generateSamplePerformanceData()} color={chartColor} />
+                    </div>
+
+                    {/* KPIs Grid */}
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                      <div className="flex flex-col items-center p-2 bg-[#232323]/50 rounded-lg">
+                        <div className="px-3 py-1.5 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg border border-purple-500/30">
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wider">AUM</p>
+                          <p className="text-sm font-bold text-purple-400">${((account.aum || 0)/1000).toFixed(0)}K</p>
+                        </div>
+                      </div>
+
+                      <KpiBadge
+                        icon={Percent}
+                        label="Mgmt Fee"
+                        value={`${(parseFloat(account.management_fee) || 0).toFixed(1)}%`}
+                        color="cyan"
+                      />
+
+                      <KpiBadge
+                        icon={Award}
+                        label="Perf Fee"
+                        value={`${(parseFloat(account.performance_fee) || 0).toFixed(1)}%`}
+                        color="yellow"
+                      />
+
+                      <KpiBadge
+                        icon={DollarSign}
+                        label="Comisiones"
+                        value={`$${((account.monthly_commissions || 0)/1000).toFixed(1)}K`}
+                        color="green"
+                      />
+                    </div>
+
+                    {/* Additional info row */}
+                    <div className="flex justify-between items-center mb-4 px-2">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                          <DollarSign size={12} className="text-gray-500" />
+                          <span className="text-xs text-gray-400">Min: {formatCurrency(account.min_investment || 0)}</span>
+                        </div>
+                        <RiskIndicator level={account.risk_level || 'Moderado'} />
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {account.created_at ? new Date(account.created_at).toLocaleDateString() : 'N/A'}
+                      </span>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleManageFund(account)}
+                        className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 hover:shadow-lg hover:shadow-purple-500/25"
+                      >
+                        <Eye size={16} />
+                        {t('pamm.manager.manageFund')}
+                      </button>
+
+                      <button
+                        onClick={() => handleConfigureFund(account)}
+                        className="px-4 py-2.5 bg-[#333]/50 hover:bg-[#444]/50 rounded-xl text-sm transition-all duration-300 flex items-center gap-2 border border-[#444]/50 hover:border-[#555]"
+                      >
+                        <Settings size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

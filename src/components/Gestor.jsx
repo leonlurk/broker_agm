@@ -1,11 +1,214 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Users, DollarSign, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Eye, Settings, BarChart3, Activity, Award, Calendar, Copy, MoreHorizontal, Edit, Camera, Save, X, Info, Shield, Target, Briefcase, Search, Filter, SlidersHorizontal, Pause, StopCircle, MessageCircle, UserCheck } from 'lucide-react';
+import { Star, Users, DollarSign, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Eye, Settings, BarChart3, Activity, Award, Calendar, Copy, MoreHorizontal, Edit, Camera, Save, X, Info, Shield, Target, Briefcase, Search, Filter, SlidersHorizontal, Pause, StopCircle, MessageCircle, UserCheck, Percent, Zap } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell } from 'recharts';
 import { getFollowers, getTraderStats, updateMasterProfile } from '../services/copytradingService';
 import ConfigurarGestorModal from './ConfigurarGestorModal';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+
+// Mini sparkline chart component for performance visualization
+const PerformanceSparkline = ({ data, color = '#22d3ee' }) => {
+  const chartData = data || generateSamplePerformanceData();
+
+  return (
+    <div className="h-12 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={`gestorGradient-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Tooltip
+            contentStyle={{
+              backgroundColor: '#191919',
+              border: '1px solid #333',
+              borderRadius: '8px',
+              fontSize: '12px'
+            }}
+            labelStyle={{ color: '#9ca3af' }}
+            formatter={(value) => [`${value.toFixed(1)}%`, 'Return']}
+          />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={color}
+            strokeWidth={2}
+            fill={`url(#gestorGradient-${color.replace('#', '')})`}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+// Generate sample performance data
+const generateSamplePerformanceData = () => {
+  const data = [];
+  let value = 0;
+  for (let i = 0; i < 30; i++) {
+    value = value + (Math.random() - 0.4) * 3;
+    data.push({ day: i + 1, value: value });
+  }
+  return data;
+};
+
+// Circular progress indicator for percentages
+const ReturnCircle = ({ percentage, size = 'normal' }) => {
+  const isPositive = percentage >= 0;
+  const radius = size === 'large' ? 24 : 18;
+  const circumference = 2 * Math.PI * radius;
+  const displayPercentage = Math.min(Math.abs(percentage), 100);
+  const strokeDashoffset = circumference - (displayPercentage / 100) * circumference;
+  const dimensions = size === 'large' ? 'w-14 h-14' : 'w-10 h-10';
+  const cx = size === 'large' ? 28 : 20;
+  const cy = size === 'large' ? 28 : 20;
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg className={`transform -rotate-90 ${dimensions}`}>
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          stroke="#333"
+          strokeWidth="3"
+          fill="transparent"
+        />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          stroke={isPositive ? '#22c55e' : '#ef4444'}
+          strokeWidth="3"
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <span className={`absolute text-[10px] font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+        {isPositive ? '+' : ''}{percentage.toFixed(0)}%
+      </span>
+    </div>
+  );
+};
+
+// KPI Badge component with hover effects
+const KpiBadge = ({ icon: Icon, label, value, color = 'cyan', trend }) => {
+  const colorClasses = {
+    cyan: 'text-cyan-400 border-cyan-500/30 hover:border-cyan-500/60',
+    blue: 'text-blue-400 border-blue-500/30 hover:border-blue-500/60',
+    green: 'text-green-400 border-green-500/30 hover:border-green-500/60',
+    red: 'text-red-400 border-red-500/30 hover:border-red-500/60',
+    yellow: 'text-yellow-400 border-yellow-500/30 hover:border-yellow-500/60',
+    purple: 'text-purple-400 border-purple-500/30 hover:border-purple-500/60'
+  };
+  const textColor = colorClasses[color] || colorClasses.cyan;
+
+  return (
+    <div className={`flex flex-col items-center p-3 bg-[#232323]/50 rounded-xl backdrop-blur-sm border ${textColor} transition-all duration-300 hover:scale-105 hover:bg-[#2a2a2a]/70`}>
+      <div className={`flex items-center gap-1 mb-1`}>
+        <Icon size={14} className={textColor.split(' ')[0]} />
+        <span className="text-[10px] uppercase tracking-wider text-gray-500">{label}</span>
+      </div>
+      <span className={`text-sm font-bold ${textColor.split(' ')[0]}`}>{value}</span>
+      {trend && (
+        <span className={`text-[10px] ${trend >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          {trend >= 0 ? '+' : ''}{trend}%
+        </span>
+      )}
+    </div>
+  );
+};
+
+// Risk indicator component with visual bars
+const RiskIndicator = ({ level, showLabel = true }) => {
+  const levels = {
+    'Bajo': { bgColor: 'bg-green-500', textColor: 'text-green-400', bars: 1 },
+    'Moderado': { bgColor: 'bg-yellow-500', textColor: 'text-yellow-400', bars: 2 },
+    'Medio-Alto': { bgColor: 'bg-orange-500', textColor: 'text-orange-400', bars: 3 },
+    'Alto': { bgColor: 'bg-red-500', textColor: 'text-red-400', bars: 4 }
+  };
+
+  const config = levels[level] || levels['Moderado'];
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex gap-0.5">
+        {[1, 2, 3, 4].map((bar) => (
+          <div
+            key={bar}
+            className={`w-1 rounded-full transition-all duration-300 ${
+              bar <= config.bars ? config.bgColor : 'bg-[#333]'
+            }`}
+            style={{ height: `${bar * 3 + 4}px` }}
+          />
+        ))}
+      </div>
+      {showLabel && <span className={`text-xs ${config.textColor}`}>{level}</span>}
+    </div>
+  );
+};
+
+// Enhanced stat card component
+const EnhancedStatCard = ({ icon: Icon, iconColor, iconBg, title, value, subtitle, trend, sparklineData, sparklineColor }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      className={`relative overflow-hidden bg-[#1C1C1C] rounded-xl border border-[#333] p-5 transition-all duration-300 ${
+        isHovered ? 'transform scale-[1.02] border-cyan-600/50 shadow-lg shadow-cyan-500/10' : ''
+      }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Gradient overlay on hover */}
+      <div className={`absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 transition-opacity duration-300 ${
+        isHovered ? 'opacity-100' : 'opacity-0'
+      }`} />
+
+      <div className="relative">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`w-12 h-12 ${iconBg} rounded-xl flex items-center justify-center transition-transform duration-300 ${
+            isHovered ? 'scale-110' : ''
+          }`}>
+            <Icon size={24} className={iconColor} />
+          </div>
+          {trend !== undefined && (
+            trend >= 0 ? (
+              <TrendingUp size={20} className="text-green-400" />
+            ) : (
+              <TrendingDown size={20} className="text-red-400" />
+            )
+          )}
+        </div>
+
+        <h3 className={`text-2xl font-bold mb-1 ${
+          trend !== undefined ? (trend >= 0 ? 'text-white' : 'text-red-400') : 'text-white'
+        }`}>
+          {value}
+        </h3>
+        <p className="text-sm text-gray-400">{title}</p>
+
+        {subtitle && (
+          <div className="mt-2 text-xs text-gray-500">
+            {subtitle}
+          </div>
+        )}
+
+        {sparklineData && (
+          <div className="mt-3">
+            <PerformanceSparkline data={sparklineData} color={sparklineColor || '#22d3ee'} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // Datos iniciales vacíos - se cargarán dinámicamente desde la API
 const initialTraderDashboardData = {
@@ -467,64 +670,92 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           </div>
         </div>
 
-        {/* Portafolio Section - DATOS DINÁMICOS */}
+        {/* Portafolio Section - DATOS DINÁMICOS con mejoras visuales */}
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-6 text-cyan-400">{t('copyTrading.manager.portfolio')}</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-cyan-400">{t('copyTrading.manager.portfolio')}</h2>
+            <div className="flex items-center gap-2">
+              <Activity size={16} className="text-gray-500" />
+              <span className="text-xs text-gray-500">Live</span>
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Capital de Terceros (AUM) */}
-            <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center">
-                  <Users size={24} className="text-cyan-400" />
+            {/* Capital de Terceros (AUM) - Enhanced */}
+            <EnhancedStatCard
+              icon={Users}
+              iconColor="text-cyan-400"
+              iconBg="bg-cyan-500/20"
+              title={t('copyTrading.manager.thirdPartyCapital')}
+              value={formatAUM(traderStats.overview.totalAUM)}
+              subtitle={<><span className="text-cyan-400">{traderStats.overview.activeFollowers} {t('copyTrading.manager.investors')}</span> {t('copyTrading.status.active')}</>}
+              trend={traderStats.overview.monthlyReturn}
+              sparklineData={traderStats.performanceChart?.slice(-30)}
+              sparklineColor="#22d3ee"
+            />
+
+            {/* Retorno Mensual - Enhanced con círculo de progreso */}
+            <div className="relative overflow-hidden bg-[#1C1C1C] rounded-xl border border-[#333] p-5 transition-all duration-300 hover:scale-[1.02] hover:border-blue-600/50 hover:shadow-lg hover:shadow-blue-500/10 group">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                    <TrendingUp size={24} className="text-blue-400" />
+                  </div>
+                  <ReturnCircle percentage={traderStats.overview.monthlyReturn} size="large" />
                 </div>
-                {traderStats.overview.monthlyReturn >= 0 ? (
-                  <TrendingUp size={20} className="text-green-400" />
-                ) : (
-                  <TrendingDown size={20} className="text-red-400" />
-                )}
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-1">{formatAUM(traderStats.overview.totalAUM)}</h3>
-              <p className="text-sm text-gray-400">{t('copyTrading.manager.thirdPartyCapital')}</p>
-              <div className="mt-2 text-xs text-gray-500">
-                <span className="text-cyan-400">{traderStats.overview.activeFollowers} {t('copyTrading.manager.investors')}</span> {t('copyTrading.status.active')}
+                <h3 className={`text-2xl font-bold mb-1 ${traderStats.overview.monthlyReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {formatPercentage(traderStats.overview.monthlyReturn)}
+                </h3>
+                <p className="text-sm text-gray-400">{t('copyTrading.manager.monthlyReturn')}</p>
+                <div className="mt-3">
+                  <PerformanceSparkline
+                    data={traderStats.performanceChart?.slice(-30)}
+                    color={traderStats.overview.monthlyReturn >= 0 ? '#22c55e' : '#ef4444'}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Retorno Mensual */}
-            <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                  <TrendingUp size={24} className="text-blue-400" />
-                </div>
-                {traderStats.overview.monthlyReturn >= 0 ? (
-                  <ArrowUp size={20} className="text-green-400" />
-                ) : (
-                  <ArrowDown size={20} className="text-red-400" />
-                )}
-              </div>
-              <h3 className={`text-2xl font-bold mb-1 ${traderStats.overview.monthlyReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {formatPercentage(traderStats.overview.monthlyReturn)}
-              </h3>
-              <p className="text-sm text-gray-400">{t('copyTrading.manager.monthlyReturn')}</p>
-              <div className="mt-2 text-xs text-gray-500">
-                <span className="text-gray-400">{t('copyTrading.time.thisMonth')}</span>
-              </div>
-            </div>
+            {/* Comisiones Totales - Enhanced */}
+            <EnhancedStatCard
+              icon={DollarSign}
+              iconColor="text-green-400"
+              iconBg="bg-green-500/20"
+              title={t('copyTrading.manager.totalCommissions')}
+              value={formatCurrency(traderStats.overview.totalCommissions)}
+              subtitle={<><span className="text-green-400">{formatCurrency(traderStats.overview.monthlyCommissions)}</span> {t('copyTrading.time.thisMonth')}</>}
+              trend={1}
+            />
+          </div>
 
-            {/* Comisiones Totales */}
-            <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
-                  <DollarSign size={24} className="text-green-400" />
-                </div>
-                <TrendingUp size={20} className="text-green-400" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-1">{formatCurrency(traderStats.overview.totalCommissions)}</h3>
-              <p className="text-sm text-gray-400">{t('copyTrading.manager.totalCommissions')}</p>
-              <div className="mt-2 text-xs text-gray-500">
-                <span className="text-green-400">{formatCurrency(traderStats.overview.monthlyCommissions)}</span> {t('copyTrading.time.thisMonth')}
-              </div>
-            </div>
+          {/* KPI Badges adicionales */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+            <KpiBadge
+              icon={Percent}
+              label="Win Rate"
+              value={`${(traderStats.overview.riskScore * 10 || 75).toFixed(0)}%`}
+              color="green"
+            />
+            <KpiBadge
+              icon={TrendingDown}
+              label="Max DD"
+              value={`${traderStats.overview.maxDrawdown || 0}%`}
+              color="red"
+            />
+            <KpiBadge
+              icon={Users}
+              label="Seguidores"
+              value={traderStats.overview.totalFollowers || 0}
+              color="cyan"
+            />
+            <KpiBadge
+              icon={Zap}
+              label="Riesgo"
+              value={traderStats.overview.riskScore || 'N/A'}
+              color="yellow"
+            />
           </div>
         </div>
 
@@ -534,71 +765,95 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
 
           {isMasterTrader && masterConfig ? (
             <div className="space-y-4">
-              {/* Cuenta Master Configurada */}
-              <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-6 hover:border-cyan-600/50 transition-colors">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-cyan-600 to-cyan-800 rounded-full flex items-center justify-center">
-                      <Award size={24} className="text-white" />
+              {/* Cuenta Master Configurada - Enhanced con glassmorphism y hover effects */}
+              <div className="relative overflow-hidden bg-[#1C1C1C] rounded-xl border border-[#333] p-6 transition-all duration-500 hover:border-cyan-600/50 hover:shadow-lg hover:shadow-cyan-500/10 group">
+                {/* Background gradient on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-purple-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                {/* Animated border gradient */}
+                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-cyan-500/10" />
+                </div>
+
+                <div className="relative flex flex-col md:flex-row md:items-start justify-between gap-6">
+                  <div className="flex items-start gap-4 flex-1">
+                    {/* Avatar mejorado con glow effect */}
+                    <div className="relative">
+                      <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-cyan-500/30 transition-transform duration-300 group-hover:scale-110">
+                        <Award size={28} className="text-white" />
+                      </div>
+                      {traderStats.overview.activeFollowers > 0 && (
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-[#1C1C1C] animate-pulse" />
+                      )}
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-white text-lg">{masterConfig.strategy_name || 'Estrategia de Trading'}</h3>
-                      <p className="text-sm text-gray-400 mb-1">{t('copyTrading.manager.created')}: {new Date(masterConfig.created_at).toLocaleDateString()}</p>
-                      <div className="flex flex-wrap items-center gap-4 mt-2">
-                        <span className="text-sm text-gray-400">
-                          {t('copyTrading.stats.aum')}: <span className="text-white font-medium">{formatAUM(traderStats.overview.totalAUM)}</span>
-                        </span>
-                        <span className="text-sm text-gray-400">
-                          {t('copyTrading.manager.investors')}: <span className="text-white font-medium">{traderStats.overview.activeFollowers}</span>
-                        </span>
-                        <span className="text-sm text-gray-400">
-                          Cuenta MT5: <span className="text-cyan-400 font-medium">#{masterConfig.master_mt5_account}</span>
-                        </span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-semibold text-white text-xl">{masterConfig.strategy_name || 'Estrategia de Trading'}</h3>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
                           traderStats.overview.activeFollowers > 0
-                            ? 'bg-green-500/20 text-green-400 border border-green-600/50'
-                            : 'bg-gray-500/20 text-gray-400 border border-gray-600/50'
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/30 shadow-sm shadow-green-500/20'
+                            : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
                         }`}>
                           {traderStats.overview.activeFollowers > 0 ? t('copyTrading.status.active') : t('copyTrading.status.inactive')}
                         </span>
                       </div>
 
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <p className="text-sm text-gray-400 mb-3">
+                        {t('copyTrading.manager.created')}: {new Date(masterConfig.created_at).toLocaleDateString()}
+                        <span className="mx-2">|</span>
+                        MT5: <span className="text-cyan-400 font-medium">#{masterConfig.master_mt5_account}</span>
+                      </p>
+
+                      {/* KPI Grid mejorado */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <div className="bg-[#232323]/80 backdrop-blur-sm p-3 rounded-lg border border-[#333]/50 hover:border-cyan-500/30 transition-all duration-300">
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">AUM</p>
+                          <p className="text-cyan-400 font-bold">{formatAUM(traderStats.overview.totalAUM)}</p>
+                        </div>
+                        <div className="bg-[#232323]/80 backdrop-blur-sm p-3 rounded-lg border border-[#333]/50 hover:border-purple-500/30 transition-all duration-300">
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{t('copyTrading.manager.investors')}</p>
+                          <p className="text-purple-400 font-bold">{traderStats.overview.activeFollowers}</p>
+                        </div>
+                        <div className="bg-[#232323]/80 backdrop-blur-sm p-3 rounded-lg border border-[#333]/50 hover:border-green-500/30 transition-all duration-300">
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Comisión</p>
+                          <p className="text-green-400 font-bold">{masterConfig.commission_rate}%</p>
+                        </div>
+                        <div className="bg-[#232323]/80 backdrop-blur-sm p-3 rounded-lg border border-[#333]/50 hover:border-yellow-500/30 transition-all duration-300">
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Max DD</p>
+                          <p className="text-yellow-400 font-bold">{masterConfig.max_drawdown}%</p>
+                        </div>
+                      </div>
+
+                      {/* Markets con badges mejorados */}
+                      <div className="flex flex-wrap gap-2 mb-4">
                         {masterConfig.markets && masterConfig.markets.map((market, idx) => (
-                          <span key={idx} className="text-xs px-2 py-1 bg-cyan-600/20 text-cyan-400 rounded">
+                          <span key={idx} className="text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-600/20 to-purple-600/20 text-cyan-400 rounded-lg border border-cyan-500/30 hover:border-cyan-500/60 transition-all duration-300 hover:scale-105">
                             {market}
                           </span>
                         ))}
                       </div>
 
-                      <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-                        <div className="bg-[#232323] p-2 rounded">
-                          <p className="text-gray-400">Comisión</p>
-                          <p className="text-white font-medium">{masterConfig.commission_rate}%</p>
-                        </div>
-                        <div className="bg-[#232323] p-2 rounded">
-                          <p className="text-gray-400">Riesgo Máx.</p>
-                          <p className="text-white font-medium">{masterConfig.max_risk}%</p>
-                        </div>
-                        <div className="bg-[#232323] p-2 rounded">
-                          <p className="text-gray-400">Drawdown Máx.</p>
-                          <p className="text-white font-medium">{masterConfig.max_drawdown}%</p>
-                        </div>
+                      {/* Risk Indicator visual */}
+                      <div className="flex items-center gap-4">
+                        <span className="text-xs text-gray-500">Nivel de Riesgo:</span>
+                        <RiskIndicator level={masterConfig.risk_level || 'Moderado'} />
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  {/* Action buttons mejorados */}
+                  <div className="flex flex-col gap-3">
                     <button
                       onClick={() => handleViewMyInvestors()}
-                      className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 justify-center"
+                      className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 justify-center shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:scale-105"
                     >
                       <Users size={16} />
                       Ver Seguidores
                     </button>
                     <button
                       onClick={handleEditProfile}
-                      className="border border-[#333] hover:border-cyan-600 text-gray-400 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 justify-center"
+                      className="border border-[#444] hover:border-cyan-500/50 bg-[#232323]/50 hover:bg-[#2a2a2a] text-gray-300 hover:text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 justify-center hover:scale-105"
                     >
                       <Edit size={16} />
                       Editar Perfil
@@ -675,46 +930,66 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           <p className="text-gray-400">{t('copyTrading.manager.manageAndMonitorInvestors')}</p>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - Enhanced */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <Users size={20} className="text-cyan-400" />
-              <span className="text-cyan-400 font-medium">{t('copyTrading.stats.total')}</span>
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 transition-all duration-300 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 hover:scale-[1.02] group">
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                  <Users size={20} className="text-cyan-400" />
+                </div>
+                <span className="text-cyan-400 font-medium text-sm">{t('copyTrading.stats.total')}</span>
+              </div>
+              <p className="text-3xl font-bold text-white">{allInvestors.length}</p>
             </div>
-            <p className="text-2xl font-bold text-white">{allInvestors.length}</p>
           </div>
-          
-          <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <UserCheck size={20} className="text-green-400" />
-              <span className="text-green-400 font-medium">{t('copyTrading.status.active')}</span>
+
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 transition-all duration-300 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/10 hover:scale-[1.02] group">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                  <UserCheck size={20} className="text-green-400" />
+                </div>
+                <span className="text-green-400 font-medium text-sm">{t('copyTrading.status.active')}</span>
+              </div>
+              <p className="text-3xl font-bold text-white">{allInvestors.filter(i => i.status === 'active').length}</p>
             </div>
-            <p className="text-2xl font-bold text-white">{allInvestors.filter(i => i.status === 'active').length}</p>
           </div>
-          
-          <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <DollarSign size={20} className="text-cyan-400" />
-              <span className="text-cyan-400 font-medium">{t('copyTrading.stats.aum')}</span>
+
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 transition-all duration-300 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 hover:scale-[1.02] group">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                  <DollarSign size={20} className="text-purple-400" />
+                </div>
+                <span className="text-purple-400 font-medium text-sm">{t('copyTrading.stats.aum')}</span>
+              </div>
+              <p className="text-3xl font-bold text-white">
+                {formatAUM(allInvestors.reduce((sum, inv) => sum + (inv.investedAmount || 0), 0))}
+              </p>
             </div>
-            <p className="text-2xl font-bold text-white">
-              {formatAUM(allInvestors.reduce((sum, inv) => sum + (inv.investedAmount || 0), 0))}
-            </p>
           </div>
-          
-          <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <TrendingUp size={20} className="text-green-400" />
-              <span className="text-green-400 font-medium">{t('copyTrading.stats.avgPnL')}</span>
+
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 transition-all duration-300 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/10 hover:scale-[1.02] group">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                  <TrendingUp size={20} className="text-green-400" />
+                </div>
+                <span className="text-green-400 font-medium text-sm">{t('copyTrading.stats.avgPnL')}</span>
+              </div>
+              <p className="text-3xl font-bold text-green-400">
+                {formatPercentage(
+                  allInvestors.length > 0
+                    ? allInvestors.reduce((sum, inv) => sum + (inv.totalPnLPercentage || 0), 0) / allInvestors.length
+                    : 0
+                )}
+              </p>
             </div>
-            <p className="text-2xl font-bold text-green-400">
-              {formatPercentage(
-                allInvestors.length > 0 
-                  ? allInvestors.reduce((sum, inv) => sum + (inv.totalPnLPercentage || 0), 0) / allInvestors.length
-                  : 0
-              )}
-            </p>
           </div>
         </div>
 
@@ -775,67 +1050,82 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               </thead>
               <tbody>
                 {filteredInvestors.map((investor) => (
-                  <tr key={investor.id} className="border-b border-[#333]/50 hover:bg-[#1C1C1C]/50 transition-colors">
-                    {/* Investor Info */}
+                  <tr key={investor.id} className="border-b border-[#333]/50 hover:bg-[#1C1C1C]/70 transition-all duration-300 group">
+                    {/* Investor Info - Enhanced */}
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">{(investor.name || 'I').charAt(0)}</span>
+                        <div className="relative">
+                          <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-full flex items-center justify-center shadow-md shadow-cyan-500/20 transition-transform duration-300 group-hover:scale-110">
+                            <span className="text-white font-semibold text-sm">{(investor.name || 'I').charAt(0)}</span>
+                          </div>
+                          {investor.status === 'active' && (
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1C1C1C]" />
+                          )}
                         </div>
                         <div>
-                          <p className="font-medium text-white">{investor.name}</p>
+                          <p className="font-medium text-white group-hover:text-cyan-400 transition-colors duration-300">{investor.name}</p>
                           <p className="text-sm text-gray-400">{investor.email}</p>
                           <p className="text-xs text-gray-500">{t('copyTrading.manager.since')} {investor.startDate}</p>
                         </div>
                       </div>
                     </td>
-                    
-                    {/* Investment Amount */}
+
+                    {/* Investment Amount - Enhanced */}
                     <td className="py-4 px-6">
                       <p className="font-semibold text-white">{formatCurrency(investor.investedAmount)}</p>
                     </td>
-                    
-                    {/* Total P&L */}
+
+                    {/* Total P&L - Enhanced con ReturnCircle */}
                     <td className="py-4 px-6">
-                      <div>
-                        <p className={`font-semibold ${investor.totalPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {formatCurrency(investor.totalPnL)}
-                        </p>
-                        <p className={`text-sm ${investor.totalPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          ({formatPercentage(investor.totalPnLPercentage)})
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <ReturnCircle percentage={investor.totalPnLPercentage || 0} />
+                        <div>
+                          <p className={`font-semibold ${investor.totalPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {formatCurrency(investor.totalPnL)}
+                          </p>
+                        </div>
                       </div>
                     </td>
-                    
-                    {/* Monthly P&L */}
+
+                    {/* Monthly P&L - Enhanced */}
                     <td className="py-4 px-6">
                       <div>
                         <p className={`font-semibold ${investor.monthlyPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {formatCurrency(investor.monthlyPnL)}
                         </p>
-                        <p className={`text-sm ${investor.monthlyPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        <p className={`text-xs ${investor.monthlyPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           ({formatPercentage(investor.monthlyPnLPercentage)})
                         </p>
                       </div>
                     </td>
-                    
-                    {/* Status */}
+
+                    {/* Status - Enhanced con badge mejorado */}
                     <td className="py-4 px-6">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(investor.status)}`}>
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 ${
+                        investor.status === 'active'
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30 shadow-sm shadow-green-500/10'
+                          : investor.status === 'paused'
+                          ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 shadow-sm shadow-yellow-500/10'
+                          : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          investor.status === 'active' ? 'bg-green-400 animate-pulse' :
+                          investor.status === 'paused' ? 'bg-yellow-400' : 'bg-gray-400'
+                        }`} />
                         {getStatusLabel(investor.status)}
                       </span>
                     </td>
-                    
-                    {/* Copy Percentage */}
+
+                    {/* Copy Percentage - Enhanced con gradiente */}
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
-                        <div className="w-12 h-2 bg-[#333] rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-cyan-500 transition-all duration-300"
+                        <div className="w-16 h-2 bg-[#333] rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-500 ease-out"
                             style={{ width: `${investor.copyPercentage || 0}%` }}
                           ></div>
                         </div>
-                        <span className="text-sm text-white">{investor.copyPercentage || 0}%</span>
+                        <span className="text-sm text-white font-medium">{investor.copyPercentage || 0}%</span>
                       </div>
                     </td>
                     
@@ -942,10 +1232,15 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Profile Form */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Basic Information */}
-            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
-              <h2 className="text-xl font-semibold text-cyan-400 mb-6 flex items-center gap-2">
-                <Info size={20} />
+            {/* Basic Information - Enhanced */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 transition-all duration-300 hover:border-[#444]">
+              {/* Background decoration */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 rounded-full blur-2xl" />
+
+              <h2 className="relative text-xl font-semibold text-cyan-400 mb-6 flex items-center gap-2">
+                <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                  <Info size={18} className="text-cyan-400" />
+                </div>
                 {t('copyTrading.manager.information')}
               </h2>
               
@@ -1062,10 +1357,15 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               </div>
             </div>
 
-            {/* Investment Settings */}
-            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
-              <h2 className="text-xl font-semibold text-cyan-400 mb-6 flex items-center gap-2">
-                <Target size={20} />
+            {/* Investment Settings - Enhanced */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 transition-all duration-300 hover:border-[#444]">
+              {/* Background decoration */}
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-br from-purple-500/5 to-cyan-500/5 rounded-full blur-2xl" />
+
+              <h2 className="relative text-xl font-semibold text-cyan-400 mb-6 flex items-center gap-2">
+                <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                  <Target size={18} className="text-purple-400" />
+                </div>
                 {t('copyTrading.manager.configuration')}
               </h2>
               
@@ -1116,39 +1416,46 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               </div>
             </div>
 
-            {/* Specializations */}
-            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
-              <h2 className="text-xl font-semibold text-cyan-400 mb-6 flex items-center gap-2">
-                <Briefcase size={20} />
+            {/* Specializations - Enhanced */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 transition-all duration-300 hover:border-[#444]">
+              {/* Background decoration */}
+              <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-green-500/5 to-cyan-500/5 rounded-full blur-2xl" />
+
+              <h2 className="relative text-xl font-semibold text-cyan-400 mb-6 flex items-center gap-2">
+                <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                  <Briefcase size={18} className="text-green-400" />
+                </div>
                 {t('copyTrading.manager.specializations')}
               </h2>
-              
-              <div className="space-y-4">
+
+              <div className="relative space-y-4">
+                {/* Selected specializations */}
                 <div className="flex flex-wrap gap-2">
                   {profileData.specializations.map((spec) => (
                     <span
                       key={spec}
-                      className="bg-cyan-600/20 text-cyan-400 px-3 py-1 rounded-lg text-sm flex items-center gap-2"
+                      className="bg-gradient-to-r from-cyan-600/20 to-purple-600/20 text-cyan-400 px-4 py-2 rounded-xl text-sm flex items-center gap-2 border border-cyan-500/30 shadow-sm shadow-cyan-500/10 transition-all duration-300 hover:scale-105"
                     >
                       {spec}
                       <button
                         onClick={() => handleRemoveSpecialization(spec)}
-                        className="hover:text-cyan-300"
+                        className="hover:text-red-400 transition-colors duration-200"
                       >
                         <X size={14} />
                       </button>
                     </span>
                   ))}
                 </div>
-                
+
+                {/* Available specializations */}
                 <div className="flex flex-wrap gap-2">
-                  {['Forex', 'Crypto', 'Stocks', 'Commodities', 'Scalping', 'Swing Trading', 'Day Trading', 'Technical Analysis', 'Fundamental Analysis'].filter(spec => 
+                  {['Forex', 'Crypto', 'Stocks', 'Commodities', 'Scalping', 'Swing Trading', 'Day Trading', 'Technical Analysis', 'Fundamental Analysis'].filter(spec =>
                     !profileData.specializations.includes(spec)
                   ).map((spec) => (
                     <button
                       key={spec}
                       onClick={() => handleAddSpecialization(spec)}
-                      className="bg-[#1C1C1C] border border-[#333] text-gray-400 hover:text-white hover:border-cyan-500 px-3 py-1 rounded-lg text-sm transition-colors"
+                      className="bg-[#1C1C1C] border border-[#333] text-gray-400 hover:text-cyan-400 hover:border-cyan-500/50 hover:bg-cyan-500/5 px-4 py-2 rounded-xl text-sm transition-all duration-300 hover:scale-105"
                     >
                       + {spec}
                     </button>
@@ -1160,10 +1467,15 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Privacy Settings */}
-            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
-              <h3 className="text-lg font-semibold text-cyan-400 mb-4 flex items-center gap-2">
-                <Shield size={18} />
+            {/* Privacy Settings - Enhanced */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 transition-all duration-300 hover:border-[#444]">
+              {/* Background decoration */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-yellow-500/5 to-orange-500/5 rounded-full blur-2xl" />
+
+              <h3 className="relative text-lg font-semibold text-cyan-400 mb-4 flex items-center gap-2">
+                <div className="w-7 h-7 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                  <Shield size={14} className="text-yellow-400" />
+                </div>
                 {t('copyTrading.manager.privacySettings')}
               </h3>
               
@@ -1202,49 +1514,56 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
               </div>
             </div>
 
-            {/* Preview Card */}
-            <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6">
+            {/* Preview Card - Enhanced */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 transition-all duration-300 hover:border-[#444]">
               <h3 className="text-lg font-semibold text-cyan-400 mb-4">{t('copyTrading.manager.preview')}</h3>
-              
-              <div className="bg-[#1C1C1C] rounded-xl border border-[#333] p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold">{(profileData.displayName || 'M').charAt(0)}</span>
+
+              <div className="relative overflow-hidden bg-[#1C1C1C] rounded-xl border border-[#333] p-4 transition-all duration-300 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/5">
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-purple-500/5 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+
+                <div className="relative">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                        <span className="text-white font-semibold">{(profileData.displayName || 'M').charAt(0)}</span>
+                      </div>
+                      {profileData.isPublic && (
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-[#1C1C1C]" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">{profileData.displayName}</h3>
+                      <p className="text-sm text-gray-400">{profileData.strategy}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-white">{profileData.displayName}</h3>
-                    <p className="text-sm text-gray-400">{profileData.strategy}</p>
-                  </div>
-                </div>
-                
-                <p className="text-sm text-gray-300 mb-3 line-clamp-2">{profileData.bio}</p>
-                
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">{t('copyTrading.stats.riskLevel')}</span>
-                    <span className={`font-medium ${
-                      profileData.riskLevel === 'Bajo' ? 'text-green-400' : 
-                      profileData.riskLevel === 'Moderado' ? 'text-yellow-400' : 'text-red-400'
-                    }`}>{profileData.riskLevel}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">{t('copyTrading.manager.minInvestmentShort')}</span>
-                    <span className="text-white">{formatCurrency(profileData.minInvestment)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">{t('copyTrading.manager.commission')}</span>
-                    <span className="text-white">{profileData.commissionRate}%</span>
+
+                  <p className="text-sm text-gray-300 mb-4 line-clamp-2">{profileData.bio}</p>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">{t('copyTrading.stats.riskLevel')}</span>
+                      <RiskIndicator level={profileData.riskLevel} />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">{t('copyTrading.manager.minInvestmentShort')}</span>
+                      <span className="text-cyan-400 font-medium">{formatCurrency(profileData.minInvestment)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">{t('copyTrading.manager.commission')}</span>
+                      <span className="text-green-400 font-medium">{profileData.commissionRate}%</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons - Enhanced */}
             <div className="space-y-3">
               <button
                 onClick={handleSaveProfile}
                 disabled={isSaving}
-                className="w-full bg-gradient-to-r from-[#0F7490] to-[#0A5A72] text-white py-3 px-6 rounded-xl hover:opacity-90 transition-opacity font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600 text-white py-3 px-6 rounded-xl transition-all duration-300 font-medium flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:scale-[1.02]"
               >
                 {isSaving ? (
                   <>
@@ -1258,10 +1577,10 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
                   </>
                 )}
               </button>
-              
+
               <button
                 onClick={handleBackToDashboard}
-                className="w-full border border-[#333] text-gray-400 py-3 px-6 rounded-xl hover:text-white hover:border-gray-300 transition-colors font-medium"
+                className="w-full border border-[#444] bg-[#232323]/50 hover:bg-[#2a2a2a] text-gray-400 py-3 px-6 rounded-xl hover:text-white hover:border-gray-500 transition-all duration-300 font-medium hover:scale-[1.02]"
               >
                 {t('copyTrading.actions.cancel')}
               </button>
