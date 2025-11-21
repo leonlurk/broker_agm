@@ -218,7 +218,6 @@ REGLAS:
 - Máximo 2 oraciones
 - Solo temas AGM/trading
 - Si no aplica: "Soy asistente de AGM. ¿Pregunta sobre trading?"
-- Mencionar riesgos del trading
 - No inventar datos
 
 INTENCIÓN: ${intent.name}
@@ -345,7 +344,6 @@ REGLAS IMPORTANTES:
 5. Sé amigable pero profesional
 6. Si detectas frustración o problema grave, ofrece asistencia humana
 7. NUNCA inventes información que no esté en la base de conocimientos
-8. Siempre recuerda que el trading conlleva riesgos
 
 Responde la siguiente pregunta del usuario:`;
 
