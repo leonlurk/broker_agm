@@ -23,13 +23,7 @@ const AccountSparkline = ({ data, color = '#22d3ee', isLoading = false }) => {
   if (isLoading) {
     return (
       <div className="h-16 w-full flex items-center justify-center">
-        <div className="flex gap-1">
-          <div className="w-1 h-8 bg-cyan-500/30 rounded animate-pulse" />
-          <div className="w-1 h-12 bg-cyan-500/30 rounded animate-pulse" style={{ animationDelay: '100ms' }} />
-          <div className="w-1 h-6 bg-cyan-500/30 rounded animate-pulse" style={{ animationDelay: '200ms' }} />
-          <div className="w-1 h-10 bg-cyan-500/30 rounded animate-pulse" style={{ animationDelay: '300ms' }} />
-          <div className="w-1 h-14 bg-cyan-500/30 rounded animate-pulse" style={{ animationDelay: '400ms' }} />
-        </div>
+        <img src="/logo.png" alt="Loading" className="h-10 w-10 animate-pulse opacity-60" />
       </div>
     );
   }
