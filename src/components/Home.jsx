@@ -33,9 +33,16 @@ const AccountSparkline = ({ data, color = '#22d3ee', isLoading = false }) => {
         />
         <style>{`
           @keyframes logoFade {
-            0% { opacity: 0.1; transform: scale(0.85) rotate(-10deg); }
-            50% { opacity: 0.6; transform: scale(1.05) rotate(10deg); }
-            100% { opacity: 0.1; transform: scale(0.85) rotate(-10deg); }
+            0%, 100% {
+              opacity: 0.15;
+              transform: scale(0.92) translateY(2px);
+              filter: brightness(0.8);
+            }
+            50% {
+              opacity: 0.55;
+              transform: scale(1) translateY(-2px);
+              filter: brightness(1.2) drop-shadow(0 0 8px rgba(34, 211, 238, 0.3));
+            }
           }
         `}</style>
       </div>
