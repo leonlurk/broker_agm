@@ -1054,7 +1054,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
 
          {isLoading ? (
            <div className="text-center py-8">
-             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500 mx-auto mb-2"></div>
+             <img src="/logo.png" alt="Loading" className="h-10 w-10 mx-auto mb-2 animate-pulse" />
              <p className="text-gray-400">{t('messages.loading', { ns: 'common' })}</p>
            </div>
          ) : error ? (
