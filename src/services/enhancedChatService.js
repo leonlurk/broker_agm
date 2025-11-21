@@ -9,7 +9,7 @@ class EnhancedChatService {
     // API Keys - Priorizar Gemini
     this.OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
     this.GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-    this.GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-1.5-flash';
+    this.GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
     
     // Configuración - Priorizar Gemini
     this.USE_OPENAI = !!this.OPENAI_API_KEY && this.OPENAI_API_KEY !== 'your-openai-api-key';
