@@ -4,7 +4,7 @@ import { logger } from '../utils/logger';
 class ChatService {
   constructor() {
     this.GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-    this.GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+    this.GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
     this.conversationCache = new Map();
     this.isInitialized = false;
   }
