@@ -23,7 +23,20 @@ const AccountSparkline = ({ data, color = '#22d3ee', isLoading = false }) => {
   if (isLoading) {
     return (
       <div className="h-16 w-full flex items-center justify-center">
-        <img src="/logo.png" alt="Loading" className="h-10 w-10 animate-pulse opacity-60" />
+        <img
+          src="/logo.png"
+          alt="Loading"
+          className="h-10 w-10 transition-all duration-500 ease-in-out"
+          style={{
+            animation: 'logoFade 1.5s ease-in-out infinite',
+          }}
+        />
+        <style>{`
+          @keyframes logoFade {
+            0%, 100% { opacity: 0.15; transform: scale(0.95); }
+            50% { opacity: 0.5; transform: scale(1); }
+          }
+        `}</style>
       </div>
     );
   }
