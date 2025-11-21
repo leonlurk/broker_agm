@@ -65,6 +65,12 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
                 setIsLoadingMyFunds(true);
                 const myFundsData = await getMyFunds();
                 setMyFunds(myFundsData);
+
+                // Inicializar investedFunds con los fondos actuales del usuario
+                if (myFundsData.funds && myFundsData.funds.length > 0) {
+                    const fundIds = myFundsData.funds.map(fund => fund.id || fund.fund_id);
+                    setInvestedFunds(new Set(fundIds));
+                }
             } catch (error) {
                 console.error('Error loading my PAMM funds:', error);
                 console.error('Error details:', error.response?.data || error.message);
@@ -255,6 +261,7 @@ const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParam
             filters={filters}
             setFilters={setFilters}
             filteredFunds={filteredFunds}
+            currentUserId={currentUser?.id}
             t={t}
         />;
     } else if (view === 'fundProfile' && selectedFund) {
@@ -959,13 +966,13 @@ const PammDashboardView = ({
 
 // Los fondos PAMM se cargan dinámicamente desde la API
 
-const PammExplorerView = ({ 
-    formatCurrency, 
-    formatPercentage, 
-    formatAUM, 
-    getRiskColor, 
-    onBackToDashboard, 
-    onViewFundDetails, 
+const PammExplorerView = ({
+    formatCurrency,
+    formatPercentage,
+    formatAUM,
+    getRiskColor,
+    onBackToDashboard,
+    onViewFundDetails,
     onInvestInFund,
     investedFunds,
     searchTerm,
@@ -974,6 +981,7 @@ const PammExplorerView = ({
     setShowFilters,
     filters,
     setFilters,
+    currentUserId,
     t,
     availableFunds = []
 }) => {
@@ -1043,7 +1051,15 @@ const PammExplorerView = ({
                     maxRisk: fund.max_risk || 10.0
                 }));
 
-                setFunds(mappedFunds);
+                // Filtrar fondos propios del usuario (no puede invertir en su propia PAMM)
+                const filteredByOwner = currentUserId
+                    ? mappedFunds.filter(fund => {
+                        const managerId = fund.manager_user_id || fund.manager?.user_id || fund.user_id;
+                        return managerId !== currentUserId;
+                    })
+                    : mappedFunds;
+
+                setFunds(filteredByOwner);
             } catch (error) {
                 console.error('Error loading PAMM funds:', error);
                 setFunds([]);
@@ -1053,7 +1069,7 @@ const PammExplorerView = ({
         };
 
         fetchAvailableFunds();
-    }, []);
+    }, [currentUserId]);
     
     const getTypeColor = (type) => {
         switch (type) {

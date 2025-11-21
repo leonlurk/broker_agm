@@ -378,9 +378,13 @@ export const createPammFund = async (fundData) => {
  */
 export const updateProfitPreference = async (investmentId, preferences) => {
   try {
+    // Backend espera 'preference' con valor 'compound' o 'withdraw'
+    // 'partial' se mapea a 'compound' con porcentaje
+    const preference = preferences.profitHandling === 'withdraw' ? 'withdraw' : 'compound';
+
     const response = await logicApiClient.put(`/api/v1/pamm/investments/${investmentId}/profit-preference`, {
-      profit_handling: preferences.profitHandling,
-      reinvest_percentage: preferences.reinvestPercentage
+      preference,
+      reinvest_percentage: preferences.reinvestPercentage || 100
     });
     return response.data;
   } catch (error) {
