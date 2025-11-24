@@ -740,19 +740,11 @@ const loadAccountMetrics = useCallback(async (account) => {
   try {
     // ENFOQUE HÍBRIDO: Combinar datos en tiempo real + históricos
 
-    // OPTIMIZACIÓN: Ejecutar los 3 requests en PARALELO con Promise.all (ahorro ~1 segundo)
-    console.log('[TradingAccounts] Obteniendo datos en paralelo (tiempo real + posiciones + históricos)...');
+    // OPTIMIZACIÓN: Ejecutar los 2 requests en PARALELO con Promise.all
+    console.log('[TradingAccounts] Obteniendo datos en paralelo (posiciones + dashboard)...');
 
-    const [accountInfoResult, positionsResult, dashboardData] = await Promise.all([
-      // PASO 1: Datos en TIEMPO REAL del MT5 Manager (balance, equity, margin)
-      brokerApi.get(`/accounts/${account.account_number}`)
-        .then(response => ({ success: true, data: response.data }))
-        .catch(error => {
-          console.warn('[TradingAccounts] No se pudieron obtener datos en tiempo real:', error);
-          return { success: false, data: null };
-        }),
-
-      // PASO 2: Posiciones ABIERTAS en tiempo real
+    const [positionsResult, dashboardData] = await Promise.all([
+      // PASO 1: Posiciones ABIERTAS en tiempo real
       brokerApi.get(`/accounts/${account.account_number}/positions`)
         .then(response => ({ success: true, data: response.data || [] }))
         .catch(error => {
@@ -760,16 +752,14 @@ const loadAccountMetrics = useCallback(async (account) => {
           return { success: false, data: [] };
         }),
 
-      // PASO 3: Datos HISTÓRICOS del dashboard (gráficos y operaciones cerradas)
+      // PASO 2: Dashboard con métricas completas (balance, equity, profit, drawdown, etc.)
       accountMetricsOptimized.getDashboardData(account.account_number, 'month')
     ]);
 
     // Extraer resultados
-    const realtimeData = accountInfoResult.success ? accountInfoResult.data : null;
     const openPositions = positionsResult.success ? positionsResult.data : [];
 
     console.log('[TradingAccounts] Datos obtenidos en paralelo:', {
-      realtimeData: !!realtimeData,
       openPositions: openPositions.length,
       dashboardData: !!dashboardData
     });
@@ -779,73 +769,58 @@ const loadAccountMetrics = useCallback(async (account) => {
       ? dashboardData.balance_history 
       : [];
     
-    // PASO 4: Combinar datos en tiempo real + históricos
-    if (dashboardData) {
-      // PRIORIZAR datos en tiempo real si están disponibles
-      if (realtimeData && dashboardData.kpis) {
-        console.log('[TradingAccounts] Combinando datos en tiempo real + históricos');
-        setRealMetrics({
-          ...dashboardData.kpis,
-          // SOBRESCRIBIR con datos en tiempo real del MT5
-          balance: realtimeData.equity || realtimeData.balance,
-          equity: realtimeData.equity,
-          margin: realtimeData.margin,
-          free_margin: realtimeData.free_margin
-        });
-        console.log('[TradingAccounts] Balance en tiempo real:', realtimeData.equity);
-      } else if (dashboardData.kpis) {
-        // Fallback a dashboard si no hay datos en tiempo real
-        console.log('[TradingAccounts] Usando métricas del dashboard:', dashboardData.kpis);
-        setRealMetrics({
-          ...dashboardData.kpis,
-          balance: dashboardData.kpis.equity || dashboardData.kpis.balance
-        });
-      }
-      
-      // Actualizar estadísticas
-      if (dashboardData.statistics) {
-        console.log('[TradingAccounts] Usando estadísticas optimizadas:', dashboardData.statistics);
-        setRealStatistics(dashboardData.statistics);
-      }
-      
-      // Actualizar instrumentos
-      if (dashboardData.instruments && dashboardData.instruments.length > 0) {
-        console.log('[TradingAccounts] Usando instrumentos optimizados:', dashboardData.instruments);
-        setRealInstruments({
-          distribution: dashboardData.instruments,
-          total_instruments: dashboardData.instruments.length,
-          total_trades: dashboardData.statistics?.total_trades || 0
-        });
-      }
-      
-      // Actualizar historial de balance
-      if (balanceHistory && balanceHistory.length > 0) {
-        console.log('[TradingAccounts] Balance history recibido:', balanceHistory.length, 'puntos');
-        console.log('[TradingAccounts] Balance history muestra:', balanceHistory.slice(0, 2));
-        // Formatear para el gráfico
-        let formattedBalance = balanceHistory.map(item => ({
-          date: item.timestamp || item.date,
-          timestamp: item.timestamp || item.date,
-          // Usar servicio estandarizado para datos de gráfico
-          value: equityDataService.getChartValue(item),
-          balance: equityDataService.getAccountBalance(item),
-          equity: equityDataService.getAccountEquity(item)
-        }));
-        try {
-          if (dashboardData.kpis && formattedBalance.length > 0) {
-            const currentVal = parseFloat(dashboardData.kpis.balance ?? 0) || 0;
-            const li = formattedBalance.length - 1;
-            const lastVal = equityDataService.getChartValue(formattedBalance[li]);
-            if (currentVal > 0 && Math.abs(currentVal - lastVal) > 0.01) {
-              formattedBalance[li] = { ...formattedBalance[li], value: currentVal, balance: currentVal, equity: currentVal };
-            }
+    // PASO 3: Usar datos del dashboard (incluye balance, equity, profit, drawdown correctos)
+    if (dashboardData && dashboardData.kpis) {
+      console.log('[TradingAccounts] Usando métricas completas del dashboard:', dashboardData.kpis);
+      setRealMetrics({
+        ...dashboardData.kpis,
+        balance: dashboardData.kpis.equity || dashboardData.kpis.balance
+      });
+    }
+
+    // Actualizar estadísticas
+    if (dashboardData && dashboardData.statistics) {
+      console.log('[TradingAccounts] Usando estadísticas optimizadas:', dashboardData.statistics);
+      setRealStatistics(dashboardData.statistics);
+    }
+
+    // Actualizar instrumentos
+    if (dashboardData && dashboardData.instruments && dashboardData.instruments.length > 0) {
+      console.log('[TradingAccounts] Usando instrumentos optimizados:', dashboardData.instruments);
+      setRealInstruments({
+        distribution: dashboardData.instruments,
+        total_instruments: dashboardData.instruments.length,
+        total_trades: dashboardData.statistics?.total_trades || 0
+      });
+    }
+
+    // Actualizar historial de balance
+    if (balanceHistory && balanceHistory.length > 0) {
+      console.log('[TradingAccounts] Balance history recibido:', balanceHistory.length, 'puntos');
+      console.log('[TradingAccounts] Balance history muestra:', balanceHistory.slice(0, 2));
+      // Formatear para el gráfico
+      let formattedBalance = balanceHistory.map(item => ({
+        date: item.timestamp || item.date,
+        timestamp: item.timestamp || item.date,
+        // Usar servicio estandarizado para datos de gráfico
+        value: equityDataService.getChartValue(item),
+        balance: equityDataService.getAccountBalance(item),
+        equity: equityDataService.getAccountEquity(item)
+      }));
+      try {
+        if (dashboardData && dashboardData.kpis && formattedBalance.length > 0) {
+          const currentVal = parseFloat(dashboardData.kpis.balance ?? 0) || 0;
+          const li = formattedBalance.length - 1;
+          const lastVal = equityDataService.getChartValue(formattedBalance[li]);
+          if (currentVal > 0 && Math.abs(currentVal - lastVal) > 0.01) {
+            formattedBalance[li] = { ...formattedBalance[li], value: currentVal, balance: currentVal, equity: currentVal };
           }
-        } catch (e) {}
-        console.log('[TradingAccounts] Balance formateado:', formattedBalance.slice(0, 2));
-        setRealBalanceHistory(formattedBalance);
-      } else {
-        console.log('[TradingAccounts] NO hay balance history!');
-      }
+        }
+      } catch (e) {}
+      console.log('[TradingAccounts] Balance formateado:', formattedBalance.slice(0, 2));
+      setRealBalanceHistory(formattedBalance);
+    } else {
+      console.log('[TradingAccounts] NO hay balance history!');
     }
     
     // COMBINAR operaciones cerradas + posiciones abiertas
