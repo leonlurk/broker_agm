@@ -168,24 +168,55 @@ export const createMT5Account = async (userId, accountData) => {
 };
 
 /**
- * Get MT5 account details
+ * Get MT5 account details with full dashboard metrics
  */
 export const getMT5AccountDetails = async (login) => {
   try {
     logger.info('[MT5 API] Getting account details', { login });
 
-    const response = await mt5Api.get(`/api/v1/accounts/${login}`);
+    // Use new dashboard endpoint with correct metrics
+    const response = await mt5Api.get(`/api/v1/supabase/accounts/${login}/dashboard?period=month`);
+
+    // Transform dashboard response to match old format for backwards compatibility
+    const dashboardData = response.data;
+    const accountData = {
+      login: login,
+      balance: dashboardData.kpis.balance,
+      equity: dashboardData.kpis.equity,
+      margin: dashboardData.kpis.margin,
+      free_margin: dashboardData.kpis.free_margin,
+      leverage: 100, // Default, can be added to backend response if needed
+      group: 'demo\\MarketDirect', // Default, can be added to backend response if needed
+      name: `Account ${login}`,
+      enabled: true,
+      last_access: new Date().toISOString(),
+
+      // NEW: Correct metrics from Supabase
+      profit: dashboardData.statistics.net_pnl, // ✅ Total profit from trading operations
+      profit_percentage: dashboardData.kpis.profit_loss_percentage,
+      drawdown: dashboardData.kpis.current_drawdown, // ✅ Drawdown in percentage
+
+      // Additional stats
+      challenge_amount: null,
+      challenge_type: null,
+      account_type: null,
+      status: 'active',
+      created_at: null,
+
+      // Include full dashboard data for components that need it
+      _fullDashboard: dashboardData
+    };
 
     return {
       success: true,
-      data: response.data
+      data: accountData
     };
   } catch (error) {
     logger.error('[MT5 API] Error getting account details', {
       error: error.message,
       response: error.response?.data
     });
-    
+
     return {
       success: false,
       error: error.response?.data?.detail || error.message || 'Error getting account details'
