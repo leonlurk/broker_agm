@@ -7,6 +7,8 @@ import WithdrawalHistoryDetails from './WithdrawalHistoryDetails';
 import Pagination from './utils/Pagination';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import IBOnboardingScreen from './IBOnboardingScreen';
+import IBAgreementModal from './IBAgreementModal';
 
 // Component now uses affiliatesService for all data
 
@@ -25,6 +27,14 @@ const AfiliadosDashboard = () => {
   const [visibleAfiliados] = useState(3);
   const [isMobile, setIsMobile] = useState(false);
   const [referralLink, setReferralLink] = useState('');
+
+  // IB Agreement states
+  const [isIBActive, setIsIBActive] = useState(false);
+  const [hasAcceptedAgreement, setHasAcceptedAgreement] = useState(false);
+  const [showAgreementModal, setShowAgreementModal] = useState(false);
+  const [agreementContent, setAgreementContent] = useState('');
+  const [agreementVersion, setAgreementVersion] = useState('1.0');
+  const [isCheckingAgreement, setIsCheckingAgreement] = useState(true);
 
   // Estados para paginación y datos dinámicos
   const [currentPageCuentas, setCurrentPageCuentas] = useState(1);
@@ -54,6 +64,38 @@ const AfiliadosDashboard = () => {
     };
   }, []);
   
+  // Check IB Agreement status
+  useEffect(() => {
+    const checkAgreementStatus = async () => {
+      if (!currentUser?.id) {
+        setIsCheckingAgreement(false);
+        return;
+      }
+
+      try {
+        setIsCheckingAgreement(true);
+        const agreementStatus = await affiliatesService.checkIBAgreement(currentUser.id);
+
+        setHasAcceptedAgreement(agreementStatus.hasAccepted);
+        setIsIBActive(agreementStatus.isActive);
+
+        // Load agreement content for modal
+        const activeAgreement = await affiliatesService.getActiveAgreement();
+        setAgreementContent(activeAgreement.content);
+        setAgreementVersion(activeAgreement.version);
+
+      } catch (error) {
+        console.error('Error checking IB agreement:', error);
+      } finally {
+        setIsCheckingAgreement(false);
+      }
+    };
+
+    if (currentUser?.id) {
+      checkAgreementStatus();
+    }
+  }, [currentUser?.id]);
+
   // Load user data and affiliate statistics
   useEffect(() => {
     const fetchUserData = async () => {
@@ -151,6 +193,29 @@ const AfiliadosDashboard = () => {
 
   const handleBackToDashboard = () => {
     setSelectedTrader(null);
+  };
+
+  // IB Agreement handlers
+  const handleBecomeIB = () => {
+    setShowAgreementModal(true);
+  };
+
+  const handleAcceptAgreement = async () => {
+    try {
+      const result = await affiliatesService.acceptIBAgreement(currentUser.id, agreementVersion);
+
+      if (result.success) {
+        setHasAcceptedAgreement(true);
+        setIsIBActive(true);
+        setShowAgreementModal(false);
+        toast.success('¡Felicidades! Ahora eres un Introducing Broker activo');
+      } else {
+        toast.error(result.message || 'Error al aceptar el acuerdo');
+      }
+    } catch (error) {
+      console.error('Error accepting IB agreement:', error);
+      toast.error('Error al procesar tu aceptación');
+    }
   };
 
   // Renderizar cards móviles para afiliados
@@ -551,6 +616,33 @@ const AfiliadosDashboard = () => {
         return null;
     }
   };
+
+  // Show loading while checking agreement status
+  if (isCheckingAgreement) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#191919]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader className="w-12 h-12 text-blue-400 animate-spin" />
+          <p className="text-gray-400">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show onboarding screen if user hasn't accepted IB agreement
+  if (!hasAcceptedAgreement || !isIBActive) {
+    return (
+      <>
+        <IBOnboardingScreen onBecomeIB={handleBecomeIB} />
+        <IBAgreementModal
+          isOpen={showAgreementModal}
+          onClose={() => setShowAgreementModal(false)}
+          onAccept={handleAcceptAgreement}
+          agreementContent={agreementContent}
+        />
+      </>
+    );
+  }
 
   if (selectedTrader) {
     return <WithdrawalHistoryDetails user={selectedTrader} onBack={handleBackToDashboard} />;

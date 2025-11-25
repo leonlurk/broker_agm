@@ -333,7 +333,7 @@ class AffiliatesService {
     try {
       // Check available balance first
       const stats = await this.getReferralStats(userId);
-      
+
       if (amount > stats.totalCommissions) {
         return {
           success: false,
@@ -369,6 +369,116 @@ class AffiliatesService {
       return {
         success: false,
         message: 'An error occurred while processing your request'
+      };
+    }
+  }
+
+  /**
+   * Check if user has accepted IB agreement
+   * @param {string} userId - User ID
+   * @returns {Promise<{hasAccepted: boolean, acceptedAt: string|null, version: string|null}>}
+   */
+  async checkIBAgreement(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('ib_agreement_accepted, ib_agreement_accepted_at, ib_agreement_version, is_ib_active')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        logger.error('[Affiliates] Error checking IB agreement:', error);
+        return { hasAccepted: false, acceptedAt: null, version: null, isActive: false };
+      }
+
+      return {
+        hasAccepted: data?.ib_agreement_accepted || false,
+        acceptedAt: data?.ib_agreement_accepted_at || null,
+        version: data?.ib_agreement_version || null,
+        isActive: data?.is_ib_active || false
+      };
+    } catch (error) {
+      logger.error('[Affiliates] Error in checkIBAgreement:', error);
+      return { hasAccepted: false, acceptedAt: null, version: null, isActive: false };
+    }
+  }
+
+  /**
+   * Get active IB agreement content
+   * @returns {Promise<{content: string, version: string}>}
+   */
+  async getActiveAgreement() {
+    try {
+      const { data, error } = await supabase
+        .from('ib_agreement_versions')
+        .select('content, version')
+        .eq('is_active', true)
+        .single();
+
+      if (error) {
+        logger.error('[Affiliates] Error fetching IB agreement:', error);
+        return { content: '', version: '1.0' };
+      }
+
+      return {
+        content: data?.content || '',
+        version: data?.version || '1.0'
+      };
+    } catch (error) {
+      logger.error('[Affiliates] Error in getActiveAgreement:', error);
+      return { content: '', version: '1.0' };
+    }
+  }
+
+  /**
+   * Accept IB agreement
+   * @param {string} userId - User ID
+   * @param {string} agreementVersion - Agreement version
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async acceptIBAgreement(userId, agreementVersion = '1.0') {
+    try {
+      // Get user's IP address (client-side, limited accuracy)
+      let ipAddress = null;
+      try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        ipAddress = data.ip;
+      } catch (ipError) {
+        logger.warn('[Affiliates] Could not fetch IP address:', ipError);
+      }
+
+      // Get user agent
+      const userAgent = navigator.userAgent;
+
+      // Call database function to record acceptance
+      const { data, error } = await supabase.rpc('accept_ib_agreement', {
+        p_user_id: userId,
+        p_agreement_version: agreementVersion,
+        p_ip_address: ipAddress,
+        p_user_agent: userAgent
+      });
+
+      if (error) {
+        logger.error('[Affiliates] Error accepting IB agreement:', error);
+        return {
+          success: false,
+          message: 'Failed to record IB agreement acceptance'
+        };
+      }
+
+      logger.info('[Affiliates] IB agreement accepted successfully', { userId, version: agreementVersion });
+
+      return {
+        success: true,
+        message: 'IB agreement accepted successfully',
+        data
+      };
+    } catch (error) {
+      logger.error('[Affiliates] Error in acceptIBAgreement:', error);
+      return {
+        success: false,
+        message: 'An error occurred while processing your acceptance'
       };
     }
   }
