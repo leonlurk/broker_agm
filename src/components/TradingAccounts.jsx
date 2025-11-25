@@ -725,6 +725,21 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
     const ticketToClose = positionToClose.ticket || positionToClose.idPosicion;
 
+    // Extraer el tipo original (BUY/SELL) - puede venir traducido como "Compra"/"Venta"
+    let originalType = positionToClose.type;
+    if (!originalType || (originalType !== 'BUY' && originalType !== 'SELL')) {
+      // Intentar extraer del campo traducido
+      const tipoTranslated = positionToClose.tipo?.toLowerCase();
+      if (tipoTranslated?.includes('compr') || tipoTranslated?.includes('buy')) {
+        originalType = 'BUY';
+      } else if (tipoTranslated?.includes('vent') || tipoTranslated?.includes('sell')) {
+        originalType = 'SELL';
+      } else {
+        // Último recurso: usar el tipo como está
+        originalType = positionToClose.tipo || 'BUY';
+      }
+    }
+
     // PASO 1: OPTIMISTIC UPDATE - Actualizar UI INMEDIATAMENTE
     // Remover de la lista de operaciones la posición que se va a cerrar
     setRealTradingOperations(prev => {
@@ -757,7 +772,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       account_number: selectedAccount.account_number,
       ticket: ticketToClose,
       symbol: positionToClose.symbol || positionToClose.instrumento,
-      type: positionToClose.type || positionToClose.tipo,
+      type: originalType,
       volume: parseFloat(positionToClose.volume || positionToClose.lotaje || 0),
       open_price: parseFloat(positionToClose.open_price || positionToClose.precioApertura || 0),
       open_time: positionToClose.open_time || positionToClose.openTime || new Date().toISOString(),
