@@ -48,26 +48,42 @@ class CryptoPaymentService {
    */
   async authenticateWithSupabase(supabaseToken, email) {
     try {
+      console.log('[CryptoPayment] Autenticando con Whapy:', {
+        email,
+        tokenLength: supabaseToken?.length,
+        tokenPrefix: supabaseToken?.substring(0, 20) + '...'
+      });
+
       // Usar el nuevo endpoint de autenticación por token
       const response = await cryptoApi.post('/users/auth-token', {
         token: supabaseToken,
         email
       });
 
+      console.log('[CryptoPayment] Respuesta de Whapy:', response.data);
+
       if (response.data.success && response.data.token) {
         localStorage.setItem('crypto_token', response.data.token);
+        console.log('[CryptoPayment] Autenticación exitosa');
         return { success: true, token: response.data.token };
       }
-      
-      return { 
-        success: false, 
-        error: response.data.msg || 'Error de autenticación' 
+
+      console.warn('[CryptoPayment] Autenticación falló:', response.data);
+      return {
+        success: false,
+        error: response.data.msg || response.data.message || 'Error de autenticación'
       };
     } catch (error) {
-      console.error('Error en autenticación crypto:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.msg || 'Error de autenticación' 
+      console.error('[CryptoPayment] Error en autenticación:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+
+      return {
+        success: false,
+        error: error.response?.data?.msg || error.response?.data?.message || error.message || 'Error de autenticación'
       };
     }
   }
