@@ -263,6 +263,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const [positionToClose, setPositionToClose] = useState(null);
   const [isClosingPosition, setIsClosingPosition] = useState(false);
 
+  // State for provisional closed positions (optimistic updates)
+  const [provisionalClosedPositions, setProvisionalClosedPositions] = useState([]);
+
   // Función para obtener tiempo transcurrido en minutos
   const getTimeAgoInMinutes = (timestamp) => {
     if (!timestamp) return null;
@@ -720,10 +723,42 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
     setIsClosingPosition(true);
 
+    // PASO 1: Crear versión provisional inmediatamente (Optimistic Update)
+    const provisionalPosition = {
+      user_id: user?.id,
+      account_number: selectedAccount.account_number,
+      ticket: positionToClose.ticket || positionToClose.idPosicion,
+      symbol: positionToClose.symbol || positionToClose.instrumento,
+      type: positionToClose.type || positionToClose.tipo,
+      volume: parseFloat(positionToClose.volume || positionToClose.lotaje || 0),
+      open_price: parseFloat(positionToClose.open_price || positionToClose.precioApertura || 0),
+      open_time: positionToClose.open_time || positionToClose.time || new Date().toISOString(),
+      close_price: parseFloat(positionToClose.price_current || positionToClose.precioCierre || positionToClose.open_price || 0),
+      close_time: new Date().toISOString(),
+      stop_loss: parseFloat(positionToClose.stop_loss || positionToClose.stopLoss || 0),
+      take_profit: parseFloat(positionToClose.take_profit || positionToClose.takeProfit || 0),
+      profit: parseFloat(positionToClose.profit || positionToClose.ganancia || 0),
+      commission: parseFloat(positionToClose.commission || 0),
+      swap: parseFloat(positionToClose.swap || 0),
+      comment: 'Pending sync from MT5'
+    };
+
     try {
       console.log('[TradingAccounts] Closing position:', positionToClose.ticket);
 
-      // Llamar al endpoint DELETE del backend Python API
+      // PASO 2: Insertar en pending_closed_positions (Supabase)
+      const { error: insertError } = await supabase
+        .from('pending_closed_positions')
+        .insert([provisionalPosition]);
+
+      if (insertError) {
+        console.warn('[TradingAccounts] Could not insert provisional position:', insertError);
+        // Continuar de todos modos, no es crítico
+      } else {
+        console.log('[TradingAccounts] Provisional position created');
+      }
+
+      // PASO 3: Llamar al endpoint DELETE del backend Python API
       const response = await brokerApi.delete(
         `/trading/positions/${positionToClose.ticket}`,
         {
@@ -742,12 +777,24 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       setShowClosePositionModal(false);
       setPositionToClose(null);
 
-      // Recargar los datos de la cuenta para reflejar el cambio
+      // PASO 4: Recargar datos para reflejar el cambio (mostrará la provisional)
       if (selectedAccount) {
         await loadAccountMetrics(selectedAccount);
       }
     } catch (error) {
       console.error('[TradingAccounts] Error closing position:', error);
+
+      // ROLLBACK: Eliminar la posición provisional si el cierre falló
+      if (error.response?.status !== 404) {
+        // Si es 404 probablemente ya estaba cerrada, así que mantenemos la provisional
+        await supabase
+          .from('pending_closed_positions')
+          .delete()
+          .eq('account_number', selectedAccount.account_number)
+          .eq('ticket', positionToClose.ticket || positionToClose.idPosicion);
+
+        console.log('[TradingAccounts] Rolled back provisional position due to error');
+      }
 
       // Manejar errores específicos
       let errorMessage;
@@ -765,9 +812,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
       toast.error(`${t('trading:positions.messages.closeError')}: ${errorMessage}`);
 
-      // Si es 404, refrescar automáticamente para sincronizar
-      if (error.response?.status === 404 && selectedAccount) {
-        console.log('[TradingAccounts] Position not found - refreshing account data');
+      // Refrescar automáticamente para sincronizar
+      if (selectedAccount) {
+        console.log('[TradingAccounts] Refreshing account data after error');
         setTimeout(() => {
           loadAccountMetrics(selectedAccount);
         }, 1000);
@@ -901,14 +948,14 @@ const loadAccountMetrics = useCallback(async (account) => {
       console.log('[TradingAccounts] NO hay balance history!');
     }
     
-    // COMBINAR operaciones cerradas + posiciones abiertas
+    // COMBINAR operaciones cerradas + posiciones abiertas + pending
     const allOperations = [];
-    
+
     // 1. Agregar operaciones CERRADAS del dashboard
     if (dashboardData.recent_operations && dashboardData.recent_operations.length > 0) {
       allOperations.push(...dashboardData.recent_operations);
     }
-    
+
     // 2. Agregar posiciones ABIERTAS del MT5 Manager
     if (openPositions && openPositions.length > 0) {
       const openOps = openPositions.map(pos => ({
@@ -919,6 +966,38 @@ const loadAccountMetrics = useCallback(async (account) => {
         status: 'OPEN'
       }));
       allOperations.push(...openOps);
+    }
+
+    // 3. Agregar posiciones PENDING (cerradas provisionales)
+    try {
+      const { data: pendingPositions, error: pendingError } = await supabase
+        .from('pending_closed_positions')
+        .select('*')
+        .eq('account_number', account.account_number);
+
+      if (!pendingError && pendingPositions && pendingPositions.length > 0) {
+        console.log('[TradingAccounts] Found', pendingPositions.length, 'pending positions');
+        const pendingOps = pendingPositions.map(pending => ({
+          ticket: pending.ticket,
+          symbol: pending.symbol,
+          type: pending.type,
+          volume: pending.volume,
+          open_price: pending.open_price,
+          open_time: pending.open_time,
+          close_price: pending.close_price,
+          close_time: pending.close_time,
+          stop_loss: pending.stop_loss,
+          take_profit: pending.take_profit,
+          profit: pending.profit,
+          commission: pending.commission || 0,
+          swap: pending.swap || 0,
+          status: 'PENDING_SYNC', // Flag especial
+          isPending: true // Flag para UI
+        }));
+        allOperations.push(...pendingOps);
+      }
+    } catch (error) {
+      console.warn('[TradingAccounts] Could not load pending positions:', error);
     }
     
     if (allOperations.length > 0) {
@@ -972,7 +1051,8 @@ const loadAccountMetrics = useCallback(async (account) => {
             profit: op.profit,
             swap: op.swap || 0,
             commission: op.commission || 0,
-            status: isOpen ? 'OPEN' : (op.status || 'CLOSED')
+            status: isOpen ? 'OPEN' : (op.status || 'CLOSED'),
+            isPending: op.isPending || false  // Flag para posiciones en sincronización
           };
         }),
         total_operations: allOperations.length
@@ -3906,7 +3986,17 @@ const loadAccountMetrics = useCallback(async (account) => {
                       <div className="grid grid-cols-2 gap-3 text-xs text-gray-400">
                         <div>
                           <div className="mb-1"><span className="text-white">Apertura:</span> {transaction.fechaApertura}</div>
-                          <div className="mb-1"><span className="text-white">Cierre:</span> {transaction.fechaCierre}</div>
+                          <div className="mb-1 flex items-center gap-2">
+                            <span className="text-white">Cierre:</span>
+                            {transaction.isPending ? (
+                              <span className="text-yellow-400 font-medium flex items-center gap-1">
+                                <span className="animate-spin inline-flex h-2 w-2 rounded-full border border-yellow-400 border-t-transparent"></span>
+                                {i18n.language === 'es' ? 'Sincronizando...' : 'Syncing...'}
+                              </span>
+                            ) : (
+                              <span>{transaction.fechaCierre}</span>
+                            )}
+                          </div>
                           <div className="mb-1"><span className="text-white">{t('lotSize')}:</span> {transaction.lotaje}</div>
                         </div>
                         <div>
@@ -3998,6 +4088,16 @@ const loadAccountMetrics = useCallback(async (account) => {
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                               </div>
                               <span className="text-green-400 font-medium">Position Opened</span>
+                            </div>
+                          ) : transaction.isPending ? (
+                            <div className="flex items-center gap-2">
+                              <div className="relative flex items-center justify-center">
+                                <span className="animate-spin inline-flex h-3 w-3 rounded-full border-2 border-yellow-400 border-t-transparent"></span>
+                              </div>
+                              <div>
+                                <div className="text-yellow-400 font-medium text-xs">{i18n.language === 'es' ? 'Sincronizando...' : 'Syncing...'}</div>
+                                <div className="text-gray-500 text-xs">{transaction.fechaCierre}</div>
+                              </div>
                             </div>
                           ) : (
                             <div className="flex items-center gap-2 text-white">
