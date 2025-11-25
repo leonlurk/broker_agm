@@ -977,24 +977,61 @@ const loadAccountMetrics = useCallback(async (account) => {
 
       if (!pendingError && pendingPositions && pendingPositions.length > 0) {
         console.log('[TradingAccounts] Found', pendingPositions.length, 'pending positions');
-        const pendingOps = pendingPositions.map(pending => ({
-          ticket: pending.ticket,
-          symbol: pending.symbol,
-          type: pending.type,
-          volume: pending.volume,
-          open_price: pending.open_price,
-          open_time: pending.open_time,
-          close_price: pending.close_price,
-          close_time: pending.close_time,
-          stop_loss: pending.stop_loss,
-          take_profit: pending.take_profit,
-          profit: pending.profit,
-          commission: pending.commission || 0,
-          swap: pending.swap || 0,
-          status: 'PENDING_SYNC', // Flag especial
-          isPending: true // Flag para UI
-        }));
-        allOperations.push(...pendingOps);
+
+        // Get tickets of real closed operations for deduplication
+        const realClosedTickets = new Set(
+          allOperations
+            .filter(op => op.close_time && op.status !== 'OPEN')
+            .map(op => op.ticket)
+        );
+
+        // Filter out pendings that already have real closed operations
+        const ticketsToDelete = [];
+        const validPendings = [];
+
+        for (const pending of pendingPositions) {
+          if (realClosedTickets.has(pending.ticket)) {
+            // Real position exists, mark for deletion
+            ticketsToDelete.push(pending.ticket);
+            console.log('[TradingAccounts] Real position found for pending ticket:', pending.ticket);
+          } else {
+            // No real position yet, keep pending
+            validPendings.push(pending);
+          }
+        }
+
+        // Delete pendings that have real positions (async, don't wait)
+        if (ticketsToDelete.length > 0) {
+          supabase
+            .from('pending_closed_positions')
+            .delete()
+            .eq('account_number', account.account_number)
+            .in('ticket', ticketsToDelete)
+            .then(() => console.log('[TradingAccounts] Cleaned up', ticketsToDelete.length, 'synced pendings'));
+        }
+
+        // Add only valid pendings to operations
+        if (validPendings.length > 0) {
+          const pendingOps = validPendings.map(pending => ({
+            ticket: pending.ticket,
+            symbol: pending.symbol,
+            type: pending.type,
+            volume: pending.volume,
+            open_price: pending.open_price,
+            open_time: pending.open_time,
+            close_price: pending.close_price,
+            close_time: pending.close_time,
+            stop_loss: pending.stop_loss,
+            take_profit: pending.take_profit,
+            profit: pending.profit,
+            commission: pending.commission || 0,
+            swap: pending.swap || 0,
+            status: 'PENDING_SYNC', // Flag especial
+            isPending: true // Flag para UI
+          }));
+          allOperations.push(...pendingOps);
+          console.log('[TradingAccounts] Added', pendingOps.length, 'pending positions to display');
+        }
       }
     } catch (error) {
       console.warn('[TradingAccounts] Could not load pending positions:', error);

@@ -73,7 +73,7 @@ BEGIN
 END;
 $$;
 
--- Function to remove pending position when real position is detected
+-- Function to remove pending position when real position is synced from MT5
 CREATE OR REPLACE FUNCTION public.remove_pending_if_real_exists()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -81,21 +81,26 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-    -- When a closed position is inserted/updated in mt5_operations
+    -- When a closed position is inserted/updated in trading_operations
     -- Remove any matching pending position
-    DELETE FROM public.pending_closed_positions
-    WHERE account_number = NEW.login
-      AND ticket = NEW.position_id
-      AND NEW.close_time IS NOT NULL; -- Only if it's actually closed
+    IF NEW.close_time IS NOT NULL THEN
+        DELETE FROM public.pending_closed_positions
+        WHERE account_number = NEW.account_number::BIGINT
+          AND ticket = NEW.ticket::BIGINT;
+
+        IF FOUND THEN
+            RAISE NOTICE 'Removed pending position for ticket % (real position synced)', NEW.ticket;
+        END IF;
+    END IF;
 
     RETURN NEW;
 END;
 $$;
 
 -- Create trigger to auto-remove pending when real appears
-DROP TRIGGER IF EXISTS trigger_remove_pending_on_real_position ON public.mt5_operations;
+DROP TRIGGER IF EXISTS trigger_remove_pending_on_real_position ON public.trading_operations;
 CREATE TRIGGER trigger_remove_pending_on_real_position
-    AFTER INSERT OR UPDATE ON public.mt5_operations
+    AFTER INSERT OR UPDATE ON public.trading_operations
     FOR EACH ROW
     WHEN (NEW.close_time IS NOT NULL)
     EXECUTE FUNCTION public.remove_pending_if_real_exists();
@@ -108,4 +113,4 @@ GRANT EXECUTE ON FUNCTION public.cleanup_expired_pending_positions TO authentica
 COMMENT ON TABLE public.pending_closed_positions IS 'Temporary storage for closed positions pending MT5 sync - enables optimistic UI updates';
 COMMENT ON COLUMN public.pending_closed_positions.expires_at IS 'Auto-cleanup timestamp - positions older than 3 days are automatically removed';
 COMMENT ON FUNCTION public.cleanup_expired_pending_positions IS 'Removes pending positions that have expired (older than 3 days)';
-COMMENT ON FUNCTION public.remove_pending_if_real_exists IS 'Trigger function that removes pending position when real closed position appears in mt5_operations';
+COMMENT ON FUNCTION public.remove_pending_if_real_exists IS 'Trigger function that removes pending position when real closed position appears in trading_operations table';
