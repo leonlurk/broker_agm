@@ -438,6 +438,38 @@ export const getBalanceChartData = async (accountNumber, period = 'month') => {
   }
 };
 
+/**
+ * Obtiene datos de rendimiento para el sparkline (últimos 30 días)
+ * Formato optimizado para los gráficos de las cards
+ */
+export const getPerformanceSparklineData = async (accountNumber, days = 30) => {
+  try {
+    const { success, data, error } = await getBalanceHistory(accountNumber, days);
+
+    if (!success || !data || data.length === 0) {
+      logger.warn('[Account History] No performance data available', { accountNumber });
+      return null;
+    }
+
+    // Transformar datos al formato esperado por el sparkline: { day, value }
+    const chartData = data.map((snapshot, index) => ({
+      day: index + 1,
+      value: snapshot.equity || snapshot.balance || 0,
+      timestamp: snapshot.timestamp
+    }));
+
+    logger.info('[Account History] Performance sparkline data generated', {
+      accountNumber,
+      dataPoints: chartData.length
+    });
+
+    return chartData;
+  } catch (error) {
+    logger.error('[Account History] Error getting performance sparkline data', error);
+    return null;
+  }
+};
+
 export default {
   recordBalanceSnapshot,
   getBalanceHistory,
@@ -446,5 +478,6 @@ export default {
   getDailyMetrics,
   calculateDailyMetrics,
   getBalanceChartData,
-  getPerformanceChartData
+  getPerformanceChartData,
+  getPerformanceSparklineData
 };

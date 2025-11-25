@@ -20,7 +20,8 @@ import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
 
 // Mini sparkline chart component
 const PerformanceSparkline = ({ data, color = '#22d3ee' }) => {
-  const chartData = data || generateSamplePerformanceData();
+  // Use real data if available, otherwise show flat line (no activity)
+  const chartData = data || generateEmptyPerformanceData();
 
   return (
     <div className="h-16 w-full">
@@ -55,13 +56,11 @@ const PerformanceSparkline = ({ data, color = '#22d3ee' }) => {
   );
 };
 
-// Generate sample performance data
-const generateSamplePerformanceData = () => {
+// Generate empty performance data (flat line when no real data available)
+const generateEmptyPerformanceData = () => {
   const data = [];
-  let value = 0;
   for (let i = 0; i < 30; i++) {
-    value = value + (Math.random() - 0.4) * 3;
-    data.push({ day: i + 1, value: value });
+    data.push({ day: i + 1, value: 0 });
   }
   return data;
 };

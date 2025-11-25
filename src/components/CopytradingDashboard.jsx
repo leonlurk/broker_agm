@@ -9,6 +9,7 @@ import { getMasterTraders, getMySubscriptions, followMaster, unfollowMaster, get
 import { useAccounts } from '../contexts/AccountsContext';
 import useTranslation from '../hooks/useTranslation';
 import { MasterAccountBadge, FollowStatusIndicator, SubscriptionStatusCard, MasterAccountSummaryCard } from './StatusIndicators';
+import { getPerformanceSparklineData } from '../services/accountHistory';
 
 const CopytradingDashboard = () => {
   const { t } = useTranslation();
@@ -117,8 +118,34 @@ const CopytradingDashboard = () => {
           winRate: trader.performance?.win_rate || 0,
           avgProfit: trader.performance?.avg_profit || 0,
           maxDrawdown: trader.performance?.max_drawdown || 0,
-          sharpeRatio: trader.performance?.sharpe_ratio || 0
+          sharpeRatio: trader.performance?.sharpe_ratio || 0,
+          // Performance history will be loaded separately
+          performanceHistory: null
         }));
+
+        // Fetch performance history for all traders in parallel
+        console.log('🔄 Fetching performance history for traders...');
+        const performancePromises = formattedTraders.map(async (trader) => {
+          const mt5Account = trader.master_config?.cuentaMT5Seleccionada ||
+                            trader.master_config?.master_mt5_account;
+
+          if (!mt5Account) {
+            console.warn(`⚠️ No MT5 account found for trader ${trader.name}`);
+            return { ...trader, performanceHistory: null };
+          }
+
+          try {
+            const performanceData = await getPerformanceSparklineData(mt5Account, 30);
+            console.log(`✅ Performance data fetched for ${trader.name}:`, performanceData?.length || 0, 'points');
+            return { ...trader, performanceHistory: performanceData };
+          } catch (error) {
+            console.error(`❌ Error fetching performance for ${trader.name}:`, error);
+            return { ...trader, performanceHistory: null };
+          }
+        });
+
+        const tradersWithPerformance = await Promise.all(performancePromises);
+        console.log('✅ All trader performance data loaded');
 
         // Mapear suscripciones con más detalle
         const formattedSubscriptions = subscriptions.map(sub => ({
@@ -134,7 +161,7 @@ const CopytradingDashboard = () => {
           masterPerformance: sub.master?.performance || {}
         }));
 
-        setAvailableTraders(formattedTraders);
+        setAvailableTraders(tradersWithPerformance);
         setActiveSubscriptions(formattedSubscriptions);
 
         // Sincronizar copiedTraders con subscriptions activas

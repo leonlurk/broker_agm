@@ -13,6 +13,7 @@ import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { MasterAccountBadge, PerformanceStatusIndicator, MasterAccountSummaryCard } from './StatusIndicators';
 import EnhancedPAMMCard, { PerformanceSparkline, ReturnCircle, KpiBadge, RiskIndicator } from './EnhancedPAMMCard';
 import EquityStopAlert from './EquityStopAlert';
+import { getPerformanceSparklineData } from '../services/accountHistory';
 
 const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
     const { t } = useTranslation('pamm');
@@ -1048,7 +1049,9 @@ const PammExplorerView = ({
                     copyRatio: fund.copy_ratio || 1.0,
                     minBalance: fund.min_balance || 10000,
                     maxInvestors: fund.max_investors || 50,
-                    maxRisk: fund.max_risk || 10.0
+                    maxRisk: fund.max_risk || 10.0,
+                    // Performance history will be loaded separately
+                    performanceHistory: null
                 }));
 
                 // Filtrar fondos propios del usuario (no puede invertir en su propia PAMM)
@@ -1059,7 +1062,32 @@ const PammExplorerView = ({
                     })
                     : mappedFunds;
 
-                setFunds(filteredByOwner);
+                // Fetch performance history for all funds in parallel
+                console.log('🔄 Fetching performance history for PAMM funds...');
+                const performancePromises = filteredByOwner.map(async (fund) => {
+                    const mt5Account = fund.manager_mt5_account_id ||
+                                      fund.manager_mt5_account ||
+                                      fund.mt5_account_id;
+
+                    if (!mt5Account) {
+                        console.warn(`⚠️ No MT5 account found for fund ${fund.name}`);
+                        return { ...fund, performanceHistory: null };
+                    }
+
+                    try {
+                        const performanceData = await getPerformanceSparklineData(mt5Account, 30);
+                        console.log(`✅ Performance data fetched for ${fund.name}:`, performanceData?.length || 0, 'points');
+                        return { ...fund, performanceHistory: performanceData };
+                    } catch (error) {
+                        console.error(`❌ Error fetching performance for ${fund.name}:`, error);
+                        return { ...fund, performanceHistory: null };
+                    }
+                });
+
+                const fundsWithPerformance = await Promise.all(performancePromises);
+                console.log('✅ All PAMM fund performance data loaded');
+
+                setFunds(fundsWithPerformance);
             } catch (error) {
                 console.error('Error loading PAMM funds:', error);
                 setFunds([]);
