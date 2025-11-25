@@ -208,13 +208,13 @@ const AfiliadosDashboard = () => {
         setHasAcceptedAgreement(true);
         setIsIBActive(true);
         setShowAgreementModal(false);
-        toast.success('¡Felicidades! Ahora eres un Introducing Broker activo');
+        toast.success(t('ib.agreement.successMessage'));
       } else {
-        toast.error(result.message || 'Error al aceptar el acuerdo');
+        toast.error(result.message || t('ib.agreement.errorMessage'));
       }
     } catch (error) {
       console.error('Error accepting IB agreement:', error);
-      toast.error('Error al procesar tu aceptación');
+      toast.error(t('ib.agreement.errorProcessing'));
     }
   };
 

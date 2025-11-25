@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, CheckCircle, AlertCircle, Download } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { useTranslation } from 'react-i18next';
 
 const IBAgreementModal = ({ isOpen, onClose, onAccept, agreementContent }) => {
+  const { t } = useTranslation();
   const [hasScrolled, setHasScrolled] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -52,10 +54,10 @@ const IBAgreementModal = ({ isOpen, onClose, onAccept, agreementContent }) => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white">
-                Acuerdo de Introducing Broker (IB)
+                {t('ib.agreement.title')}
               </h2>
               <p className="text-sm text-gray-400 mt-1">
-                Por favor, lea cuidadosamente antes de aceptar
+                {t('ib.agreement.subtitle')}
               </p>
             </div>
           </div>
@@ -101,7 +103,7 @@ const IBAgreementModal = ({ isOpen, onClose, onAccept, agreementContent }) => {
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600/20 border border-yellow-600/30 rounded-lg">
                 <AlertCircle className="w-4 h-4 text-yellow-400" />
                 <span className="text-sm text-yellow-400">
-                  Desplácese hasta el final para continuar
+                  {t('ib.agreement.scrollIndicator')}
                 </span>
               </div>
             </div>
@@ -126,12 +128,11 @@ const IBAgreementModal = ({ isOpen, onClose, onAccept, agreementContent }) => {
             </div>
             <div className="flex-1">
               <p className={`text-sm ${agreedToTerms ? 'text-white' : 'text-gray-400'} group-hover:text-white transition-colors`}>
-                He leído, comprendido y acepto completamente los términos y condiciones del <strong>Acuerdo de Introducing Broker</strong>.
-                Confirmo que tengo la capacidad legal para celebrar este acuerdo y que mi aceptación electrónica tiene la misma validez que una firma manuscrita.
+                {t('ib.agreement.checkbox')}
               </p>
               {!hasScrolled && (
                 <p className="text-xs text-yellow-400 mt-1">
-                  Debe leer todo el documento antes de aceptar
+                  {t('ib.agreement.mustRead')}
                 </p>
               )}
             </div>
@@ -144,7 +145,7 @@ const IBAgreementModal = ({ isOpen, onClose, onAccept, agreementContent }) => {
               disabled={isAccepting}
               className="flex-1 px-6 py-3 bg-[#2d2d2d] hover:bg-[#3a3a3a] text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Cancelar
+              {t('ib.agreement.buttons.cancel')}
             </button>
             <button
               onClick={handleAccept}
@@ -154,12 +155,12 @@ const IBAgreementModal = ({ isOpen, onClose, onAccept, agreementContent }) => {
               {isAccepting ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Procesando...
+                  {t('ib.agreement.buttons.processing')}
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-5 h-5" />
-                  Aceptar y Activar IB
+                  {t('ib.agreement.buttons.accept')}
                 </>
               )}
             </button>
@@ -168,8 +169,7 @@ const IBAgreementModal = ({ isOpen, onClose, onAccept, agreementContent }) => {
           {/* Legal Notice */}
           <div className="pt-3 border-t border-[#333]">
             <p className="text-xs text-gray-500 text-center">
-              Al aceptar este acuerdo, usted reconoce que ha sido informado de sus derechos y obligaciones como Introducing Broker.
-              Su IP y datos de aceptación serán registrados para cumplimiento regulatorio.
+              {t('ib.agreement.legal')}
             </p>
           </div>
         </div>

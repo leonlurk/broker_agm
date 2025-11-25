@@ -499,5 +499,91 @@
     "performanceChart": "Performance Chart",
     "comments": "Comments",
     "rating": "Rating"
+  },
+  "ib": {
+    "onboarding": {
+      "title": "Introducing Broker Program",
+      "subtitle": "Become a partner with AGM Broker and earn recurring commissions from your referred clients' trades",
+      "benefits": {
+        "competitiveCommissions": {
+          "title": "Competitive Commissions",
+          "description": "Earn up to $8 USD per lot traded. Tier system that increases your commissions based on the number of active referrals."
+        },
+        "unlimitedGrowth": {
+          "title": "Unlimited Growth",
+          "description": "No referral limit. The more active clients you have, the higher your tier and commissions per lot."
+        },
+        "dedicatedSupport": {
+          "title": "Dedicated Support",
+          "description": "Access to marketing materials, real-time dashboard, and priority support for IBs."
+        }
+      },
+      "tiers": {
+        "title": "Tier Structure",
+        "tier1": {
+          "name": "Bronze",
+          "referrals": "1-4",
+          "commission": "$3-4/lot"
+        },
+        "tier2": {
+          "name": "Silver",
+          "referrals": "5-9",
+          "commission": "$4-5/lot"
+        },
+        "tier3": {
+          "name": "Gold",
+          "referrals": "10-19",
+          "commission": "$5-6/lot"
+        },
+        "tier4": {
+          "name": "Platinum",
+          "referrals": "20+",
+          "commission": "$7-8/lot"
+        }
+      },
+      "features": {
+        "title": "What do you get as an IB?",
+        "customReferralLink": "Custom referral link",
+        "realtimeDashboard": "Real-time dashboard with statistics",
+        "automaticPayments": "Monthly automatic payments",
+        "commissionTracking": "Commission tracking per operation",
+        "marketingMaterials": "Professional marketing materials",
+        "prioritySupport": "Priority technical support",
+        "detailedReports": "Detailed activity reports",
+        "noActivationFee": "No activation costs"
+      },
+      "requirements": {
+        "title": "Regulatory Requirements",
+        "description": "To comply with financial regulations, all Introducing Brokers must review and accept our IB Agreement before activating this functionality.",
+        "agreementInfo": "The agreement establishes your rights, obligations, and commission structure. Your electronic acceptance will have legal validity."
+      },
+      "cta": {
+        "button": "Review Agreement and Activate IB",
+        "disclaimer": "By continuing, you will review the complete Introducing Broker Agreement"
+      },
+      "footer": {
+        "questions": "Have questions? Contact our support team or check the",
+        "documentation": "complete IB program documentation"
+      }
+    },
+    "agreement": {
+      "title": "Introducing Broker (IB) Agreement",
+      "subtitle": "Please read carefully before accepting",
+      "scrollIndicator": "Scroll to the bottom to continue",
+      "checkbox": "I have read, understood, and fully accept the terms and conditions of the Introducing Broker Agreement. I confirm that I have the legal capacity to enter into this agreement and that my electronic acceptance has the same validity as a handwritten signature.",
+      "mustRead": "You must read the entire document before accepting",
+      "buttons": {
+        "cancel": "Cancel",
+        "accept": "Accept and Activate IB",
+        "processing": "Processing..."
+      },
+      "legal": "By accepting this agreement, you acknowledge that you have been informed of your rights and obligations as an Introducing Broker. Your IP and acceptance data will be recorded for regulatory compliance.",
+      "successMessage": "Congratulations! You are now an active Introducing Broker",
+      "errorMessage": "Error accepting the agreement",
+      "errorProcessing": "Error processing your acceptance"
+    },
+    "common": {
+      "loading": "Loading..."
+    }
   }
 }
