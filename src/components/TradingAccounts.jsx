@@ -725,7 +725,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
     // PASO 1: Crear versión provisional inmediatamente (Optimistic Update)
     const provisionalPosition = {
-      user_id: user?.id,
+      user_id: currentUser?.id,
       account_number: selectedAccount.account_number,
       ticket: positionToClose.ticket || positionToClose.idPosicion,
       symbol: positionToClose.symbol || positionToClose.instrumento,
