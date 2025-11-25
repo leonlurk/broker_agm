@@ -106,13 +106,27 @@ const CryptoDepositModal = ({
       
       // Obtener el token de la sesión actual de Supabase
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
+
+      console.log('[CryptoDepositModal] Session info:', {
+        hasSession: !!session,
+        hasAccessToken: !!session?.access_token,
+        tokenLength: session?.access_token?.length,
+        userEmail: session?.user?.email,
+        sessionError: sessionError
+      });
+
       if (sessionError || !session?.access_token) {
         console.warn('No se pudo obtener el token de autenticación');
       } else {
         // Autenticar usando el token de Supabase
+        console.log('[CryptoDepositModal] Calling authenticateWithSupabase with:', {
+          email: userEmail,
+          tokenPrefix: session.access_token.substring(0, 30) + '...',
+          sessionUserEmail: session.user?.email
+        });
+
         const authResult = await cryptoPaymentService.authenticateWithSupabase(session.access_token, userEmail);
-        
+
         if (!authResult.success) {
           console.warn('Error de autenticación:', authResult.error);
           setError(t('cryptoModal.errors.authError'));
