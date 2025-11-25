@@ -73,9 +73,15 @@ export const AccountsProvider = ({ children }) => {
         })));
         
         // Organizar cuentas por categoría
+        // IMPORTANTE: Excluir cuentas de torneo (is_tournament_account = true)
+        // Las cuentas de torneo solo deben aparecer en el leaderboard, NO en wallet/home
         const organizedAccounts = {
-          [ACCOUNT_CATEGORIES.REAL]: result.accounts.filter(acc => acc.account_type === 'Real'),
-          [ACCOUNT_CATEGORIES.DEMO]: result.accounts.filter(acc => acc.account_type === 'DEMO'),
+          [ACCOUNT_CATEGORIES.REAL]: result.accounts.filter(acc =>
+            acc.account_type === 'Real' && !acc.is_tournament_account
+          ),
+          [ACCOUNT_CATEGORIES.DEMO]: result.accounts.filter(acc =>
+            acc.account_type === 'DEMO' && !acc.is_tournament_account
+          ),
           [ACCOUNT_CATEGORIES.COPYTRADING]: [], // Se llenarán con datos reales después
           [ACCOUNT_CATEGORIES.PAMM]: [] // Se llenarán con datos reales después
         };
