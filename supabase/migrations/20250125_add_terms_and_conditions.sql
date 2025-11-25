@@ -41,20 +41,23 @@ ALTER TABLE public.terms_versions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.terms_acceptance_audit ENABLE ROW LEVEL SECURITY;
 
 -- 6. RLS Policies for terms_versions (readable by all authenticated users)
-CREATE POLICY IF NOT EXISTS "Users can view active T&C versions"
+DROP POLICY IF EXISTS "Users can view active T&C versions" ON public.terms_versions;
+CREATE POLICY "Users can view active T&C versions"
   ON public.terms_versions
   FOR SELECT
   TO authenticated
   USING (is_active = true);
 
 -- 7. RLS Policies for terms_acceptance_audit (users can only see their own records)
-CREATE POLICY IF NOT EXISTS "Users can view their own T&C audit records"
+DROP POLICY IF EXISTS "Users can view their own T&C audit records" ON public.terms_acceptance_audit;
+CREATE POLICY "Users can view their own T&C audit records"
   ON public.terms_acceptance_audit
   FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can insert their own T&C audit records"
+DROP POLICY IF EXISTS "Users can insert their own T&C audit records" ON public.terms_acceptance_audit;
+CREATE POLICY "Users can insert their own T&C audit records"
   ON public.terms_acceptance_audit
   FOR INSERT
   TO authenticated
