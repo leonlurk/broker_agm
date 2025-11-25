@@ -2932,7 +2932,7 @@ const loadAccountMetrics = useCallback(async (account) => {
                     ? 'bg-green-800 bg-opacity-30 text-green-400' 
                     : 'bg-red-800 bg-opacity-30 text-red-400'
                 }`}>
-                  {(realMetrics?.profit_loss_percentage || 0) >= 0 ? '+' : ''}{(realMetrics?.profit_loss_percentage || 0).toFixed(1)}%
+                  {(realMetrics?.profit_loss_percentage || 0) >= 0 ? '+' : ''}{(realMetrics?.profit_loss_percentage || 0).toFixed(2)}%
                 </span>
               </div>
               {/* Chips con Balance y Equity actuales */}
@@ -3071,7 +3071,7 @@ const loadAccountMetrics = useCallback(async (account) => {
                       ? 'bg-green-800 bg-opacity-30 text-green-400'
                       : 'bg-red-800 bg-opacity-30 text-red-400'
                   }`}>
-                    {(realMetrics?.profit_loss || 0) >= 0 ? '+' : ''}{(realMetrics?.profit_loss_percentage || 0).toFixed(1)}%
+                    {(realMetrics?.profit_loss || 0) >= 0 ? '+' : ''}{(realMetrics?.profit_loss_percentage || 0).toFixed(2)}%
                   </span>
                   </div>
                   <p className="text-xs sm:text-sm text-gray-400">{t('metrics.historicalTotal')}</p>
@@ -3224,7 +3224,7 @@ const loadAccountMetrics = useCallback(async (account) => {
               <CustomTooltip content={t('tooltips.pnl')}>
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">{t('metrics.pnl')}</h3>
-                <span className="text-xl font-bold">${(realStatistics?.net_pnl || 0).toFixed(2)} = {(realStatistics?.net_pnl_percentage || 0).toFixed(1)}%</span>
+                <span className="text-xl font-bold">${(realStatistics?.net_pnl || 0).toFixed(2)} = {(realStatistics?.net_pnl_percentage || 0).toFixed(2)}%</span>
               </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
