@@ -6,6 +6,8 @@ import emailServiceProxy from '../services/emailServiceProxy';
 import { ChevronDown, Search, Check, X, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import TermsAndConditionsModal from './TermsAndConditionsModal';
+import { supabase } from '../supabase/config';
 
 const Register = ({ onLoginClick }) => {
   const { t } = useTranslation('auth');
@@ -30,6 +32,9 @@ const Register = ({ onLoginClick }) => {
   const [refId, setRefId] = useState(null);
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [termsContent, setTermsContent] = useState('');
+  const [termsVersion, setTermsVersion] = useState('1.0');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -53,6 +58,33 @@ const Register = ({ onLoginClick }) => {
       console.log("[Register] Referral ID detected:", ref);
     }
   }, [location.search]);
+
+  // Load Terms and Conditions
+  useEffect(() => {
+    const loadTerms = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('terms_versions')
+          .select('content, version')
+          .eq('is_active', true)
+          .single();
+
+        if (error) {
+          console.error('[Register] Error loading terms:', error);
+          return;
+        }
+
+        if (data) {
+          setTermsContent(data.content);
+          setTermsVersion(data.version);
+        }
+      } catch (error) {
+        console.error('[Register] Error loading terms:', error);
+      }
+    };
+
+    loadTerms();
+  }, []);
 
   // Fetch countries from API
   useEffect(() => {
@@ -111,6 +143,12 @@ const Register = ({ onLoginClick }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  const handleAcceptTerms = async () => {
+    setShowTermsModal(false);
+    setAcceptTerms(true);
+    toast.success(t('terms.successMessage'));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -459,7 +497,14 @@ const Register = ({ onLoginClick }) => {
             className="h-4 w-4 bg-gray-800 border-gray-700 rounded focus:ring-blue-500"
           />
           <label htmlFor="accept_terms" className="ml-2 block text-gray-300 text-sm">
-            {t('register.termsAndConditions')}
+            {t('register.termsAndConditions')}{' '}
+            <button
+              type="button"
+              onClick={() => setShowTermsModal(true)}
+              className="text-blue-400 hover:text-blue-300 underline font-medium"
+            >
+              {t('terms.viewTerms')}
+            </button>
           </label>
         </div>
 
@@ -478,6 +523,14 @@ const Register = ({ onLoginClick }) => {
           </p>
         </div>
       </form>
+
+      {/* Terms and Conditions Modal */}
+      <TermsAndConditionsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={handleAcceptTerms}
+        termsContent={termsContent}
+      />
     </div>
   );
 };
