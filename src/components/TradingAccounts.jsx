@@ -741,20 +741,20 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
 
     // PASO 1: OPTIMISTIC UPDATE - Actualizar UI INMEDIATAMENTE
-    // Remover de la lista de operaciones la posición que se va a cerrar
+    // Marcar la posición como cerrada (sin indicador de loading - debe parecer instantáneo)
     setRealTradingOperations(prev => {
       if (!prev || !prev.operations) return prev;
 
       return {
         ...prev,
         operations: prev.operations.map(op => {
-          // Si es la posición que estamos cerrando, marcarla como pending
+          // Si es la posición que estamos cerrando, marcarla como cerrada normal
           if (op.ticket === ticketToClose || op.idPosicion === ticketToClose) {
             return {
               ...op,
               isOpen: false,
-              status: 'PENDING_SYNC',
-              isPending: true,
+              status: 'CLOSED',
+              isPending: false,  // No mostrar indicador de carga - debe verse como cerrada normal
               close_time: new Date().toISOString(),
               closeTime: new Date().toISOString(),
               fechaCierre: new Date().toLocaleDateString(),
@@ -1072,7 +1072,7 @@ const loadAccountMetrics = useCallback(async (account) => {
             .then(() => console.log('[TradingAccounts] Cleaned up', ticketsToDelete.length, 'synced pendings'));
         }
 
-        // Add only valid pendings to operations
+        // Add only valid pendings to operations (mostrar como cerradas normales)
         if (validPendings.length > 0) {
           const pendingOps = validPendings.map(pending => ({
             ticket: pending.ticket,
@@ -1088,11 +1088,11 @@ const loadAccountMetrics = useCallback(async (account) => {
             profit: pending.profit,
             commission: pending.commission || 0,
             swap: pending.swap || 0,
-            status: 'PENDING_SYNC', // Flag especial
-            isPending: true // Flag para UI
+            status: 'CLOSED', // Mostrar como cerrada normal
+            isPending: false // Sin indicador de carga
           }));
           allOperations.push(...pendingOps);
-          console.log('[TradingAccounts] Added', pendingOps.length, 'pending positions to display');
+          console.log('[TradingAccounts] Added', pendingOps.length, 'pending positions to display (as normal closed)');
         }
       }
     } catch (error) {
