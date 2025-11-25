@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
 
 const IBAgreementModal = ({ isOpen, onClose, onAccept, agreementContent }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('affiliates');
   const [hasScrolled, setHasScrolled] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);

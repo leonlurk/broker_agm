@@ -3,7 +3,7 @@ import { Users, TrendingUp, DollarSign, Award, Shield, FileText, ArrowRight, Che
 import { useTranslation } from 'react-i18next';
 
 const IBOnboardingScreen = ({ onBecomeIB }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('affiliates');
 
   return (
     <div className="min-h-screen bg-[#191919] p-4 md:p-8">
@@ -66,12 +66,11 @@ const IBOnboardingScreen = ({ onBecomeIB }) => {
             <Shield className="w-6 h-6 text-blue-400" />
             {t('ib.onboarding.tiers.title')}
           </h2>
-          <div className="grid md:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-3 gap-4 mb-4">
             {[
               { tier: 1, name: t('ib.onboarding.tiers.tier1.name'), referrals: t('ib.onboarding.tiers.tier1.referrals'), commission: t('ib.onboarding.tiers.tier1.commission') },
               { tier: 2, name: t('ib.onboarding.tiers.tier2.name'), referrals: t('ib.onboarding.tiers.tier2.referrals'), commission: t('ib.onboarding.tiers.tier2.commission') },
-              { tier: 3, name: t('ib.onboarding.tiers.tier3.name'), referrals: t('ib.onboarding.tiers.tier3.referrals'), commission: t('ib.onboarding.tiers.tier3.commission') },
-              { tier: 4, name: t('ib.onboarding.tiers.tier4.name'), referrals: t('ib.onboarding.tiers.tier4.referrals'), commission: t('ib.onboarding.tiers.tier4.commission') }
+              { tier: 3, name: t('ib.onboarding.tiers.tier3.name'), referrals: t('ib.onboarding.tiers.tier3.referrals'), commission: t('ib.onboarding.tiers.tier3.commission') }
             ].map((tier) => (
               <div
                 key={tier.tier}
@@ -88,6 +87,9 @@ const IBOnboardingScreen = ({ onBecomeIB }) => {
               </div>
             ))}
           </div>
+          <p className="text-xs text-gray-500 text-center mt-4">
+            {t('ib.onboarding.tiersNote')}
+          </p>
         </div>
 
         {/* Features */}

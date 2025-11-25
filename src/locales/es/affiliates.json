@@ -97,5 +97,84 @@
       "notAuthenticated": "Usuario no autenticado.",
       "dataLoadError": "Error al cargar los datos. Intente de nuevo más tarde."
     }
+  },
+  "ib": {
+    "onboarding": {
+      "title": "Programa de Introducing Broker",
+      "subtitle": "Conviértete en socio de AGM Broker y obtén comisiones recurrentes por las operaciones de tus referidos",
+      "benefits": {
+        "competitiveCommissions": {
+          "title": "Comisiones Competitivas",
+          "description": "Gana hasta $4 USD por lote operado. Sistema de tiers que incrementa tus comisiones según el número de referidos activos."
+        },
+        "unlimitedGrowth": {
+          "title": "Crecimiento Ilimitado",
+          "description": "Sin límite de referidos. Mientras más clientes activos tengas, mayor será tu nivel y tus comisiones por lote."
+        },
+        "dedicatedSupport": {
+          "title": "Soporte Dedicado",
+          "description": "Acceso a materiales de marketing, dashboard en tiempo real, y soporte prioritario para IBs."
+        }
+      },
+      "tiers": {
+        "title": "Estructura de Tiers",
+        "tier1": {
+          "name": "Bronce",
+          "referrals": "0-99",
+          "commission": "$3.00/lote*"
+        },
+        "tier2": {
+          "name": "Plata",
+          "referrals": "100-199",
+          "commission": "$3.50/lote*"
+        },
+        "tier3": {
+          "name": "Oro",
+          "referrals": "200+",
+          "commission": "$4.00/lote*"
+        }
+      },
+      "tiersNote": "*Market Direct. Cuentas Institucionales: 50% de comisión",
+      "features": {
+        "title": "¿Qué obtienes como IB?",
+        "customReferralLink": "Enlace de referido personalizado",
+        "realtimeDashboard": "Dashboard en tiempo real con estadísticas",
+        "automaticPayments": "Pagos mensuales automáticos",
+        "commissionTracking": "Rastreo de comisiones por operación",
+        "marketingMaterials": "Materiales de marketing profesionales",
+        "prioritySupport": "Soporte técnico prioritario",
+        "detailedReports": "Informes detallados de actividad",
+        "noActivationFee": "Sin costos de activación"
+      },
+      "requirements": {
+        "title": "Requisitos Regulatorios",
+        "description": "Para cumplir con las regulaciones financieras, todos los Introducing Brokers deben revisar y aceptar nuestro Acuerdo de IB antes de activar esta funcionalidad.",
+        "agreementInfo": "El acuerdo establece tus derechos, obligaciones y la estructura de comisiones. Tu aceptación electrónica tendrá validez legal."
+      },
+      "cta": {
+        "button": "Revisar Acuerdo y Activar IB",
+        "disclaimer": "Al continuar, revisarás el Acuerdo de Introducing Broker completo"
+      },
+      "footer": {
+        "questions": "¿Tienes preguntas? Contacta a nuestro equipo de soporte o consulta la",
+        "documentation": "documentación completa del programa IB"
+      }
+    },
+    "agreement": {
+      "title": "Acuerdo de Introducing Broker (IB)",
+      "subtitle": "Por favor, lea cuidadosamente antes de aceptar",
+      "scrollIndicator": "Desplácese hasta el final para continuar",
+      "checkbox": "He leído, comprendido y acepto completamente los términos y condiciones del Acuerdo de Introducing Broker. Confirmo que tengo la capacidad legal para celebrar este acuerdo y que mi aceptación electrónica tiene la misma validez que una firma manuscrita.",
+      "mustRead": "Debe leer todo el documento antes de aceptar",
+      "buttons": {
+        "cancel": "Cancelar",
+        "accept": "Aceptar y Activar IB",
+        "processing": "Procesando..."
+      },
+      "legal": "Al aceptar este acuerdo, usted reconoce que ha sido informado de sus derechos y obligaciones como Introducing Broker. Su IP y datos de aceptación serán registrados para cumplimiento regulatorio.",
+      "successMessage": "¡Felicidades! Ahora eres un Introducing Broker activo",
+      "errorMessage": "Error al aceptar el acuerdo",
+      "errorProcessing": "Error al procesar tu aceptación"
+    }
   }
 }
