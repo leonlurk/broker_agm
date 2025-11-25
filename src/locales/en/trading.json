@@ -191,7 +191,24 @@
       "modify": "Modify",
       "closeAll": "Close All",
       "closeProfit": "Close in Profit",
-      "closeLoss": "Close in Loss"
+      "closeLoss": "Close in Loss",
+      "closePosition": "Close Position",
+      "closing": "Closing...",
+      "actionsColumn": "Actions"
+    },
+    "closeConfirmation": {
+      "title": "Confirm Position Close",
+      "message": "Are you sure you want to close this position?",
+      "details": "Position {{ticket}} - {{symbol}} {{type}} {{volume}} lots",
+      "currentProfit": "Current profit: {{profit}}",
+      "warning": "This action cannot be undone.",
+      "confirm": "Yes, Close Position",
+      "cancel": "Cancel"
+    },
+    "messages": {
+      "closeSuccess": "Position closed successfully",
+      "closeError": "Error closing position",
+      "closeErrorDetail": "Could not close position. Please try again."
     }
   },
   "copyTrading": {

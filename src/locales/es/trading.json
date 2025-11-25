@@ -174,7 +174,24 @@
       "modify": "Modificar",
       "closeAll": "Cerrar Todas",
       "closeProfit": "Cerrar en Ganancia",
-      "closeLoss": "Cerrar en Pérdida"
+      "closeLoss": "Cerrar en Pérdida",
+      "closePosition": "Cerrar Posición",
+      "closing": "Cerrando...",
+      "actionsColumn": "Acciones"
+    },
+    "closeConfirmation": {
+      "title": "Confirmar Cierre de Posición",
+      "message": "¿Estás seguro que deseas cerrar esta posición?",
+      "details": "Posición {{ticket}} - {{symbol}} {{type}} {{volume}} lotes",
+      "currentProfit": "Ganancia actual: {{profit}}",
+      "warning": "Esta acción no se puede deshacer.",
+      "confirm": "Sí, Cerrar Posición",
+      "cancel": "Cancelar"
+    },
+    "messages": {
+      "closeSuccess": "Posición cerrada exitosamente",
+      "closeError": "Error al cerrar la posición",
+      "closeErrorDetail": "No se pudo cerrar la posición. Por favor intenta nuevamente."
     }
   },
   "copyTrading": {

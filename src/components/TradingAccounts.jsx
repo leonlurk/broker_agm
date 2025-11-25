@@ -258,6 +258,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // State for new instrument filter
   const [showInstrumentDropdown, setShowInstrumentDropdown] = useState(false);
 
+  // State for close position modal
+  const [showClosePositionModal, setShowClosePositionModal] = useState(false);
+  const [positionToClose, setPositionToClose] = useState(null);
+  const [isClosingPosition, setIsClosingPosition] = useState(false);
+
   // Función para obtener tiempo transcurrido en minutos
   const getTimeAgoInMinutes = (timestamp) => {
     if (!timestamp) return null;
@@ -699,6 +704,57 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     setViewMode('overview');
     setSelectedAccountId(null);
     scrollToTopManual(scrollContainerRef); // Scroll al volver a vista general
+  };
+
+  // Función para iniciar el proceso de cierre de posición
+  const handleClosePositionClick = (position) => {
+    setPositionToClose(position);
+    setShowClosePositionModal(true);
+  };
+
+  // Función para cerrar posición
+  const handleClosePosition = async () => {
+    if (!positionToClose || !selectedAccount) {
+      return;
+    }
+
+    setIsClosingPosition(true);
+
+    try {
+      console.log('[TradingAccounts] Closing position:', positionToClose.ticket);
+
+      // Llamar al endpoint DELETE del backend Python API
+      const response = await brokerApi.delete(
+        `/trading/positions/${positionToClose.ticket}`,
+        {
+          params: {
+            account_number: selectedAccount.account_number
+          }
+        }
+      );
+
+      console.log('[TradingAccounts] Position closed successfully:', response.data);
+
+      // Mostrar mensaje de éxito
+      toast.success(t('trading:positions.messages.closeSuccess'));
+
+      // Cerrar el modal
+      setShowClosePositionModal(false);
+      setPositionToClose(null);
+
+      // Recargar los datos de la cuenta para reflejar el cambio
+      if (selectedAccount) {
+        await loadAccountMetrics(selectedAccount);
+      }
+    } catch (error) {
+      console.error('[TradingAccounts] Error closing position:', error);
+
+      // Mostrar mensaje de error
+      const errorMessage = error.response?.data?.detail || t('trading:positions.messages.closeErrorDetail');
+      toast.error(`${t('trading:positions.messages.closeError')}: ${errorMessage}`);
+    } finally {
+      setIsClosingPosition(false);
+    }
   };
 
   // Ref para prevenir llamadas duplicadas
@@ -3845,6 +3901,19 @@ const loadAccountMetrics = useCallback(async (account) => {
                           <span>SL: {transaction.stopLoss} | TP: {transaction.takeProfit}</span>
                         </div>
                       </div>
+
+                      {/* Botón de acción para posiciones abiertas */}
+                      {transaction.isOpen && (
+                        <div className="mt-3 pt-3 border-t border-[#333]">
+                          <button
+                            onClick={() => handleClosePositionClick(transaction)}
+                            className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-2"
+                          >
+                            <X size={16} />
+                            {t('trading:positions.actions.closePosition')}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -3879,6 +3948,7 @@ const loadAccountMetrics = useCallback(async (account) => {
                       <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('pips')}</th>
                       <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('positionId')}</th>
                       <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('result')}</th>
+                      <th className="text-left py-3 px-2 text-gray-400 font-medium whitespace-nowrap">{t('trading:positions.actions.actionsColumn')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -3979,14 +4049,27 @@ const loadAccountMetrics = useCallback(async (account) => {
                           <div className={`font-medium ${transaction.resultadoColor} flex items-center gap-2 whitespace-nowrap`}>
                             <span>{transaction.resultado}</span>
                             <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              transaction.resultadoColor === 'text-green-400' 
-                                ? 'bg-green-800 bg-opacity-30' 
+                              transaction.resultadoColor === 'text-green-400'
+                                ? 'bg-green-800 bg-opacity-30'
                                 : 'bg-red-800 bg-opacity-30'
                             }`}>
                               {transaction.resultadoPct}
                             </span>
                             <ArrowUpRight size={14} />
                           </div>
+                        </td>
+
+                        {/* Acciones */}
+                        <td className="py-3 px-2">
+                          {transaction.isOpen && (
+                            <button
+                              onClick={() => handleClosePositionClick(transaction)}
+                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-colors flex items-center gap-1.5"
+                            >
+                              <X size={14} />
+                              {t('trading:positions.actions.close')}
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -4117,6 +4200,107 @@ const loadAccountMetrics = useCallback(async (account) => {
                   <>
                     <Settings size={16} />
                     {t('common.configure')}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Cierre de Posición */}
+      {showClosePositionModal && positionToClose && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1a1a] rounded-xl border border-[#333] w-full max-w-md">
+            {/* Header del Modal */}
+            <div className="flex justify-between items-center p-6 border-b border-[#333]">
+              <h3 className="text-xl font-semibold text-white">
+                {t('trading:positions.closeConfirmation.title')}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowClosePositionModal(false);
+                  setPositionToClose(null);
+                }}
+                disabled={isClosingPosition}
+                className="p-2 hover:bg-[#2a2a2a] rounded-lg transition-colors disabled:opacity-50"
+              >
+                <X size={20} className="text-gray-400 hover:text-white" />
+              </button>
+            </div>
+
+            {/* Contenido del Modal */}
+            <div className="p-6 space-y-4">
+              {/* Mensaje de confirmación */}
+              <p className="text-gray-300">
+                {t('trading:positions.closeConfirmation.message')}
+              </p>
+
+              {/* Detalles de la posición */}
+              <div className="bg-[#0f0f0f] border border-[#333] rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">{t('positionId')}:</span>
+                  <span className="text-white font-medium">{positionToClose.ticket || positionToClose.idPosicion}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">{t('instrument')}:</span>
+                  <span className="text-white font-medium">{positionToClose.symbol || positionToClose.instrumento}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">{t('type')}:</span>
+                  <span className={`font-medium ${positionToClose.type === 'BUY' || positionToClose.tipo === t('positions.types.buy') ? 'text-green-400' : 'text-red-400'}`}>
+                    {positionToClose.type || positionToClose.tipo}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">{t('lotSize')}:</span>
+                  <span className="text-white font-medium">{positionToClose.volume || positionToClose.lotaje}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">{t('result')}:</span>
+                  <span className={`font-medium ${parseFloat(positionToClose.profit || positionToClose.ganancia || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    ${parseFloat(positionToClose.profit || positionToClose.ganancia || 0).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Advertencia */}
+              <div className="flex items-start gap-2 p-3 bg-yellow-600/10 border border-yellow-600/30 rounded-lg">
+                <svg className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p className="text-sm text-yellow-400">
+                  {t('trading:positions.closeConfirmation.warning')}
+                </p>
+              </div>
+            </div>
+
+            {/* Footer del Modal */}
+            <div className="flex justify-end gap-3 p-6 border-t border-[#333]">
+              <button
+                onClick={() => {
+                  setShowClosePositionModal(false);
+                  setPositionToClose(null);
+                }}
+                disabled={isClosingPosition}
+                className="px-4 py-2 bg-transparent border border-[#333] text-gray-300 rounded-lg hover:bg-[#2a2a2a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t('trading:positions.closeConfirmation.cancel')}
+              </button>
+              <button
+                onClick={handleClosePosition}
+                disabled={isClosingPosition}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isClosingPosition ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    {t('trading:positions.actions.closing')}
+                  </>
+                ) : (
+                  <>
+                    <X size={16} />
+                    {t('trading:positions.closeConfirmation.confirm')}
                   </>
                 )}
               </button>
