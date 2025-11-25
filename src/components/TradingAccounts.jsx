@@ -723,17 +723,45 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
     setIsClosingPosition(true);
 
-    // PASO 1: Crear versión provisional inmediatamente (Optimistic Update)
+    const ticketToClose = positionToClose.ticket || positionToClose.idPosicion;
+
+    // PASO 1: OPTIMISTIC UPDATE - Actualizar UI INMEDIATAMENTE
+    // Remover de la lista de operaciones la posición que se va a cerrar
+    setRealTradingOperations(prev => {
+      if (!prev || !prev.operations) return prev;
+
+      return {
+        ...prev,
+        operations: prev.operations.map(op => {
+          // Si es la posición que estamos cerrando, marcarla como pending
+          if (op.ticket === ticketToClose || op.idPosicion === ticketToClose) {
+            return {
+              ...op,
+              isOpen: false,
+              status: 'PENDING_SYNC',
+              isPending: true,
+              close_time: new Date().toISOString(),
+              closeTime: new Date().toISOString(),
+              fechaCierre: new Date().toLocaleDateString(),
+              tiempoCierre: new Date().toLocaleTimeString()
+            };
+          }
+          return op;
+        })
+      };
+    });
+
+    // PASO 2: Crear versión provisional para persistencia
     const provisionalPosition = {
       user_id: currentUser?.id,
       account_number: selectedAccount.account_number,
-      ticket: positionToClose.ticket || positionToClose.idPosicion,
+      ticket: ticketToClose,
       symbol: positionToClose.symbol || positionToClose.instrumento,
       type: positionToClose.type || positionToClose.tipo,
       volume: parseFloat(positionToClose.volume || positionToClose.lotaje || 0),
       open_price: parseFloat(positionToClose.open_price || positionToClose.precioApertura || 0),
-      open_time: positionToClose.open_time || positionToClose.time || new Date().toISOString(),
-      close_price: parseFloat(positionToClose.price_current || positionToClose.precioCierre || positionToClose.open_price || 0),
+      open_time: positionToClose.open_time || positionToClose.openTime || new Date().toISOString(),
+      close_price: parseFloat(positionToClose.closePrice || positionToClose.precioCierre || positionToClose.open_price || 0),
       close_time: new Date().toISOString(),
       stop_loss: parseFloat(positionToClose.stop_loss || positionToClose.stopLoss || 0),
       take_profit: parseFloat(positionToClose.take_profit || positionToClose.takeProfit || 0),
@@ -744,23 +772,22 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     };
 
     try {
-      console.log('[TradingAccounts] Closing position:', positionToClose.ticket);
+      console.log('[TradingAccounts] Closing position:', ticketToClose);
 
-      // PASO 2: Insertar en pending_closed_positions (Supabase)
+      // PASO 3: Insertar en pending_closed_positions (Supabase) para persistencia
       const { error: insertError } = await supabase
         .from('pending_closed_positions')
         .insert([provisionalPosition]);
 
       if (insertError) {
         console.warn('[TradingAccounts] Could not insert provisional position:', insertError);
-        // Continuar de todos modos, no es crítico
       } else {
-        console.log('[TradingAccounts] Provisional position created');
+        console.log('[TradingAccounts] Provisional position persisted to database');
       }
 
-      // PASO 3: Llamar al endpoint DELETE del backend Python API
+      // PASO 4: Llamar al endpoint DELETE del backend Python API
       const response = await brokerApi.delete(
-        `/trading/positions/${positionToClose.ticket}`,
+        `/trading/positions/${ticketToClose}`,
         {
           params: {
             account_login: selectedAccount.account_number
@@ -777,21 +804,49 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       setShowClosePositionModal(false);
       setPositionToClose(null);
 
-      // PASO 4: Recargar datos para reflejar el cambio (mostrará la provisional)
+      // PASO 5: Recargar datos en background (para sincronizar otras métricas)
+      // La posición ya desapareció de la UI gracias al optimistic update
       if (selectedAccount) {
-        await loadAccountMetrics(selectedAccount);
+        // Esperar un poco para dar tiempo a que MT5 procese
+        setTimeout(() => {
+          loadAccountMetrics(selectedAccount);
+        }, 2000);
       }
     } catch (error) {
       console.error('[TradingAccounts] Error closing position:', error);
 
-      // ROLLBACK: Eliminar la posición provisional si el cierre falló
+      // ROLLBACK: Revertir el optimistic update
+      setRealTradingOperations(prev => {
+        if (!prev || !prev.operations) return prev;
+
+        return {
+          ...prev,
+          operations: prev.operations.map(op => {
+            // Revertir la posición a su estado original (abierta)
+            if (op.ticket === ticketToClose || op.idPosicion === ticketToClose) {
+              return {
+                ...op,
+                isOpen: true,
+                status: 'OPEN',
+                isPending: false,
+                close_time: null,
+                closeTime: null,
+                fechaCierre: null,
+                tiempoCierre: null
+              };
+            }
+            return op;
+          })
+        };
+      });
+
+      // ROLLBACK: Eliminar la posición provisional de la base de datos
       if (error.response?.status !== 404) {
-        // Si es 404 probablemente ya estaba cerrada, así que mantenemos la provisional
         await supabase
           .from('pending_closed_positions')
           .delete()
           .eq('account_number', selectedAccount.account_number)
-          .eq('ticket', positionToClose.ticket || positionToClose.idPosicion);
+          .eq('ticket', ticketToClose);
 
         console.log('[TradingAccounts] Rolled back provisional position due to error');
       }
@@ -812,7 +867,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
       toast.error(`${t('trading:positions.messages.closeError')}: ${errorMessage}`);
 
-      // Refrescar automáticamente para sincronizar
+      // Refrescar para sincronizar
       if (selectedAccount) {
         console.log('[TradingAccounts] Refreshing account data after error');
         setTimeout(() => {
@@ -956,19 +1011,8 @@ const loadAccountMetrics = useCallback(async (account) => {
       allOperations.push(...dashboardData.recent_operations);
     }
 
-    // 2. Agregar posiciones ABIERTAS del MT5 Manager
-    if (openPositions && openPositions.length > 0) {
-      const openOps = openPositions.map(pos => ({
-        ...pos,
-        close_time: null,  // NULL indica posición abierta
-        close_price: pos.current_price || pos.price_current,
-        profit: pos.profit || 0,
-        status: 'OPEN'
-      }));
-      allOperations.push(...openOps);
-    }
-
-    // 3. Agregar posiciones PENDING (cerradas provisionales)
+    // 2. Primero cargar posiciones PENDING para filtrar correctamente
+    let pendingTickets = new Set();
     try {
       const { data: pendingPositions, error: pendingError } = await supabase
         .from('pending_closed_positions')
@@ -976,7 +1020,10 @@ const loadAccountMetrics = useCallback(async (account) => {
         .eq('account_number', account.account_number);
 
       if (!pendingError && pendingPositions && pendingPositions.length > 0) {
-        console.log('[TradingAccounts] Found', pendingPositions.length, 'pending positions');
+        console.log('[TradingAccounts] Found', pendingPositions.length, 'pending closed positions');
+
+        // Guardar tickets pending para filtrar de open positions
+        pendingTickets = new Set(pendingPositions.map(p => p.ticket));
 
         // Get tickets of real closed operations for deduplication
         const realClosedTickets = new Set(
@@ -1036,7 +1083,33 @@ const loadAccountMetrics = useCallback(async (account) => {
     } catch (error) {
       console.warn('[TradingAccounts] Could not load pending positions:', error);
     }
-    
+
+    // 3. Agregar posiciones ABIERTAS del MT5 Manager (excepto las que están en pending)
+    if (openPositions && openPositions.length > 0) {
+      const openOps = openPositions
+        .filter(pos => {
+          const ticket = pos.ticket || pos.position;
+          // FILTRAR: No incluir posiciones que están en pending_closed_positions
+          if (pendingTickets.has(ticket)) {
+            console.log('[TradingAccounts] Filtering out open position', ticket, '- exists in pending closed');
+            return false;
+          }
+          return true;
+        })
+        .map(pos => ({
+          ...pos,
+          close_time: null,  // NULL indica posición abierta
+          close_price: pos.current_price || pos.price_current,
+          profit: pos.profit || 0,
+          status: 'OPEN'
+        }));
+
+      if (openOps.length > 0) {
+        allOperations.push(...openOps);
+        console.log('[TradingAccounts] Added', openOps.length, 'open positions (filtered', openPositions.length - openOps.length, 'pending closed)');
+      }
+    }
+
     if (allOperations.length > 0) {
       // Transformar TODAS las operaciones (cerradas + abiertas) al formato de la tabla
       const transformedOps = {
