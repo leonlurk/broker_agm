@@ -749,11 +749,33 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     } catch (error) {
       console.error('[TradingAccounts] Error closing position:', error);
 
-      // Mostrar mensaje de error
-      const errorMessage = error.response?.data?.detail || t('trading:positions.messages.closeErrorDetail');
+      // Manejar errores específicos
+      let errorMessage;
+      if (error.response?.status === 404) {
+        errorMessage = i18n.language === 'es'
+          ? 'Esta posición ya no existe. Puede que ya fue cerrada o alcanzó su Stop Loss/Take Profit.'
+          : 'This position no longer exists. It may have been closed or reached its Stop Loss/Take Profit.';
+      } else if (error.response?.status === 403) {
+        errorMessage = i18n.language === 'es'
+          ? 'No tienes permisos para cerrar esta posición.'
+          : 'You do not have permission to close this position.';
+      } else {
+        errorMessage = error.response?.data?.detail || t('trading:positions.messages.closeErrorDetail');
+      }
+
       toast.error(`${t('trading:positions.messages.closeError')}: ${errorMessage}`);
+
+      // Si es 404, refrescar automáticamente para sincronizar
+      if (error.response?.status === 404 && selectedAccount) {
+        console.log('[TradingAccounts] Position not found - refreshing account data');
+        setTimeout(() => {
+          loadAccountMetrics(selectedAccount);
+        }, 1000);
+      }
     } finally {
       setIsClosingPosition(false);
+      setShowClosePositionModal(false);
+      setPositionToClose(null);
     }
   };
 
