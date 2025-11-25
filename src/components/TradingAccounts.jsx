@@ -728,7 +728,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         `/trading/positions/${positionToClose.ticket}`,
         {
           params: {
-            account_number: selectedAccount.account_number
+            account_login: selectedAccount.account_number
           }
         }
       );
