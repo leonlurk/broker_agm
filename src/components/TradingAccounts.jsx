@@ -3084,13 +3084,7 @@ const loadAccountMetrics = useCallback(async (account) => {
                 </CustomTooltip>
                 <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
-                    ${(() => {
-                      // Calcular drawdown sobre equity usando servicio estandarizado
-                      const basis = equityDataService.getAccountEquity(realMetrics);
-                      const maxDrawdownPercent = realMetrics?.max_drawdown || 0;
-                      const drawdownAmount = (basis * maxDrawdownPercent) / 100;
-                      return drawdownAmount.toFixed(2);
-                    })()}
+                    {(realMetrics?.max_drawdown || 0).toFixed(2)}%
                   </span>
                   <span className={`px-2 py-1 rounded text-xs ${
                     (realMetrics?.current_drawdown || 0) <= 5
@@ -3099,12 +3093,7 @@ const loadAccountMetrics = useCallback(async (account) => {
                       ? 'bg-red-900 bg-opacity-40 text-red-300'
                       : 'bg-red-900 bg-opacity-50 text-red-200'
                   }`}>
-                    {t('metrics.current')}: ${(() => {
-                      const basis = equityDataService.getAccountEquity(realMetrics);
-                      const currentDrawdownPercent = realMetrics?.current_drawdown || 0;
-                      const currentDrawdownAmount = (basis * currentDrawdownPercent) / 100;
-                      return currentDrawdownAmount.toFixed(2);
-                    })()}
+                    {t('metrics.current')}: {(realMetrics?.current_drawdown || 0).toFixed(2)}%
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-gray-400">{t('metrics.maxCurrent')}</p>
