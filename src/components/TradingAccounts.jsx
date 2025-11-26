@@ -3768,12 +3768,12 @@ const loadAccountMetrics = useCallback(async (account) => {
                 </div>
 
                 {/* Gráfico */}
-                <div className="w-full h-64 pb-2">
+                <div className="w-full h-64 pt-4 pb-2">
                   {(() => {
-                    const dataToUse = realInstruments?.distribution?.length > 0 
-                      ? realInstruments.distribution 
+                    const dataToUse = realInstruments?.distribution?.length > 0
+                      ? realInstruments.distribution
                       : (realInstruments === null ? dynamicInstrumentsData : []);
-                    
+
                     // Si no hay datos o es "Sin operaciones", mostrar mensaje profesional
                     if (dataToUse.length === 0 || (dataToUse.length === 1 && dataToUse[0].name === t('trading:charts.noOperations'))) {
                       return (
@@ -3788,17 +3788,17 @@ const loadAccountMetrics = useCallback(async (account) => {
                         </div>
                       );
                     }
-                    
+
                     return (
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={dataToUse}
                             cx="50%"
-                            cy="45%"
+                            cy="50%"
                             labelLine={false}
                             label={({ percent }) => `${typeof percent === 'number' ? (percent * 100).toFixed(2) : 0}%`}
-                            outerRadius={85}
+                            outerRadius={80}
                             dataKey="value"
                             stroke="#2a2a2a"
                             strokeWidth={4}
