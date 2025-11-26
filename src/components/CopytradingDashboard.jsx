@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Crown, CheckCircle, Search, Filter, Star, TrendingUp, Users, Target, Copy, BarChart3, PieChart, Calendar, Clock, AlertTriangle, DollarSign, Settings, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, Crown, CheckCircle, Search, Filter, Star, TrendingUp, Users, Target, Copy, BarChart3, PieChart, Calendar, Clock, AlertTriangle, DollarSign, Settings, Plus, TrendingDown, Wallet, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 import TraderProfileDetail from './TraderProfileDetail';
 import SeguirTraderModal from './SeguirTraderModal';
@@ -10,6 +10,144 @@ import { useAccounts } from '../contexts/AccountsContext';
 import useTranslation from '../hooks/useTranslation';
 import { MasterAccountBadge, FollowStatusIndicator, SubscriptionStatusCard, MasterAccountSummaryCard } from './StatusIndicators';
 import { getPerformanceSparklineData } from '../services/accountHistory';
+import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
+
+// ============================================================================
+// REUSABLE COMPONENTS FOR ENHANCED VISUALS
+// ============================================================================
+
+const PerformanceSparkline = ({ data, color = '#22d3ee' }) => {
+  const chartData = data || [];
+
+  return (
+    <div className="h-12 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={`copyGradient-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Tooltip
+            contentStyle={{ backgroundColor: '#191919', border: '1px solid #333', borderRadius: '8px', fontSize: '12px' }}
+            labelStyle={{ color: '#9ca3af' }}
+            formatter={(value) => [`${value.toFixed(1)}%`, 'Return']}
+          />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={color}
+            strokeWidth={2}
+            fill={`url(#copyGradient-${color.replace('#', '')})`}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const ReturnCircle = ({ percentage, size = 'normal' }) => {
+  const isPositive = percentage >= 0;
+  const radius = size === 'large' ? 24 : size === 'small' ? 14 : 20;
+  const circumference = 2 * Math.PI * radius;
+  const displayPercentage = Math.min(Math.abs(percentage), 100);
+  const strokeDashoffset = circumference - (displayPercentage / 100) * circumference;
+
+  const dimensions = size === 'large' ? 'w-14 h-14' : size === 'small' ? 'w-8 h-8' : 'w-12 h-12';
+  const cx = size === 'large' ? 28 : size === 'small' ? 16 : 24;
+  const cy = size === 'large' ? 28 : size === 'small' ? 16 : 24;
+  const strokeWidth = size === 'small' ? 2 : 4;
+  const textSize = size === 'small' ? 'text-[8px]' : 'text-xs';
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg className={`transform -rotate-90 ${dimensions}`}>
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          stroke="#333"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          stroke={isPositive ? '#22c55e' : '#ef4444'}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <span className={`absolute ${textSize} font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+        {isPositive ? '+' : ''}{percentage.toFixed(0)}%
+      </span>
+    </div>
+  );
+};
+
+const EnhancedStatCard = ({
+  icon: Icon,
+  iconColor,
+  iconBg,
+  title,
+  value,
+  subtitle,
+  trend,
+  sparklineData,
+  sparklineColor
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      className={`relative overflow-hidden bg-[#1C1C1C] rounded-xl border border-[#333] p-5 transition-all duration-300 ${
+        isHovered ? 'transform scale-[1.02] border-cyan-600/50 shadow-lg shadow-cyan-500/10' : ''
+      }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className={`absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 transition-opacity duration-300 ${
+        isHovered ? 'opacity-100' : 'opacity-0'
+      }`} />
+      <div className="relative">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`w-12 h-12 ${iconBg} rounded-xl flex items-center justify-center transition-transform duration-300 ${
+            isHovered ? 'scale-110' : ''
+          }`}>
+            <Icon size={24} className={iconColor} />
+          </div>
+          {trend !== undefined && (
+            trend >= 0 ?
+              <TrendingUp size={20} className="text-green-400" /> :
+              <TrendingDown size={20} className="text-red-400" />
+          )}
+        </div>
+        <h3 className={`text-2xl font-bold mb-1 ${
+          trend !== undefined ? (trend >= 0 ? 'text-white' : 'text-red-400') : 'text-white'
+        }`}>
+          {value}
+        </h3>
+        <p className="text-sm text-gray-400">{title}</p>
+        {subtitle && <div className="mt-2 text-xs text-gray-500">{subtitle}</div>}
+        {sparklineData && sparklineData.length > 0 && (
+          <div className="mt-3">
+            <PerformanceSparkline data={sparklineData} color={sparklineColor || '#22d3ee'} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 const CopytradingDashboard = () => {
   const { t } = useTranslation();
@@ -720,6 +858,69 @@ const CopytradingDashboard = () => {
       {/* Contenido según tab seleccionado */}
       {activeTab === 'traders' && (
         <div className="space-y-4">
+          {/* Portfolio Summary Section */}
+          {activeSubscriptions.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <Wallet className="text-cyan-400" size={24} />
+                Resumen de Portfolio
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <EnhancedStatCard
+                  icon={Wallet}
+                  iconColor="text-cyan-400"
+                  iconBg="bg-cyan-900/30"
+                  title="Capital Invertido"
+                  value={`$${activeSubscriptions.reduce((sum, sub) => {
+                    const amount = parseFloat(sub.invested.replace('$', '').replace(',', ''));
+                    return sum + (isNaN(amount) ? 0 : amount);
+                  }, 0).toFixed(2)}`}
+                  subtitle={`En ${activeSubscriptions.length} ${activeSubscriptions.length === 1 ? 'trader' : 'traders'}`}
+                />
+                <EnhancedStatCard
+                  icon={TrendingUp}
+                  iconColor="text-green-400"
+                  iconBg="bg-green-900/30"
+                  title="Beneficio Total"
+                  value={`$${activeSubscriptions.reduce((sum, sub) => {
+                    const amount = parseFloat(sub.profit.replace(/[+$,]/g, ''));
+                    return sum + (isNaN(amount) ? 0 : amount);
+                  }, 0).toFixed(2)}`}
+                  trend={activeSubscriptions.reduce((sum, sub) => {
+                    const pct = parseFloat(sub.profitPercentage.replace(/[+%]/g, ''));
+                    return sum + (isNaN(pct) ? 0 : pct);
+                  }, 0) / activeSubscriptions.length}
+                  subtitle={`Promedio: ${(activeSubscriptions.reduce((sum, sub) => {
+                    const pct = parseFloat(sub.profitPercentage.replace(/[+%]/g, ''));
+                    return sum + (isNaN(pct) ? 0 : pct);
+                  }, 0) / activeSubscriptions.length).toFixed(1)}%`}
+                />
+                <EnhancedStatCard
+                  icon={Users}
+                  iconColor="text-purple-400"
+                  iconBg="bg-purple-900/30"
+                  title="Traders Activos"
+                  value={activeSubscriptions.length.toString()}
+                  subtitle="En seguimiento"
+                />
+                <EnhancedStatCard
+                  icon={Activity}
+                  iconColor="text-orange-400"
+                  iconBg="bg-orange-900/30"
+                  title="ROI Promedio"
+                  value={`${(activeSubscriptions.reduce((sum, sub) => {
+                    const pct = parseFloat(sub.profitPercentage.replace(/[+%]/g, ''));
+                    return sum + (isNaN(pct) ? 0 : pct);
+                  }, 0) / activeSubscriptions.length).toFixed(1)}%`}
+                  trend={activeSubscriptions.reduce((sum, sub) => {
+                    const pct = parseFloat(sub.profitPercentage.replace(/[+%]/g, ''));
+                    return sum + (isNaN(pct) ? 0 : pct);
+                  }, 0) / activeSubscriptions.length}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Dashboard de Traders Seguidos */}
           {activeSubscriptions.length > 0 && (
             <div className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border border-cyan-500/30 rounded-xl p-6 mb-6">
@@ -733,34 +934,82 @@ const CopytradingDashboard = () => {
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {activeSubscriptions.slice(0, 3).map(sub => (
-                  <div key={sub.id} className="bg-[#191919]/50 rounded-lg p-4 border border-cyan-500/20 hover:border-cyan-500/40 transition-all">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium text-white truncate">{sub.name}</h4>
-                      <CheckCircle size={16} className="text-green-400" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Invertido:</span>
-                        <span className="text-white font-medium">{sub.invested}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Beneficio:</span>
-                        <span className="text-green-400 font-bold">{sub.profit}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Rentabilidad:</span>
-                        <span className="text-cyan-400 font-bold">{sub.profitPercentage}</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleUnfollowTrader(sub.traderId)}
-                      className="w-full mt-3 px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-sm transition-colors border border-red-600/30"
+                {activeSubscriptions.slice(0, 3).map(sub => {
+                  // Find the trader's performance history
+                  const trader = availableTraders.find(t => t.id === sub.traderId || t.user_id === sub.traderId);
+                  const performanceData = trader?.performanceHistory || null;
+                  const profitPct = parseFloat(sub.profitPercentage.replace(/[+%]/g, '')) || 0;
+
+                  return (
+                    <div
+                      key={sub.id}
+                      className="relative overflow-hidden bg-[#191919]/50 backdrop-blur-sm rounded-lg p-4 border border-cyan-500/20 hover:border-cyan-500/50 hover:scale-[1.02] transition-all duration-300 group"
                     >
-                      Dejar de Copiar
-                    </button>
-                  </div>
-                ))}
+                      {/* Glassmorphism overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                      <div className="relative">
+                        {/* Header with ReturnCircle */}
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium text-white truncate flex-1">{sub.name}</h4>
+                          <div className="flex items-center gap-2">
+                            <ReturnCircle percentage={profitPct} size="small" />
+                            <CheckCircle size={16} className="text-green-400" />
+                          </div>
+                        </div>
+
+                        {/* Performance Sparkline */}
+                        {performanceData && performanceData.length > 0 && (
+                          <div className="mb-3 -mx-2">
+                            <PerformanceSparkline
+                              data={performanceData}
+                              color={profitPct >= 0 ? '#22d3ee' : '#ef4444'}
+                            />
+                          </div>
+                        )}
+
+                        {/* Stats */}
+                        <div className="space-y-2 mb-3">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-400">Invertido:</span>
+                            <span className="text-white font-medium">{sub.invested}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-400">Beneficio:</span>
+                            <span className={`font-bold ${profitPct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {sub.profit}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-400">Rentabilidad:</span>
+                            <span className={`font-bold ${profitPct >= 0 ? 'text-cyan-400' : 'text-red-400'}`}>
+                              {sub.profitPercentage}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              const traderToView = availableTraders.find(t => t.id === sub.traderId);
+                              if (traderToView) handleViewTraderDetails(traderToView);
+                            }}
+                            className="flex-1 px-3 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 rounded-lg text-sm transition-colors border border-cyan-600/30"
+                          >
+                            Ver Perfil
+                          </button>
+                          <button
+                            onClick={() => handleUnfollowTrader(sub.traderId)}
+                            className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-sm transition-colors border border-red-600/30"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
               {activeSubscriptions.length > 3 && (
                 <button

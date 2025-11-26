@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, User, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, BarChart2, Activity, History, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus, Info } from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowUp, TrendingUp, TrendingDown, Users, User, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, BarChart2, Activity, History, Shield, Award, Calendar, DollarSign, Crown, CheckCircle, Settings, Plus, Info, Wallet } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts';
 import toast from 'react-hot-toast';
 import { getPammFunds, getMyFunds, leavePammFund, joinPammFund, getFundDetails, updateProfitPreference, getProfitHistory } from '../services/pammService';
@@ -14,6 +14,68 @@ import { MasterAccountBadge, PerformanceStatusIndicator, MasterAccountSummaryCar
 import EnhancedPAMMCard, { PerformanceSparkline, ReturnCircle, KpiBadge, RiskIndicator } from './EnhancedPAMMCard';
 import EquityStopAlert from './EquityStopAlert';
 import { getPerformanceSparklineData } from '../services/accountHistory';
+
+// ============================================================================
+// ENHANCED STAT CARD COMPONENT
+// ============================================================================
+
+const EnhancedStatCard = ({
+  icon: Icon,
+  iconColor,
+  iconBg,
+  title,
+  value,
+  subtitle,
+  trend,
+  sparklineData,
+  sparklineColor
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      className={`relative overflow-hidden bg-[#1C1C1C] rounded-xl border border-[#333] p-5 transition-all duration-300 ${
+        isHovered ? 'transform scale-[1.02] border-cyan-600/50 shadow-lg shadow-cyan-500/10' : ''
+      }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className={`absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 transition-opacity duration-300 ${
+        isHovered ? 'opacity-100' : 'opacity-0'
+      }`} />
+      <div className="relative">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`w-12 h-12 ${iconBg} rounded-xl flex items-center justify-center transition-transform duration-300 ${
+            isHovered ? 'scale-110' : ''
+          }`}>
+            <Icon size={24} className={iconColor} />
+          </div>
+          {trend !== undefined && (
+            trend >= 0 ?
+              <TrendingUp size={20} className="text-green-400" /> :
+              <TrendingDown size={20} className="text-red-400" />
+          )}
+        </div>
+        <h3 className={`text-2xl font-bold mb-1 ${
+          trend !== undefined ? (trend >= 0 ? 'text-white' : 'text-red-400') : 'text-white'
+        }`}>
+          {value}
+        </h3>
+        <p className="text-sm text-gray-400">{title}</p>
+        {subtitle && <div className="mt-2 text-xs text-gray-500">{subtitle}</div>}
+        {sparklineData && sparklineData.length > 0 && (
+          <div className="mt-3">
+            <PerformanceSparkline data={sparklineData} color={sparklineColor || '#22d3ee'} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 const PammDashboard = ({ setSelectedOption, navigationParams, setNavigationParams, scrollContainerRef }) => {
     const { t } = useTranslation('pamm');
@@ -540,38 +602,46 @@ const PammDashboardView = ({
 
             {/* Widget 1: Resumen de Portafolio PAMM */}
             <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
-                <h2 className="text-xl font-semibold mb-4 text-cyan-400">{t('pamm.portfolio')}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
-                        <p className="text-gray-400 text-xs mb-2 uppercase tracking-wide">Total Invertido</p>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.total_invested || portfolioData.totalBalance || 0)}</p>
-                    </div>
-                    <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
-                        <p className="text-gray-400 text-xs mb-2 uppercase tracking-wide">Valor Actual</p>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.total_current_value || portfolioData.activeCapital || 0)}</p>
-                    </div>
-                    <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
-                        <p className="text-gray-400 text-xs mb-2 uppercase tracking-wide">{t('pamm.totalPnL')}</p>
-                        <div className="flex items-center gap-2">
-                            <p className={`text-2xl font-bold ${(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                {formatCurrency(portfolioData.total_pnl || portfolioData.totalPnL || 0)}
-                            </p>
-                            {(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ?
-                                <ArrowUp size={20} className="text-green-500" /> :
-                                <TrendingDown size={20} className="text-red-500" />
-                            }
-                        </div>
-                        <p className={`text-sm font-medium mt-1 ${(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                            {formatPercentage(portfolioData.total_pnl_percentage || portfolioData.totalPnLPercentage || 0)}
-                        </p>
-                    </div>
-                    <div className="bg-[#1C1C1C] rounded-xl p-4 border border-[#333]">
-                        <p className="text-gray-400 text-xs mb-2 uppercase tracking-wide">Fondos Activos</p>
-                        <div className="flex items-center gap-2">
-                            <p className="text-2xl font-bold text-white">{portfolioData.active_funds || investedFundsArray.length || 0}</p>
-                            <Users size={20} className="text-cyan-500" />
-                        </div>
-                    </div>
+                <h2 className="text-xl font-semibold mb-4 text-cyan-400 flex items-center gap-2">
+                    <Wallet className="text-cyan-400" size={24} />
+                    {t('pamm.portfolio')}
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <EnhancedStatCard
+                        icon={Wallet}
+                        iconColor="text-cyan-400"
+                        iconBg="bg-cyan-900/30"
+                        title="Total Invertido"
+                        value={formatCurrency(portfolioData.total_invested || portfolioData.totalBalance || 0)}
+                        subtitle={`En ${portfolioData.active_funds || investedFundsArray.length || 0} ${(portfolioData.active_funds || investedFundsArray.length || 0) === 1 ? 'fondo' : 'fondos'}`}
+                    />
+                    <EnhancedStatCard
+                        icon={Activity}
+                        iconColor="text-purple-400"
+                        iconBg="bg-purple-900/30"
+                        title="Valor Actual"
+                        value={formatCurrency(portfolioData.total_current_value || portfolioData.activeCapital || 0)}
+                        subtitle="Equity total"
+                    />
+                    <EnhancedStatCard
+                        icon={TrendingUp}
+                        iconColor={(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? "text-green-400" : "text-red-400"}
+                        iconBg={(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? "bg-green-900/30" : "bg-red-900/30"}
+                        title={t('pamm.totalPnL')}
+                        value={formatCurrency(portfolioData.total_pnl || portfolioData.totalPnL || 0)}
+                        trend={portfolioData.total_pnl || portfolioData.totalPnL || 0}
+                        subtitle={formatPercentage(portfolioData.total_pnl_percentage || portfolioData.totalPnLPercentage || 0)}
+                        sparklineData={historicalData.length > 0 ? historicalData.map((item, idx) => ({ day: idx + 1, value: item.pnl || 0 })) : null}
+                        sparklineColor={(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? '#22d3ee' : '#ef4444'}
+                    />
+                    <EnhancedStatCard
+                        icon={Users}
+                        iconColor="text-orange-400"
+                        iconBg="bg-orange-900/30"
+                        title="Fondos Activos"
+                        value={(portfolioData.active_funds || investedFundsArray.length || 0).toString()}
+                        subtitle="Inversiones activas"
+                    />
                 </div>
             </div>
 
@@ -606,32 +676,55 @@ const PammDashboardView = ({
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {investedFundsArray.map((fund) => (
-                            <div key={fund.id} className="bg-[#1C1C1C] rounded-xl border border-[#333] overflow-hidden hover:border-cyan-600/50 transition-all duration-200">
-                                {/* Header */}
-                                <div className="p-5 border-b border-[#333]">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                                                <span className="text-white font-bold text-xl">{(fund.fund_name || fund.name || 'F').charAt(0)}</span>
+                        {investedFundsArray.map((fund) => {
+                            const profitPct = fund.profit_loss_percentage || fund.personalPnLPercentage || 0;
+                            const fundPerformance = fund.performanceHistory || null;
+
+                            return (
+                                <div
+                                    key={fund.id}
+                                    className="relative bg-[#1C1C1C] rounded-xl border border-[#333] overflow-hidden hover:border-cyan-600/50 hover:scale-[1.005] transition-all duration-300 group"
+                                >
+                                    {/* Glassmorphism overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+                                    {/* Header */}
+                                    <div className="relative p-5 border-b border-[#333]">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex items-center gap-4 flex-1">
+                                                <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                                    <span className="text-white font-bold text-xl">{(fund.fund_name || fund.name || 'F').charAt(0)}</span>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h3 className="text-lg font-semibold text-white">{fund.fund_name || fund.name || 'Sin nombre'}</h3>
+                                                        <ReturnCircle percentage={profitPct} size="small" />
+                                                    </div>
+                                                    <p className="text-sm text-gray-400 flex items-center gap-1">
+                                                        <User size={14} />
+                                                        {typeof fund.manager === 'string' ? fund.manager : (fund.manager?.name || fund.manager?.display_name || 'Manager')}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="text-lg font-semibold text-white mb-1">{fund.fund_name || fund.name || 'Sin nombre'}</h3>
-                                                <p className="text-sm text-gray-400 flex items-center gap-1">
-                                                    <User size={14} />
-                                                    {typeof fund.manager === 'string' ? fund.manager : (fund.manager?.name || fund.manager?.display_name || 'Manager')}
-                                                </p>
-                                            </div>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                                fund.status === 'active'
+                                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                    : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                                            }`}>
+                                                {fund.status === 'active' ? t('pamm.status.active') : t('pamm.status.paused')}
+                                            </span>
                                         </div>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                            fund.status === 'active'
-                                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                                : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                                        }`}>
-                                            {fund.status === 'active' ? t('pamm.status.active') : t('pamm.status.paused')}
-                                        </span>
+
+                                        {/* Performance Sparkline */}
+                                        {fundPerformance && fundPerformance.length > 0 && (
+                                            <div className="mt-4 -mx-2">
+                                                <PerformanceSparkline
+                                                    data={fundPerformance}
+                                                    color={profitPct >= 0 ? '#22d3ee' : '#ef4444'}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
 
                                 {/* Stats Grid */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-[#191919]">
@@ -872,7 +965,8 @@ const PammDashboardView = ({
                                     );
                                 })()}
                             </div>
-                        ))}
+                        );
+                        })}
                     </div>
                 )}
             </div>
