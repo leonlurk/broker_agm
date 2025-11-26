@@ -2330,7 +2330,7 @@ const loadAccountMetrics = useCallback(async (account) => {
     if (realInstruments?.distribution && realInstruments.distribution.length > 0) {
       // Usar datos reales de la API con colores dinámicos
       const colors = ['#06b6d4', '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
-      
+
       return realInstruments.distribution.map((item, index) => ({
         name: item.symbol || item.name || t('trading:charts.unknown'),
         value: item.percentage || 0,
@@ -2339,11 +2339,19 @@ const loadAccountMetrics = useCallback(async (account) => {
         operaciones: item.count || 0
       }));
     }
-    
-    // Si no hay datos de la API, usar operaciones reales de Supabase
-    let dataToProcess = realTradingOperations ? 
-      transformTradingOperations(realTradingOperations) : 
-      [];
+
+    // Si no hay datos de la API, usar operaciones de Supabase
+    // OPTIMISTIC UPDATE: Priorizar realTradingOperations (actualización optimista)
+    // Si no existe, usar realHistory (incluye backend + pending_closed_positions)
+    let dataToProcess = [];
+
+    if (realTradingOperations?.operations) {
+      // Usar datos optimistas si existen
+      dataToProcess = transformTradingOperations(realTradingOperations.operations);
+    } else if (realHistory?.operations) {
+      // Usar datos del backend (incluye pending)
+      dataToProcess = realHistory.operations;
+    }
     
     // Si tampoco hay operaciones, mostrar "Sin datos"
     if (dataToProcess.length === 0) {
@@ -2506,9 +2514,10 @@ const loadAccountMetrics = useCallback(async (account) => {
   };
 
   // Memoizar datos dinámicos para evitar recálculos innecesarios
-  // OPTIMISTIC UPDATE: Incluir realTradingOperations en dependencias para que se recalcule
-  // automáticamente cuando se cierren posiciones (actualización optimista)
-  const dynamicInstrumentsData = useMemo(() => generateInstrumentsData(), [realInstruments, realTradingOperations, historialData, t]);
+  // OPTIMISTIC UPDATE: Incluir realTradingOperations y realHistory en dependencias
+  // - realTradingOperations: actualización optimista inmediata al cerrar posición
+  // - realHistory: datos del backend incluyendo pending_closed_positions
+  const dynamicInstrumentsData = useMemo(() => generateInstrumentsData(), [realInstruments, realTradingOperations, realHistory, historialData, t]);
   const dynamicRendimientoData = useMemo(() => generateRendimientoData(), [realBalanceHistory, realMetrics, rendimientoFilters, t]);
   
   // Actualizar las variables con los datos dinámicos generados
