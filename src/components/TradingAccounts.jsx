@@ -2348,9 +2348,12 @@ const loadAccountMetrics = useCallback(async (account) => {
     if (realTradingOperations?.operations) {
       // Usar datos optimistas si existen
       dataToProcess = transformTradingOperations(realTradingOperations.operations);
+      console.log('[PieChart] Using optimistic data:', dataToProcess.length, 'operations');
     } else if (realHistory?.operations) {
       // Usar datos del backend (incluye pending)
-      dataToProcess = realHistory.operations;
+      // FILTRAR: Solo operaciones CERRADAS (el pie chart es para historial)
+      dataToProcess = realHistory.operations.filter(op => !op.isOpen && op.status !== 'OPEN');
+      console.log('[PieChart] Using realHistory data:', dataToProcess.length, 'closed operations from', realHistory.operations.length, 'total');
     }
     
     // Si tampoco hay operaciones, mostrar "Sin datos"
