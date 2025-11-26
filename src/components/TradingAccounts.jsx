@@ -2506,7 +2506,9 @@ const loadAccountMetrics = useCallback(async (account) => {
   };
 
   // Memoizar datos dinámicos para evitar recálculos innecesarios
-  const dynamicInstrumentsData = useMemo(() => generateInstrumentsData(), [realInstruments, historialData, t]);
+  // OPTIMISTIC UPDATE: Incluir realTradingOperations en dependencias para que se recalcule
+  // automáticamente cuando se cierren posiciones (actualización optimista)
+  const dynamicInstrumentsData = useMemo(() => generateInstrumentsData(), [realInstruments, realTradingOperations, historialData, t]);
   const dynamicRendimientoData = useMemo(() => generateRendimientoData(), [realBalanceHistory, realMetrics, rendimientoFilters, t]);
   
   // Actualizar las variables con los datos dinámicos generados
