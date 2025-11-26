@@ -954,6 +954,7 @@ const Inversor = () => {
                     </div>
                   </div>
                 </div>
+              </div>
               );
             })}
           </div>
