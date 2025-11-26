@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Plus, Target, UserMinus } from 'lucide-react';
+import { ChevronDown, ArrowUp, TrendingUp, TrendingDown, Users, MoreHorizontal, Pause, StopCircle, Eye, Search, Filter, SlidersHorizontal, Star, Copy, TrendingUp as TrendingUpIcon, BarChart3, Activity, History, MessageSquare, Shield, Award, Calendar, DollarSign, Plus, Target, UserMinus, Wallet } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, PieChart, Pie, Cell, Legend } from 'recharts';
 import CombinedCopyTradingModal from './CombinedCopyTradingModal';
 import CommentsRatingModal from './CommentsRatingModal';
@@ -10,6 +10,144 @@ import { useTranslation } from 'react-i18next';
 import { getMasterTraders, getMySubscriptions, getInvestorPortfolio, followMaster, unfollowMaster, submitTraderComment, getTraderComments } from '../services/copytradingService';
 import toast from 'react-hot-toast';
 import EquityStopAlert from './EquityStopAlert';
+import { getPerformanceSparklineData } from '../services/accountHistory';
+
+// ============================================================================
+// REUSABLE COMPONENTS FOR ENHANCED VISUALS
+// ============================================================================
+
+const PerformanceSparkline = ({ data, color = '#22d3ee' }) => {
+  const chartData = data || [];
+
+  return (
+    <div className="h-12 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={`inversorGradient-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Tooltip
+            contentStyle={{ backgroundColor: '#191919', border: '1px solid #333', borderRadius: '8px', fontSize: '12px' }}
+            labelStyle={{ color: '#9ca3af' }}
+            formatter={(value) => [`${value.toFixed(1)}%`, 'Return']}
+          />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={color}
+            strokeWidth={2}
+            fill={`url(#inversorGradient-${color.replace('#', '')})`}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const ReturnCircle = ({ percentage, size = 'normal' }) => {
+  const isPositive = percentage >= 0;
+  const radius = size === 'large' ? 24 : size === 'small' ? 14 : 20;
+  const circumference = 2 * Math.PI * radius;
+  const displayPercentage = Math.min(Math.abs(percentage), 100);
+  const strokeDashoffset = circumference - (displayPercentage / 100) * circumference;
+
+  const dimensions = size === 'large' ? 'w-14 h-14' : size === 'small' ? 'w-8 h-8' : 'w-12 h-12';
+  const cx = size === 'large' ? 28 : size === 'small' ? 16 : 24;
+  const cy = size === 'large' ? 28 : size === 'small' ? 16 : 24;
+  const strokeWidth = size === 'small' ? 2 : 4;
+  const textSize = size === 'small' ? 'text-[8px]' : 'text-xs';
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg className={`transform -rotate-90 ${dimensions}`}>
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          stroke="#333"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          stroke={isPositive ? '#22c55e' : '#ef4444'}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <span className={`absolute ${textSize} font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+        {isPositive ? '+' : ''}{percentage.toFixed(0)}%
+      </span>
+    </div>
+  );
+};
+
+const EnhancedStatCard = ({
+  icon: Icon,
+  iconColor,
+  iconBg,
+  title,
+  value,
+  subtitle,
+  trend,
+  sparklineData,
+  sparklineColor
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      className={`relative overflow-hidden bg-[#1C1C1C] rounded-xl border border-[#333] p-5 transition-all duration-300 ${
+        isHovered ? 'transform scale-[1.02] border-cyan-600/50 shadow-lg shadow-cyan-500/10' : ''
+      }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className={`absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 transition-opacity duration-300 ${
+        isHovered ? 'opacity-100' : 'opacity-0'
+      }`} />
+      <div className="relative">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`w-12 h-12 ${iconBg} rounded-xl flex items-center justify-center transition-transform duration-300 ${
+            isHovered ? 'scale-110' : ''
+          }`}>
+            <Icon size={24} className={iconColor} />
+          </div>
+          {trend !== undefined && (
+            trend >= 0 ?
+              <TrendingUp size={20} className="text-green-400" /> :
+              <TrendingDown size={20} className="text-red-400" />
+          )}
+        </div>
+        <h3 className={`text-2xl font-bold mb-1 ${
+          trend !== undefined ? (trend >= 0 ? 'text-white' : 'text-red-400') : 'text-white'
+        }`}>
+          {value}
+        </h3>
+        <p className="text-sm text-gray-400">{title}</p>
+        {subtitle && <div className="mt-2 text-xs text-gray-500">{subtitle}</div>}
+        {sparklineData && sparklineData.length > 0 && (
+          <div className="mt-3">
+            <PerformanceSparkline data={sparklineData} color={sparklineColor || '#22d3ee'} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 // Estados iniciales vacíos para datos dinámicos
 const initialPortfolioData = {
@@ -688,28 +826,44 @@ const Inversor = () => {
 
         {/* Widget 1: Resumen de Portafolio */}
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-cyan-400">{t('copyTrading.investor.portfolio')}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center md:text-left">
-              <p className="text-gray-400 text-sm mb-1">{t('copyTrading.investor.totalBalance')}</p>
-              <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.total_balance || portfolioData.totalBalance || 0)}</p>
-            </div>
-            <div className="text-center md:text-left">
-              <p className="text-gray-400 text-sm mb-1">{t('copyTrading.investor.totalPnL')}</p>
-              <div className="flex items-center justify-center md:justify-start gap-2">
-                <p className={`text-2xl font-bold ${(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {formatCurrency(portfolioData.total_pnl || portfolioData.totalPnL || 0)}
-                </p>
-                <div className={`flex items-center gap-1 ${(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? <ArrowUp size={20} /> : <TrendingDown size={20} />}
-                  <span className="text-sm font-medium">({formatPercentage(portfolioData.total_pnl_percentage || portfolioData.totalPnLPercentage || 0)})</span>
-                </div>
-              </div>
-            </div>
-            <div className="text-center md:text-left">
-              <p className="text-gray-400 text-sm mb-1">{t('copyTrading.investor.activeCapital')}</p>
-              <p className="text-2xl font-bold text-white">{formatCurrency(portfolioData.active_capital || portfolioData.activeCapital || 0)}</p>
-            </div>
+          <h2 className="text-xl font-semibold mb-4 text-cyan-400 flex items-center gap-2">
+            <Wallet className="text-cyan-400" size={24} />
+            {t('copyTrading.investor.portfolio')}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <EnhancedStatCard
+              icon={Wallet}
+              iconColor="text-cyan-400"
+              iconBg="bg-cyan-900/30"
+              title={t('copyTrading.investor.totalBalance')}
+              value={formatCurrency(portfolioData.total_balance || portfolioData.totalBalance || 0)}
+              subtitle={`En ${subscriptions.length} ${subscriptions.length === 1 ? 'trader' : 'traders'}`}
+            />
+            <EnhancedStatCard
+              icon={TrendingUp}
+              iconColor={(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? "text-green-400" : "text-red-400"}
+              iconBg={(portfolioData.total_pnl || portfolioData.totalPnL || 0) >= 0 ? "bg-green-900/30" : "bg-red-900/30"}
+              title={t('copyTrading.investor.totalPnL')}
+              value={formatCurrency(portfolioData.total_pnl || portfolioData.totalPnL || 0)}
+              trend={portfolioData.total_pnl || portfolioData.totalPnL || 0}
+              subtitle={formatPercentage(portfolioData.total_pnl_percentage || portfolioData.totalPnLPercentage || 0)}
+            />
+            <EnhancedStatCard
+              icon={Activity}
+              iconColor="text-purple-400"
+              iconBg="bg-purple-900/30"
+              title={t('copyTrading.investor.activeCapital')}
+              value={formatCurrency(portfolioData.active_capital || portfolioData.activeCapital || 0)}
+              subtitle="Capital asignado"
+            />
+            <EnhancedStatCard
+              icon={Users}
+              iconColor="text-orange-400"
+              iconBg="bg-orange-900/30"
+              title="Traders Copiados"
+              value={subscriptions.length.toString()}
+              subtitle="Inversiones activas"
+            />
           </div>
         </div>
 
@@ -717,33 +871,46 @@ const Inversor = () => {
         <div className="bg-gradient-to-br from-[#232323] to-[#2b2b2b] rounded-2xl border border-[#333] p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4 text-cyan-400">{t('copyTrading.investor.copiedTraders')}</h2>
           <div className="space-y-4">
-            {subscriptions.map((trader) => (
-              <div key={trader.id} className="bg-[#1C1C1C] rounded-xl border border-[#333] p-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  {/* Trader Info */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold">{(trader.name || 'T').charAt(0)}</span>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white">{trader.name}</h3>
-                      <p className="text-sm text-gray-400">{t('copyTrading.investor.capital')}: {formatCurrency(trader.assignedCapital)}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Performance */}
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-sm text-gray-400">{t('copyTrading.stats.performance')}</p>
-                      <div className="flex items-center gap-2">
-                        <p className={`font-semibold ${trader.personalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                          {formatCurrency(trader.personalPnL)}
-                        </p>
-                        <span className={`text-sm ${trader.personalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                          ({formatPercentage(trader.personalPnLPercentage)})
-                        </span>
+            {subscriptions.map((trader) => {
+              const profitPct = trader.personalPnLPercentage || 0;
+
+              return (
+                <div
+                  key={trader.id}
+                  className="relative bg-[#1C1C1C] rounded-xl border border-[#333] p-4 hover:border-cyan-600/50 hover:scale-[1.005] transition-all duration-300 group overflow-hidden"
+                >
+                  {/* Glassmorphism overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+                  <div className="relative">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      {/* Trader Info with ReturnCircle */}
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                          <span className="text-white font-semibold">{(trader.name || 'T').charAt(0)}</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-white">{trader.name}</h3>
+                            <ReturnCircle percentage={profitPct} size="small" />
+                          </div>
+                          <p className="text-sm text-gray-400">{t('copyTrading.investor.capital')}: {formatCurrency(trader.assignedCapital)}</p>
+                        </div>
                       </div>
-                    </div>
+
+                      {/* Performance */}
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-sm text-gray-400">{t('copyTrading.stats.performance')}</p>
+                          <div className="flex items-center gap-2">
+                            <p className={`font-semibold ${trader.personalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              {formatCurrency(trader.personalPnL)}
+                            </p>
+                            <span className={`text-sm ${trader.personalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              ({formatPercentage(trader.personalPnLPercentage)})
+                            </span>
+                          </div>
+                        </div>
                     
                     {/* Status */}
                     <div className="flex items-center gap-2">
@@ -787,8 +954,8 @@ const Inversor = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
