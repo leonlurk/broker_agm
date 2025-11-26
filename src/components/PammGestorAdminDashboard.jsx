@@ -51,6 +51,43 @@ const generateSamplePerformanceData = () => {
   return data;
 };
 
+// Calculate aggregated performance from all funds
+const calculateAggregatedPerformance = (funds) => {
+  if (!funds || funds.length === 0) return [];
+
+  // Filter funds with valid performance data
+  const fundsWithData = funds.filter(fund => fund.performanceHistory && fund.performanceHistory.length > 0);
+
+  if (fundsWithData.length === 0) return [];
+
+  // Get the maximum length of performance data
+  const maxLength = Math.max(...fundsWithData.map(fund => fund.performanceHistory.length));
+
+  // Aggregate performance data weighted by AUM
+  const aggregated = [];
+  for (let i = 0; i < maxLength; i++) {
+    let totalWeightedValue = 0;
+    let totalWeight = 0;
+
+    fundsWithData.forEach(fund => {
+      if (fund.performanceHistory[i]) {
+        const weight = fund.aum || 1; // Use AUM as weight, default to 1
+        totalWeightedValue += fund.performanceHistory[i].value * weight;
+        totalWeight += weight;
+      }
+    });
+
+    if (totalWeight > 0) {
+      aggregated.push({
+        day: i + 1,
+        value: totalWeightedValue / totalWeight
+      });
+    }
+  }
+
+  return aggregated;
+};
+
 // Circular progress indicator for returns
 const ReturnCircle = ({ percentage, size = 'normal' }) => {
   const isPositive = percentage >= 0;
@@ -153,6 +190,7 @@ import InvestorActionsMenu from './InvestorActionsMenu';
 import { getManagerStats, getFundActivities, getFundWithdrawals } from '../services/pammService';
 import PAMMWithdrawalApprovalModal from './PAMMWithdrawalApprovalModal';
 import { scrollToTopManual } from '../hooks/useScrollToTop';
+import { getPerformanceSparklineData } from '../services/accountHistory';
 
 // Datos iniciales vacíos - se cargarán dinámicamente desde la API
 const initialPAMMGestorData = {
@@ -299,6 +337,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
   const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
   const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
   const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
+  const [aggregatedPerformance, setAggregatedPerformance] = useState([]);
 
   const data = gestorData;
 
@@ -335,11 +374,36 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
 
           // Actualizar estado con datos reales
           setInvestors(investors);
-          setTradersDisponibles(traders);
-          
-          // Cargar solicitudes de retiro pendientes para todos los fondos
+
+          // Fetch performance history for all manager's funds
           if (traders.length > 0) {
-            loadPendingWithdrawals(traders);
+            const performancePromises = traders.map(async (fund) => {
+              const mt5Account = fund.manager_mt5_account_id ||
+                                fund.manager_mt5_account ||
+                                fund.mt5_account_id;
+
+              if (!mt5Account) return { ...fund, performanceHistory: null };
+
+              try {
+                const performanceData = await getPerformanceSparklineData(mt5Account, 30);
+                return { ...fund, performanceHistory: performanceData };
+              } catch (error) {
+                console.warn(`[PammGestorAdmin] Could not load performance for account ${mt5Account}:`, error);
+                return { ...fund, performanceHistory: null };
+              }
+            });
+
+            const tradersWithPerformance = await Promise.all(performancePromises);
+            setTradersDisponibles(tradersWithPerformance);
+
+            // Calculate aggregated performance data from all funds
+            const aggregated = calculateAggregatedPerformance(tradersWithPerformance);
+            setAggregatedPerformance(aggregated);
+
+            // Cargar solicitudes de retiro pendientes para todos los fondos
+            loadPendingWithdrawals(tradersWithPerformance);
+          } else {
+            setTradersDisponibles(traders);
           }
         }
       } catch (error) {
@@ -1122,7 +1186,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               title={t('pamm.manager.totalAUM')}
               value={formatCurrency(data.totalCapital)}
               color="cyan"
-              sparklineData={generateSamplePerformanceData()}
+              sparklineData={aggregatedPerformance}
             />
 
             <EnhancedStatCard
@@ -1130,7 +1194,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
               title={t('pamm.manager.performance')}
               value={formatPercentage(data.rendimiento)}
               color="green"
-              sparklineData={generateSamplePerformanceData()}
+              sparklineData={aggregatedPerformance}
             />
 
             <EnhancedStatCard
@@ -1324,7 +1388,7 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
                           {formatPercentage(totalReturn)}
                         </span>
                       </div>
-                      <PerformanceSparkline data={generateSamplePerformanceData()} color={chartColor} />
+                      <PerformanceSparkline data={account.performanceHistory || []} color={chartColor} />
                     </div>
 
                     {/* KPIs Grid */}
