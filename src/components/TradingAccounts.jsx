@@ -656,31 +656,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       // 'all' - obtener todas las cuentas
       filteredAccounts = getAllAccounts();
     }
-    
-    // Debug logs
-    console.log('[TradingAccounts] activeTab:', activeTab);
-    console.log('[TradingAccounts] filteredAccounts:', filteredAccounts.length);
-    console.log('[TradingAccounts] realAccountsOnly:', realAccountsOnly.length);
-    console.log('[TradingAccounts] demoAccountsOnly:', demoAccountsOnly.length);
-    
+
     return filteredAccounts;
   };
 
   const accountsForCurrentTab = getFilteredAccounts();
-  
-  // Debug logging
-  console.log('[TradingAccounts] Current state:', {
-    activeTab,
-    accountsForCurrentTab: accountsForCurrentTab.length,
-    isLoading,
-    error
-  });
 
   // Manejar navegación desde Home.jsx y actualizar la pestaña activa
   useEffect(() => {
     if (navigationParams && navigationParams.viewMode === 'details' && navigationParams.accountId) {
-      console.log("[TradingAccounts] Processing navigation params:", navigationParams);
-      
       const targetAccount = getAllAccounts().find(acc => acc.id === navigationParams.accountId);
       if (targetAccount) {
         // Determinar en qué categoría está la cuenta basándose en account_type
@@ -813,21 +797,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     setProvisionalClosedPositions(prev => [...prev, provisionalPosition]);
 
     try {
-      console.log('[TradingAccounts] Closing position:', ticketToClose);
-
       // PASO 3: Insertar en pending_closed_positions (Supabase) para persistencia
       const { error: insertError } = await supabase
         .from('pending_closed_positions')
         .insert([provisionalPosition]);
 
-      if (insertError) {
-        console.warn('[TradingAccounts] Could not insert provisional position:', insertError);
-      } else {
-        console.log('[TradingAccounts] Provisional position persisted to database');
-      }
-
       // PASO 4: Llamar al endpoint DELETE del backend Python API
-      const response = await brokerApi.delete(
+      await brokerApi.delete(
         `/trading/positions/${ticketToClose}`,
         {
           params: {
@@ -835,8 +811,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           }
         }
       );
-
-      console.log('[TradingAccounts] Position closed successfully:', response.data);
 
       // Mostrar mensaje de éxito
       toast.success(t('trading:positions.messages.closeSuccess'));
@@ -901,8 +875,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           .delete()
           .eq('account_number', selectedAccount.account_number)
           .eq('ticket', ticketToClose);
-
-        console.log('[TradingAccounts] Rolled back provisional position due to error');
       }
 
       // Manejar errores específicos
@@ -923,7 +895,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 
       // Refrescar para sincronizar
       if (selectedAccount) {
-        console.log('[TradingAccounts] Refreshing account data after error');
         setTimeout(() => {
           loadAccountMetrics(selectedAccount);
         }, 1000);
@@ -943,23 +914,20 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
 // Función para cargar métricas de una cuenta
 const loadAccountMetrics = useCallback(async (account) => {
   if (!account || !account.account_number) {
-    console.error('[TradingAccounts] No account provided to loadAccountMetrics');
     return;
   }
 
   // Prevenir cargas duplicadas
   if (loadingRef.current) {
-    console.log('[TradingAccounts] Ya hay una carga en progreso, saltando...');
     return;
   }
-  
+
   // Prevenir cargas muy frecuentes (menos de 2 segundos)
   const now = Date.now();
   if (lastLoadTimeRef.current && (now - lastLoadTimeRef.current) < 2000) {
-    console.log('[TradingAccounts] Carga muy reciente, saltando...');
     return;
   }
-  
+
   loadingRef.current = true;
   lastLoadTimeRef.current = now;
 
@@ -970,21 +938,15 @@ const loadAccountMetrics = useCallback(async (account) => {
   } else {
     setIsBackgroundLoading(true);
   }
-  
+
   try {
     // ENFOQUE HÍBRIDO: Combinar datos en tiempo real + históricos
-
     // OPTIMIZACIÓN: Ejecutar los 2 requests en PARALELO con Promise.all
-    console.log('[TradingAccounts] Obteniendo datos en paralelo (posiciones + dashboard)...');
-
     const [positionsResult, dashboardData] = await Promise.all([
       // PASO 1: Posiciones ABIERTAS en tiempo real
       brokerApi.get(`/accounts/${account.account_number}/positions`)
         .then(response => ({ success: true, data: response.data || [] }))
-        .catch(error => {
-          console.warn('[TradingAccounts] No se pudieron obtener posiciones abiertas:', error);
-          return { success: false, data: [] };
-        }),
+        .catch(() => ({ success: false, data: [] })),
 
       // PASO 2: Dashboard con métricas completas (balance, equity, profit, drawdown, etc.)
       accountMetricsOptimized.getDashboardData(account.account_number, 'month')
@@ -993,19 +955,13 @@ const loadAccountMetrics = useCallback(async (account) => {
     // Extraer resultados
     const openPositions = positionsResult.success ? positionsResult.data : [];
 
-    console.log('[TradingAccounts] Datos obtenidos en paralelo:', {
-      openPositions: openPositions.length,
-      dashboardData: !!dashboardData
-    });
-    
     // Historial de balance: usar solo el que viene en el dashboard (ya incluido en la respuesta)
-    const balanceHistory = Array.isArray(dashboardData?.balance_history) 
-      ? dashboardData.balance_history 
+    const balanceHistory = Array.isArray(dashboardData?.balance_history)
+      ? dashboardData.balance_history
       : [];
-    
+
     // PASO 3: Usar datos del dashboard (incluye balance, equity, profit, drawdown correctos)
     if (dashboardData && dashboardData.kpis) {
-      console.log('[TradingAccounts] Usando métricas completas del dashboard:', dashboardData.kpis);
       setRealMetrics({
         ...dashboardData.kpis,
         balance: dashboardData.kpis.equity || dashboardData.kpis.balance
@@ -1014,13 +970,11 @@ const loadAccountMetrics = useCallback(async (account) => {
 
     // Actualizar estadísticas
     if (dashboardData && dashboardData.statistics) {
-      console.log('[TradingAccounts] Usando estadísticas optimizadas:', dashboardData.statistics);
       setRealStatistics(dashboardData.statistics);
     }
 
     // Actualizar instrumentos
     if (dashboardData && dashboardData.instruments && dashboardData.instruments.length > 0) {
-      console.log('[TradingAccounts] Usando instrumentos optimizados:', dashboardData.instruments);
       setRealInstruments({
         distribution: dashboardData.instruments,
         total_instruments: dashboardData.instruments.length,
@@ -1030,8 +984,6 @@ const loadAccountMetrics = useCallback(async (account) => {
 
     // Actualizar historial de balance
     if (balanceHistory && balanceHistory.length > 0) {
-      console.log('[TradingAccounts] Balance history recibido:', balanceHistory.length, 'puntos');
-      console.log('[TradingAccounts] Balance history muestra:', balanceHistory.slice(0, 2));
       // Formatear para el gráfico
       let formattedBalance = balanceHistory.map(item => ({
         date: item.timestamp || item.date,
@@ -1074,8 +1026,6 @@ const loadAccountMetrics = useCallback(async (account) => {
         .eq('account_number', account.account_number);
 
       if (!pendingError && pendingPositions && pendingPositions.length > 0) {
-        console.log('[TradingAccounts] Found', pendingPositions.length, 'pending closed positions');
-
         // Guardar tickets pending para filtrar de open positions
         pendingTickets = new Set(pendingPositions.map(p => p.ticket));
 
@@ -1092,11 +1042,8 @@ const loadAccountMetrics = useCallback(async (account) => {
 
         for (const pending of pendingPositions) {
           if (realClosedTickets.has(pending.ticket)) {
-            // Real position exists, mark for deletion
             ticketsToDelete.push(pending.ticket);
-            console.log('[TradingAccounts] Real position found for pending ticket:', pending.ticket);
           } else {
-            // No real position yet, keep pending
             validPendings.push(pending);
           }
         }
@@ -1107,8 +1054,7 @@ const loadAccountMetrics = useCallback(async (account) => {
             .from('pending_closed_positions')
             .delete()
             .eq('account_number', account.account_number)
-            .in('ticket', ticketsToDelete)
-            .then(() => console.log('[TradingAccounts] Cleaned up', ticketsToDelete.length, 'synced pendings'));
+            .in('ticket', ticketsToDelete);
         }
 
         // Add only valid pendings to operations (mostrar como cerradas normales)
@@ -1127,15 +1073,14 @@ const loadAccountMetrics = useCallback(async (account) => {
             profit: pending.profit,
             commission: pending.commission || 0,
             swap: pending.swap || 0,
-            status: 'CLOSED', // Mostrar como cerrada normal
-            isPending: false // Sin indicador de carga
+            status: 'CLOSED',
+            isPending: false
           }));
           allOperations.push(...pendingOps);
-          console.log('[TradingAccounts] Added', pendingOps.length, 'pending positions to display (as normal closed)');
         }
       }
     } catch (error) {
-      console.warn('[TradingAccounts] Could not load pending positions:', error);
+      // Silently fail - pending positions are optional
     }
 
     // 3. Agregar posiciones ABIERTAS del MT5 Manager (excepto las que están en pending)
@@ -1143,12 +1088,7 @@ const loadAccountMetrics = useCallback(async (account) => {
       const openOps = openPositions
         .filter(pos => {
           const ticket = pos.ticket || pos.position;
-          // FILTRAR: No incluir posiciones que están en pending_closed_positions
-          if (pendingTickets.has(ticket)) {
-            console.log('[TradingAccounts] Filtering out open position', ticket, '- exists in pending closed');
-            return false;
-          }
-          return true;
+          return !pendingTickets.has(ticket);
         })
         .map(pos => ({
           ...pos,
@@ -1160,7 +1100,6 @@ const loadAccountMetrics = useCallback(async (account) => {
 
       if (openOps.length > 0) {
         allOperations.push(...openOps);
-        console.log('[TradingAccounts] Added', openOps.length, 'open positions (filtered', openPositions.length - openOps.length, 'pending closed)');
       }
     }
 
@@ -1230,7 +1169,6 @@ const loadAccountMetrics = useCallback(async (account) => {
       });
       
       setRealHistory(transformedOps);
-      console.log('[TradingAccounts] Total operaciones (abiertas + cerradas):', transformedOps.total_operations);
     } else {
       // Si no hay operaciones, establecer array vacío
       setRealHistory({ operations: [], total_operations: 0 });
@@ -1250,7 +1188,7 @@ const loadAccountMetrics = useCallback(async (account) => {
     });
 
   } catch (error) {
-    console.error('[TradingAccounts] Error cargando métricas:', error);
+    // Error loading metrics - silently fail, UI shows cached data
   } finally {
     setIsLoadingMetrics(false);
     setIsBackgroundLoading(false);
@@ -2853,19 +2791,6 @@ const loadAccountMetrics = useCallback(async (account) => {
   // Actualizar las variables con los datos dinámicos generados
   instrumentosData = dynamicInstrumentsData;
   rendimientoData = dynamicRendimientoData;
-  
-  // Debug para ver qué datos se están usando
-  console.log('[Debug Instruments]', {
-    realInstruments,
-    dynamicInstrumentsData,
-    hasRealData: realInstruments?.distribution?.length > 0
-  });
-  
-  console.log('[Debug Rendimiento]', {
-    beneficioData: generateBeneficioData(),
-    dynamicRendimientoData,
-    hasRealData: balanceData?.length > 0
-  });
 
   // Función para renderizar las credenciales MT5 en móvil como tarjetas
   const renderMobileCredentials = (selectedAccount) => {

@@ -1,8 +1,9 @@
 // Professional logging system to replace console.log calls
 class Logger {
   constructor() {
-    this.isDevelopment = import.meta.env.MODE === 'development';
-    this.isLoggingEnabled = import.meta.env.VITE_ENABLE_LOGGING === 'true';
+    // Disable all info/debug logs - only errors in production
+    this.isDevelopment = false; // Force disabled to prevent console buffer issues
+    this.isLoggingEnabled = false;
   }
 
   // Format log message with timestamp and level
@@ -17,20 +18,14 @@ class Logger {
     return logObj;
   }
 
-  // Log info messages (only in development or when logging is enabled)
+  // Log info messages - DISABLED to prevent UI buffer
   info(message, data = null) {
-    if (this.isDevelopment || this.isLoggingEnabled) {
-      const logObj = this.formatMessage('INFO', message, data);
-      console.log(`[${logObj.timestamp}] INFO: ${message}`, data || '');
-    }
-    // In production, you would send this to a logging service
+    // Disabled - was causing UI rendering delays
   }
 
-  // Log warning messages
+  // Log warning messages - DISABLED to prevent UI buffer
   warn(message, data = null) {
-    const logObj = this.formatMessage('WARN', message, data);
-    console.warn(`[${logObj.timestamp}] WARN: ${message}`, data || '');
-    // In production, you would send this to a logging service
+    // Disabled - was causing UI rendering delays
   }
 
   // Log error messages (always logged)
