@@ -1285,9 +1285,9 @@ const loadAccountMetrics = useCallback(async (account) => {
 
       setLiveOpenPositions(positions);
 
-      if (!silent && positions.length > 0) {
-        console.log('[LivePositions] Synced', positions.length, 'positions');
-        console.log('[LivePositions] Sample data:', JSON.stringify(positions[0], null, 2));
+      // Debug: siempre mostrar datos para verificar formato
+      if (positions.length > 0) {
+        console.log('[LivePositions] Raw data sample:', positions[0]);
       }
 
       return positions;
