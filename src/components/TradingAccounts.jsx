@@ -267,6 +267,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const [provisionalClosedPositions, setProvisionalClosedPositions] = useState([]);
 
   // ============================================
+  // PASO 3: POSICIONES CERRADAS OPTIMISTAMENTE
+  // Set para trackear tickets cerrados (filtrar de polling)
+  // ============================================
+  const [optimisticallyClosed, setOptimisticallyClosed] = useState(new Set());
+
+  // ============================================
   // PASO 1: POLLING DE POSICIONES ABIERTAS
   // Estado para posiciones abiertas en tiempo real
   // ============================================
@@ -748,7 +754,17 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     }
 
     // PASO 1: OPTIMISTIC UPDATE - Actualizar UI INMEDIATAMENTE
-    // Marcar la posición como cerrada (sin indicador de loading - debe parecer instantáneo)
+    // 1.1: Agregar ticket al set de posiciones cerradas optimistamente
+    const ticketStr = String(ticketToClose);
+    setOptimisticallyClosed(prev => new Set([...prev, ticketStr]));
+
+    // 1.2: Remover de liveOpenPositions inmediatamente
+    setLiveOpenPositions(prev => prev.filter(pos => {
+      const posTicket = String(pos.ticket || pos.position || '');
+      return posTicket !== ticketStr;
+    }));
+
+    // 1.3: Marcar la posición como cerrada en realTradingOperations
     setRealTradingOperations(prev => {
       if (!prev || !prev.operations) return prev;
 
@@ -837,7 +853,15 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     } catch (error) {
       console.error('[TradingAccounts] Error closing position:', error);
 
-      // ROLLBACK: Revertir el optimistic update
+      // ROLLBACK: Remover del set de posiciones cerradas optimistamente
+      const ticketStrRollback = String(ticketToClose);
+      setOptimisticallyClosed(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(ticketStrRollback);
+        return newSet;
+      });
+
+      // ROLLBACK: Revertir el optimistic update en realTradingOperations
       setRealTradingOperations(prev => {
         if (!prev || !prev.operations) return prev;
 
@@ -1275,6 +1299,7 @@ const loadAccountMetrics = useCallback(async (account) => {
   // ============================================
   // FUNCIÓN DE SINCRONIZACIÓN DE POSICIONES ABIERTAS
   // Obtiene posiciones del MT5 en tiempo real
+  // PASO 3: También limpia tickets confirmados como cerrados
   // ============================================
   const syncOpenPositions = useCallback(async (accountNumber, silent = true) => {
     if (!accountNumber) return;
@@ -1283,8 +1308,27 @@ const loadAccountMetrics = useCallback(async (account) => {
       const response = await brokerApi.get(`/accounts/${accountNumber}/positions`);
       const positions = response.data || [];
 
-      setLiveOpenPositions(positions);
+      // Obtener tickets actuales del backend
+      const backendTickets = new Set(
+        positions.map(pos => String(pos.ticket || pos.position || ''))
+      );
 
+      // Limpiar optimisticallyClosed: quitar tickets que ya no existen en backend
+      // (esto significa que el backend ha confirmado que están cerradas)
+      setOptimisticallyClosed(prev => {
+        const newSet = new Set();
+        prev.forEach(ticket => {
+          // Si el ticket todavía existe en backend, mantenerlo en el set
+          // (el backend aún no ha procesado el cierre)
+          if (backendTickets.has(ticket)) {
+            newSet.add(ticket);
+          }
+          // Si no existe en backend, el cierre fue confirmado, no agregar al nuevo set
+        });
+        return newSet;
+      });
+
+      setLiveOpenPositions(positions);
 
       return positions;
     } catch (error) {
@@ -1426,8 +1470,12 @@ const loadAccountMetrics = useCallback(async (account) => {
         console.log('[LivePositions] Polling detenido');
       }
 
+      // PASO 3: Limpiar posiciones cerradas optimistamente al cambiar de cuenta
+      setOptimisticallyClosed(new Set());
+      setLiveOpenPositions([]);
+
       if (channel) {
-        console.log(`[Realtime] 🔌 Desuscribiéndose de cuenta ${selectedAccount.account_number}`);
+        console.log(`[Realtime] Desuscribiendose de cuenta ${selectedAccount.account_number}`);
         supabase.removeChannel(channel);
       }
 
@@ -1716,18 +1764,25 @@ const loadAccountMetrics = useCallback(async (account) => {
   // ============================================
   // PASO 2: COMBINAR DATOS DE realHistory CON liveOpenPositions
   // Actualiza profit/precio en tiempo real sin modificar la fuente original
+  // PASO 3: Excluir posiciones cerradas optimistamente
   // ============================================
   const operationsWithLiveData = useMemo(() => {
     const baseOperations = realHistory?.operations || historialData || [];
 
-    // Si no hay posiciones live, retornar datos originales sin modificar
-    if (!liveOpenPositions || liveOpenPositions.length === 0) {
+    // Filtrar posiciones live excluyendo las cerradas optimistamente
+    const filteredLivePositions = liveOpenPositions.filter(pos => {
+      const ticket = String(pos.ticket || pos.position || '');
+      return !optimisticallyClosed.has(ticket);
+    });
+
+    // Si no hay posiciones live (después de filtrar), retornar datos originales sin modificar
+    if (!filteredLivePositions || filteredLivePositions.length === 0) {
       return baseOperations;
     }
 
     // Crear mapa de posiciones live por ticket para búsqueda rápida
     const liveMap = new Map();
-    liveOpenPositions.forEach(pos => {
+    filteredLivePositions.forEach(pos => {
       const ticket = String(pos.ticket || pos.position || '');
       if (ticket) liveMap.set(ticket, pos);
     });
@@ -1762,8 +1817,9 @@ const loadAccountMetrics = useCallback(async (account) => {
     });
 
     // Agregar nuevas posiciones que no existen en baseOperations
+    // (usando filteredLivePositions que ya excluye las cerradas optimistamente)
     const newPositions = [];
-    liveOpenPositions.forEach(pos => {
+    filteredLivePositions.forEach(pos => {
       const ticket = String(pos.ticket || pos.position || '');
       if (ticket && !existingTickets.has(ticket)) {
         // Transformar al formato de la tabla
@@ -1811,7 +1867,7 @@ const loadAccountMetrics = useCallback(async (account) => {
     }
 
     return updatedOperations;
-  }, [realHistory?.operations, historialData, liveOpenPositions, t]);
+  }, [realHistory?.operations, historialData, liveOpenPositions, optimisticallyClosed, t]);
 
   // OPTIMIZACIÓN: Memoizar filtrado de historial para evitar recálculos innecesarios
   const filteredHistorialData = useMemo(() => {
