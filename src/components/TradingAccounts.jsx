@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, Legend, CartesianGrid, LabelList, Tooltip } from 'recharts';
 import { useAccounts, ACCOUNT_CATEGORIES } from '../contexts/AccountsContext';
 import { Copy, Eye, EyeOff, Check, X, Settings, Menu, Filter, ArrowUpRight, Star, Search as SearchIcon, RefreshCw } from 'lucide-react';
@@ -1259,23 +1260,26 @@ const loadAccountMetrics = useCallback(async (account) => {
         positions.map(pos => String(pos.ticket || pos.position || ''))
       );
 
-      // Limpiar optimisticallyClosed: quitar tickets que ya no existen en backend
-      setOptimisticallyClosed(prev => {
-        const newSet = new Set();
-        prev.forEach(ticket => {
-          if (backendTickets.has(ticket)) {
-            newSet.add(ticket);
-          }
+      // SOLUCIÓN ANTI-THROTTLE: Usar flushSync para forzar actualizaciones síncronas
+      // Esto evita que React/Chrome difieran los updates cuando DevTools está cerrado
+      flushSync(() => {
+        // Limpiar optimisticallyClosed: quitar tickets que ya no existen en backend
+        setOptimisticallyClosed(prev => {
+          const newSet = new Set();
+          prev.forEach(ticket => {
+            if (backendTickets.has(ticket)) {
+              newSet.add(ticket);
+            }
+          });
+          return newSet;
         });
-        return newSet;
+
+        setLiveOpenPositions(positions);
       });
 
-      setLiveOpenPositions(positions);
-
-      // Forzar repaint del browser para evitar throttling cuando DevTools está cerrado
-      requestAnimationFrame(() => {
-        // Este callback vacío fuerza al browser a procesar las actualizaciones de estado
-      });
+      // Forzar reflow del DOM para asegurar que el browser procese los cambios
+      // Leer offsetHeight fuerza al browser a recalcular el layout
+      void document.body.offsetHeight;
 
       return positions;
     } catch (error) {
