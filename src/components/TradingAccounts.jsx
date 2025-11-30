@@ -266,6 +266,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // State for provisional closed positions (optimistic updates)
   const [provisionalClosedPositions, setProvisionalClosedPositions] = useState([]);
 
+  // ============================================
+  // PASO 1: POLLING DE POSICIONES ABIERTAS
+  // Estado para posiciones abiertas en tiempo real
+  // ============================================
+  const [liveOpenPositions, setLiveOpenPositions] = useState([]);
+  const openPositionsIntervalRef = useRef(null);
+
   // Función para obtener tiempo transcurrido en minutos
   const getTimeAgoInMinutes = (timestamp) => {
     if (!timestamp) return null;
@@ -1265,6 +1272,32 @@ const loadAccountMetrics = useCallback(async (account) => {
     }
   }, [selectedAccountId, lastRefreshTime, getAllAccounts, loadAccountMetrics]);
 
+  // ============================================
+  // FUNCIÓN DE SINCRONIZACIÓN DE POSICIONES ABIERTAS
+  // Obtiene posiciones del MT5 en tiempo real
+  // ============================================
+  const syncOpenPositions = useCallback(async (accountNumber, silent = true) => {
+    if (!accountNumber) return;
+
+    try {
+      const response = await brokerApi.get(`/accounts/${accountNumber}/positions`);
+      const positions = response.data || [];
+
+      setLiveOpenPositions(positions);
+
+      if (!silent) {
+        console.log('[LivePositions] Synced', positions.length, 'open positions');
+      }
+
+      return positions;
+    } catch (error) {
+      if (!silent) {
+        console.warn('[LivePositions] Error syncing:', error.message);
+      }
+      return [];
+    }
+  }, []);
+
   // useEffect para cargar datos reales de MT5 y suscribirse a actualizaciones en tiempo real
   useEffect(() => {
     if (!selectedAccountId) return;
@@ -1304,6 +1337,23 @@ const loadAccountMetrics = useCallback(async (account) => {
 
     // Cargar datos inmediatamente
     loadAccountMetrics(selectedAccount);
+
+    // ========== POLLING DE POSICIONES ABIERTAS ==========
+    // Sincronizar posiciones cada 5 segundos para datos en tiempo real
+    // Limpiar intervalo anterior si existe
+    if (openPositionsIntervalRef.current) {
+      clearInterval(openPositionsIntervalRef.current);
+    }
+
+    // Sync inicial
+    syncOpenPositions(selectedAccount.account_number, false);
+
+    // Iniciar polling
+    openPositionsIntervalRef.current = setInterval(() => {
+      syncOpenPositions(selectedAccount.account_number, true);
+    }, 5000);
+
+    console.log('[LivePositions] Polling iniciado para cuenta:', selectedAccount.account_number);
 
     // ========== REALTIME WEBSOCKET SUBSCRIPTION ==========
     // Suscribirse a cambios en tiempo real de la cuenta en broker_accounts
@@ -1372,6 +1422,13 @@ const loadAccountMetrics = useCallback(async (account) => {
 
     // Limpiar suscripción al desmontar o cambiar de cuenta
     return () => {
+      // Detener polling de posiciones abiertas
+      if (openPositionsIntervalRef.current) {
+        clearInterval(openPositionsIntervalRef.current);
+        openPositionsIntervalRef.current = null;
+        console.log('[LivePositions] Polling detenido');
+      }
+
       if (channel) {
         console.log(`[Realtime] 🔌 Desuscribiéndose de cuenta ${selectedAccount.account_number}`);
         supabase.removeChannel(channel);
