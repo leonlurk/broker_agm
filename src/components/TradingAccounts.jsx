@@ -1285,10 +1285,6 @@ const loadAccountMetrics = useCallback(async (account) => {
 
       setLiveOpenPositions(positions);
 
-      // Debug: siempre mostrar datos para verificar formato
-      if (positions.length > 0) {
-        console.log('[LivePositions] Raw data sample:', positions[0]);
-      }
 
       return positions;
     } catch (error) {
@@ -1748,7 +1744,8 @@ const loadAccountMetrics = useCallback(async (account) => {
 
       // Solo actualizar si es posición abierta Y tenemos datos live
       if (livePos && (op.isOpen || op.status === 'OPEN')) {
-        const liveProfit = parseFloat(livePos.profit) || 0;
+        // NOTA: Backend divide profit por 100, multiplicamos para corregir
+        const liveProfit = (parseFloat(livePos.profit) || 0) * 100;
         const livePrice = parseFloat(livePos.price_current) || 0;
 
         return {
@@ -1771,7 +1768,8 @@ const loadAccountMetrics = useCallback(async (account) => {
       if (ticket && !existingTickets.has(ticket)) {
         // Transformar al formato de la tabla
         const openTime = pos.open_time ? new Date(pos.open_time) : new Date();
-        const profit = parseFloat(pos.profit) || 0;
+        // NOTA: Backend divide profit por 100, multiplicamos para corregir
+        const profit = (parseFloat(pos.profit) || 0) * 100;
 
         newPositions.push({
           fechaApertura: openTime.toLocaleDateString(),
