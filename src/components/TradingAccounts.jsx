@@ -1919,6 +1919,60 @@ const loadAccountMetrics = useCallback(async (account) => {
     });
   }, [operationsWithLiveData, historyFilters, t]);
 
+  // ============================================
+  // PASO 4: CALCULAR KPIs INSTANTÁNEOS DESDE POSICIONES ABIERTAS
+  // Métricas en tiempo real basadas en liveOpenPositions
+  // ============================================
+  const liveKPIs = useMemo(() => {
+    // Filtrar posiciones live excluyendo las cerradas optimistamente
+    const activePositions = liveOpenPositions.filter(pos => {
+      const ticket = String(pos.ticket || pos.position || '');
+      return !optimisticallyClosed.has(ticket);
+    });
+
+    if (!activePositions || activePositions.length === 0) {
+      return {
+        unrealizedProfit: 0,
+        openPositionsCount: 0,
+        avgOpenProfit: 0,
+        winningPositions: 0,
+        losingPositions: 0,
+        largestWin: 0,
+        largestLoss: 0
+      };
+    }
+
+    let totalUnrealized = 0;
+    let winningCount = 0;
+    let losingCount = 0;
+    let largestWin = 0;
+    let largestLoss = 0;
+
+    activePositions.forEach(pos => {
+      // NOTA: Backend divide profit por 100, multiplicamos para corregir
+      const profit = (parseFloat(pos.profit) || 0) * 100;
+      totalUnrealized += profit;
+
+      if (profit > 0) {
+        winningCount++;
+        if (profit > largestWin) largestWin = profit;
+      } else if (profit < 0) {
+        losingCount++;
+        if (profit < largestLoss) largestLoss = profit;
+      }
+    });
+
+    return {
+      unrealizedProfit: totalUnrealized,
+      openPositionsCount: activePositions.length,
+      avgOpenProfit: activePositions.length > 0 ? totalUnrealized / activePositions.length : 0,
+      winningPositions: winningCount,
+      losingPositions: losingCount,
+      largestWin: largestWin,
+      largestLoss: largestLoss
+    };
+  }, [liveOpenPositions, optimisticallyClosed]);
+
   // Función para generar datos del gráfico de beneficio total con optimización móvil
   const generateBenefitChartData = () => {
     // Usar datos del balance history si están disponibles para el gráfico de beneficio
@@ -3561,7 +3615,7 @@ const loadAccountMetrics = useCallback(async (account) => {
               
             {/* Métricas lado derecho - 2 columnas con altura completa */}
             <div className={`${isMobile ? 'w-full grid grid-cols-1 gap-3' : 'lg:col-span-2 flex flex-col justify-between'} space-y-3 sm:space-y-4`}>
-              {/* Profit/Loss */}
+              {/* Profit/Loss - PASO 4: Incluye P/L no realizado de posiciones abiertas */}
               <div className={`${isMobile ? '' : 'flex-1'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex flex-col justify-center`}>
                 <div className="flex justify-between items-start mb-2">
                   <CustomTooltip content={t('tooltips.profitLoss')}>
@@ -3581,6 +3635,17 @@ const loadAccountMetrics = useCallback(async (account) => {
                     {(realMetrics?.profit_loss || 0) >= 0 ? '+' : ''}{(realMetrics?.profit_loss_percentage || 0).toFixed(2)}%
                   </span>
                   </div>
+                  {/* PASO 4: Mostrar P/L no realizado si hay posiciones abiertas */}
+                  {liveKPIs.openPositionsCount > 0 && (
+                    <div className="flex items-center mt-1">
+                      <span className={`text-sm font-medium ${liveKPIs.unrealizedProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {liveKPIs.unrealizedProfit >= 0 ? '+' : ''}${liveKPIs.unrealizedProfit.toFixed(2)}
+                      </span>
+                      <span className="text-xs text-gray-500 ml-2">
+                        ({liveKPIs.openPositionsCount} {t('metrics.openPositions') || 'open'})
+                      </span>
+                    </div>
+                  )}
                   <p className="text-xs sm:text-sm text-gray-400">{t('metrics.historicalTotal')}</p>
                 </div>
 
