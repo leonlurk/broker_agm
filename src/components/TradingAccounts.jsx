@@ -1716,10 +1716,108 @@ const loadAccountMetrics = useCallback(async (account) => {
     }));
   };
 
+  // ============================================
+  // PASO 2: COMBINAR DATOS DE realHistory CON liveOpenPositions
+  // Actualiza profit/precio en tiempo real sin modificar la fuente original
+  // ============================================
+  const operationsWithLiveData = useMemo(() => {
+    const baseOperations = realHistory?.operations || historialData || [];
+
+    // Si no hay posiciones live, retornar datos originales sin modificar
+    if (!liveOpenPositions || liveOpenPositions.length === 0) {
+      return baseOperations;
+    }
+
+    // Crear mapa de posiciones live por ticket para búsqueda rápida
+    const liveMap = new Map();
+    liveOpenPositions.forEach(pos => {
+      const ticket = String(pos.ticket || pos.position || '');
+      if (ticket) liveMap.set(ticket, pos);
+    });
+
+    // Tickets que ya existen en baseOperations
+    const existingTickets = new Set();
+
+    // Actualizar posiciones abiertas existentes con datos live
+    const updatedOperations = baseOperations.map(op => {
+      const ticket = String(op.ticket || op.idPosicion || '');
+      existingTickets.add(ticket);
+
+      const livePos = liveMap.get(ticket);
+
+      // Solo actualizar si es posición abierta Y tenemos datos live
+      if (livePos && (op.isOpen || op.status === 'OPEN')) {
+        const liveProfit = parseFloat(livePos.profit) || 0;
+        const livePrice = parseFloat(livePos.price_current) || 0;
+
+        return {
+          ...op,
+          profit: liveProfit,
+          ganancia: liveProfit,
+          resultado: `$${liveProfit.toFixed(2)}`,
+          resultadoColor: liveProfit >= 0 ? 'text-green-400' : 'text-red-400',
+          precioCierre: livePrice.toFixed(5),
+          close_price: livePrice
+        };
+      }
+      return op;
+    });
+
+    // Agregar nuevas posiciones que no existen en baseOperations
+    const newPositions = [];
+    liveOpenPositions.forEach(pos => {
+      const ticket = String(pos.ticket || pos.position || '');
+      if (ticket && !existingTickets.has(ticket)) {
+        // Transformar al formato de la tabla
+        const openTime = pos.open_time ? new Date(pos.open_time) : new Date();
+        const profit = parseFloat(pos.profit) || 0;
+
+        newPositions.push({
+          fechaApertura: openTime.toLocaleDateString(),
+          tiempoApertura: openTime.toLocaleTimeString(),
+          fechaCierre: null,
+          tiempoCierre: null,
+          isOpen: true,
+          fechaISO: openTime.toISOString(),
+          instrumento: pos.symbol || 'N/A',
+          bandera: getInstrumentIcon(pos.symbol || 'N/A'),
+          tipo: pos.action === 0 ? t('positions.types.buy') : pos.action === 1 ? t('positions.types.sell') : 'N/A',
+          lotaje: (parseFloat(pos.volume) || 0).toFixed(2),
+          stopLossFormatted: pos.sl ? parseFloat(pos.sl).toFixed(5) : '0.0',
+          takeProfitFormatted: pos.tp ? parseFloat(pos.tp).toFixed(5) : '0.0',
+          precioApertura: (parseFloat(pos.price_open) || 0).toFixed(5),
+          precioCierre: (parseFloat(pos.price_current) || 0).toFixed(5),
+          pips: 0,
+          idPosicion: ticket,
+          resultado: `$${profit.toFixed(2)}`,
+          resultadoColor: profit >= 0 ? 'text-green-400' : 'text-red-400',
+          ganancia: profit,
+          ticket: ticket,
+          symbol: pos.symbol,
+          type: pos.action === 0 ? 'BUY' : 'SELL',
+          volume: parseFloat(pos.volume) || 0,
+          open_price: parseFloat(pos.price_open) || 0,
+          close_price: parseFloat(pos.price_current) || 0,
+          open_time: pos.open_time,
+          profit: profit,
+          status: 'OPEN'
+        });
+      }
+    });
+
+    // Combinar: nuevas posiciones primero (son las más recientes)
+    if (newPositions.length > 0) {
+      console.log('[LiveData] Added', newPositions.length, 'new positions');
+      return [...newPositions, ...updatedOperations];
+    }
+
+    return updatedOperations;
+  }, [realHistory?.operations, historialData, liveOpenPositions, t]);
+
   // OPTIMIZACIÓN: Memoizar filtrado de historial para evitar recálculos innecesarios
   const filteredHistorialData = useMemo(() => {
-    // Usar datos reales si están disponibles, sino usar datos de ejemplo
-    const dataSource = realHistory?.operations || historialData;
+    // Usar datos combinados con live data
+    const dataSource = operationsWithLiveData;
     return dataSource.filter(item => {
       // Filtro por instrumento
       if (historyFilters.instrument !== 'all') {
@@ -1764,7 +1862,7 @@ const loadAccountMetrics = useCallback(async (account) => {
 
       return true;
     });
-  }, [realHistory?.operations, historialData, historyFilters, t]);
+  }, [operationsWithLiveData, historyFilters, t]);
 
   // Función para generar datos del gráfico de beneficio total con optimización móvil
   const generateBenefitChartData = () => {
