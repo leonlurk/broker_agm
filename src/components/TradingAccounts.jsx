@@ -1260,21 +1260,22 @@ const loadAccountMetrics = useCallback(async (account) => {
       );
 
       // Limpiar optimisticallyClosed: quitar tickets que ya no existen en backend
-      // (esto significa que el backend ha confirmado que están cerradas)
       setOptimisticallyClosed(prev => {
         const newSet = new Set();
         prev.forEach(ticket => {
-          // Si el ticket todavía existe en backend, mantenerlo en el set
-          // (el backend aún no ha procesado el cierre)
           if (backendTickets.has(ticket)) {
             newSet.add(ticket);
           }
-          // Si no existe en backend, el cierre fue confirmado, no agregar al nuevo set
         });
         return newSet;
       });
 
       setLiveOpenPositions(positions);
+
+      // Forzar repaint del browser para evitar throttling cuando DevTools está cerrado
+      requestAnimationFrame(() => {
+        // Este callback vacío fuerza al browser a procesar las actualizaciones de estado
+      });
 
       return positions;
     } catch (error) {
@@ -1326,19 +1327,30 @@ const loadAccountMetrics = useCallback(async (account) => {
     loadAccountMetrics(selectedAccount);
 
     // ========== POLLING DE POSICIONES ABIERTAS ==========
-    // Sincronizar posiciones cada 5 segundos para datos en tiempo real
-    // Limpiar intervalo anterior si existe
+    // Usar setTimeout recursivo en lugar de setInterval (menos throttleado por browsers)
+    // Limpiar timeout anterior si existe
     if (openPositionsIntervalRef.current) {
-      clearInterval(openPositionsIntervalRef.current);
+      clearTimeout(openPositionsIntervalRef.current);
+      openPositionsIntervalRef.current = null;
     }
 
     // Sync inicial
     syncOpenPositions(selectedAccount.account_number, false);
 
-    // Iniciar polling (3 segundos para mejor UX sin afectar rendimiento)
-    openPositionsIntervalRef.current = setInterval(() => {
-      syncOpenPositions(selectedAccount.account_number, true);
-    }, 3000);
+    // Función de polling recursivo (menos throttleado que setInterval)
+    const pollPositions = () => {
+      if (!openPositionsIntervalRef.current) return; // Check if cancelled
+
+      syncOpenPositions(selectedAccount.account_number, true).finally(() => {
+        // Solo programar siguiente poll si no fue cancelado
+        if (openPositionsIntervalRef.current !== null) {
+          openPositionsIntervalRef.current = setTimeout(pollPositions, 3000);
+        }
+      });
+    };
+
+    // Iniciar polling después de 3 segundos
+    openPositionsIntervalRef.current = setTimeout(pollPositions, 3000);
 
     // ========== REALTIME WEBSOCKET SUBSCRIPTION ==========
     // Suscribirse a cambios en tiempo real de la cuenta en broker_accounts
@@ -1395,9 +1407,9 @@ const loadAccountMetrics = useCallback(async (account) => {
 
     // Limpiar suscripción al desmontar o cambiar de cuenta
     return () => {
-      // Detener polling de posiciones abiertas
+      // Detener polling de posiciones abiertas (usar clearTimeout porque usamos setTimeout recursivo)
       if (openPositionsIntervalRef.current) {
-        clearInterval(openPositionsIntervalRef.current);
+        clearTimeout(openPositionsIntervalRef.current);
         openPositionsIntervalRef.current = null;
       }
 
