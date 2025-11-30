@@ -20,6 +20,8 @@ import { supabase } from '../supabase/config';
 // Importar broker services
 import * as brokerAccountsService from '../services/brokerAccountsService';
 import { brokerApi } from '../services/brokerAccountsService';
+// WebSocket para posiciones en tiempo real
+import { positionsWebSocket } from '../services/positionsWebSocket';
 import {
   getBalanceChartData,
   recordBalanceSnapshot,
@@ -274,56 +276,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const [optimisticallyClosed, setOptimisticallyClosed] = useState(new Set());
 
   // ============================================
-  // WORKAROUND: Prevenir throttling de Chrome cuando DevTools está cerrado
-  // Usa Web Audio API para mantener la página "activa"
-  // ============================================
-  const audioContextRef = useRef(null);
-
-  useEffect(() => {
-    // Crear AudioContext silencioso para prevenir throttling de Chrome
-    const createSilentAudio = () => {
-      try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-
-        audioContextRef.current = new AudioContext();
-
-        // Crear oscilador silencioso (gain = 0)
-        const oscillator = audioContextRef.current.createOscillator();
-        const gainNode = audioContextRef.current.createGain();
-
-        gainNode.gain.value = 0; // Completamente silencioso
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContextRef.current.destination);
-        oscillator.start();
-
-        // Resumir contexto si está suspendido (requiere interacción del usuario)
-        if (audioContextRef.current.state === 'suspended') {
-          const resumeAudio = () => {
-            audioContextRef.current?.resume();
-            document.removeEventListener('click', resumeAudio);
-            document.removeEventListener('keydown', resumeAudio);
-          };
-          document.addEventListener('click', resumeAudio);
-          document.addEventListener('keydown', resumeAudio);
-        }
-      } catch (e) {
-        // Silently fail - audio workaround is optional
-      }
-    };
-
-    createSilentAudio();
-
-    return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
-      }
-    };
-  }, []);
-
-  // ============================================
-  // PASO 1: POLLING DE POSICIONES ABIERTAS
+  // WEBSOCKET: Posiciones abiertas en tiempo real
   // Estado para posiciones abiertas en tiempo real
   // ============================================
   const [liveOpenPositions, setLiveOpenPositions] = useState([]);
@@ -1379,31 +1332,109 @@ const loadAccountMetrics = useCallback(async (account) => {
     // Cargar datos inmediatamente
     loadAccountMetrics(selectedAccount);
 
-    // ========== POLLING DE POSICIONES ABIERTAS ==========
-    // Usar setTimeout recursivo en lugar de setInterval (menos throttleado por browsers)
-    // Limpiar timeout anterior si existe
-    if (openPositionsIntervalRef.current) {
-      clearTimeout(openPositionsIntervalRef.current);
-      openPositionsIntervalRef.current = null;
-    }
+    // ========== WEBSOCKET PARA POSICIONES EN TIEMPO REAL ==========
+    // Conectar a WebSocket para recibir actualizaciones de posiciones
+    // Reemplaza el polling anterior - más eficiente y en tiempo real
 
-    // Sync inicial
+    // Primero hacer sync inicial vía HTTP (más confiable para el estado inicial)
     syncOpenPositions(selectedAccount.account_number, false);
 
-    // Función de polling recursivo (menos throttleado que setInterval)
-    const pollPositions = () => {
-      if (!openPositionsIntervalRef.current) return; // Check if cancelled
+    // Conectar a WebSocket
+    positionsWebSocket.connect(selectedAccount.account_number).catch(err => {
+      console.warn('[WS] Failed to connect, falling back to polling:', err);
+      // Fallback a polling si WebSocket falla
+      openPositionsIntervalRef.current = setInterval(() => {
+        syncOpenPositions(selectedAccount.account_number, true);
+      }, 3000);
+    });
 
-      syncOpenPositions(selectedAccount.account_number, true).finally(() => {
-        // Solo programar siguiente poll si no fue cancelado
-        if (openPositionsIntervalRef.current !== null) {
-          openPositionsIntervalRef.current = setTimeout(pollPositions, 3000);
+    // Suscribirse a actualizaciones de posiciones
+    const unsubscribeWS = positionsWebSocket.subscribe((data) => {
+      const { type, position, positionId, positions, login } = data;
+
+      // Verificar que el mensaje es para esta cuenta
+      if (login && String(login) !== String(selectedAccount.account_number)) {
+        return;
+      }
+
+      flushSync(() => {
+        switch (type) {
+          case 'initial':
+            // Posiciones iniciales desde el servidor
+            if (positions && Array.isArray(positions)) {
+              setLiveOpenPositions(positions.map(p => ({
+                ...p,
+                ticket: p.position || p.positionId || p.ticket,
+                profit: p.profit || 0
+              })));
+            }
+            break;
+
+          case 'position_add':
+            // Nueva posición abierta
+            if (position) {
+              setLiveOpenPositions(prev => {
+                const exists = prev.some(p =>
+                  String(p.ticket || p.position) === String(position.id || position.positionId)
+                );
+                if (exists) return prev;
+
+                return [...prev, {
+                  ...position,
+                  ticket: position.id || position.positionId,
+                  profit: position.profit || 0
+                }];
+              });
+            }
+            break;
+
+          case 'position_update':
+            // Posición actualizada (profit, SL/TP, etc.)
+            if (position) {
+              setLiveOpenPositions(prev => prev.map(p => {
+                const pTicket = String(p.ticket || p.position);
+                const updateTicket = String(position.id || position.positionId);
+                if (pTicket === updateTicket) {
+                  return {
+                    ...p,
+                    ...position,
+                    ticket: position.id || position.positionId,
+                    profit: position.profit || p.profit,
+                    priceCurrent: position.priceCurrent || p.priceCurrent
+                  };
+                }
+                return p;
+              }));
+            }
+            break;
+
+          case 'position_delete':
+            // Posición cerrada
+            if (positionId) {
+              const ticketStr = String(positionId);
+              setLiveOpenPositions(prev =>
+                prev.filter(p => String(p.ticket || p.position) !== ticketStr)
+              );
+              // Limpiar de optimistically closed si estaba ahí
+              setOptimisticallyClosed(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(ticketStr);
+                return newSet;
+              });
+            }
+            break;
+
+          case 'positions_clean':
+            // Todas las posiciones limpiadas
+            setLiveOpenPositions([]);
+            setOptimisticallyClosed(new Set());
+            break;
         }
       });
-    };
 
-    // Iniciar polling después de 3 segundos
-    openPositionsIntervalRef.current = setTimeout(pollPositions, 3000);
+      // Forzar reflow del DOM
+      void document.body.offsetHeight;
+    });
 
     // ========== REALTIME WEBSOCKET SUBSCRIPTION ==========
     // Suscribirse a cambios en tiempo real de la cuenta en broker_accounts
@@ -1460,9 +1491,13 @@ const loadAccountMetrics = useCallback(async (account) => {
 
     // Limpiar suscripción al desmontar o cambiar de cuenta
     return () => {
-      // Detener polling de posiciones abiertas (usar clearTimeout porque usamos setTimeout recursivo)
+      // Desconectar WebSocket de posiciones
+      unsubscribeWS();
+      positionsWebSocket.disconnect();
+
+      // Limpiar fallback polling si estaba activo
       if (openPositionsIntervalRef.current) {
-        clearTimeout(openPositionsIntervalRef.current);
+        clearInterval(openPositionsIntervalRef.current);
         openPositionsIntervalRef.current = null;
       }
 
