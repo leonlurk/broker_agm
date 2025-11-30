@@ -809,6 +809,9 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       comment: 'Pending sync from MT5'
     };
 
+    // PASO 5: Agregar a provisionalClosedPositions para estadísticas instantáneas
+    setProvisionalClosedPositions(prev => [...prev, provisionalPosition]);
+
     try {
       console.log('[TradingAccounts] Closing position:', ticketToClose);
 
@@ -885,6 +888,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           })
         };
       });
+
+      // ROLLBACK: Remover de provisionalClosedPositions
+      setProvisionalClosedPositions(prev =>
+        prev.filter(pos => pos.ticket !== ticketToClose)
+      );
 
       // ROLLBACK: Eliminar la posición provisional de la base de datos
       if (error.response?.status !== 404) {
@@ -1470,9 +1478,10 @@ const loadAccountMetrics = useCallback(async (account) => {
         console.log('[LivePositions] Polling detenido');
       }
 
-      // PASO 3: Limpiar posiciones cerradas optimistamente al cambiar de cuenta
+      // PASO 3 & 5: Limpiar posiciones cerradas optimistamente al cambiar de cuenta
       setOptimisticallyClosed(new Set());
       setLiveOpenPositions([]);
+      setProvisionalClosedPositions([]);
 
       if (channel) {
         console.log(`[Realtime] Desuscribiendose de cuenta ${selectedAccount.account_number}`);
@@ -1972,6 +1981,77 @@ const loadAccountMetrics = useCallback(async (account) => {
       largestLoss: largestLoss
     };
   }, [liveOpenPositions, optimisticallyClosed]);
+
+  // ============================================
+  // PASO 5: ESTADÍSTICAS COMBINADAS CON POSICIONES CERRADAS OPTIMISTAS
+  // Combina realStatistics con provisionalClosedPositions para stats instantáneos
+  // ============================================
+  const combinedStatistics = useMemo(() => {
+    // Si no hay estadísticas base ni posiciones provisionales, retornar null
+    if (!realStatistics && provisionalClosedPositions.length === 0) {
+      return realStatistics;
+    }
+
+    // Copiar estadísticas base del backend
+    const baseStats = realStatistics || {
+      total_trades: 0,
+      win_rate: 0,
+      average_win: 0,
+      average_loss: 0,
+      net_pnl: 0,
+      net_pnl_percentage: 0,
+      average_lot_size: 0,
+      risk_reward_ratio: 0,
+      average_trade_duration: '00:00:00',
+      total_deposits: 0,
+      total_withdrawals: 0
+    };
+
+    // Si no hay posiciones provisionales, retornar stats base
+    if (!provisionalClosedPositions || provisionalClosedPositions.length === 0) {
+      return baseStats;
+    }
+
+    // Calcular ajustes basados en posiciones cerradas optimistamente
+    let additionalWins = 0;
+    let additionalLosses = 0;
+    let additionalPnL = 0;
+    let additionalVolume = 0;
+
+    provisionalClosedPositions.forEach(pos => {
+      const profit = pos.profit || 0;
+      additionalPnL += profit;
+      additionalVolume += pos.volume || 0;
+
+      if (profit > 0) {
+        additionalWins++;
+      } else if (profit < 0) {
+        additionalLosses++;
+      }
+    });
+
+    const additionalTrades = provisionalClosedPositions.length;
+    const newTotalTrades = (baseStats.total_trades || 0) + additionalTrades;
+
+    // Calcular nuevo win rate
+    // Asumiendo que las estadísticas base tienen X wins de Y trades
+    const baseWins = Math.round((baseStats.win_rate || 0) / 100 * (baseStats.total_trades || 0));
+    const newWins = baseWins + additionalWins;
+    const newWinRate = newTotalTrades > 0 ? (newWins / newTotalTrades) * 100 : 0;
+
+    // Calcular nuevo net PnL
+    const newNetPnL = (baseStats.net_pnl || 0) + additionalPnL;
+
+    return {
+      ...baseStats,
+      total_trades: newTotalTrades,
+      win_rate: newWinRate,
+      net_pnl: newNetPnL,
+      // Marcar que hay ajustes optimistas pendientes
+      _hasOptimisticAdjustments: provisionalClosedPositions.length > 0,
+      _optimisticTradesCount: provisionalClosedPositions.length
+    };
+  }, [realStatistics, provisionalClosedPositions]);
 
   // Función para generar datos del gráfico de beneficio total con optimización móvil
   const generateBenefitChartData = () => {
@@ -3752,12 +3832,17 @@ const loadAccountMetrics = useCallback(async (account) => {
                 </div>
               </div>
               
-            {/* 6. {t('tradingAccountsUI.metrics.winRatio')} */}
+            {/* 6. {t('tradingAccountsUI.metrics.winRatio')} - PASO 5: Usa combinedStatistics */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
               <CustomTooltip content={t('tooltips.winRate')}>
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">{t('metrics.winRate')}</h3>
-                <span className="text-xl font-bold">{(realStatistics?.win_rate || 0).toFixed(1)}%</span>
+                <div className="flex items-center">
+                  <span className="text-xl font-bold">{(combinedStatistics?.win_rate || 0).toFixed(1)}%</span>
+                  {combinedStatistics?._hasOptimisticAdjustments && (
+                    <span className="text-xs text-yellow-500 ml-2">*</span>
+                  )}
+                </div>
               </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
@@ -3791,12 +3876,17 @@ const loadAccountMetrics = useCallback(async (account) => {
         </div>
       </div>
       
-            {/* 9. {t('tradingAccountsUI.metrics.pnl')} */}
+            {/* 9. {t('tradingAccountsUI.metrics.pnl')} - PASO 5: Usa combinedStatistics */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
               <CustomTooltip content={t('tooltips.pnl')}>
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">{t('metrics.pnl')}</h3>
-                <span className="text-xl font-bold">${(realStatistics?.net_pnl || 0).toFixed(2)} = {(realStatistics?.net_pnl_percentage || 0).toFixed(2)}%</span>
+                <div className="flex items-center">
+                  <span className="text-xl font-bold">${(combinedStatistics?.net_pnl || 0).toFixed(2)} = {(realStatistics?.net_pnl_percentage || 0).toFixed(2)}%</span>
+                  {combinedStatistics?._hasOptimisticAdjustments && (
+                    <span className="text-xs text-yellow-500 ml-2">*</span>
+                  )}
+                </div>
               </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
