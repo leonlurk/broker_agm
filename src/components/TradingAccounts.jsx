@@ -1402,11 +1402,8 @@ const loadAccountMetrics = useCallback(async (account) => {
       syncOpenPositions(selectedAccount.account_number, true);
     }, 3000);
 
-    console.log('[LivePositions] Polling iniciado para cuenta:', selectedAccount.account_number);
-
     // ========== REALTIME WEBSOCKET SUBSCRIPTION ==========
     // Suscribirse a cambios en tiempo real de la cuenta en broker_accounts
-    console.log(`[Realtime] 🔌 Iniciando suscripción para cuenta ${selectedAccount.account_number}`);
 
     let channel = null;
 
@@ -1422,8 +1419,6 @@ const loadAccountMetrics = useCallback(async (account) => {
             filter: `login=eq.${selectedAccount.account_number}`
           },
           (payload) => {
-            console.log('[Realtime] ✅ Actualización recibida:', payload.new);
-
             // Actualización quirúrgica de métricas con datos en tiempo real
             setRealMetrics(prev => {
               if (!prev) return prev;
@@ -1446,27 +1441,18 @@ const loadAccountMetrics = useCallback(async (account) => {
 
             // Actualizar timestamp de última actualización
             setLastUpdated(new Date());
-
-            console.log('[Realtime] ✅ Métricas actualizadas en tiempo real');
           }
         )
         .subscribe((status) => {
-          console.log('[Realtime] 📡 Estado de suscripción:', status);
-
-          if (status === 'SUBSCRIBED') {
-            console.log('[Realtime] ✅ Conectado exitosamente');
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('[Realtime] ❌ Error en el canal');
+          // Solo loguear errores
+          if (status === 'CHANNEL_ERROR') {
+            console.error('[Realtime] Error en el canal');
           } else if (status === 'TIMED_OUT') {
-            console.error('[Realtime] ⏱️ Timeout en conexión');
-          } else if (status === 'CLOSED') {
-            console.warn('[Realtime] 🔌 Canal cerrado');
+            console.error('[Realtime] Timeout en conexion');
           }
         });
-
-      console.log('[Realtime] 📝 Canal creado:', channel);
     } catch (error) {
-      console.error('[Realtime] ❌ Error creando suscripción:', error);
+      console.error('[Realtime] Error creando suscripcion:', error);
     }
 
     // Limpiar suscripción al desmontar o cambiar de cuenta
@@ -1475,7 +1461,6 @@ const loadAccountMetrics = useCallback(async (account) => {
       if (openPositionsIntervalRef.current) {
         clearInterval(openPositionsIntervalRef.current);
         openPositionsIntervalRef.current = null;
-        console.log('[LivePositions] Polling detenido');
       }
 
       // PASO 3 & 5: Limpiar posiciones cerradas optimistamente al cambiar de cuenta
@@ -1484,7 +1469,6 @@ const loadAccountMetrics = useCallback(async (account) => {
       setProvisionalClosedPositions([]);
 
       if (channel) {
-        console.log(`[Realtime] Desuscribiendose de cuenta ${selectedAccount.account_number}`);
         supabase.removeChannel(channel);
       }
 
@@ -1871,7 +1855,6 @@ const loadAccountMetrics = useCallback(async (account) => {
 
     // Combinar: nuevas posiciones primero (son las más recientes)
     if (newPositions.length > 0) {
-      console.log('[LiveData] Added', newPositions.length, 'new positions');
       return [...newPositions, ...updatedOperations];
     }
 
