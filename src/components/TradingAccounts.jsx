@@ -274,6 +274,55 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const [optimisticallyClosed, setOptimisticallyClosed] = useState(new Set());
 
   // ============================================
+  // WORKAROUND: Prevenir throttling de Chrome cuando DevTools está cerrado
+  // Usa Web Audio API para mantener la página "activa"
+  // ============================================
+  const audioContextRef = useRef(null);
+
+  useEffect(() => {
+    // Crear AudioContext silencioso para prevenir throttling de Chrome
+    const createSilentAudio = () => {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+
+        audioContextRef.current = new AudioContext();
+
+        // Crear oscilador silencioso (gain = 0)
+        const oscillator = audioContextRef.current.createOscillator();
+        const gainNode = audioContextRef.current.createGain();
+
+        gainNode.gain.value = 0; // Completamente silencioso
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContextRef.current.destination);
+        oscillator.start();
+
+        // Resumir contexto si está suspendido (requiere interacción del usuario)
+        if (audioContextRef.current.state === 'suspended') {
+          const resumeAudio = () => {
+            audioContextRef.current?.resume();
+            document.removeEventListener('click', resumeAudio);
+            document.removeEventListener('keydown', resumeAudio);
+          };
+          document.addEventListener('click', resumeAudio);
+          document.addEventListener('keydown', resumeAudio);
+        }
+      } catch (e) {
+        // Silently fail - audio workaround is optional
+      }
+    };
+
+    createSilentAudio();
+
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+    };
+  }, []);
+
+  // ============================================
   // PASO 1: POLLING DE POSICIONES ABIERTAS
   // Estado para posiciones abiertas en tiempo real
   // ============================================
