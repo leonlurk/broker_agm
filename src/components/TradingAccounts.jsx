@@ -2004,6 +2004,31 @@ const loadAccountMetrics = useCallback(async (account) => {
   }, [liveOpenPositions, optimisticallyClosed]);
 
   // ============================================
+  // PASO 4.5: DATOS DE CUENTA EN TIEMPO REAL (OPTIMISTIC UI)
+  // Calcula equity, balance y P&L usando datos live de posiciones
+  // ============================================
+  const liveAccountData = useMemo(() => {
+    const baseBalance = parseFloat(selectedAccount?.balance) || 0;
+    const optimisticClosedProfit = provisionalClosedPositions.reduce((sum, pos) => {
+      return sum + (parseFloat(pos.profit) || 0);
+    }, 0);
+    const optimisticBalance = baseBalance + optimisticClosedProfit;
+    const liveEquity = optimisticBalance + liveKPIs.unrealizedProfit;
+    const initialBalance = parseFloat(realBalanceHistory?.[0]?.balance) || 10000;
+    const profitLoss = liveEquity - initialBalance;
+    const profitLossPercentage = initialBalance > 0 ? (profitLoss / initialBalance) * 100 : 0;
+
+    return {
+      balance: optimisticBalance,
+      equity: liveEquity,
+      profitLoss,
+      profitLossPercentage,
+      unrealizedProfit: liveKPIs.unrealizedProfit,
+      _isOptimistic: optimisticClosedProfit !== 0 || liveKPIs.unrealizedProfit !== 0
+    };
+  }, [selectedAccount?.balance, provisionalClosedPositions, liveKPIs.unrealizedProfit, realBalanceHistory]);
+
+  // ============================================
   // PASO 5: ESTADÍSTICAS COMBINADAS CON POSICIONES CERRADAS OPTIMISTAS
   // Combina realStatistics con provisionalClosedPositions para stats instantáneos
   // ============================================
