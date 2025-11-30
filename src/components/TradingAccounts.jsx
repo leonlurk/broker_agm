@@ -1285,8 +1285,9 @@ const loadAccountMetrics = useCallback(async (account) => {
 
       setLiveOpenPositions(positions);
 
-      if (!silent) {
-        console.log('[LivePositions] Synced', positions.length, 'open positions');
+      if (!silent && positions.length > 0) {
+        console.log('[LivePositions] Synced', positions.length, 'positions');
+        console.log('[LivePositions] Sample data:', JSON.stringify(positions[0], null, 2));
       }
 
       return positions;
@@ -1348,10 +1349,10 @@ const loadAccountMetrics = useCallback(async (account) => {
     // Sync inicial
     syncOpenPositions(selectedAccount.account_number, false);
 
-    // Iniciar polling
+    // Iniciar polling (3 segundos para mejor UX sin afectar rendimiento)
     openPositionsIntervalRef.current = setInterval(() => {
       syncOpenPositions(selectedAccount.account_number, true);
-    }, 5000);
+    }, 3000);
 
     console.log('[LivePositions] Polling iniciado para cuenta:', selectedAccount.account_number);
 
