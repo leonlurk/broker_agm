@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, FileText, CheckCircle, AlertCircle, Download } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { X, FileText, CheckCircle, AlertCircle, Download, Eraser, PenTool } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
 
@@ -9,13 +9,104 @@ const IBAgreementModal = ({ isOpen, onClose, onAccept, agreementContent }) => {
   const [isAccepting, setIsAccepting] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
+  // Signature canvas state
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+  const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
+
   // Reset state when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setHasScrolled(false);
       setAgreedToTerms(false);
+      setHasSignature(false);
+      // Clear canvas when modal opens
+      setTimeout(() => {
+        clearSignature();
+      }, 100);
     }
   }, [isOpen]);
+
+  // Initialize canvas
+  useEffect(() => {
+    if (isOpen && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+
+      // Set canvas size to match display size
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * 2; // For retina displays
+      canvas.height = rect.height * 2;
+      ctx.scale(2, 2);
+
+      // Set drawing style
+      ctx.strokeStyle = '#3b82f6'; // Blue color
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // Fill with white background
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, 0, rect.width, rect.height);
+    }
+  }, [isOpen]);
+
+  const getPosition = useCallback((e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+
+    const rect = canvas.getBoundingClientRect();
+
+    // Handle both mouse and touch events
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }, []);
+
+  const startDrawing = useCallback((e) => {
+    e.preventDefault();
+    const pos = getPosition(e);
+    setLastPosition(pos);
+    setIsDrawing(true);
+  }, [getPosition]);
+
+  const draw = useCallback((e) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const pos = getPosition(e);
+
+    ctx.beginPath();
+    ctx.moveTo(lastPosition.x, lastPosition.y);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+
+    setLastPosition(pos);
+    setHasSignature(true);
+  }, [isDrawing, lastPosition, getPosition]);
+
+  const stopDrawing = useCallback(() => {
+    setIsDrawing(false);
+  }, []);
+
+  const clearSignature = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, rect.width, rect.height);
+    setHasSignature(false);
+  }, []);
 
   // Track scrolling to ensure user reads the agreement
   const handleScroll = (e) => {
@@ -28,12 +119,20 @@ const IBAgreementModal = ({ isOpen, onClose, onAccept, agreementContent }) => {
     }
   };
 
+  // Get signature as base64 image
+  const getSignatureData = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    return canvas.toDataURL('image/png');
+  }, []);
+
   const handleAccept = async () => {
-    if (!agreedToTerms || !hasScrolled) return;
+    if (!agreedToTerms || !hasScrolled || !hasSignature) return;
 
     setIsAccepting(true);
     try {
-      await onAccept();
+      const signatureData = getSignatureData();
+      await onAccept(signatureData);
     } catch (error) {
       console.error('Error accepting IB agreement:', error);
     } finally {
@@ -138,6 +237,66 @@ const IBAgreementModal = ({ isOpen, onClose, onAccept, agreementContent }) => {
             </div>
           </label>
 
+          {/* Digital Signature Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <PenTool className="w-4 h-4 text-blue-400" />
+                <span className="text-sm font-medium text-white">
+                  {t('ib.agreement.signature.title', 'Firma Digital')}
+                </span>
+                {hasSignature && (
+                  <CheckCircle className="w-4 h-4 text-green-400" />
+                )}
+              </div>
+              <button
+                onClick={clearSignature}
+                disabled={isAccepting}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] hover:bg-[#3a3a3a] text-gray-400 hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
+              >
+                <Eraser className="w-4 h-4" />
+                {t('ib.agreement.signature.clear', 'Limpiar')}
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-400">
+              {t('ib.agreement.signature.instruction', 'Dibuja tu firma con el mouse o dedo en el recuadro de abajo')}
+            </p>
+
+            {/* Signature Canvas */}
+            <div className={`relative border-2 rounded-xl overflow-hidden transition-colors ${
+              hasSignature
+                ? 'border-green-500/50'
+                : 'border-dashed border-gray-600 hover:border-blue-500/50'
+            }`}>
+              <canvas
+                ref={canvasRef}
+                className="w-full h-24 cursor-crosshair touch-none"
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchMove={draw}
+                onTouchEnd={stopDrawing}
+              />
+              {!hasSignature && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-gray-500 text-sm">
+                    {t('ib.agreement.signature.placeholder', 'Firma aqui...')}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {!hasSignature && agreedToTerms && (
+              <p className="text-xs text-yellow-400 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {t('ib.agreement.signature.required', 'Debes firmar para continuar')}
+              </p>
+            )}
+          </div>
+
           {/* Buttons */}
           <div className="flex gap-3">
             <button
@@ -149,7 +308,7 @@ const IBAgreementModal = ({ isOpen, onClose, onAccept, agreementContent }) => {
             </button>
             <button
               onClick={handleAccept}
-              disabled={!agreedToTerms || !hasScrolled || isAccepting}
+              disabled={!agreedToTerms || !hasScrolled || !hasSignature || isAccepting}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-blue-600 disabled:hover:to-blue-700 flex items-center justify-center gap-2"
             >
               {isAccepting ? (

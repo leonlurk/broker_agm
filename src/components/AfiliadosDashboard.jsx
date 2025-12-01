@@ -200,9 +200,9 @@ const AfiliadosDashboard = () => {
     setShowAgreementModal(true);
   };
 
-  const handleAcceptAgreement = async () => {
+  const handleAcceptAgreement = async (signatureData) => {
     try {
-      const result = await affiliatesService.acceptIBAgreement(currentUser.id, agreementVersion);
+      const result = await affiliatesService.acceptIBAgreement(currentUser.id, agreementVersion, signatureData);
 
       if (result.success) {
         setHasAcceptedAgreement(true);

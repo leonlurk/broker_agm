@@ -434,9 +434,10 @@ class AffiliatesService {
    * Accept IB agreement
    * @param {string} userId - User ID
    * @param {string} agreementVersion - Agreement version
+   * @param {string} signatureData - Base64 encoded signature image (optional)
    * @returns {Promise<{success: boolean, message: string}>}
    */
-  async acceptIBAgreement(userId, agreementVersion = '1.0') {
+  async acceptIBAgreement(userId, agreementVersion = '1.0', signatureData = null) {
     try {
       // Get user's IP address (client-side, limited accuracy)
       let ipAddress = null;
@@ -456,7 +457,8 @@ class AffiliatesService {
         p_user_id: userId,
         p_agreement_version: agreementVersion,
         p_ip_address: ipAddress,
-        p_user_agent: userAgent
+        p_user_agent: userAgent,
+        p_signature_data: signatureData
       });
 
       if (error) {
@@ -467,7 +469,7 @@ class AffiliatesService {
         };
       }
 
-      logger.info('[Affiliates] IB agreement accepted successfully', { userId, version: agreementVersion });
+      logger.info('[Affiliates] IB agreement accepted successfully', { userId, version: agreementVersion, hasSignature: !!signatureData });
 
       return {
         success: true,
