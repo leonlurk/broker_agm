@@ -2029,6 +2029,32 @@ const loadAccountMetrics = useCallback(async (account) => {
   }, [currentSelectedAccount?.balance, provisionalClosedPositions, liveKPIs.unrealizedProfit, realBalanceHistory]);
 
   // ============================================
+  // PASO 4B: DATOS DEL GRÁFICO CON PUNTO LIVE
+  // Agrega un punto en tiempo real al gráfico cuando hay posiciones activas
+  // ============================================
+  const liveBalanceData = useMemo(() => {
+    if (!balanceData || balanceData.length === 0) return balanceData;
+
+    // Si no hay datos optimistas, retornar balanceData original
+    if (!liveAccountData._isOptimistic) return balanceData;
+
+    // Crear copia del array y agregar/actualizar punto live
+    const dataWithLive = [...balanceData];
+    const now = new Date();
+    const livePointName = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+    // Agregar punto live al final
+    dataWithLive.push({
+      name: `● ${livePointName}`,
+      value: liveAccountData.equity,
+      isLive: true,
+      fullDate: now.toISOString()
+    });
+
+    return dataWithLive;
+  }, [balanceData, liveAccountData]);
+
+  // ============================================
   // PASO 5: ESTADÍSTICAS COMBINADAS CON POSICIONES CERRADAS OPTIMISTAS
   // Combina realStatistics con provisionalClosedPositions para stats instantáneos
   // ============================================
@@ -3634,7 +3660,7 @@ const loadAccountMetrics = useCallback(async (account) => {
               
               <div className={`w-full ${isMobile ? 'h-48' : 'h-64'}`}>
                   <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={balanceData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                  <AreaChart data={liveBalanceData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                       <defs>
                         <linearGradient id="colorBalanceGain" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
@@ -3717,20 +3743,20 @@ const loadAccountMetrics = useCallback(async (account) => {
                         }}
                       />
                       <Area
-                        type="monotone" 
-                        dataKey="value" 
+                        type="monotone"
+                        dataKey="value"
                         stroke={(() => {
-                          if (!balanceData || balanceData.length < 2) return "#06b6d4";
-                          const first = parseFloat(balanceData[0].value) || 0;
-                          const last = parseFloat(balanceData[balanceData.length - 1].value) || 0;
+                          if (!liveBalanceData || liveBalanceData.length < 2) return "#06b6d4";
+                          const first = parseFloat(liveBalanceData[0].value) || 0;
+                          const last = parseFloat(liveBalanceData[liveBalanceData.length - 1].value) || 0;
                           return last < first ? "#ef4444" : "#06b6d4";
                         })()}
                         strokeWidth={2}
-                        fillOpacity={1} 
+                        fillOpacity={1}
                         fill={(() => {
-                          if (!balanceData || balanceData.length < 2) return "url(#colorBalanceGain)";
-                          const first = parseFloat(balanceData[0].value) || 0;
-                          const last = parseFloat(balanceData[balanceData.length - 1].value) || 0;
+                          if (!liveBalanceData || liveBalanceData.length < 2) return "url(#colorBalanceGain)";
+                          const first = parseFloat(liveBalanceData[0].value) || 0;
+                          const last = parseFloat(liveBalanceData[liveBalanceData.length - 1].value) || 0;
                           return last < first ? "url(#colorBalanceLoss)" : "url(#colorBalanceGain)";
                         })()}
                       />
