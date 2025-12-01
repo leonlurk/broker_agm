@@ -760,8 +760,16 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         const fromDate = yesterday.toISOString().split('T')[0];
         const toDate = now.toISOString().split('T')[0];
 
+        // Asegurar token fresco antes de la llamada (importante para contexto WebSocket)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          console.warn('[fetchRealProfit] No session token available');
+          continue;
+        }
+
         const historyResponse = await brokerApi.get(`/accounts/${accountNumber}/history`, {
-          params: { from_date: fromDate, to_date: toDate }
+          params: { from_date: fromDate, to_date: toDate },
+          headers: { Authorization: `Bearer ${session.access_token}` }
         });
 
         const operations = historyResponse.data?.operations || [];
