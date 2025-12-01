@@ -748,49 +748,39 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   };
 
   // Helper: Obtener profit real del historial después de cerrar una posición
+  // Consulta directamente desde Supabase (tabla trading_operations)
   const fetchRealProfitFromHistory = async (accountNumber, ticket, retries = 3) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        // Esperar un poco para que MT5 registre el deal
-        await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+        // Esperar un poco para que el sync scheduler registre el deal en Supabase
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
 
-        // Obtener historial reciente (últimas 24 horas)
-        const now = new Date();
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const fromDate = yesterday.toISOString().split('T')[0];
-        const toDate = now.toISOString().split('T')[0];
+        // Consultar trading_operations directamente desde Supabase
+        const { data: operations, error } = await supabase
+          .from('trading_operations')
+          .select('position_id, ticket, profit, close_price, close_time')
+          .eq('account_number', String(accountNumber))
+          .or(`position_id.eq.${ticket},ticket.eq.${ticket}`)
+          .not('close_time', 'is', null)
+          .order('close_time', { ascending: false })
+          .limit(1);
 
-        // Asegurar token fresco antes de la llamada (importante para contexto WebSocket)
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) {
-          console.warn('[fetchRealProfit] No session token available');
+        if (error) {
+          console.warn(`[fetchRealProfit] Supabase error:`, error.message);
           continue;
         }
 
-        const historyResponse = await brokerApi.get(`/accounts/${accountNumber}/history`, {
-          params: { from_date: fromDate, to_date: toDate },
-          headers: { Authorization: `Bearer ${session.access_token}` }
-        });
-
-        const operations = historyResponse.data?.operations || [];
-
-        // Buscar el deal por ticket (puede ser position_id o deal)
-        const deal = operations.find(op =>
-          String(op.position_id) === String(ticket) ||
-          String(op.ticket) === String(ticket) ||
-          String(op.deal) === String(ticket)
-        );
-
-        if (deal && deal.profit !== undefined) {
-          console.log(`[fetchRealProfit] Found deal for ticket ${ticket}:`, deal.profit);
+        if (operations && operations.length > 0) {
+          const deal = operations[0];
+          console.log(`[fetchRealProfit] Found deal for ticket ${ticket} in Supabase:`, deal.profit);
           return {
             profit: parseFloat(deal.profit) || 0,
-            closePrice: parseFloat(deal.price) || parseFloat(deal.price_close) || 0,
+            closePrice: parseFloat(deal.close_price) || 0,
             found: true
           };
         }
 
-        console.log(`[fetchRealProfit] Attempt ${attempt}: Deal not found yet for ticket ${ticket}`);
+        console.log(`[fetchRealProfit] Attempt ${attempt}: Deal not found yet for ticket ${ticket} in Supabase`);
       } catch (error) {
         console.warn(`[fetchRealProfit] Attempt ${attempt} failed:`, error.message);
       }
