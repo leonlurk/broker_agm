@@ -745,38 +745,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     const ticketStr = String(ticketToClose);
     setOptimisticallyClosed(prev => new Set([...prev, ticketStr]));
 
-    // 1.2: Remover de liveOpenPositions inmediatamente
-    setLiveOpenPositions(prev => prev.filter(pos => {
-      const posTicket = String(pos.ticket || pos.position || '');
-      return posTicket !== ticketStr;
-    }));
-
-    // 1.3: Marcar la posición como cerrada en realTradingOperations
-    setRealTradingOperations(prev => {
-      if (!prev || !prev.operations) return prev;
-
-      return {
-        ...prev,
-        operations: prev.operations.map(op => {
-          // Si es la posición que estamos cerrando, marcarla como cerrada normal
-          if (op.ticket === ticketToClose || op.idPosicion === ticketToClose) {
-            return {
-              ...op,
-              isOpen: false,
-              status: 'CLOSED',
-              isPending: false,  // No mostrar indicador de carga - debe verse como cerrada normal
-              close_time: new Date().toISOString(),
-              closeTime: new Date().toISOString(),
-              fechaCierre: new Date().toLocaleDateString(),
-              tiempoCierre: new Date().toLocaleTimeString()
-            };
-          }
-          return op;
-        })
-      };
-    });
-
-    // PASO 2: Buscar profit más reciente de liveOpenPositions (WebSocket)
+    // PASO 2: Buscar profit más reciente de liveOpenPositions (WebSocket) ANTES de removerlo
     // El profit en positionToClose puede estar desactualizado
     const livePosition = liveOpenPositions.find(pos => {
       const liveTicket = String(pos.ticket || pos.position || '');
@@ -784,8 +753,6 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     });
 
     // Usar profit de liveOpenPositions si existe, sino del objeto positionToClose
-    // NOTA: liveOpenPositions tiene profit ya procesado (backend divide por 100)
-    // pero operationsWithLiveData multiplica por 100, así que positionToClose.profit ya está correcto
     let finalProfit = 0;
     if (livePosition) {
       // livePosition.profit viene del WebSocket (ya dividido por 100 en C#)
@@ -797,6 +764,42 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       finalProfit = parseFloat(positionToClose.profit || positionToClose.ganancia || 0);
       console.log('[ClosePosition] Using positionToClose profit:', finalProfit);
     }
+
+    // 1.2: Remover de liveOpenPositions inmediatamente (DESPUÉS de capturar el profit)
+    setLiveOpenPositions(prev => prev.filter(pos => {
+      const posTicket = String(pos.ticket || pos.position || '');
+      return posTicket !== ticketStr;
+    }));
+
+    // 1.3: Marcar la posición como cerrada en realTradingOperations CON EL PROFIT CORRECTO
+    setRealTradingOperations(prev => {
+      if (!prev || !prev.operations) return prev;
+
+      return {
+        ...prev,
+        operations: prev.operations.map(op => {
+          // Si es la posición que estamos cerrando, marcarla como cerrada con profit final
+          if (op.ticket === ticketToClose || op.idPosicion === ticketToClose) {
+            return {
+              ...op,
+              isOpen: false,
+              status: 'CLOSED',
+              isPending: false,
+              close_time: new Date().toISOString(),
+              closeTime: new Date().toISOString(),
+              fechaCierre: new Date().toLocaleDateString(),
+              tiempoCierre: new Date().toLocaleTimeString(),
+              // IMPORTANTE: Usar el profit final capturado del WebSocket
+              profit: finalProfit,
+              ganancia: finalProfit,
+              resultado: `$${finalProfit.toFixed(2)}`,
+              resultadoColor: finalProfit >= 0 ? 'text-green-400' : 'text-red-400'
+            };
+          }
+          return op;
+        })
+      };
+    });
 
     // PASO 2b: Crear versión provisional para persistencia
     const provisionalPosition = {
