@@ -1914,12 +1914,65 @@ const loadAccountMetrics = useCallback(async (account) => {
     });
 
     // Combinar: nuevas posiciones primero (son las más recientes)
-    if (newPositions.length > 0) {
-      return [...newPositions, ...updatedOperations];
+    let result = newPositions.length > 0
+      ? [...newPositions, ...updatedOperations]
+      : updatedOperations;
+
+    // PASO 6: Agregar posiciones cerradas provisionalmente (optimistic UI)
+    // Estas son posiciones que el usuario acaba de cerrar pero aún no llegan del backend
+    if (provisionalClosedPositions && provisionalClosedPositions.length > 0) {
+      const existingTickets = new Set(result.map(op => String(op.ticket || op.idPosicion || '')));
+
+      const provisionalOps = provisionalClosedPositions
+        .filter(pos => !existingTickets.has(String(pos.ticket)))
+        .map(pos => {
+          const openTime = pos.open_time ? new Date(pos.open_time) : new Date();
+          const closeTime = pos.close_time ? new Date(pos.close_time) : new Date();
+          const profit = parseFloat(pos.profit) || 0;
+
+          return {
+            fechaApertura: openTime.toLocaleDateString(),
+            tiempoApertura: openTime.toLocaleTimeString(),
+            fechaCierre: closeTime.toLocaleDateString(),
+            tiempoCierre: closeTime.toLocaleTimeString(),
+            isOpen: false,
+            isPending: true, // Marcar como pendiente de sincronización
+            fechaISO: closeTime.toISOString(),
+            instrumento: pos.symbol || 'N/A',
+            bandera: getInstrumentIcon(pos.symbol || 'N/A'),
+            tipo: pos.type === 'BUY' ? t('positions.types.buy') : pos.type === 'SELL' ? t('positions.types.sell') : pos.type,
+            lotaje: (parseFloat(pos.volume) || 0).toFixed(2),
+            stopLossFormatted: pos.stop_loss ? parseFloat(pos.stop_loss).toFixed(5) : '0.0',
+            takeProfitFormatted: pos.take_profit ? parseFloat(pos.take_profit).toFixed(5) : '0.0',
+            precioApertura: (parseFloat(pos.open_price) || 0).toFixed(5),
+            precioCierre: (parseFloat(pos.close_price) || 0).toFixed(5),
+            pips: 0,
+            idPosicion: pos.ticket,
+            resultado: `$${profit.toFixed(2)}`,
+            resultadoColor: profit >= 0 ? 'text-green-400' : 'text-red-400',
+            ganancia: profit,
+            ticket: pos.ticket,
+            symbol: pos.symbol,
+            type: pos.type,
+            volume: parseFloat(pos.volume) || 0,
+            open_price: parseFloat(pos.open_price) || 0,
+            close_price: parseFloat(pos.close_price) || 0,
+            open_time: pos.open_time,
+            close_time: pos.close_time,
+            profit: profit,
+            status: 'CLOSED',
+            _isOptimistic: true // Flag para identificar datos optimistas
+          };
+        });
+
+      if (provisionalOps.length > 0) {
+        // Agregar al inicio (posiciones más recientes primero)
+        result = [...provisionalOps, ...result];
+      }
     }
 
-    return updatedOperations;
-  }, [realHistory?.operations, historialData, liveOpenPositions, optimisticallyClosed, t]);
+    return result;
+  }, [realHistory?.operations, historialData, liveOpenPositions, optimisticallyClosed, provisionalClosedPositions, t]);
 
   // OPTIMIZACIÓN: Memoizar filtrado de historial para evitar recálculos innecesarios
   const filteredHistorialData = useMemo(() => {
