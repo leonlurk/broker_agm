@@ -1613,6 +1613,8 @@ const loadAccountMetrics = useCallback(async (account) => {
               if (!wasClosedFromFrontend) {
                 // Cierre EXTERNO desde MT5 - capturar datos antes de remover
                 console.log('[WebSocket] External close detected from MT5, ticket:', ticketStr);
+                console.log('[WebSocket] currentLivePositions count:', currentLivePositions?.length);
+                console.log('[WebSocket] currentLivePositions:', currentLivePositions);
 
                 // Buscar la posición en liveOpenPositions ANTES de removerla (usando ref)
                 const closedPosition = currentLivePositions.find(p => {
@@ -1620,8 +1622,13 @@ const loadAccountMetrics = useCallback(async (account) => {
                   return pTicket === ticketStr;
                 });
 
+                console.log('[WebSocket] Found closedPosition:', closedPosition);
+
                 // Usar ref para currentUser (evitar stale closure)
                 const currentUserData = currentUserRef.current;
+                console.log('[WebSocket] currentUserData:', currentUserData?.id);
+                console.log('[WebSocket] selectedAccount:', selectedAccount?.account_number);
+
                 if (closedPosition && currentUserData && selectedAccount) {
                   // Determinar el tipo de operación (puede venir como 0/1, "0"/"1", "BUY"/"SELL", o "buy"/"sell")
                   let posType = closedPosition.type;
@@ -1690,56 +1697,12 @@ const loadAccountMetrics = useCallback(async (account) => {
 
                   // Forzar actualización del timestamp para trigger de re-render
                   setLastUpdated(new Date());
-
-                  // Obtener profit REAL del historial en background
-                  // Usar setTimeout para salir del contexto flushSync
-                  const ticketForHistory = parseInt(ticketStr);
-                  const accountForHistory = selectedAccount.account_number;
-                  setTimeout(async () => {
-                    const realResult = await fetchRealProfitFromHistory(accountForHistory, ticketForHistory);
-
-                    if (realResult.found && realResult.profit !== null) {
-                      const realProfit = realResult.profit;
-                      console.log('[WebSocket] Real profit from history for external close:', realProfit);
-
-                      // Actualizar provisionalClosedPositions con profit real
-                      setProvisionalClosedPositions(prev => prev.map(pos => {
-                        if (String(pos.ticket) === String(ticketForHistory)) {
-                          return {
-                            ...pos,
-                            profit: realProfit,
-                            close_price: realResult.closePrice || pos.close_price
-                          };
-                        }
-                        return pos;
-                      }));
-
-                      // Actualizar realTradingOperations con profit real
-                      setRealTradingOperations(prev => {
-                        if (!prev || !prev.operations) return prev;
-                        return {
-                          ...prev,
-                          operations: prev.operations.map(op => {
-                            if (String(op.ticket) === String(ticketForHistory) || String(op.idPosicion) === String(ticketForHistory)) {
-                              return {
-                                ...op,
-                                profit: realProfit,
-                                ganancia: realProfit,
-                                resultado: `$${realProfit.toFixed(2)}`,
-                                resultadoColor: realProfit >= 0 ? 'text-green-400' : 'text-red-400',
-                                close_price: realResult.closePrice || op.close_price,
-                                precioCierre: realResult.closePrice ? realResult.closePrice.toFixed(5) : op.precioCierre
-                              };
-                            }
-                            return op;
-                          })
-                        };
-                      });
-
-                      // Forzar re-render
-                      setLastUpdated(new Date());
-                    }
-                  }, 100);
+                } else {
+                  console.warn('[WebSocket] Could not create provisional - missing data:', {
+                    hasClosedPosition: !!closedPosition,
+                    hasCurrentUser: !!currentUserData,
+                    hasSelectedAccount: !!selectedAccount
+                  });
                 }
               }
 
