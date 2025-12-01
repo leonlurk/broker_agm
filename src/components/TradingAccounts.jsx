@@ -1834,7 +1834,9 @@ const loadAccountMetrics = useCallback(async (account) => {
   // PASO 3: Excluir posiciones cerradas optimistamente
   // ============================================
   const operationsWithLiveData = useMemo(() => {
-    const baseOperations = realHistory?.operations || historialData || [];
+    // IMPORTANTE: Priorizar realTradingOperations que tiene los updates optimistas
+    // realTradingOperations se actualiza cuando el usuario cierra posiciones
+    const baseOperations = realTradingOperations?.operations || realHistory?.operations || historialData || [];
 
     // Filtrar posiciones live excluyendo las cerradas optimistamente
     const filteredLivePositions = liveOpenPositions.filter(pos => {
@@ -1991,7 +1993,7 @@ const loadAccountMetrics = useCallback(async (account) => {
 
     console.log('[operationsWithLiveData] Final result count:', result.length);
     return result;
-  }, [realHistory?.operations, historialData, liveOpenPositions, optimisticallyClosed, provisionalClosedPositions, t]);
+  }, [realTradingOperations?.operations, realHistory?.operations, historialData, liveOpenPositions, optimisticallyClosed, provisionalClosedPositions, t]);
 
   // OPTIMIZACIÓN: Memoizar filtrado de historial para evitar recálculos innecesarios
   const filteredHistorialData = useMemo(() => {
