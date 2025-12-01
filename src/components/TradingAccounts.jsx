@@ -1710,36 +1710,40 @@ const loadAccountMetrics = useCallback(async (account) => {
   const getInstrumentIcon = (symbol) => {
     // Icono por defecto (moneda genérica)
     const defaultIcon = 'https://cdn-icons-png.flaticon.com/512/2150/2150150.png';
-    
+
     if (!symbol) return defaultIcon;
-    
+
+    // Normalizar el símbolo para manejar sufijos de broker (XAUUSDc -> XAUUSD)
+    const normalizedSymbol = normalizeInstrument(symbol);
+
     // Mapeo de símbolos a iconos/banderas
     const iconMap = {
       'EURUSD': 'https://flagcdn.com/w40/eu.png',
       'GBPUSD': 'https://flagcdn.com/w40/gb.png',
       'USDJPY': 'https://flagcdn.com/w40/us.png',
       'AUDUSD': 'https://flagcdn.com/w40/au.png',
-      'USDCAD': 'https://flagcdn.com/w40/us.png',  // US flag for USD pairs
+      'USDCAD': 'https://flagcdn.com/w40/us.png',
       'NZDUSD': 'https://flagcdn.com/w40/nz.png',
       'EURJPY': 'https://flagcdn.com/w40/eu.png',
       'GBPJPY': 'https://flagcdn.com/w40/gb.png',
-      'AUDJPY': 'https://flagcdn.com/w40/au.png',  // AU flag for AUD pairs
+      'AUDJPY': 'https://flagcdn.com/w40/au.png',
       'EURGBP': 'https://flagcdn.com/w40/eu.png',
+      'CADJPY': 'https://flagcdn.com/w40/ca.png',
       'XAUUSD': 'https://cdn-icons-png.flaticon.com/512/3188/3188582.png', // Gold bar icon
       'GOLD': 'https://cdn-icons-png.flaticon.com/512/3188/3188582.png',
       'XAGUSD': 'https://cdn-icons-png.flaticon.com/512/861/861184.png', // Silver icon
       'BTCUSD': 'https://cdn-icons-png.flaticon.com/512/1490/1490849.png', // Bitcoin icon
       'ETHUSD': 'https://cdn-icons-png.flaticon.com/512/7016/7016537.png', // Ethereum icon
     };
-    
-    // Si existe un mapeo específico, usarlo
-    if (iconMap[symbol]) {
-      return iconMap[symbol];
+
+    // Si existe un mapeo específico con símbolo normalizado, usarlo
+    if (iconMap[normalizedSymbol]) {
+      return iconMap[normalizedSymbol];
     }
-    
+
     // Para otros pares, intentar obtener la bandera del primer país
-    if (symbol && symbol.length >= 6) {
-      const currency = symbol.substring(0, 3);
+    if (normalizedSymbol && normalizedSymbol.length >= 6) {
+      const currency = normalizedSymbol.substring(0, 3);
       const currencyToCountry = {
         'EUR': 'eu',
         'USD': 'us',
@@ -1750,16 +1754,20 @@ const loadAccountMetrics = useCallback(async (account) => {
         'NZD': 'nz',
         'CHF': 'ch',
         'SEK': 'se',
-        'NOK': 'no'
+        'NOK': 'no',
+        'XAU': null, // Gold - handled above
+        'XAG': null, // Silver - handled above
+        'BTC': null, // Bitcoin - handled above
+        'ETH': null, // Ethereum - handled above
       };
-      
+
       if (currencyToCountry[currency]) {
         return `https://flagcdn.com/w40/${currencyToCountry[currency]}.png`;
       }
     }
-    
+
     // Icono por defecto para instrumentos desconocidos
-    return 'https://cdn-icons-png.flaticon.com/512/2150/2150150.png';
+    return defaultIcon;
   };
 
   // Transformar operaciones de Supabase al formato de la tabla
@@ -1771,15 +1779,18 @@ const loadAccountMetrics = useCallback(async (account) => {
       const closeTime = new Date(op.close_time);
       const duration = closeTime - openTime;
       
-      // Calcular pips según el instrumento
+      // Calcular pips según el instrumento (usar símbolo normalizado para comparaciones)
       let pips = 0;
       const openPrice = parseFloat(op.open_price);
       const closePrice = parseFloat(op.close_price);
-      
-      if (op.symbol && op.symbol.includes('JPY')) {
+      const normalizedSym = normalizeInstrument(op.symbol);
+
+      if (normalizedSym && normalizedSym.includes('JPY')) {
         pips = Math.round((closePrice - openPrice) * 100);
-      } else if (op.symbol === 'XAUUSD' || op.symbol === 'GOLD') {
+      } else if (normalizedSym === 'XAUUSD' || normalizedSym === 'GOLD') {
         pips = Math.round((closePrice - openPrice) * 10);
+      } else if (normalizedSym === 'XAGUSD' || normalizedSym === 'SILVER') {
+        pips = Math.round((closePrice - openPrice) * 100);
       } else {
         pips = Math.round((closePrice - openPrice) * 10000);
       }
