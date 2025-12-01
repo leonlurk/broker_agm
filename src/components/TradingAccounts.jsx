@@ -2765,6 +2765,40 @@ const loadAccountMetrics = useCallback(async (account) => {
 
   const currentChartData = useMemo(() => getChartDataByTab(), [benefitChartTab, benefitChartData]);
 
+  // ============================================
+  // LIVE CHART DATA: Agrega punto live a gráficos de Beneficio/Drawdown/Rendimiento
+  // ============================================
+  const liveCurrentChartData = useMemo(() => {
+    if (!currentChartData || currentChartData.length === 0) return currentChartData;
+    if (!liveAccountData._isOptimistic) return currentChartData;
+
+    const dataWithLive = [...currentChartData];
+    const now = new Date();
+    const livePointName = `● ${now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+
+    // Calcular valor live según el tipo de gráfico
+    let liveValue;
+    if (benefitChartTab === 'balance') {
+      // Para balance, usar equity actual
+      liveValue = liveAccountData.equity;
+    } else if (benefitChartTab === 'drawdown') {
+      // Para drawdown, calcular desde equity máximo
+      const maxEquity = Math.max(...dataWithLive.map(d => d.value || 0), liveAccountData.equity);
+      liveValue = maxEquity > 0 ? ((maxEquity - liveAccountData.equity) / maxEquity) * 100 : 0;
+    } else {
+      // Para beneficio, usar profitLoss
+      liveValue = liveAccountData.profitLoss;
+    }
+
+    dataWithLive.push({
+      date: livePointName,
+      value: liveValue,
+      isLive: true
+    });
+
+    return dataWithLive;
+  }, [currentChartData, liveAccountData, benefitChartTab]);
+
   // Función para generar datos de instrumentos basado en filtros - COMPLETAMENTE DINÁMICO
   const generateInstrumentsData = () => {
     // Primero verificar si hay datos reales de la API
@@ -4110,7 +4144,7 @@ const loadAccountMetrics = useCallback(async (account) => {
             {/* Gráfico - OPTIMIZADO PARA MÓVIL */}
             <div className={`w-full ${isMobile ? 'h-64' : 'h-80'}`}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={currentChartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                <LineChart data={liveCurrentChartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                   <defs>
                     <linearGradient id="color
                     " x1="0" y1="0" x2="0" y2="1">
@@ -4192,13 +4226,13 @@ const loadAccountMetrics = useCallback(async (account) => {
                     stroke={
                       benefitChartTab === 'drawdown'
                         ? '#ef4444'
-                        : (currentChartData && currentChartData.length > 1 && (currentChartData[currentChartData.length - 1].value < currentChartData[0].value)
+                        : (liveCurrentChartData && liveCurrentChartData.length > 1 && (liveCurrentChartData[liveCurrentChartData.length - 1].value < liveCurrentChartData[0].value)
                             ? '#ef4444'
                             : '#06b6d4')
-                    } 
+                    }
                     strokeWidth={isMobile ? 2 : 3}
-                    dot={isMobile ? false : { fill: (benefitChartTab === 'drawdown' || (currentChartData && currentChartData.length > 1 && currentChartData[currentChartData.length - 1].value < currentChartData[0].value)) ? '#ef4444' : '#06b6d4', strokeWidth: 0, r: 4 }}
-                    activeDot={{ r: isMobile ? 4 : 6, fill: (benefitChartTab === 'drawdown' || (currentChartData && currentChartData.length > 1 && currentChartData[currentChartData.length - 1].value < currentChartData[0].value)) ? '#ef4444' : '#06b6d4' }}
+                    dot={isMobile ? false : { fill: (benefitChartTab === 'drawdown' || (liveCurrentChartData && liveCurrentChartData.length > 1 && liveCurrentChartData[liveCurrentChartData.length - 1].value < liveCurrentChartData[0].value)) ? '#ef4444' : '#06b6d4', strokeWidth: 0, r: 4 }}
+                    activeDot={{ r: isMobile ? 4 : 6, fill: (benefitChartTab === 'drawdown' || (liveCurrentChartData && liveCurrentChartData.length > 1 && liveCurrentChartData[liveCurrentChartData.length - 1].value < liveCurrentChartData[0].value)) ? '#ef4444' : '#06b6d4' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
