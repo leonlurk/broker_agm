@@ -747,6 +747,51 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     scrollToTopManual(scrollContainerRef); // Scroll al volver a vista general
   };
 
+  // Helper: Obtener profit real del historial después de cerrar una posición
+  const fetchRealProfitFromHistory = async (accountNumber, ticket, retries = 3) => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        // Esperar un poco para que MT5 registre el deal
+        await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+
+        // Obtener historial reciente (últimas 24 horas)
+        const now = new Date();
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const fromDate = yesterday.toISOString().split('T')[0];
+        const toDate = now.toISOString().split('T')[0];
+
+        const historyResponse = await brokerApi.get(`/accounts/${accountNumber}/history`, {
+          params: { from_date: fromDate, to_date: toDate }
+        });
+
+        const operations = historyResponse.data?.operations || [];
+
+        // Buscar el deal por ticket (puede ser position_id o deal)
+        const deal = operations.find(op =>
+          String(op.position_id) === String(ticket) ||
+          String(op.ticket) === String(ticket) ||
+          String(op.deal) === String(ticket)
+        );
+
+        if (deal && deal.profit !== undefined) {
+          console.log(`[fetchRealProfit] Found deal for ticket ${ticket}:`, deal.profit);
+          return {
+            profit: parseFloat(deal.profit) || 0,
+            closePrice: parseFloat(deal.price) || parseFloat(deal.price_close) || 0,
+            found: true
+          };
+        }
+
+        console.log(`[fetchRealProfit] Attempt ${attempt}: Deal not found yet for ticket ${ticket}`);
+      } catch (error) {
+        console.warn(`[fetchRealProfit] Attempt ${attempt} failed:`, error.message);
+      }
+    }
+
+    console.log(`[fetchRealProfit] Could not find deal for ticket ${ticket} after ${retries} attempts`);
+    return { profit: null, closePrice: null, found: false };
+  };
+
   // Función para iniciar el proceso de cierre de posición
   const handleClosePositionClick = (position) => {
     setPositionToClose(position);
@@ -918,7 +963,58 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       setShowClosePositionModal(false);
       setPositionToClose(null);
 
-      // PASO 5: Recargar datos en background (para sincronizar otras métricas)
+      // PASO 6: Obtener profit REAL del historial y actualizar UI
+      // Esto se hace en background para no bloquear la UI
+      (async () => {
+        const realResult = await fetchRealProfitFromHistory(
+          selectedAccount.account_number,
+          ticketToClose
+        );
+
+        if (realResult.found && realResult.profit !== null) {
+          const realProfit = realResult.profit;
+          console.log('[ClosePosition] Real profit from history:', realProfit);
+
+          // Actualizar provisionalClosedPositions con profit real
+          setProvisionalClosedPositions(prev => prev.map(pos => {
+            if (String(pos.ticket) === String(ticketToClose)) {
+              return {
+                ...pos,
+                profit: realProfit,
+                close_price: realResult.closePrice || pos.close_price
+              };
+            }
+            return pos;
+          }));
+
+          // Actualizar realTradingOperations con profit real
+          setRealTradingOperations(prev => {
+            if (!prev || !prev.operations) return prev;
+            return {
+              ...prev,
+              operations: prev.operations.map(op => {
+                if (String(op.ticket) === String(ticketToClose) || String(op.idPosicion) === String(ticketToClose)) {
+                  return {
+                    ...op,
+                    profit: realProfit,
+                    ganancia: realProfit,
+                    resultado: `$${realProfit.toFixed(2)}`,
+                    resultadoColor: realProfit >= 0 ? 'text-green-400' : 'text-red-400',
+                    close_price: realResult.closePrice || op.close_price,
+                    precioCierre: realResult.closePrice ? realResult.closePrice.toFixed(5) : op.precioCierre
+                  };
+                }
+                return op;
+              })
+            };
+          });
+
+          // Forzar re-render
+          setLastUpdated(new Date());
+        }
+      })();
+
+      // PASO 7: Recargar datos en background (para sincronizar otras métricas)
       // La posición ya desapareció de la UI gracias al optimistic update
       if (selectedAccount) {
         // Esperar un poco para dar tiempo a que MT5 procese
@@ -1596,6 +1692,56 @@ const loadAccountMetrics = useCallback(async (account) => {
 
                   // Forzar actualización del timestamp para trigger de re-render
                   setLastUpdated(new Date());
+
+                  // Obtener profit REAL del historial en background
+                  // Usar setTimeout para salir del contexto flushSync
+                  const ticketForHistory = parseInt(ticketStr);
+                  const accountForHistory = selectedAccount.account_number;
+                  setTimeout(async () => {
+                    const realResult = await fetchRealProfitFromHistory(accountForHistory, ticketForHistory);
+
+                    if (realResult.found && realResult.profit !== null) {
+                      const realProfit = realResult.profit;
+                      console.log('[WebSocket] Real profit from history for external close:', realProfit);
+
+                      // Actualizar provisionalClosedPositions con profit real
+                      setProvisionalClosedPositions(prev => prev.map(pos => {
+                        if (String(pos.ticket) === String(ticketForHistory)) {
+                          return {
+                            ...pos,
+                            profit: realProfit,
+                            close_price: realResult.closePrice || pos.close_price
+                          };
+                        }
+                        return pos;
+                      }));
+
+                      // Actualizar realTradingOperations con profit real
+                      setRealTradingOperations(prev => {
+                        if (!prev || !prev.operations) return prev;
+                        return {
+                          ...prev,
+                          operations: prev.operations.map(op => {
+                            if (String(op.ticket) === String(ticketForHistory) || String(op.idPosicion) === String(ticketForHistory)) {
+                              return {
+                                ...op,
+                                profit: realProfit,
+                                ganancia: realProfit,
+                                resultado: `$${realProfit.toFixed(2)}`,
+                                resultadoColor: realProfit >= 0 ? 'text-green-400' : 'text-red-400',
+                                close_price: realResult.closePrice || op.close_price,
+                                precioCierre: realResult.closePrice ? realResult.closePrice.toFixed(5) : op.precioCierre
+                              };
+                            }
+                            return op;
+                          })
+                        };
+                      });
+
+                      // Forzar re-render
+                      setLastUpdated(new Date());
+                    }
+                  }, 100);
                 }
               }
 
