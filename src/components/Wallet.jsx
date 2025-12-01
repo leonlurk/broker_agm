@@ -704,12 +704,8 @@ const Wallet = () => {
             amount: amountNum
           });
 
-          // Validar balance suficiente en cuenta MT5 origen
-          const sourceBalance = transferFromAccount.balance || 0;
-          if (amountNum > sourceBalance) {
-            toast.error(t('common.errors.insufficientBalance'));
-            return;
-          }
+          // Nota: No validamos balance localmente porque broker_accounts puede estar desactualizado
+          // El backend valida contra el balance REAL de MT5
 
           // Llamar al endpoint MT5-to-Wallet
           const mt5Result = await transferMT5ToWallet(
@@ -779,12 +775,8 @@ const Wallet = () => {
             return;
           }
 
-          // Validar balance suficiente en cuenta origen
-          const sourceBalance = transferFromAccount.balance || 0;
-          if (amountNum > sourceBalance) {
-            toast.error(t('common.errors.insufficientBalance'));
-            return;
-          }
+          // Nota: No validamos balance localmente porque broker_accounts puede estar desactualizado
+          // El backend valida contra el balance REAL de MT5
 
           console.log('[Wallet] MT5-to-MT5 Transfer:', {
             sourceLogin: transferFromAccount.account_number,
