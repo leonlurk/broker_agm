@@ -630,7 +630,7 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
   // Obtener todas las cuentas y filtrarlas según el filtro seleccionado
   const getFilteredAccounts = () => {
     let filteredAccounts = [];
-    
+
     if (accountFilter === 'real') {
       filteredAccounts = getAccountsByCategory(ACC_CAT.REAL);
     } else if (accountFilter === 'demo') {
@@ -639,15 +639,16 @@ const Home = ({ onSettingsClick, setSelectedOption, user }) => {
       // 'all' - obtener todas las cuentas
       filteredAccounts = getAllAccounts();
     }
-    
-    // Ordenar por fecha de creación (más reciente primero) y tomar solo las últimas 3
-    return filteredAccounts
-      .sort((a, b) => {
-        const dateA = new Date(a.created_at || 0);
-        const dateB = new Date(b.created_at || 0);
-        return dateB - dateA;
-      })
-      .slice(0, 3);
+
+    // Ordenar por fecha de creación (más reciente primero)
+    const sortedAccounts = filteredAccounts.sort((a, b) => {
+      const dateA = new Date(a.created_at || 0);
+      const dateB = new Date(b.created_at || 0);
+      return dateB - dateA;
+    });
+
+    // Si es "todas", mostrar todas las cuentas; sino limitar a 3
+    return accountFilter === 'all' ? sortedAccounts : sortedAccounts.slice(0, 3);
   };
 
   // Efecto para cargar métricas de las cuentas cuando cambien
