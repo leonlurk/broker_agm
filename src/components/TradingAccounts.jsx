@@ -2008,7 +2008,7 @@ const loadAccountMetrics = useCallback(async (account) => {
   // Calcula equity, balance y P&L usando datos live de posiciones
   // ============================================
   const liveAccountData = useMemo(() => {
-    const baseBalance = parseFloat(selectedAccount?.balance) || 0;
+    const baseBalance = parseFloat(currentSelectedAccount?.balance) || 0;
     const optimisticClosedProfit = provisionalClosedPositions.reduce((sum, pos) => {
       return sum + (parseFloat(pos.profit) || 0);
     }, 0);
@@ -2026,7 +2026,7 @@ const loadAccountMetrics = useCallback(async (account) => {
       unrealizedProfit: liveKPIs.unrealizedProfit,
       _isOptimistic: optimisticClosedProfit !== 0 || liveKPIs.unrealizedProfit !== 0
     };
-  }, [selectedAccount?.balance, provisionalClosedPositions, liveKPIs.unrealizedProfit, realBalanceHistory]);
+  }, [currentSelectedAccount?.balance, provisionalClosedPositions, liveKPIs.unrealizedProfit, realBalanceHistory]);
 
   // ============================================
   // PASO 5: ESTADÍSTICAS COMBINADAS CON POSICIONES CERRADAS OPTIMISTAS
