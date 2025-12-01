@@ -202,6 +202,8 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   } = useAccounts();
 
   const { currentUser, userData } = useAuth();
+  // Ref para acceso en callbacks de WebSocket (evitar stale closures)
+  const currentUserRef = useRef(currentUser);
 
   // Determinar el estado inicial basado en los parámetros de navegación
   // para evitar el parpadeo de la doble navegación.
@@ -292,12 +294,16 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // Set para trackear tickets cerrados (filtrar de polling)
   // ============================================
   const [optimisticallyClosed, setOptimisticallyClosed] = useState(new Set());
+  // Ref para acceso en callbacks de WebSocket (evitar stale closures)
+  const optimisticallyClosedRef = useRef(new Set());
 
   // ============================================
   // WEBSOCKET: Posiciones abiertas en tiempo real
   // Estado para posiciones abiertas en tiempo real
   // ============================================
   const [liveOpenPositions, setLiveOpenPositions] = useState([]);
+  // Ref para acceso en callbacks de WebSocket (evitar stale closures)
+  const liveOpenPositionsRef = useRef([]);
   const openPositionsIntervalRef = useRef(null);
 
   // Función para obtener tiempo transcurrido en minutos
@@ -406,6 +412,20 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   const [barChartTooltip, setBarChartTooltip] = useState(null);
 
   // Detectar dispositivo móvil
+
+  // Sincronizar refs con estado para evitar stale closures en WebSocket
+  useEffect(() => {
+    optimisticallyClosedRef.current = optimisticallyClosed;
+  }, [optimisticallyClosed]);
+
+  useEffect(() => {
+    liveOpenPositionsRef.current = liveOpenPositions;
+  }, [liveOpenPositions]);
+
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
   // Initial data loading
   useEffect(() => {
     const loadInitialData = async () => {
@@ -763,24 +783,46 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     const ticketStr = String(ticketToClose);
     setOptimisticallyClosed(prev => new Set([...prev, ticketStr]));
 
-    // PASO 2: Buscar profit más reciente de liveOpenPositions (WebSocket) ANTES de removerlo
+    // PASO 2: Obtener profit más reciente - primero del API, luego WebSocket, luego local
     // El profit en positionToClose puede estar desactualizado
-    const livePosition = liveOpenPositions.find(pos => {
-      const liveTicket = String(pos.ticket || pos.position || '');
-      return liveTicket === String(ticketToClose);
-    });
-
-    // Usar profit de liveOpenPositions si existe, sino del objeto positionToClose
     let finalProfit = 0;
-    if (livePosition) {
-      // livePosition.profit viene del WebSocket (ya dividido por 100 en C#)
-      // Multiplicar por 100 para consistencia con el resto del frontend
-      finalProfit = (parseFloat(livePosition.profit) || 0) * 100;
-      console.log('[ClosePosition] Using live profit from WebSocket:', livePosition.profit, '-> adjusted:', finalProfit);
-    } else {
-      // Fallback: usar profit del objeto (ya multiplicado por 100 en operationsWithLiveData)
-      finalProfit = parseFloat(positionToClose.profit || positionToClose.ganancia || 0);
-      console.log('[ClosePosition] Using positionToClose profit:', finalProfit);
+    let latestClosePrice = parseFloat(positionToClose.closePrice || positionToClose.precioCierre || positionToClose.open_price || 0);
+
+    // 2.1: Intentar obtener el dato más reciente del API (fuente más precisa)
+    try {
+      console.log('[ClosePosition] Fetching latest position data from API...');
+      const positionsResponse = await brokerApi.get(`/accounts/${selectedAccount.account_number}/positions`);
+      const apiPositions = positionsResponse.data || [];
+      const apiPosition = apiPositions.find(p => String(p.ticket || p.position) === String(ticketToClose));
+
+      if (apiPosition) {
+        // API profit viene en formato crudo (centavos), multiplicar por 100
+        finalProfit = (parseFloat(apiPosition.profit) || 0) * 100;
+        latestClosePrice = parseFloat(apiPosition.price_current || apiPosition.current_price) || latestClosePrice;
+        console.log('[ClosePosition] Got latest profit from API:', apiPosition.profit, '-> adjusted:', finalProfit);
+      }
+    } catch (apiError) {
+      console.warn('[ClosePosition] Could not fetch from API, falling back to WebSocket:', apiError.message);
+    }
+
+    // 2.2: Si no obtuvimos profit del API, usar WebSocket
+    if (finalProfit === 0) {
+      const livePosition = liveOpenPositions.find(pos => {
+        const liveTicket = String(pos.ticket || pos.position || '');
+        return liveTicket === String(ticketToClose);
+      });
+
+      if (livePosition) {
+        // livePosition.profit viene del WebSocket (ya dividido por 100 en C#)
+        // Multiplicar por 100 para consistencia con el resto del frontend
+        finalProfit = (parseFloat(livePosition.profit) || 0) * 100;
+        latestClosePrice = parseFloat(livePosition.price_current || livePosition.current_price) || latestClosePrice;
+        console.log('[ClosePosition] Using live profit from WebSocket:', livePosition.profit, '-> adjusted:', finalProfit);
+      } else {
+        // Fallback: usar profit del objeto (ya multiplicado por 100 en operationsWithLiveData)
+        finalProfit = parseFloat(positionToClose.profit || positionToClose.ganancia || 0);
+        console.log('[ClosePosition] Using positionToClose profit:', finalProfit);
+      }
     }
 
     // 1.2: Remover de liveOpenPositions inmediatamente (DESPUÉS de capturar el profit)
@@ -829,7 +871,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       volume: parseFloat(positionToClose.volume || positionToClose.lotaje || 0),
       open_price: parseFloat(positionToClose.open_price || positionToClose.precioApertura || 0),
       open_time: positionToClose.open_time || positionToClose.openTime || new Date().toISOString(),
-      close_price: parseFloat(positionToClose.closePrice || positionToClose.precioCierre || positionToClose.open_price || 0),
+      close_price: latestClosePrice,
       close_time: new Date().toISOString(),
       stop_loss: parseFloat(positionToClose.stop_loss || positionToClose.stopLoss || 0),
       take_profit: parseFloat(positionToClose.take_profit || positionToClose.takeProfit || 0),
@@ -1463,12 +1505,90 @@ const loadAccountMetrics = useCallback(async (account) => {
             break;
 
           case 'position_delete':
-            // Posición cerrada
+            // Posición cerrada (puede ser desde el broker o desde MT5 directamente)
             if (positionId) {
               const ticketStr = String(positionId);
+
+              // Usar refs para acceder al estado actual (evitar stale closures)
+              const currentOptimisticallyClosed = optimisticallyClosedRef.current;
+              const currentLivePositions = liveOpenPositionsRef.current;
+
+              // Verificar si fue cerrada desde el frontend (optimistic) o desde MT5 directamente
+              const wasClosedFromFrontend = currentOptimisticallyClosed.has(ticketStr);
+
+              if (!wasClosedFromFrontend) {
+                // Cierre EXTERNO desde MT5 - capturar datos antes de remover
+                console.log('[WebSocket] External close detected from MT5, ticket:', ticketStr);
+
+                // Buscar la posición en liveOpenPositions ANTES de removerla (usando ref)
+                const closedPosition = currentLivePositions.find(p => {
+                  const pTicket = String(p.ticket || p.position || '');
+                  return pTicket === ticketStr;
+                });
+
+                // Usar ref para currentUser (evitar stale closure)
+                const currentUserData = currentUserRef.current;
+                if (closedPosition && currentUserData && selectedAccount) {
+                  // Crear posición provisional para mostrar como "recientemente cerrada"
+                  const externalCloseProvisional = {
+                    user_id: currentUserData?.id,
+                    account_number: selectedAccount.account_number,
+                    ticket: parseInt(ticketStr),
+                    symbol: closedPosition.symbol,
+                    type: closedPosition.type === 0 ? 'BUY' : closedPosition.type === 1 ? 'SELL' : String(closedPosition.type),
+                    volume: parseFloat(closedPosition.volume || 0),
+                    open_price: parseFloat(closedPosition.priceOpen || closedPosition.open_price || 0),
+                    open_time: closedPosition.time || closedPosition.open_time || new Date().toISOString(),
+                    close_price: parseFloat(closedPosition.priceCurrent || closedPosition.price_current || closedPosition.priceOpen || 0),
+                    close_time: new Date().toISOString(),
+                    stop_loss: parseFloat(closedPosition.sl || closedPosition.stop_loss || 0),
+                    take_profit: parseFloat(closedPosition.tp || closedPosition.take_profit || 0),
+                    // Profit del WebSocket viene dividido por 100 en C#, multiplicar por 100
+                    profit: (parseFloat(closedPosition.profit) || 0) * 100,
+                    commission: parseFloat(closedPosition.commission || 0),
+                    swap: parseFloat(closedPosition.swap || 0),
+                    comment: 'Closed from MT5'
+                  };
+
+                  console.log('[WebSocket] Creating provisional for external close:', externalCloseProvisional);
+
+                  // Agregar a provisionalClosedPositions
+                  setProvisionalClosedPositions(prev => [...prev, externalCloseProvisional]);
+
+                  // Marcar la posición como cerrada en realTradingOperations
+                  setRealTradingOperations(prev => {
+                    if (!prev || !prev.operations) return prev;
+                    return {
+                      ...prev,
+                      operations: prev.operations.map(op => {
+                        if (String(op.ticket) === ticketStr || String(op.idPosicion) === ticketStr) {
+                          return {
+                            ...op,
+                            isOpen: false,
+                            status: 'CLOSED',
+                            isPending: false,
+                            close_time: new Date().toISOString(),
+                            closeTime: new Date().toISOString(),
+                            fechaCierre: new Date().toLocaleDateString(),
+                            tiempoCierre: new Date().toLocaleTimeString(),
+                            profit: externalCloseProvisional.profit,
+                            ganancia: externalCloseProvisional.profit,
+                            resultado: `$${externalCloseProvisional.profit.toFixed(2)}`,
+                            resultadoColor: externalCloseProvisional.profit >= 0 ? 'text-green-400' : 'text-red-400'
+                          };
+                        }
+                        return op;
+                      })
+                    };
+                  });
+                }
+              }
+
+              // Remover de liveOpenPositions
               setLiveOpenPositions(prev =>
                 prev.filter(p => String(p.ticket || p.position) !== ticketStr)
               );
+
               // Limpiar de optimistically closed si estaba ahí
               setOptimisticallyClosed(prev => {
                 const newSet = new Set(prev);
