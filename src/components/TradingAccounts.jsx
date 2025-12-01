@@ -138,6 +138,17 @@ const indicesInstruments = [
 ];
 
 const allInstruments = [...forexInstruments, ...stockInstruments, ...cryptoInstruments, ...metalInstruments, ...indicesInstruments];
+
+// Helper function para normalizar instrumentos (EUR/USD -> EURUSD, eurusd -> EURUSD)
+const normalizeInstrument = (instrument) => {
+  if (!instrument) return '';
+  return instrument.replace(/[\/\-_\s]/g, '').toUpperCase();
+};
+
+// Helper function para comparar instrumentos normalizados
+const instrumentsMatch = (instrument1, instrument2) => {
+  return normalizeInstrument(instrument1) === normalizeInstrument(instrument2);
+};
 // --- End Instrument Lists ---
 
 // Options for custom dropdowns - will be translated inside component
@@ -2000,12 +2011,9 @@ const loadAccountMetrics = useCallback(async (account) => {
     // Usar datos combinados con live data
     const dataSource = operationsWithLiveData;
     return dataSource.filter(item => {
-      // Filtro por instrumento
+      // Filtro por instrumento (normalizado para manejar EUR/USD vs EURUSD)
       if (historyFilters.instrument !== 'all') {
-        // Normalizar ambos formatos (EUR/USD -> EURUSD)
-        const normalizedFilter = historyFilters.instrument.replace('/', '');
-        const normalizedInstrument = item.instrumento?.replace('/', '') || '';
-        if (normalizedInstrument !== normalizedFilter) {
+        if (!instrumentsMatch(item.instrumento, historyFilters.instrument)) {
           return false;
         }
       }
@@ -2298,9 +2306,9 @@ const loadAccountMetrics = useCallback(async (account) => {
     // Fallback al código anterior si no hay datos de balance
     let dataToProcess = realHistory?.operations || historialData;
     
-    // Aplicar filtros del historial si están activos
+    // Aplicar filtros del historial si están activos (normalizado para manejar EUR/USD vs EURUSD)
     if (historyFilters.instrument !== 'all') {
-      dataToProcess = dataToProcess.filter(item => item.instrumento === historyFilters.instrument);
+      dataToProcess = dataToProcess.filter(item => instrumentsMatch(item.instrumento, historyFilters.instrument));
     }
     
     if (historyFilters.type !== 'all') {
@@ -2510,10 +2518,10 @@ const loadAccountMetrics = useCallback(async (account) => {
   // Función anterior renombrada para no perder funcionalidad
   const generateBalanceChartDataOld = () => {
     let dataToProcess = historialData;
-    
-    // Aplicar mismos filtros que el gráfico de beneficio
+
+    // Aplicar mismos filtros que el gráfico de beneficio (normalizado)
     if (historyFilters.instrument !== 'all') {
-      dataToProcess = dataToProcess.filter(item => item.instrumento === historyFilters.instrument);
+      dataToProcess = dataToProcess.filter(item => instrumentsMatch(item.instrumento, historyFilters.instrument));
     }
     
     if (historyFilters.type !== 'all') {
@@ -2716,10 +2724,10 @@ const loadAccountMetrics = useCallback(async (account) => {
     
     // Fallback al código anterior si no hay datos reales
     let dataToProcess = historialData;
-    
-    // Aplicar mismos filtros
+
+    // Aplicar mismos filtros (normalizado para manejar EUR/USD vs EURUSD)
     if (historyFilters.instrument !== 'all') {
-      dataToProcess = dataToProcess.filter(item => item.instrumento === historyFilters.instrument);
+      dataToProcess = dataToProcess.filter(item => instrumentsMatch(item.instrumento, historyFilters.instrument));
     }
     
     if (historyFilters.type !== 'all') {
