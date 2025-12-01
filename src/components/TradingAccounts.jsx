@@ -832,8 +832,13 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
         .from('pending_closed_positions')
         .insert([provisionalPosition]);
 
+      if (insertError) {
+        console.warn('[ClosePosition] Supabase insert warning:', insertError);
+      }
+
       // PASO 4: Llamar al endpoint DELETE del backend Python API
-      await brokerApi.delete(
+      console.log('[ClosePosition] Calling API to close position:', ticketToClose, 'account:', selectedAccount.account_number);
+      const closeResponse = await brokerApi.delete(
         `/trading/positions/${ticketToClose}`,
         {
           params: {
@@ -841,6 +846,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
           }
         }
       );
+      console.log('[ClosePosition] API response:', closeResponse);
 
       // Mostrar mensaje de éxito
       toast.success(t('trading:positions.messages.closeSuccess'));
