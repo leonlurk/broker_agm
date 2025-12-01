@@ -22,7 +22,8 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
     });
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
-    
+    const [isSmallHeight, setIsSmallHeight] = useState(false);
+
     // Debug KYC status
     useEffect(() => {
         console.log("[Sidebar] User data received:", {
@@ -42,18 +43,20 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
         }
     }, [selectedOption]);
 
-    // Detectar si es dispositivo móvil
+    // Detectar si es dispositivo móvil o pantalla con altura pequeña
     useEffect(() => {
-        const checkIfMobile = () => {
+        const checkScreenSize = () => {
             setIsMobile(window.innerWidth < 768);
+            // Detectar pantallas con altura limitada (laptops pequeñas, MacBooks)
+            setIsSmallHeight(window.innerHeight < 800);
         };
-        
+
         // Verificar al cargar y al cambiar tamaño
-        checkIfMobile();
-        window.addEventListener('resize', checkIfMobile);
-        
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+
         return () => {
-            window.removeEventListener('resize', checkIfMobile);
+            window.removeEventListener('resize', checkScreenSize);
         };
     }, []);
 
@@ -186,11 +189,11 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                 transition-all duration-300 ease-in-out ${isMobile ? 'overflow-y-auto' : 'overflow-hidden'}`}
             >
                 {/* Logo section - fixed */}
-                <div className={`flex justify-center px-4 ${isMobile ? 'pt-6 pb-4' : 'pt-8 pb-6'}`}>
-                    <img 
-                        src="/Capa_x0020_1.svg" 
-                        alt="AGM Logo" 
-                        className={`${isMobile ? 'w-20' : 'w-24'} h-auto transition-all duration-300`}
+                <div className={`flex justify-center px-4 ${isMobile ? 'pt-6 pb-4' : isSmallHeight ? 'pt-4 pb-3' : 'pt-8 pb-6'}`}>
+                    <img
+                        src="/Capa_x0020_1.svg"
+                        alt="AGM Logo"
+                        className={`${isMobile ? 'w-20' : isSmallHeight ? 'w-16' : 'w-24'} h-auto transition-all duration-300`}
                         onError={(e) => {
                             e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23333333'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='white'%3EAGM%3C/text%3E%3C/svg%3E";
                         }}
@@ -199,17 +202,17 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                 
                 {/* Plataformas dropdown removido completamente */}
                 
-                <div className={`h-px w-full bg-[#333] ${isMobile ? 'mb-4' : 'mb-6'}`}></div>
-                
+                <div className={`h-px w-full bg-[#333] ${isMobile ? 'mb-4' : isSmallHeight ? 'mb-3' : 'mb-6'}`}></div>
+
                 {/* Scrollable menu section with dynamic spacing */}
                 <div className={`${isMobile ? 'flex-1 min-h-0' : 'flex-1'} overflow-y-auto transition-all duration-500 ease-in-out flex flex-col`} style={{ scrollbarWidth: 'thin', scrollbarColor: '#555 #333' }}>
-                    <nav className={`flex flex-col h-full ${isMobile ? 'px-2' : 'px-4'} justify-center gap-4`}>
+                    <nav className={`flex flex-col ${isMobile ? 'px-2' : 'px-4'} ${isSmallHeight ? 'justify-start py-2' : 'justify-center h-full'} ${isSmallHeight ? 'gap-1' : 'gap-4'}`}>
                         {menuItems.map((item) => (
                             <div key={item.name} className="flex flex-col">
                                 <button
                                     onClick={() => handleNavigation(item.name)}
                                     className={`flex items-center justify-between w-full rounded-xl bg-transparent border font-regular transition-all
-                                        ${isMobile ? 'py-3 px-4 text-base' : 'py-4 px-6 text-lg'}
+                                        ${isMobile ? 'py-3 px-4 text-base' : isSmallHeight ? 'py-2 px-4 text-sm' : 'py-4 px-6 text-lg'}
                                         ${(() => {
                                             const isSelected = selectedOption === item.name;
                                             const isSubSelected = item.subOptions && item.subOptions.some(sub => 
@@ -226,8 +229,8 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                                     style={{ outline: 'none' }}
                                 >
                                     <div className="flex items-center">
-                                        <div className={`${isMobile ? 'w-6' : 'w-8'} flex justify-center mr-2`}>
-                                            {React.cloneElement(item.icon, { className: isMobile ? 'w-6 h-6' : 'w-8 h-8' })}
+                                        <div className={`${isMobile ? 'w-6' : isSmallHeight ? 'w-5' : 'w-8'} flex justify-center mr-2`}>
+                                            {React.cloneElement(item.icon, { className: isMobile ? 'w-6 h-6' : isSmallHeight ? 'w-5 h-5' : 'w-8 h-8' })}
                                         </div>
                                         <span>{t(item.translationKey)}</span>
                                     </div>
@@ -240,10 +243,10 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                                 
                                 {/* Subopciones para elementos con subOptions */}
                                 {item.subOptions && (
-                                    <div 
+                                    <div
                                         className={`space-y-1 overflow-hidden transition-all duration-500 ease-in-out w-full
-                                            ${isMobile ? 'pl-4' : 'pl-8'}
-                                            ${expandedOptions[item.name] ? (isMobile ? 'mt-1 mb-1 max-h-48 opacity-100' : 'mt-3 mb-3 max-h-48 opacity-100') : 'max-h-0 opacity-0'}`}
+                                            ${isMobile ? 'pl-4' : isSmallHeight ? 'pl-6' : 'pl-8'}
+                                            ${expandedOptions[item.name] ? (isMobile ? 'mt-1 mb-1 max-h-48 opacity-100' : isSmallHeight ? 'mt-1 mb-1 max-h-40 opacity-100' : 'mt-3 mb-3 max-h-48 opacity-100') : 'max-h-0 opacity-0'}`}
                                     >
                                         {item.subOptions.map(subOption => {
                                             // Iconos para cada subopción
@@ -282,12 +285,12 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                                             return (
                                                 <button
                                                     key={subOption.name}
-                                                    onClick={() => { 
+                                                    onClick={() => {
                                                         console.log(`[Sidebar] Clicked on button for: ${subOption.name} under ${item.name}`);
                                                         handleSubOptionClick(subOption.name, item.name);
                                                     }}
                                                     className={`flex items-center w-full font-regular rounded-lg transition-colors
-                                                        ${isMobile ? 'py-2 px-3 text-sm' : 'py-3 px-4 text-md'}
+                                                        ${isMobile ? 'py-2 px-3 text-sm' : isSmallHeight ? 'py-1.5 px-3 text-xs' : 'py-3 px-4 text-md'}
                                                         ${(item.name === "Herramientas" && selectedOption === subOption.name) || 
                                                           (item.name !== "Herramientas" && selectedOption === `${item.name} ${subOption.name}`)
                                                             ? "bg-transparent border-l-2 border-cyan-500" 
@@ -310,7 +313,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                 
                 {/* Bottom section - fixed */}
                 <div className={`${isMobile ? 'mt-2 flex-shrink-0 px-2' : 'mt-auto px-4'}`}>
-                    <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : 'my-4'}`}></div>
+                    <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : isSmallHeight ? 'my-2' : 'my-4'}`}></div>
                     <button
                         onClick={() => {
                             // Allow navigation to account creation for all users
@@ -319,7 +322,7 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                         }}
                         className={`flex items-center justify-center space-x-2 rounded-md w-full transition relative
                                    bg-gradient-to-r from-[#0F7490] to-[#0A5A72] hover:opacity-90
-                                   ${isMobile ? 'py-2.5 px-3 text-base' : 'py-4 px-4 text-lg'}`}
+                                   ${isMobile ? 'py-2.5 px-3 text-base' : isSmallHeight ? 'py-2 px-3 text-sm' : 'py-4 px-4 text-lg'}`}
                         style={{ outline: 'none' }}
                         title={!user ? 'Cargando información del usuario...' : user?.kyc_status !== 'approved' ? 'Solo puedes crear cuentas Demo sin KYC aprobado' : ''}
                     >
@@ -328,17 +331,17 @@ const Sidebar = ({ selectedOption, setSelectedOption, onLogout, user }) => {
                                 <span className="text-black text-xs font-bold">!</span>
                             </span>
                         )}
-                        <span className={`${isMobile ? 'text-lg' : 'text-xl'} mr-1`}>+</span>
+                        <span className={`${isMobile ? 'text-lg' : isSmallHeight ? 'text-base' : 'text-xl'} mr-1`}>+</span>
                         <span>{t('quickActions.newAccount')}</span>
                     </button>
-                    <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : 'my-4'}`}></div>
-                    
+                    <div className={`h-px w-full bg-[#333] ${isMobile ? 'my-2' : isSmallHeight ? 'my-2' : 'my-4'}`}></div>
+
                     <button onClick={handleLogout}
                         className={`w-full bg-transparent flex items-center space-x-2 py-2.5 px-4 text-gray-300 hover:bg-gray-700 rounded-lg
-                                   ${isMobile ? 'mb-4 text-base' : 'mb-6 text-lg'}`}
+                                   ${isMobile ? 'mb-4 text-base' : isSmallHeight ? 'mb-3 text-sm' : 'mb-6 text-lg'}`}
                         style={{ outline: 'none' }}
                     >
-                        <img src="/Sign_out_circle_light.svg" className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} alt="Logout" />
+                        <img src="/Sign_out_circle_light.svg" className={`${isMobile ? 'w-6 h-6' : isSmallHeight ? 'w-5 h-5' : 'w-8 h-8'}`} alt="Logout" />
                         <span>{t('common:buttons.logout')}</span>
                     </button>
                 </div>
