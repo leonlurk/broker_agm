@@ -1529,13 +1529,24 @@ const loadAccountMetrics = useCallback(async (account) => {
                 // Usar ref para currentUser (evitar stale closure)
                 const currentUserData = currentUserRef.current;
                 if (closedPosition && currentUserData && selectedAccount) {
+                  // Determinar el tipo de operación (puede venir como 0/1, "0"/"1", "BUY"/"SELL", o "buy"/"sell")
+                  let posType = closedPosition.type;
+                  const posTypeNum = parseInt(posType);
+                  const posTypeStr = String(posType).toUpperCase();
+                  let normalizedType = 'BUY'; // default
+                  if (posTypeNum === 0 || posTypeStr === 'BUY' || posTypeStr === '0') {
+                    normalizedType = 'BUY';
+                  } else if (posTypeNum === 1 || posTypeStr === 'SELL' || posTypeStr === '1') {
+                    normalizedType = 'SELL';
+                  }
+
                   // Crear posición provisional para mostrar como "recientemente cerrada"
                   const externalCloseProvisional = {
                     user_id: currentUserData?.id,
                     account_number: selectedAccount.account_number,
                     ticket: parseInt(ticketStr),
                     symbol: closedPosition.symbol,
-                    type: closedPosition.type === 0 ? 'BUY' : closedPosition.type === 1 ? 'SELL' : String(closedPosition.type),
+                    type: normalizedType,
                     volume: parseFloat(closedPosition.volume || 0),
                     open_price: parseFloat(closedPosition.priceOpen || closedPosition.open_price || 0),
                     open_time: closedPosition.time || closedPosition.open_time || new Date().toISOString(),
@@ -1547,7 +1558,8 @@ const loadAccountMetrics = useCallback(async (account) => {
                     profit: (parseFloat(closedPosition.profit) || 0) * 100,
                     commission: parseFloat(closedPosition.commission || 0),
                     swap: parseFloat(closedPosition.swap || 0),
-                    comment: 'Closed from MT5'
+                    comment: 'Closed from MT5',
+                    _isExternalClose: true // Flag para no mostrar "Sincronizando..."
                   };
 
                   console.log('[WebSocket] Creating provisional for external close:', externalCloseProvisional);
@@ -1581,6 +1593,9 @@ const loadAccountMetrics = useCallback(async (account) => {
                       })
                     };
                   });
+
+                  // Forzar actualización del timestamp para trigger de re-render
+                  setLastUpdated(new Date());
                 }
               }
 
@@ -2097,13 +2112,16 @@ const loadAccountMetrics = useCallback(async (account) => {
           const closeTime = pos.close_time ? new Date(pos.close_time) : new Date();
           const profit = parseFloat(pos.profit) || 0;
 
+          // Si es cierre externo (desde MT5), no mostrar "Sincronizando..."
+          const isExternalClose = pos._isExternalClose === true;
+
           return {
             fechaApertura: openTime.toLocaleDateString(),
             tiempoApertura: openTime.toLocaleTimeString(),
             fechaCierre: closeTime.toLocaleDateString(),
             tiempoCierre: closeTime.toLocaleTimeString(),
             isOpen: false,
-            isPending: true, // Marcar como pendiente de sincronización
+            isPending: !isExternalClose, // Solo pendiente si NO es cierre externo
             fechaISO: closeTime.toISOString(),
             instrumento: pos.symbol || 'N/A',
             bandera: getInstrumentIcon(pos.symbol || 'N/A'),
@@ -2128,7 +2146,8 @@ const loadAccountMetrics = useCallback(async (account) => {
             close_time: pos.close_time,
             profit: profit,
             status: 'CLOSED',
-            _isOptimistic: true // Flag para identificar datos optimistas
+            _isOptimistic: true, // Flag para identificar datos optimistas
+            _isExternalClose: isExternalClose // Preservar flag de cierre externo
           };
         });
 
