@@ -2089,16 +2089,20 @@ const loadAccountMetrics = useCallback(async (account) => {
     let additionalLosses = 0;
     let additionalPnL = 0;
     let additionalVolume = 0;
+    let additionalWinProfit = 0;
+    let additionalLossAmount = 0;
 
     provisionalClosedPositions.forEach(pos => {
-      const profit = pos.profit || 0;
+      const profit = parseFloat(pos.profit) || 0;
       additionalPnL += profit;
-      additionalVolume += pos.volume || 0;
+      additionalVolume += parseFloat(pos.volume) || 0;
 
       if (profit > 0) {
         additionalWins++;
+        additionalWinProfit += profit;
       } else if (profit < 0) {
         additionalLosses++;
+        additionalLossAmount += Math.abs(profit);
       }
     });
 
@@ -2106,24 +2110,45 @@ const loadAccountMetrics = useCallback(async (account) => {
     const newTotalTrades = (baseStats.total_trades || 0) + additionalTrades;
 
     // Calcular nuevo win rate
-    // Asumiendo que las estadísticas base tienen X wins de Y trades
     const baseWins = Math.round((baseStats.win_rate || 0) / 100 * (baseStats.total_trades || 0));
+    const baseLosses = (baseStats.total_trades || 0) - baseWins;
     const newWins = baseWins + additionalWins;
+    const newLosses = baseLosses + additionalLosses;
     const newWinRate = newTotalTrades > 0 ? (newWins / newTotalTrades) * 100 : 0;
 
     // Calcular nuevo net PnL
     const newNetPnL = (baseStats.net_pnl || 0) + additionalPnL;
+    const initialBalance = parseFloat(realBalanceHistory?.[0]?.balance) || 10000;
+    const newNetPnLPercentage = initialBalance > 0 ? (newNetPnL / initialBalance) * 100 : 0;
+
+    // Calcular nuevos promedios de ganancia/pérdida
+    const baseWinTotal = (baseStats.average_win || 0) * baseWins;
+    const baseLossTotal = (baseStats.average_loss || 0) * baseLosses;
+    const newAverageWin = newWins > 0 ? (baseWinTotal + additionalWinProfit) / newWins : baseStats.average_win || 0;
+    const newAverageLoss = newLosses > 0 ? (baseLossTotal + additionalLossAmount) / newLosses : baseStats.average_loss || 0;
+
+    // Calcular nuevo lotaje promedio
+    const baseTotalVolume = (baseStats.average_lot_size || 0) * (baseStats.total_trades || 0);
+    const newAverageLotSize = newTotalTrades > 0 ? (baseTotalVolume + additionalVolume) / newTotalTrades : baseStats.average_lot_size || 0;
+
+    // Calcular nuevo risk/reward ratio
+    const newRiskRewardRatio = newAverageLoss > 0 ? newAverageWin / newAverageLoss : baseStats.risk_reward_ratio || 0;
 
     return {
       ...baseStats,
       total_trades: newTotalTrades,
       win_rate: newWinRate,
       net_pnl: newNetPnL,
+      net_pnl_percentage: newNetPnLPercentage,
+      average_win: newAverageWin,
+      average_loss: newAverageLoss,
+      average_lot_size: newAverageLotSize,
+      risk_reward_ratio: newRiskRewardRatio,
       // Marcar que hay ajustes optimistas pendientes
       _hasOptimisticAdjustments: provisionalClosedPositions.length > 0,
       _optimisticTradesCount: provisionalClosedPositions.length
     };
-  }, [realStatistics, provisionalClosedPositions]);
+  }, [realStatistics, provisionalClosedPositions, realBalanceHistory]);
 
   // Función para generar datos del gráfico de beneficio total con optimización móvil
   const generateBenefitChartData = () => {
@@ -3830,14 +3855,17 @@ const loadAccountMetrics = useCallback(async (account) => {
           
           {/* Grid de métricas KPIs con iconos del public */}
           <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
-            {/* 1. {t('tradingAccountsUI.metrics.averageLossPerTrade')} */}
+            {/* 1. Pérdida Promedio - LIVE */}
             <div className={`p-3 sm:p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl ${isMobile ? 'flex items-center justify-between' : 'flex justify-between items-center'}`}>
               <CustomTooltip content={t('tooltips.averageLoss')}>
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-xs sm:text-sm mb-1">{t('metrics.averageLoss')}</h3>
                 <div className="flex items-center">
-                  <span className="text-lg sm:text-xl font-bold text-red-400">${(realStatistics?.average_loss || 0).toFixed(2)}</span>
+                  <span className="text-lg sm:text-xl font-bold text-red-400">${(combinedStatistics?.average_loss || 0).toFixed(2)}</span>
                   <span className="bg-red-800 bg-opacity-30 text-red-400 px-1 py-0.5 rounded text-xs ml-2">{t('metrics.average')}</span>
+                  {combinedStatistics?._hasOptimisticAdjustments && (
+                    <span className="text-xs text-yellow-500 ml-1">●</span>
+                  )}
                 </div>
               </div>
               </CustomTooltip>
@@ -3846,14 +3874,17 @@ const loadAccountMetrics = useCallback(async (account) => {
                   </div>
                   </div>
 
-            {/* 2. {t('tradingAccountsUI.metrics.averageWinPerTrade')} */}
+            {/* 2. Ganancia Promedio - LIVE */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
               <CustomTooltip content={t('tooltips.averageWin')}>
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">{t('metrics.averageWin')}</h3>
                 <div className="flex items-center">
-                  <span className="text-xl font-bold">${(realStatistics?.average_win || 0).toFixed(2)}</span>
+                  <span className="text-xl font-bold">${(combinedStatistics?.average_win || 0).toFixed(2)}</span>
                   <span className="bg-green-800 bg-opacity-30 text-green-400 px-1 py-0.5 rounded text-xs ml-2">{t('metrics.average')}</span>
+                  {combinedStatistics?._hasOptimisticAdjustments && (
+                    <span className="text-xs text-yellow-500 ml-1">●</span>
+                  )}
                 </div>
               </div>
               </CustomTooltip>
@@ -3861,13 +3892,18 @@ const loadAccountMetrics = useCallback(async (account) => {
                 <img src="/GananciaIcono.svg" alt="" className="" />
                 </div>
               </div>
-              
-            {/* 3. {t('tradingAccountsUI.metrics.averageLotSizePerTrade')} */}
+
+            {/* 3. Lotaje Promedio - LIVE */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
               <CustomTooltip content={t('tooltips.averageLotSize')}>
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">{t('metrics.averageLotSize')}</h3>
-                <span className="text-xl font-bold">{(realStatistics?.average_lot_size || 0).toFixed(2)}</span>
+                <div className="flex items-center">
+                  <span className="text-xl font-bold">{(combinedStatistics?.average_lot_size || 0).toFixed(2)}</span>
+                  {combinedStatistics?._hasOptimisticAdjustments && (
+                    <span className="text-xs text-yellow-500 ml-2">●</span>
+                  )}
+                </div>
                   </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
@@ -3888,16 +3924,21 @@ const loadAccountMetrics = useCallback(async (account) => {
                   </div>
             </div>
 
-            {/* 5. {t('tradingAccountsUI.metrics.riskRewardRatio')} */}
+            {/* 5. Risk/Reward - LIVE */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
               <CustomTooltip content={t('tooltips.riskReward')}>
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">{t('metrics.riskReward')}</h3>
-                <span className="text-xl font-bold">
-                  {realStatistics?.risk_reward_ratio 
-                    ? `1:${parseFloat(realStatistics.risk_reward_ratio).toFixed(2)}` 
-                    : '1:0'}
-                </span>
+                <div className="flex items-center">
+                  <span className="text-xl font-bold">
+                    {combinedStatistics?.risk_reward_ratio
+                      ? `1:${parseFloat(combinedStatistics.risk_reward_ratio).toFixed(2)}`
+                      : '1:0'}
+                  </span>
+                  {combinedStatistics?._hasOptimisticAdjustments && (
+                    <span className="text-xs text-yellow-500 ml-2">●</span>
+                  )}
+                </div>
               </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
@@ -3905,7 +3946,7 @@ const loadAccountMetrics = useCallback(async (account) => {
                 </div>
               </div>
               
-            {/* 6. {t('tradingAccountsUI.metrics.winRatio')} - PASO 5: Usa combinedStatistics */}
+            {/* 6. Win Rate - LIVE */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
               <CustomTooltip content={t('tooltips.winRate')}>
                 <div className="cursor-help">
@@ -3913,7 +3954,7 @@ const loadAccountMetrics = useCallback(async (account) => {
                 <div className="flex items-center">
                   <span className="text-xl font-bold">{(combinedStatistics?.win_rate || 0).toFixed(1)}%</span>
                   {combinedStatistics?._hasOptimisticAdjustments && (
-                    <span className="text-xs text-yellow-500 ml-2">*</span>
+                    <span className="text-xs text-yellow-500 ml-2">●</span>
                   )}
                 </div>
               </div>
@@ -3949,15 +3990,17 @@ const loadAccountMetrics = useCallback(async (account) => {
         </div>
       </div>
       
-            {/* 9. {t('tradingAccountsUI.metrics.pnl')} - PASO 5: Usa combinedStatistics */}
+            {/* 9. PNL - LIVE */}
             <div className="p-4 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex justify-between items-center">
               <CustomTooltip content={t('tooltips.pnl')}>
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">{t('metrics.pnl')}</h3>
                 <div className="flex items-center">
-                  <span className="text-xl font-bold">${(combinedStatistics?.net_pnl || 0).toFixed(2)} = {(realStatistics?.net_pnl_percentage || 0).toFixed(2)}%</span>
+                  <span className={`text-xl font-bold ${(combinedStatistics?.net_pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    ${(combinedStatistics?.net_pnl || 0).toFixed(2)} = {(combinedStatistics?.net_pnl_percentage || 0).toFixed(2)}%
+                  </span>
                   {combinedStatistics?._hasOptimisticAdjustments && (
-                    <span className="text-xs text-yellow-500 ml-2">*</span>
+                    <span className="text-xs text-yellow-500 ml-2">●</span>
                   )}
                 </div>
               </div>
