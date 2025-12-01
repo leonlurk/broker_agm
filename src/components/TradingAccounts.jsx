@@ -139,10 +139,17 @@ const indicesInstruments = [
 
 const allInstruments = [...forexInstruments, ...stockInstruments, ...cryptoInstruments, ...metalInstruments, ...indicesInstruments];
 
-// Helper function para normalizar instrumentos (EUR/USD -> EURUSD, eurusd -> EURUSD)
+// Helper function para normalizar instrumentos
+// Maneja: EUR/USD -> EURUSD, CADJPYc -> CADJPY, eurusd -> EURUSD
 const normalizeInstrument = (instrument) => {
   if (!instrument) return '';
-  return instrument.replace(/[\/\-_\s]/g, '').toUpperCase();
+  let normalized = instrument
+    .replace(/[\/\-_\s.]/g, '')  // Remover /, -, _, espacios, puntos
+    .toUpperCase();
+  // Remover sufijos comunes de brokers (c, m, i, pro, etc.)
+  normalized = normalized.replace(/[CMI]$/, '');  // Sufijos de 1 letra al final
+  normalized = normalized.replace(/(PRO|ECN|RAW|STP)$/, '');  // Sufijos comunes
+  return normalized;
 };
 
 // Helper function para comparar instrumentos normalizados
