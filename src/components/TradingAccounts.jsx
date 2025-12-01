@@ -776,7 +776,29 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       };
     });
 
-    // PASO 2: Crear versión provisional para persistencia
+    // PASO 2: Buscar profit más reciente de liveOpenPositions (WebSocket)
+    // El profit en positionToClose puede estar desactualizado
+    const livePosition = liveOpenPositions.find(pos => {
+      const liveTicket = String(pos.ticket || pos.position || '');
+      return liveTicket === String(ticketToClose);
+    });
+
+    // Usar profit de liveOpenPositions si existe, sino del objeto positionToClose
+    // NOTA: liveOpenPositions tiene profit ya procesado (backend divide por 100)
+    // pero operationsWithLiveData multiplica por 100, así que positionToClose.profit ya está correcto
+    let finalProfit = 0;
+    if (livePosition) {
+      // livePosition.profit viene del WebSocket (ya dividido por 100 en C#)
+      // Multiplicar por 100 para consistencia con el resto del frontend
+      finalProfit = (parseFloat(livePosition.profit) || 0) * 100;
+      console.log('[ClosePosition] Using live profit from WebSocket:', livePosition.profit, '-> adjusted:', finalProfit);
+    } else {
+      // Fallback: usar profit del objeto (ya multiplicado por 100 en operationsWithLiveData)
+      finalProfit = parseFloat(positionToClose.profit || positionToClose.ganancia || 0);
+      console.log('[ClosePosition] Using positionToClose profit:', finalProfit);
+    }
+
+    // PASO 2b: Crear versión provisional para persistencia
     const provisionalPosition = {
       user_id: currentUser?.id,
       account_number: selectedAccount.account_number,
@@ -790,7 +812,7 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
       close_time: new Date().toISOString(),
       stop_loss: parseFloat(positionToClose.stop_loss || positionToClose.stopLoss || 0),
       take_profit: parseFloat(positionToClose.take_profit || positionToClose.takeProfit || 0),
-      profit: parseFloat(positionToClose.profit || positionToClose.ganancia || 0),
+      profit: finalProfit,
       commission: parseFloat(positionToClose.commission || 0),
       swap: parseFloat(positionToClose.swap || 0),
       comment: 'Pending sync from MT5'
