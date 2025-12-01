@@ -3597,26 +3597,39 @@ const loadAccountMetrics = useCallback(async (account) => {
               <div className="flex items-center mb-2 sm:mb-3">
                 <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2 sm:mr-3 text-white">
                   ${(
-                    // Mostrar equity usando servicio estandarizado - fuente única desde dashboard
-                    equityDataService.getAccountEquity(realMetrics) ?? 0
+                    // LIVE: Usa liveAccountData cuando hay posiciones activas, sino realMetrics
+                    liveAccountData._isOptimistic
+                      ? liveAccountData.equity
+                      : (equityDataService.getAccountEquity(realMetrics) ?? 0)
                   ).toLocaleString()}
                 </span>
                 <span className={`px-2 py-1 rounded text-xs sm:text-sm ${
-                  (realMetrics?.profit_loss_percentage || 0) >= 0 
-                    ? 'bg-green-800 bg-opacity-30 text-green-400' 
+                  (liveAccountData._isOptimistic ? liveAccountData.profitLossPercentage : (realMetrics?.profit_loss_percentage || 0)) >= 0
+                    ? 'bg-green-800 bg-opacity-30 text-green-400'
                     : 'bg-red-800 bg-opacity-30 text-red-400'
                 }`}>
-                  {(realMetrics?.profit_loss_percentage || 0) >= 0 ? '+' : ''}{(realMetrics?.profit_loss_percentage || 0).toFixed(2)}%
+                  {(liveAccountData._isOptimistic ? liveAccountData.profitLossPercentage : (realMetrics?.profit_loss_percentage || 0)) >= 0 ? '+' : ''}
+                  {(liveAccountData._isOptimistic ? liveAccountData.profitLossPercentage : (realMetrics?.profit_loss_percentage || 0)).toFixed(2)}%
                 </span>
               </div>
-              {/* Chips con Balance y Equity actuales */}
+              {/* Chips con Balance y Equity actuales - LIVE */}
               <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
                 <div className="px-2 py-1 bg-gray-800/50 border border-gray-700/50 rounded-md text-xs text-gray-300">
-                  {t('trading:balance')}: <span className="text-white font-semibold">${equityDataService.getAccountBalance(realMetrics).toLocaleString()}</span>
+                  {t('trading:balance')}: <span className="text-white font-semibold">
+                    ${(liveAccountData._isOptimistic ? liveAccountData.balance : equityDataService.getAccountBalance(realMetrics)).toLocaleString()}
+                  </span>
                 </div>
                 <div className="px-2 py-1 bg-cyan-900/30 border border-cyan-700/40 rounded-md text-xs text-cyan-300">
-                  {t('trading:equity')}: <span className="text-white font-semibold">${equityDataService.getAccountEquity(realMetrics).toLocaleString()}</span>
+                  {t('trading:equity')}: <span className="text-white font-semibold">
+                    ${(liveAccountData._isOptimistic ? liveAccountData.equity : equityDataService.getAccountEquity(realMetrics)).toLocaleString()}
+                  </span>
                 </div>
+                {/* Indicador visual cuando hay datos live */}
+                {liveAccountData._isOptimistic && (
+                  <div className="px-2 py-1 bg-green-900/30 border border-green-700/40 rounded-md text-xs text-green-400 animate-pulse">
+                    ● LIVE
+                  </div>
+                )}
               </div>
               
               <div className={`w-full ${isMobile ? 'h-48' : 'h-64'}`}>
@@ -3728,7 +3741,7 @@ const loadAccountMetrics = useCallback(async (account) => {
               
             {/* Métricas lado derecho - 2 columnas con altura completa */}
             <div className={`${isMobile ? 'w-full grid grid-cols-1 gap-3' : 'lg:col-span-2 flex flex-col justify-between'} space-y-3 sm:space-y-4`}>
-              {/* Profit/Loss - PASO 4: Incluye P/L no realizado de posiciones abiertas */}
+              {/* Profit/Loss - LIVE: Usa liveAccountData cuando hay posiciones activas */}
               <div className={`${isMobile ? '' : 'flex-1'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex flex-col justify-center`}>
                 <div className="flex justify-between items-start mb-2">
                   <CustomTooltip content={t('tooltips.profitLoss')}>
@@ -3738,17 +3751,18 @@ const loadAccountMetrics = useCallback(async (account) => {
                 </div>
                   <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
-                    ${(realMetrics?.profit_loss || 0).toFixed(2)}
+                    ${(liveAccountData._isOptimistic ? liveAccountData.profitLoss : (realMetrics?.profit_loss || 0)).toFixed(2)}
                   </span>
                   <span className={`px-2 py-1 rounded text-xs ${
-                    (realMetrics?.profit_loss || 0) >= 0
+                    (liveAccountData._isOptimistic ? liveAccountData.profitLoss : (realMetrics?.profit_loss || 0)) >= 0
                       ? 'bg-green-800 bg-opacity-30 text-green-400'
                       : 'bg-red-800 bg-opacity-30 text-red-400'
                   }`}>
-                    {(realMetrics?.profit_loss || 0) >= 0 ? '+' : ''}{(realMetrics?.profit_loss_percentage || 0).toFixed(2)}%
+                    {(liveAccountData._isOptimistic ? liveAccountData.profitLoss : (realMetrics?.profit_loss || 0)) >= 0 ? '+' : ''}
+                    {(liveAccountData._isOptimistic ? liveAccountData.profitLossPercentage : (realMetrics?.profit_loss_percentage || 0)).toFixed(2)}%
                   </span>
                   </div>
-                  {/* PASO 4: Mostrar P/L no realizado si hay posiciones abiertas */}
+                  {/* Mostrar P/L no realizado si hay posiciones abiertas */}
                   {liveKPIs.openPositionsCount > 0 && (
                     <div className="flex items-center mt-1">
                       <span className={`text-sm font-medium ${liveKPIs.unrealizedProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
