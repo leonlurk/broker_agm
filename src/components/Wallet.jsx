@@ -577,8 +577,10 @@ const Wallet = () => {
       toast.error(t('common.errors.insufficientBalance'));
       return;
     }
-    // Para transferencias, validar contra el balance general
-    if (activeTab === 'transferir' && parseFloat(amount) > brokerBalance) {
+    // Para transferencias Wallet→MT5, validar contra el balance general
+    // Para MT5→Wallet o MT5→MT5, el backend valida contra MT5 real
+    const isWalletToMT5 = activeTab === 'transferir' && !transferFromAccount && transferToAccount?.account_number;
+    if (isWalletToMT5 && parseFloat(amount) > brokerBalance) {
       toast.error(t('common.errors.insufficientBalance'));
       return;
     }
