@@ -819,7 +819,12 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
     };
 
     // PASO 5: Agregar a provisionalClosedPositions para estadísticas instantáneas
-    setProvisionalClosedPositions(prev => [...prev, provisionalPosition]);
+    console.log('[ClosePosition] Adding to provisionalClosedPositions:', provisionalPosition);
+    setProvisionalClosedPositions(prev => {
+      const newList = [...prev, provisionalPosition];
+      console.log('[ClosePosition] provisionalClosedPositions updated, count:', newList.length);
+      return newList;
+    });
 
     try {
       // PASO 3: Insertar en pending_closed_positions (Supabase) para persistencia
@@ -1920,7 +1925,9 @@ const loadAccountMetrics = useCallback(async (account) => {
 
     // PASO 6: Agregar posiciones cerradas provisionalmente (optimistic UI)
     // Estas son posiciones que el usuario acaba de cerrar pero aún no llegan del backend
+    console.log('[operationsWithLiveData] provisionalClosedPositions count:', provisionalClosedPositions?.length || 0);
     if (provisionalClosedPositions && provisionalClosedPositions.length > 0) {
+      console.log('[operationsWithLiveData] Processing provisional positions:', provisionalClosedPositions);
       const existingTickets = new Set(result.map(op => String(op.ticket || op.idPosicion || '')));
 
       const provisionalOps = provisionalClosedPositions
@@ -1965,12 +1972,15 @@ const loadAccountMetrics = useCallback(async (account) => {
           };
         });
 
+      console.log('[operationsWithLiveData] provisionalOps after filter:', provisionalOps.length, 'existingTickets:', [...existingTickets]);
       if (provisionalOps.length > 0) {
         // Agregar al inicio (posiciones más recientes primero)
         result = [...provisionalOps, ...result];
+        console.log('[operationsWithLiveData] Added provisional to result, total:', result.length);
       }
     }
 
+    console.log('[operationsWithLiveData] Final result count:', result.length);
     return result;
   }, [realHistory?.operations, historialData, liveOpenPositions, optimisticallyClosed, provisionalClosedPositions, t]);
 
