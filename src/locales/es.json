@@ -36,7 +36,45 @@
     "demo": "Demo",
     "live": "Real",
     "creation": {
-      "tournamentBalanceDescription": "Balance inicial para tu cuenta de torneo"
+      "title": "Crear Nueva Cuenta",
+      "tournamentBalanceDescription": "Balance inicial para tu cuenta de torneo",
+      "initialBalanceDescription": "Balance inicial para tu cuenta demo (por defecto: $10,000)",
+      "mt5Credentials": "Credenciales MT5",
+      "loginLabel": "Login",
+      "passwordLabel": "Contraseña",
+      "investorPasswordLabel": "Contraseña Inversor",
+      "serverLabel": "Servidor",
+      "credentialsWarning": "⚠️ Guarda estas credenciales en un lugar seguro. Las necesitarás para conectarte a MetaTrader 5.",
+      "creating": "Creando cuenta...",
+      "createButton": "Crear Cuenta",
+      "success": "¡Cuenta {{accountNumber}} creada exitosamente!",
+      "verificationRequired": "Verificación Requerida",
+      "verificationMessage": "Debes verificar tu email antes de crear una cuenta de trading.",
+      "verificationEmailSent": "Email de verificación enviado exitosamente",
+      "verificationEmailError": "Error al enviar email de verificación",
+      "verifyAccount": "Reenviar Email de Verificación",
+      "kycRequiredForReal": "Se requiere verificación KYC para cuentas reales",
+      "kycRequiredNote": "Completa la verificación KYC para crear cuentas Reales y de Torneo",
+      "minimumDepositNote": "Deposita mínimo $50 en tu wallet para crear cuenta de torneo",
+      "minimumDepositRequired": "Se requiere un depósito mínimo de $50 en tu wallet para crear una cuenta de torneo",
+      "validation": {
+        "accountNameRequired": "El nombre de la cuenta es requerido",
+        "leverageRequired": "Debes seleccionar un apalancamiento",
+        "authRequired": "Debes iniciar sesión para crear una cuenta",
+        "minimumDepositRequired": "Se requiere un depósito mínimo de $50 en tu wallet",
+        "createError": "Error al crear la cuenta",
+        "unexpectedError": "Ha ocurrido un error inesperado"
+      }
+    },
+    "fields": {
+      "accountNameLabel": "Nombre de la Cuenta",
+      "namePlaceholder": "Ej: Mi cuenta principal",
+      "accountTypeLabel": "Tipo de Cuenta",
+      "institutional": "Institucional",
+      "marketDirect": "Market Direct",
+      "initialBalance": "Balance Inicial",
+      "leverageLabel": "Apalancamiento",
+      "leverageSelect": "Seleccionar apalancamiento"
     }
   },
   "wallet": {

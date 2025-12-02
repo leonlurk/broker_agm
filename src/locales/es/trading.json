@@ -69,13 +69,19 @@
       "serverLabel": "Servidor:",
       "credentialsWarning": "⚠️ Estas credenciales también están disponibles en la sección 'Detalles' de su cuenta.",
       "initialBalanceDescription": "Monto inicial para la cuenta demo. Las cuentas demo pueden practicar con fondos virtuales.",
+      "tournamentBalanceDescription": "Balance inicial para tu cuenta de torneo",
+      "kycRequiredForReal": "Se requiere verificación KYC para cuentas reales",
+      "kycRequiredNote": "Completa la verificación KYC para crear cuentas Reales y de Torneo",
+      "minimumDepositNote": "Deposita mínimo $50 en tu wallet para crear cuenta de torneo",
+      "minimumDepositRequired": "Se requiere un depósito mínimo de $50 en tu wallet para crear una cuenta de torneo",
       "validation": {
         "accountNameRequired": "El nombre de la cuenta es requerido",
         "leverageRequired": "Debe seleccionar un apalancamiento",
         "authRequired": "Debe estar autenticado para crear una cuenta",
         "createError": "Error al crear la cuenta",
         "unexpectedError": "Error inesperado al crear la cuenta",
-        "kycRequiredForMT5": "Debes completar tu verificación KYC antes de crear cuentas MetaTrader 5"
+        "kycRequiredForMT5": "Debes completar tu verificación KYC antes de crear cuentas MetaTrader 5",
+        "minimumDepositRequired": "Se requiere un depósito mínimo de $50 en tu wallet"
       },
       "verificationRequired": "Verificación Requerida",
       "verificationMessage": "Para crear cuentas de trading, primero debes verificar tu correo electrónico. Este paso es necesario para proteger tu cuenta y cumplir con las regulaciones.",

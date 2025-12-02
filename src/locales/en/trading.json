@@ -71,13 +71,19 @@
       "serverLabel": "Server:",
       "credentialsWarning": "⚠️ These credentials are also available in the 'Details' section of your account.",
       "initialBalanceDescription": "Initial amount for demo account. Demo accounts can practice with virtual funds.",
+      "tournamentBalanceDescription": "Initial balance for your tournament account",
+      "kycRequiredForReal": "KYC verification required for Real accounts",
+      "kycRequiredNote": "Complete KYC verification to create Real and Tournament accounts",
+      "minimumDepositNote": "Deposit at least $50 in your wallet to create a tournament account",
+      "minimumDepositRequired": "A minimum deposit of $50 in your wallet is required to create a tournament account",
       "validation": {
         "accountNameRequired": "Account name is required",
         "leverageRequired": "You must select leverage",
         "authRequired": "You must be authenticated to create an account",
         "createError": "Error creating account",
         "unexpectedError": "Unexpected error creating account",
-        "kycRequiredForMT5": "You must complete your KYC verification before creating MetaTrader 5 accounts"
+        "kycRequiredForMT5": "You must complete your KYC verification before creating MetaTrader 5 accounts",
+        "minimumDepositRequired": "A minimum deposit of $50 in your wallet is required"
       },
       "verificationRequired": "Verification Required",
       "verificationMessage": "To create trading accounts, you must first verify your email. This step is necessary to protect your account and comply with regulations.",

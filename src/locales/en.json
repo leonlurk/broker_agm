@@ -37,7 +37,45 @@
     "demo": "Demo",
     "live": "Live",
     "creation": {
-      "tournamentBalanceDescription": "Initial balance for your tournament account"
+      "title": "Create New Account",
+      "tournamentBalanceDescription": "Initial balance for your tournament account",
+      "initialBalanceDescription": "Initial balance for your demo account (default: $10,000)",
+      "mt5Credentials": "MT5 Credentials",
+      "loginLabel": "Login",
+      "passwordLabel": "Password",
+      "investorPasswordLabel": "Investor Password",
+      "serverLabel": "Server",
+      "credentialsWarning": "⚠️ Save these credentials in a safe place. You'll need them to connect to MetaTrader 5.",
+      "creating": "Creating account...",
+      "createButton": "Create Account",
+      "success": "Account {{accountNumber}} created successfully!",
+      "verificationRequired": "Verification Required",
+      "verificationMessage": "You must verify your email before creating a trading account.",
+      "verificationEmailSent": "Verification email sent successfully",
+      "verificationEmailError": "Error sending verification email",
+      "verifyAccount": "Resend Verification Email",
+      "kycRequiredForReal": "KYC verification required for Real accounts",
+      "kycRequiredNote": "Complete KYC verification to create Real and Tournament accounts",
+      "minimumDepositNote": "Deposit at least $50 in your wallet to create a tournament account",
+      "minimumDepositRequired": "A minimum deposit of $50 in your wallet is required to create a tournament account",
+      "validation": {
+        "accountNameRequired": "Account name is required",
+        "leverageRequired": "You must select a leverage",
+        "authRequired": "You must be logged in to create an account",
+        "minimumDepositRequired": "A minimum deposit of $50 in your wallet is required",
+        "createError": "Error creating account",
+        "unexpectedError": "An unexpected error occurred"
+      }
+    },
+    "fields": {
+      "accountNameLabel": "Account Name",
+      "namePlaceholder": "E.g.: My main account",
+      "accountTypeLabel": "Account Type",
+      "institutional": "Institutional",
+      "marketDirect": "Market Direct",
+      "initialBalance": "Initial Balance",
+      "leverageLabel": "Leverage",
+      "leverageSelect": "Select leverage"
     }
   },
   "wallet": {
