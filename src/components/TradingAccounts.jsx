@@ -5419,8 +5419,11 @@ const loadAccountMetrics = useCallback(async (account) => {
                   const posTicket = pos.ticket || pos.position || pos.positionId;
                   return String(posTicket) === String(ticketToFind);
                 });
-                // Usar profit en tiempo real si está disponible, sino el original
-                const currentProfit = livePos?.profit ?? positionToClose.profit ?? positionToClose.ganancia ?? 0;
+                // NOTA: livePos.profit viene del WebSocket dividido por 100, hay que multiplicar
+                // positionToClose.profit/ganancia ya viene multiplicado por 100 de la tabla
+                const currentProfit = livePos
+                  ? (parseFloat(livePos.profit) || 0) * 100
+                  : (positionToClose.profit ?? positionToClose.ganancia ?? 0);
                 const currentPrice = livePos?.priceCurrent ?? livePos?.price_current ?? positionToClose.priceCurrent ?? '-';
 
                 return (
