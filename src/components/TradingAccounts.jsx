@@ -2040,13 +2040,29 @@ const loadAccountMetrics = useCallback(async (account) => {
       const closePrice = parseFloat(op.close_price);
       const normalizedSym = normalizeInstrument(op.symbol);
 
-      if (normalizedSym && normalizedSym.includes('JPY')) {
+      // Crypto: BTCUSD, ETHUSD, LTCUSD, XRPUSD, etc. - pips = diferencia de precio directa
+      const isCrypto = normalizedSym && (
+        normalizedSym.includes('BTC') ||
+        normalizedSym.includes('ETH') ||
+        normalizedSym.includes('LTC') ||
+        normalizedSym.includes('XRP') ||
+        normalizedSym.includes('BCH') ||
+        normalizedSym.includes('DOGE') ||
+        normalizedSym.includes('SOL') ||
+        normalizedSym.includes('ADA')
+      );
+
+      if (isCrypto) {
+        // Para crypto, mostrar diferencia de precio directa (en USD)
+        pips = Math.round(closePrice - openPrice);
+      } else if (normalizedSym && normalizedSym.includes('JPY')) {
         pips = Math.round((closePrice - openPrice) * 100);
       } else if (normalizedSym === 'XAUUSD' || normalizedSym === 'GOLD') {
         pips = Math.round((closePrice - openPrice) * 10);
       } else if (normalizedSym === 'XAGUSD' || normalizedSym === 'SILVER') {
         pips = Math.round((closePrice - openPrice) * 100);
       } else {
+        // Forex estándar: 1 pip = 0.0001
         pips = Math.round((closePrice - openPrice) * 10000);
       }
       
