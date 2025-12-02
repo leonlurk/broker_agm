@@ -1581,20 +1581,28 @@ const loadAccountMetrics = useCallback(async (account) => {
           case 'position_update':
             // Posición actualizada (profit, SL/TP, etc.)
             if (position) {
-              setLiveOpenPositions(prev => prev.map(p => {
-                const pTicket = String(p.ticket || p.position);
-                const updateTicket = String(position.id || position.positionId);
-                if (pTicket === updateTicket) {
-                  return {
-                    ...p,
-                    ...position,
-                    ticket: position.id || position.positionId,
-                    profit: position.profit || p.profit,
-                    priceCurrent: position.priceCurrent || p.priceCurrent
-                  };
-                }
-                return p;
-              }));
+              console.log('[WS-UPDATE] Received:', { positionId: position.positionId, profit: position.profit, priceCurrent: position.priceCurrent });
+              setLiveOpenPositions(prev => {
+                console.log('[WS-UPDATE] Current positions:', prev.map(p => ({ ticket: p.ticket, position: p.position })));
+                return prev.map(p => {
+                  const pTicket = String(p.ticket || p.position);
+                  const updateTicket = String(position.id || position.positionId);
+                  const isMatch = pTicket === updateTicket;
+                  if (isMatch) {
+                    console.log('[WS-UPDATE] MATCH! Updating position', pTicket, 'profit:', position.profit);
+                  }
+                  if (isMatch) {
+                    return {
+                      ...p,
+                      ...position,
+                      ticket: position.id || position.positionId,
+                      profit: position.profit || p.profit,
+                      priceCurrent: position.priceCurrent || p.priceCurrent
+                    };
+                  }
+                  return p;
+                });
+              });
             }
             break;
 
