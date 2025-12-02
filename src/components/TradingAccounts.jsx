@@ -1297,15 +1297,18 @@ const loadAccountMetrics = useCallback(async (account) => {
     }
 
     if (allOperations.length > 0) {
+      // Obtener balance inicial para cálculos de porcentaje
+      const accountBalance = dashboardData?.kpis?.balance || dashboardData?.kpis?.equity || 1;
+
       // Transformar TODAS las operaciones (cerradas + abiertas) al formato de la tabla
       const transformedOps = {
         operations: allOperations.map(op => {
           const openTime = op.open_time ? new Date(op.open_time) : null;
           const closeTime = op.close_time ? new Date(op.close_time) : null;
-          
+
           // Detectar si es posición abierta
           const isOpen = !op.close_time || op.status === 'OPEN';
-          
+
           return {
             // Formato para la tabla de historial
             fechaApertura: openTime ? openTime.toLocaleDateString() : '-',
@@ -1325,7 +1328,7 @@ const loadAccountMetrics = useCallback(async (account) => {
             pips: op.pips || 0,
             idPosicion: op.ticket || '-',
             resultado: `$${(op.profit || 0).toFixed(2)}`,
-            resultadoPct: `${((op.profit || 0) / 10000 * 100).toFixed(1)}%`,
+            resultadoPct: `${((op.profit || 0) / accountBalance * 100).toFixed(1)}%`,
             resultadoColor: (op.profit || 0) >= 0 ? 'text-green-400' : 'text-red-400',
             ganancia: op.profit || 0,
             stopLossPct: op.stop_loss ? 
@@ -1496,14 +1499,16 @@ const loadAccountMetrics = useCallback(async (account) => {
 
       // OPTIMIZACIÓN: Usar datos básicos de la cuenta inmediatamente
       // en lugar de mostrar skeleton loader
+      // NOTA: profit_loss y initial_balance se calcularán cuando lleguen los datos reales
+      // del dashboard (usando el primer punto del historial como balance inicial)
       const cachedMetrics = {
         balance: selectedAccount.balance || selectedAccount.equity || 0,
         equity: selectedAccount.equity || selectedAccount.balance || 0,
         margin: selectedAccount.margin || 0,
         free_margin: selectedAccount.free_margin || 0,
-        profit_loss: (selectedAccount.equity || 0) - 10000,
-        profit_loss_percentage: selectedAccount.equity ? (((selectedAccount.equity - 10000) / 10000) * 100) : 0,
-        initial_balance: 10000
+        profit_loss: null, // Se calculará con datos reales del historial
+        profit_loss_percentage: null,
+        initial_balance: null // Se obtendrá del primer punto del historial de balance
       };
 
       // Mostrar datos cacheados inmediatamente
@@ -2227,8 +2232,8 @@ const loadAccountMetrics = useCallback(async (account) => {
           const closeTime = pos.close_time ? new Date(pos.close_time) : new Date();
           const profit = parseFloat(pos.profit) || 0;
 
-          // Si es cierre externo (desde MT5), no mostrar "Sincronizando..."
-          const isExternalClose = pos._isExternalClose === true;
+          // NUNCA mostrar "Sincronizando..." - siempre mostrar valores optimistas
+          // El trade se auto-reemplaza cuando llega la confirmación real del backend
 
           return {
             fechaApertura: openTime.toLocaleDateString(),
@@ -2236,7 +2241,7 @@ const loadAccountMetrics = useCallback(async (account) => {
             fechaCierre: closeTime.toLocaleDateString(),
             tiempoCierre: closeTime.toLocaleTimeString(),
             isOpen: false,
-            isPending: !isExternalClose, // Solo pendiente si NO es cierre externo
+            isPending: false, // SIEMPRE false - mostrar valores optimistas directamente
             fechaISO: closeTime.toISOString(),
             instrumento: pos.symbol || 'N/A',
             bandera: getInstrumentIcon(pos.symbol || 'N/A'),
@@ -2390,9 +2395,20 @@ const loadAccountMetrics = useCallback(async (account) => {
     }, 0);
     const optimisticBalance = baseBalance + optimisticClosedProfit;
     const liveEquity = optimisticBalance + liveKPIs.unrealizedProfit;
-    const initialBalance = parseFloat(realBalanceHistory?.[0]?.balance) || 10000;
-    const profitLoss = liveEquity - initialBalance;
+    // Usar el primer punto del historial como balance inicial, o el balance base como fallback
+    const initialBalance = parseFloat(realBalanceHistory?.[0]?.balance) || baseBalance || 0;
+    const profitLoss = initialBalance > 0 ? (liveEquity - initialBalance) : 0;
     const profitLossPercentage = initialBalance > 0 ? (profitLoss / initialBalance) * 100 : 0;
+
+    // Calcular drawdown en tiempo real
+    // Peak balance = máximo entre el peak histórico y el balance actual (sin unrealized)
+    const historicPeak = parseFloat(realMetrics?.peak_balance) || optimisticBalance;
+    const peakBalance = Math.max(historicPeak, optimisticBalance);
+    // Current drawdown basado en equity live vs peak
+    const currentDrawdown = peakBalance > 0 ? ((peakBalance - liveEquity) / peakBalance) * 100 : 0;
+    // Max drawdown: tomar el mayor entre el histórico y el actual
+    const historicMaxDrawdown = parseFloat(realMetrics?.max_drawdown) || 0;
+    const maxDrawdown = Math.max(historicMaxDrawdown, currentDrawdown);
 
     return {
       balance: optimisticBalance,
@@ -2400,9 +2416,12 @@ const loadAccountMetrics = useCallback(async (account) => {
       profitLoss,
       profitLossPercentage,
       unrealizedProfit: liveKPIs.unrealizedProfit,
+      currentDrawdown: Math.max(0, currentDrawdown), // No puede ser negativo
+      maxDrawdown: Math.max(0, maxDrawdown),
+      peakBalance,
       _isOptimistic: optimisticClosedProfit !== 0 || liveKPIs.unrealizedProfit !== 0
     };
-  }, [currentSelectedAccount?.balance, provisionalClosedPositions, liveKPIs.unrealizedProfit, realBalanceHistory]);
+  }, [currentSelectedAccount?.balance, provisionalClosedPositions, liveKPIs.unrealizedProfit, realBalanceHistory, realMetrics?.peak_balance, realMetrics?.max_drawdown]);
 
   // ============================================
   // PASO 4B: DATOS DEL GRÁFICO CON PUNTO LIVE
@@ -2494,7 +2513,9 @@ const loadAccountMetrics = useCallback(async (account) => {
 
     // Calcular nuevo net PnL
     const newNetPnL = (baseStats.net_pnl || 0) + additionalPnL;
-    const initialBalance = parseFloat(realBalanceHistory?.[0]?.balance) || 10000;
+    // Usar balance inicial del historial, o balance actual como fallback
+    const initialBalance = parseFloat(realBalanceHistory?.[0]?.balance) ||
+                           parseFloat(currentSelectedAccount?.balance) || 0;
     const newNetPnLPercentage = initialBalance > 0 ? (newNetPnL / initialBalance) * 100 : 0;
 
     // Calcular nuevos promedios de ganancia/pérdida
@@ -2524,7 +2545,7 @@ const loadAccountMetrics = useCallback(async (account) => {
       _hasOptimisticAdjustments: provisionalClosedPositions.length > 0,
       _optimisticTradesCount: provisionalClosedPositions.length
     };
-  }, [realStatistics, provisionalClosedPositions, realBalanceHistory]);
+  }, [realStatistics, provisionalClosedPositions, realBalanceHistory, currentSelectedAccount?.balance]);
 
   // Función para generar datos del gráfico de beneficio total con optimización móvil
   const generateBenefitChartData = () => {
@@ -2891,8 +2912,10 @@ const loadAccountMetrics = useCallback(async (account) => {
       dateArray.push({ dateKey, formattedDate });
     }
     
-    // Simular balance inicial y calcular balance acumulado
-    const initialBalance = 10000;
+    // Usar balance inicial real del historial o de la cuenta actual
+    const initialBalance = parseFloat(realBalanceHistory?.[0]?.balance) ||
+                           currentSelectedAccount?.initialBalance ||
+                           currentSelectedAccount?.balance || 0;
     let currentBalance = initialBalance;
     
     const chartData = dateArray.map(({ dateKey, formattedDate }) => {
@@ -4237,30 +4260,30 @@ const loadAccountMetrics = useCallback(async (account) => {
                   <p className="text-xs sm:text-sm text-gray-400">{t('metrics.historicalTotal')}</p>
                 </div>
 
-              {/* Drawdown */}
+              {/* Drawdown - LIVE: Usa liveAccountData cuando hay posiciones activas */}
               <div className={`${isMobile ? '' : 'flex-1'} p-4 sm:p-6 bg-gradient-to-br from-[#2a2a2a] to-[#2d2d2d] border border-[#333] rounded-xl flex flex-col justify-center`}>
                 <CustomTooltip content={t('tooltips.drawdown')}>
                   <h3 className="text-lg sm:text-xl font-bold mb-2 cursor-help">{t('drawdown')}</h3>
                 </CustomTooltip>
                 <div className="flex items-center mb-1">
                   <span className="text-xl sm:text-2xl lg:text-3xl font-bold mr-2">
-                    {(realMetrics?.max_drawdown || 0).toFixed(2)}%
+                    {(liveAccountData._isOptimistic ? liveAccountData.maxDrawdown : (realMetrics?.max_drawdown || 0)).toFixed(2)}%
                   </span>
                   <span className={`px-2 py-1 rounded text-xs ${
-                    (realMetrics?.current_drawdown || 0) <= 5
+                    (liveAccountData._isOptimistic ? liveAccountData.currentDrawdown : (realMetrics?.current_drawdown || 0)) <= 5
                       ? 'bg-red-800 bg-opacity-30 text-red-400'
-                      : (realMetrics?.current_drawdown || 0) <= 10
+                      : (liveAccountData._isOptimistic ? liveAccountData.currentDrawdown : (realMetrics?.current_drawdown || 0)) <= 10
                       ? 'bg-red-900 bg-opacity-40 text-red-300'
                       : 'bg-red-900 bg-opacity-50 text-red-200'
                   }`}>
-                    {t('metrics.current')}: {(realMetrics?.current_drawdown || 0).toFixed(2)}%
+                    {t('metrics.current')}: {(liveAccountData._isOptimistic ? liveAccountData.currentDrawdown : (realMetrics?.current_drawdown || 0)).toFixed(2)}%
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-gray-400">{t('metrics.maxCurrent')}</p>
-                </div>
-                </div>
               </div>
-              
+            </div>
+          </div>
+
           {/* ===== CAPTURA 3: GRID MÉTRICAS 3x3 ===== */}
           
           {/* Grid de métricas KPIs con iconos del public */}
@@ -5388,33 +5411,52 @@ const loadAccountMetrics = useCallback(async (account) => {
                 {t('trading:positions.closeConfirmation.message')}
               </p>
 
-              {/* Detalles de la posición */}
-              <div className="bg-[#0f0f0f] border border-[#333] rounded-lg p-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">{t('positionId')}:</span>
-                  <span className="text-white font-medium">{positionToClose.ticket || positionToClose.idPosicion}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">{t('instrument')}:</span>
-                  <span className="text-white font-medium">{positionToClose.symbol || positionToClose.instrumento}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">{t('type')}:</span>
-                  <span className={`font-medium ${positionToClose.type === 'BUY' || positionToClose.tipo === t('positions.types.buy') ? 'text-green-400' : 'text-red-400'}`}>
-                    {positionToClose.type || positionToClose.tipo}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">{t('lotSize')}:</span>
-                  <span className="text-white font-medium">{positionToClose.volume || positionToClose.lotaje}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">{t('result')}:</span>
-                  <span className={`font-medium ${parseFloat(positionToClose.profit || positionToClose.ganancia || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    ${parseFloat(positionToClose.profit || positionToClose.ganancia || 0).toFixed(2)}
-                  </span>
-                </div>
-              </div>
+              {/* Detalles de la posición - con profit en tiempo real */}
+              {(() => {
+                // Buscar el profit actualizado en liveOpenPositions (tiempo real)
+                const ticketToFind = positionToClose.ticket || positionToClose.idPosicion;
+                const livePos = liveOpenPositions.find(pos => {
+                  const posTicket = pos.ticket || pos.position || pos.positionId;
+                  return String(posTicket) === String(ticketToFind);
+                });
+                // Usar profit en tiempo real si está disponible, sino el original
+                const currentProfit = livePos?.profit ?? positionToClose.profit ?? positionToClose.ganancia ?? 0;
+                const currentPrice = livePos?.priceCurrent ?? livePos?.price_current ?? positionToClose.priceCurrent ?? '-';
+
+                return (
+                  <div className="bg-[#0f0f0f] border border-[#333] rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">{t('positionId')}:</span>
+                      <span className="text-white font-medium">{ticketToFind}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">{t('instrument')}:</span>
+                      <span className="text-white font-medium">{positionToClose.symbol || positionToClose.instrumento}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">{t('type')}:</span>
+                      <span className={`font-medium ${positionToClose.type === 'BUY' || positionToClose.tipo === t('positions.types.buy') ? 'text-green-400' : 'text-red-400'}`}>
+                        {positionToClose.type || positionToClose.tipo}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">{t('lotSize')}:</span>
+                      <span className="text-white font-medium">{positionToClose.volume || positionToClose.lotaje}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">{t('trading:positions.fields.currentPrice')}:</span>
+                      <span className="text-white font-medium">{typeof currentPrice === 'number' ? currentPrice.toFixed(5) : currentPrice}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">{t('result')}:</span>
+                      <span className={`font-medium transition-all duration-200 ${parseFloat(currentProfit) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        ${parseFloat(currentProfit).toFixed(2)}
+                        {livePos && <span className="text-xs text-gray-500 ml-1">(live)</span>}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Advertencia */}
               <div className="flex items-start gap-2 p-3 bg-yellow-600/10 border border-yellow-600/30 rounded-lg">
