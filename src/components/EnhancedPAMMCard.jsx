@@ -41,7 +41,7 @@ const PerformanceSparkline = ({ data, color = '#22d3ee' }) => {
               fontSize: '12px'
             }}
             labelStyle={{ color: '#9ca3af' }}
-            formatter={(value) => [`${value.toFixed(1)}%`, 'Return']}
+            formatter={(value) => [`$${value.toLocaleString()}`, 'Equity']}
           />
           <Area
             type="monotone"
