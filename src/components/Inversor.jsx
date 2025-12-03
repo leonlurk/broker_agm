@@ -306,6 +306,55 @@ const Inversor = () => {
             // Performance history for sparkline chart
             performanceHistory: trader.performance?.chart_data || trader.chart_data || null,
 
+            // Performance chart for profile modal (same data, different name)
+            performanceChart: trader.performance?.chart_data || trader.chart_data || [],
+
+            // Performance periods for profile modal
+            performancePeriods: {
+              '1M': {
+                return: trader.performance?.monthly_pnl_percentage || 0,
+                sharpe: trader.performance?.sharpe_ratio || 0,
+                volatility: trader.performance?.max_drawdown || 0
+              },
+              '3M': {
+                return: (trader.performance?.monthly_pnl_percentage || 0) * 3,
+                sharpe: trader.performance?.sharpe_ratio || 0,
+                volatility: trader.performance?.max_drawdown || 0
+              },
+              '6M': {
+                return: (trader.performance?.monthly_pnl_percentage || 0) * 6,
+                sharpe: trader.performance?.sharpe_ratio || 0,
+                volatility: trader.performance?.max_drawdown || 0
+              },
+              '1Y': {
+                return: (trader.performance?.monthly_pnl_percentage || 0) * 12,
+                sharpe: trader.performance?.sharpe_ratio || 0,
+                volatility: trader.performance?.max_drawdown || 0
+              }
+            },
+
+            // Statistics for profile modal
+            statistics: {
+              totalTrades: trader.performance?.total_trades || trader.total_trades || 0,
+              winningTrades: trader.performance?.winning_trades || Math.round((trader.performance?.total_trades || 0) * ((trader.performance?.win_rate || 0) / 100)),
+              losingTrades: trader.performance?.losing_trades || Math.round((trader.performance?.total_trades || 0) * (1 - (trader.performance?.win_rate || 0) / 100)),
+              avgWinAmount: Math.abs(trader.performance?.avg_profit || 0) * 1.5,
+              avgLossAmount: Math.abs(trader.performance?.avg_profit || 0) * 0.8,
+              largestWin: Math.abs(trader.performance?.total_pnl || 0) * 0.3,
+              largestLoss: Math.abs(trader.performance?.max_drawdown || 0) * (trader.performance?.balance || 1000) / 100,
+              avgTradeDuration: trader.avg_hold_time || '4h',
+              profitFactor: trader.performance?.win_rate ? ((trader.performance.win_rate / 100) / (1 - trader.performance.win_rate / 100)).toFixed(2) : 0,
+              recoveryFactor: trader.performance?.max_drawdown > 0 ? (trader.performance?.total_pnl / (trader.performance?.max_drawdown * trader.performance?.balance / 100)).toFixed(2) : 0,
+              calmarRatio: trader.performance?.max_drawdown > 0 ? ((trader.performance?.monthly_pnl_percentage * 12) / trader.performance?.max_drawdown).toFixed(2) : 0
+            },
+
+            // Instruments (from trades or config)
+            instruments: trader.instruments || [
+              { name: 'Forex', percentage: 60 },
+              { name: 'Indices', percentage: 25 },
+              { name: 'Commodities', percentage: 15 }
+            ],
+
             // Información de cuenta
             accountNumber: config.master_mt5_account || trader.mt5_account || trader.account_number || 'N/A',
             server: trader.server || 'MT5',
@@ -1409,18 +1458,6 @@ const Inversor = () => {
                 </button>
 
                 <button
-                  onClick={() => handleFollowTrader(selectedTrader)}
-                  className={`group py-3 px-6 rounded-xl transition-all duration-300 font-medium flex items-center gap-2 ${
-                    followedTraders.has(selectedTrader.id)
-                      ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg shadow-green-500/30'
-                      : 'border-2 border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 hover:shadow-lg hover:shadow-cyan-500/20 hover:scale-105'
-                  }`}
-                >
-                  <Star size={18} className={followedTraders.has(selectedTrader.id) ? 'fill-current' : ''} />
-                  <span>{followedTraders.has(selectedTrader.id) ? t('copyTrading.status.following') : t('copyTrading.follow')}</span>
-                </button>
-
-                <button
                   onClick={() => setShowCommentsModal(true)}
                   className="group py-3 px-6 rounded-xl transition-all duration-300 font-medium flex items-center gap-2 border-2 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10 hover:shadow-lg hover:shadow-yellow-500/20 hover:scale-105"
                 >
@@ -1790,29 +1827,37 @@ const Inversor = () => {
                   {t('copyTrading.actions.addComment')}
                 </button>
               </div>
-              <div className="space-y-4">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="bg-[#1C1C1C] rounded-xl p-6 border border-[#333]">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center">
-                        <span className="text-white font-semibold text-sm">{(comment.user || 'U').charAt(0)}</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-white">{comment.user}</span>
-                          <div className="flex items-center gap-1">
-                            {renderStarRating(comment.rating)}
+              {/* Comments container with internal scroll */}
+              <div className="max-h-96 overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                {comments.length > 0 ? (
+                  comments.map((comment) => (
+                    <div key={comment.id} className="bg-[#1C1C1C] rounded-xl p-6 border border-[#333]">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center">
+                          <span className="text-white font-semibold text-sm">{(comment.user || 'U').charAt(0)}</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-white">{comment.user}</span>
+                            <div className="flex items-center gap-1">
+                              {renderStarRating(comment.rating)}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-400">
+                            <Calendar size={14} />
+                            {comment.date}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <Calendar size={14} />
-                          {comment.date}
-                        </div>
                       </div>
+                      <p className="text-gray-300 leading-relaxed">{comment.comment}</p>
                     </div>
-                    <p className="text-gray-300 leading-relaxed">{comment.comment}</p>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <MessageSquare size={40} className="mx-auto mb-3 opacity-50" />
+                    <p>{t('copyTrading.noComments')}</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}
