@@ -1,11 +1,13 @@
 /**
  * Equity Stop Service
  * Frontend service for managing equity stop events and notifications
+ * Uses Python API proxy which forwards to Copy-PAMM service
  */
 
 import { supabase } from '../supabase/config';
 
-const COPY_PAMM_API_URL = import.meta.env.VITE_COPY_PAMM_API_URL || 'https://logic.agmlatam.com';
+// Use main API URL (Python proxies to Copy-PAMM)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BROKER_API_URL || 'https://apekapital.com:444';
 
 /**
  * Get the auth token from Supabase session
@@ -24,7 +26,7 @@ const apiRequest = async (endpoint, options = {}) => {
         throw new Error('No authentication token available');
     }
 
-    const response = await fetch(`${COPY_PAMM_API_URL}/api/v1/equity-stop${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/equity-stop${endpoint}`, {
         ...options,
         headers: {
             'Content-Type': 'application/json',
