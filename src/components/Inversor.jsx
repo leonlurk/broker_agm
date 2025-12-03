@@ -280,13 +280,31 @@ const Inversor = () => {
 
             // Seguidores y capital
             followers: trader.follower_count || 0,
+            followerCount: trader.follower_count || 0,  // EnhancedTraderCard expects this name
             followersChangePercent: trader.followers_change_percentage || 0,
             aum: trader.aum || 0,
             managedCapital: trader.aum || trader.managed_capital || 0,
 
-            // Riesgo y drawdown - Map experience_level to risk display
+            // Riesgo y drawdown - Use actual performance data, not config max
             riskLevel: config.experience_level || trader.risk_level || 'Moderado',
-            maxDrawdown: config.max_drawdown || trader.max_drawdown || 0,
+            maxDrawdown: trader.performance?.max_drawdown || trader.max_drawdown || 0,
+
+            // Performance object for EnhancedTraderCard
+            performance: {
+              win_rate: trader.performance?.win_rate || trader.win_rate || 0,
+              monthly_pnl_percentage: trader.performance?.monthly_pnl_percentage || 0,
+              total_trades: trader.performance?.total_trades || trader.total_trades || 0,
+              max_drawdown: trader.performance?.max_drawdown || trader.max_drawdown || 0,
+              balance: trader.balance || 0,
+              equity: trader.equity || trader.balance || 0,
+              avg_profit: trader.performance?.avg_profit || 0,
+              sharpe_ratio: trader.performance?.sharpe_ratio || 0,
+              total_pnl: trader.performance?.total_pnl || 0,
+              total_pnl_percentage: trader.performance?.total_pnl_percentage || 0
+            },
+
+            // Performance history for sparkline chart
+            performanceHistory: trader.performance?.chart_data || trader.chart_data || null,
 
             // Información de cuenta
             accountNumber: config.master_mt5_account || trader.mt5_account || trader.account_number || 'N/A',
