@@ -13,7 +13,7 @@ import { scrollToTopManual } from '../hooks/useScrollToTop';
 import { MasterAccountBadge, PerformanceStatusIndicator, MasterAccountSummaryCard } from './StatusIndicators';
 import EnhancedPAMMCard, { PerformanceSparkline, ReturnCircle, KpiBadge, RiskIndicator } from './EnhancedPAMMCard';
 import EquityStopAlert from './EquityStopAlert';
-import { getPerformanceSparklineData } from '../services/accountHistory';
+// Performance data now comes pre-calculated from backend - no need for separate API calls
 
 // ============================================================================
 // ENHANCED STAT CARD COMPONENT
@@ -1156,30 +1156,26 @@ const PammExplorerView = ({
                     })
                     : mappedFunds;
 
-                // Fetch performance history for all funds in parallel
-                console.log('🔄 Fetching performance history for PAMM funds...');
-                const performancePromises = filteredByOwner.map(async (fund) => {
-                    const mt5Account = fund.manager_mt5_account_id ||
-                                      fund.manager_mt5_account ||
-                                      fund.mt5_account_id;
+                // Performance data now comes pre-calculated from backend (via masterPerformanceWorker)
+                // No need for extra API calls - just use the data already in the fund object
+                console.log('✅ Using pre-calculated performance data from backend');
 
-                    if (!mt5Account) {
-                        console.warn(`⚠️ No MT5 account found for fund ${fund.name}`);
-                        return { ...fund, performanceHistory: null };
-                    }
+                const fundsWithPerformance = filteredByOwner.map(fund => {
+                    // Extract pre-calculated performance from backend
+                    const perf = fund.performance || {};
 
-                    try {
-                        const performanceData = await getPerformanceSparklineData(mt5Account, 30);
-                        console.log(`✅ Performance data fetched for ${fund.name}:`, performanceData?.length || 0, 'points');
-                        return { ...fund, performanceHistory: performanceData };
-                    } catch (error) {
-                        console.error(`❌ Error fetching performance for ${fund.name}:`, error);
-                        return { ...fund, performanceHistory: null };
-                    }
+                    return {
+                        ...fund,
+                        // Use pre-calculated metrics from worker
+                        monthlyReturn: perf.monthly_pnl_percentage || fund.monthly_return || fund.monthlyReturn || 0,
+                        maxDrawdown: perf.max_drawdown || fund.max_drawdown || fund.maxDrawdown || 0,
+                        sharpeRatio: perf.sharpe_ratio || fund.sharpe_ratio || fund.sharpeRatio || 0,
+                        winRate: perf.win_rate || 0,
+                        totalTrades: perf.total_trades || 0,
+                        // performanceHistory not needed - metrics come pre-calculated
+                        performanceHistory: null
+                    };
                 });
-
-                const fundsWithPerformance = await Promise.all(performancePromises);
-                console.log('✅ All PAMM fund performance data loaded');
 
                 setFunds(fundsWithPerformance);
             } catch (error) {
