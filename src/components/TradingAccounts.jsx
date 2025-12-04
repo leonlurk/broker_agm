@@ -748,20 +748,19 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   };
 
   // Helper: Obtener profit real del historial después de cerrar una posición
-  // Consulta directamente desde Supabase (tabla trading_operations)
+  // Consulta directamente desde Supabase (tabla pending_closed_positions)
   const fetchRealProfitFromHistory = async (accountNumber, ticket, retries = 3) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         // Esperar un poco para que el sync scheduler registre el deal en Supabase
         await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
 
-        // Consultar trading_operations directamente desde Supabase
+        // Consultar pending_closed_positions directamente desde Supabase
         const { data: operations, error } = await supabase
-          .from('trading_operations')
-          .select('position_id, ticket, profit, close_price, close_time')
+          .from('pending_closed_positions')
+          .select('ticket, profit, close_price, close_time')
           .eq('account_number', String(accountNumber))
-          .or(`position_id.eq.${ticket},ticket.eq.${ticket}`)
-          .not('close_time', 'is', null)
+          .eq('ticket', parseInt(ticket))
           .order('close_time', { ascending: false })
           .limit(1);
 
@@ -2283,7 +2282,7 @@ const loadAccountMetrics = useCallback(async (account) => {
             profit: profit,
             status: 'CLOSED',
             _isOptimistic: true, // Flag para identificar datos optimistas
-            _isExternalClose: isExternalClose // Preservar flag de cierre externo
+            _isExternalClose: pos._isExternalClose || false // Preservar flag de cierre externo
           };
         });
 
