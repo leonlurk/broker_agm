@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 import Login from './components/Login';
 import Register from './components/Register';
 import ForgotPassword from './components/ForgotPassword';
-import ResetPassword from './components/ResetPassword';
 import PasswordReset from './components/PasswordReset';
 import VerifyEmail from './components/VerifyEmail';
 import EmailVerificationPending from './components/EmailVerificationPending';
@@ -104,19 +103,7 @@ function App() {
         />
         
         
-        <Route 
-          path="/reset-password" 
-          element={
-            <AuthPageWrapper>
-              <ResetPassword 
-                onContinue={() => navigate('/login')} 
-                onLoginClick={() => navigate('/login')} 
-              />
-            </AuthPageWrapper>
-          } 
-        />
-
-        <Route 
+        <Route
           path="/auth/callback" 
           element={<AuthCallback />} 
         />

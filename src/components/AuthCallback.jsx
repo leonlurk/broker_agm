@@ -35,11 +35,11 @@ const AuthCallback = () => {
           
           if (session && session.user) {
             // Sesión válida, redirigir a la página de cambio de contraseña
-            navigate('/reset-password', { 
-              state: { 
+            navigate('/password-reset', {
+              state: {
                 isValidSession: true,
-                accessToken: accessToken 
-              } 
+                accessToken: accessToken
+              }
             });
           } else {
             // No hay sesión válida
