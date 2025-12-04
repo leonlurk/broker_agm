@@ -1626,15 +1626,21 @@ const loadAccountMetrics = useCallback(async (account) => {
                 // Cierre EXTERNO desde MT5 - capturar datos antes de remover
                 console.log('[WebSocket] External close detected from MT5, ticket:', ticketStr);
                 console.log('[WebSocket] currentLivePositions count:', currentLivePositions?.length);
-                console.log('[WebSocket] currentLivePositions:', currentLivePositions);
+                console.log('[WebSocket] WebSocket position data:', position);
 
                 // Buscar la posición en liveOpenPositions ANTES de removerla (usando ref)
-                const closedPosition = currentLivePositions.find(p => {
+                let closedPosition = currentLivePositions.find(p => {
                   const pTicket = String(p.ticket || p.position || '');
                   return pTicket === ticketStr;
                 });
 
-                console.log('[WebSocket] Found closedPosition:', closedPosition);
+                // FALLBACK: Si no encontramos en liveOpenPositions, usar datos del WebSocket
+                if (!closedPosition && position) {
+                  console.log('[WebSocket] Position not in liveOpenPositions, using WebSocket data');
+                  closedPosition = position;
+                }
+
+                console.log('[WebSocket] closedPosition to use:', closedPosition);
 
                 // Usar ref para currentUser (evitar stale closure)
                 const currentUserData = currentUserRef.current;
@@ -1642,8 +1648,8 @@ const loadAccountMetrics = useCallback(async (account) => {
                 console.log('[WebSocket] selectedAccount:', selectedAccount?.account_number);
 
                 if (closedPosition && currentUserData && selectedAccount) {
-                  // Determinar el tipo de operación (puede venir como 0/1, "0"/"1", "BUY"/"SELL", o "buy"/"sell")
-                  let posType = closedPosition.type;
+                  // Determinar el tipo de operación (puede venir como 0/1, "0"/"1", "BUY"/"SELL", o "buy"/"sell", or "action" field)
+                  let posType = closedPosition.type || closedPosition.action;
                   const posTypeNum = parseInt(posType);
                   const posTypeStr = String(posType).toUpperCase();
                   let normalizedType = 'BUY'; // default
@@ -1658,19 +1664,19 @@ const loadAccountMetrics = useCallback(async (account) => {
                     user_id: currentUserData?.id,
                     account_number: selectedAccount.account_number,
                     ticket: parseInt(ticketStr),
-                    symbol: closedPosition.symbol,
+                    symbol: closedPosition.symbol || closedPosition.Symbol || '',
                     type: normalizedType,
-                    volume: parseFloat(closedPosition.volume || 0),
-                    open_price: parseFloat(closedPosition.priceOpen || closedPosition.open_price || 0),
-                    open_time: closedPosition.time || closedPosition.open_time || new Date().toISOString(),
-                    close_price: parseFloat(closedPosition.priceCurrent || closedPosition.price_current || closedPosition.priceOpen || 0),
+                    volume: parseFloat(closedPosition.volume || closedPosition.Volume || 0),
+                    open_price: parseFloat(closedPosition.priceOpen || closedPosition.open_price || closedPosition.PriceOpen || 0),
+                    open_time: closedPosition.time || closedPosition.open_time || closedPosition.timeCreate || new Date().toISOString(),
+                    close_price: parseFloat(closedPosition.priceCurrent || closedPosition.price_current || closedPosition.PriceCurrent || closedPosition.priceOpen || 0),
                     close_time: new Date().toISOString(),
-                    stop_loss: parseFloat(closedPosition.sl || closedPosition.stop_loss || 0),
-                    take_profit: parseFloat(closedPosition.tp || closedPosition.take_profit || 0),
+                    stop_loss: parseFloat(closedPosition.sl || closedPosition.stop_loss || closedPosition.Sl || 0),
+                    take_profit: parseFloat(closedPosition.tp || closedPosition.take_profit || closedPosition.Tp || 0),
                     // Profit del WebSocket viene dividido por 100 en C#, multiplicar por 100
-                    profit: (parseFloat(closedPosition.profit) || 0) * 100,
-                    commission: parseFloat(closedPosition.commission || 0),
-                    swap: parseFloat(closedPosition.swap || 0),
+                    profit: (parseFloat(closedPosition.profit || closedPosition.Profit || 0)) * 100,
+                    commission: parseFloat(closedPosition.commission || closedPosition.Commission || 0),
+                    swap: parseFloat(closedPosition.swap || closedPosition.Swap || 0),
                     comment: 'Closed from MT5',
                     _isExternalClose: true // Flag para no mostrar "Sincronizando..."
                   };
@@ -1712,6 +1718,7 @@ const loadAccountMetrics = useCallback(async (account) => {
                 } else {
                   console.warn('[WebSocket] Could not create provisional - missing data:', {
                     hasClosedPosition: !!closedPosition,
+                    hasPosition: !!position,
                     hasCurrentUser: !!currentUserData,
                     hasSelectedAccount: !!selectedAccount
                   });
