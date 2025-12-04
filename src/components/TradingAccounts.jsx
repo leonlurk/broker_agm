@@ -1689,9 +1689,12 @@ const loadAccountMetrics = useCallback(async (account) => {
                   // PASO 2: Persistir en Supabase (pending_closed_positions) para que sobreviva refresh
                   (async () => {
                     try {
+                      // Crear objeto limpio SIN campos internos del frontend (_isExternalClose)
+                      const { _isExternalClose, ...dbRecord } = externalCloseProvisional;
+
                       const { error: insertError } = await supabase
                         .from('pending_closed_positions')
-                        .insert([externalCloseProvisional]);
+                        .insert([dbRecord]);
 
                       if (insertError) {
                         console.error('[WebSocket] Error persisting external close to Supabase:', insertError);
