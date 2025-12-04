@@ -289,6 +289,11 @@ const TradingAccounts = ({ setSelectedOption, navigationParams, scrollContainerR
   // State for provisional closed positions (optimistic updates)
   const [provisionalClosedPositions, setProvisionalClosedPositions] = useState([]);
 
+  // DEBUG: Log when provisionalClosedPositions changes
+  useEffect(() => {
+    console.log('[DEBUG] provisionalClosedPositions state changed:', provisionalClosedPositions.length, provisionalClosedPositions.map(p => p.ticket));
+  }, [provisionalClosedPositions]);
+
   // ============================================
   // PASO 3: POSICIONES CERRADAS OPTIMISTAMENTE
   // Set para trackear tickets cerrados (filtrar de polling)
