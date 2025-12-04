@@ -85,25 +85,8 @@ const CryptoDepositModal = ({
   const generateWallet = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
-      // Usar wallets fijas de la empresa para recibir depósitos
-      // IMPORTANTE: Estas son las billeteras donde los clientes envían sus depósitos
-      const fixedWallet = {
-        tron: {
-          address: 'TEaQgjdWECF4fjzgscF6pA5v2GQvPPhBpR', // Billetera TRON de la empresa (TRC-20)
-          qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TEaQgjdWECF4fjzgscF6pA5v2GQvPPhBpR`
-        },
-        bsc: {
-          // Esta dirección se usa tanto para ERC-20 (Ethereum) como BEP-20 (BSC)
-          address: '0x38CfeC0B9199d6cA2944df012621F7C60be4b0d9', // Billetera Ethereum/BSC de la empresa
-          qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=0x38CfeC0B9199d6cA2944df012621F7C60be4b0d9`
-        }
-      };
-      
-      setWalletInfo(fixedWallet);
-      setDepositStatus('waiting');
-      
       // Obtener el token de la sesión actual de Supabase
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -117,24 +100,47 @@ const CryptoDepositModal = ({
 
       if (sessionError || !session?.access_token) {
         console.warn('No se pudo obtener el token de autenticación');
-      } else {
-        // Autenticar usando el token de Supabase
-        console.log('[CryptoDepositModal] Calling authenticateWithSupabase with:', {
-          email: userEmail,
-          tokenPrefix: session.access_token.substring(0, 30) + '...',
-          sessionUserEmail: session.user?.email
-        });
-
-        const authResult = await cryptoPaymentService.authenticateWithSupabase(session.access_token, userEmail);
-
-        if (!authResult.success) {
-          console.warn('Error de autenticación:', authResult.error);
-          setError(t('cryptoModal.errors.authError'));
-        } else {
-          setIsAuthenticated(true);
-          console.log('Autenticación exitosa con Payroll API');
-        }
+        setError(t('cryptoModal.errors.authError'));
+        return;
       }
+
+      // 1. Autenticar usando el token de Supabase
+      console.log('[CryptoDepositModal] Calling authenticateWithSupabase with:', {
+        email: userEmail,
+        tokenPrefix: session.access_token.substring(0, 30) + '...',
+        sessionUserEmail: session.user?.email
+      });
+
+      const authResult = await cryptoPaymentService.authenticateWithSupabase(session.access_token, userEmail);
+
+      if (!authResult.success) {
+        console.warn('Error de autenticación:', authResult.error);
+        setError(t('cryptoModal.errors.authError'));
+        return;
+      }
+
+      setIsAuthenticated(true);
+      console.log('[CryptoDepositModal] Autenticación exitosa con Payroll API');
+
+      // 2. Generar wallet única para este usuario
+      console.log('[CryptoDepositModal] Generando wallet única para el usuario...');
+      const walletResult = await cryptoPaymentService.generateDepositWallet();
+
+      if (!walletResult.success || !walletResult.wallets) {
+        console.error('[CryptoDepositModal] Error generando wallet:', walletResult.error);
+        setError(walletResult.error || t('cryptoModal.errors.generateError'));
+        return;
+      }
+
+      console.log('[CryptoDepositModal] Wallet generada exitosamente:', {
+        tron: walletResult.wallets.tron?.address,
+        bsc: walletResult.wallets.bsc?.address
+      });
+
+      // 3. Usar la wallet única del usuario
+      setWalletInfo(walletResult.wallets);
+      setDepositStatus('waiting');
+
     } catch (error) {
       console.error('Error generating wallet:', error);
       setError(error.message || t('cryptoModal.errors.generateError'));
