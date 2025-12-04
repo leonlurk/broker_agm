@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowUp, DollarSign, TrendingUp, TrendingDown, Users, Award, Activity, Eye, Settings, Plus, MoreHorizontal, Loader2, RefreshCw, Briefcase, Percent, Zap, AlertTriangle } from 'lucide-react';
+import { ArrowUp, DollarSign, TrendingUp, TrendingDown, Users, Award, Activity, Eye, Settings, Plus, MoreHorizontal, Loader2, RefreshCw, Briefcase, Percent, Zap, AlertTriangle, BarChart2 } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 
 // Mini sparkline chart component (from EnhancedPAMMCard)
@@ -367,9 +367,15 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
             totalCapital: response.overview.total_aum || 0,
             rendimiento: response.overview.total_return_percentage || 0,
             numeroInversores: response.overview.total_investors || 0,
-            comisionesGeneradas: response.overview.total_commissions || 0,
+            comisionesGeneradas: response.overview.monthly_commissions || response.overview.total_commissions || 0,
             drawdownMaximo: response.overview.max_drawdown || 0,
-            sharpeRatio: response.overview.sharpe_ratio || 0
+            sharpeRatio: response.overview.sharpe_ratio || 0,
+            // Nuevas métricas desde account_metrics_mv
+            winRate: response.overview.win_rate || 0,
+            totalTrades: response.overview.total_trades || 0,
+            profitFactor: response.overview.profit_factor || 0,
+            managerPnL: response.overview.manager_performance || 0,
+            dataSource: response.overview.data_source || 'unavailable'
           });
 
           // Actualizar estado con datos reales
@@ -1212,25 +1218,37 @@ const PammGestorAdminDashboard = ({ setSelectedOption, navigationParams, setNavi
             />
           </div>
 
-          {/* Additional KPIs row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* Additional KPIs row - Métricas Reales */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <KpiBadge
-              icon={TrendingDown}
-              label="Max Drawdown"
-              value={`${data.drawdownMaximo?.toFixed(1) || 0}%`}
-              color="red"
+              icon={Percent}
+              label="Win Rate"
+              value={`${(data.winRate || 0).toFixed(1)}%`}
+              color="green"
+            />
+            <KpiBadge
+              icon={BarChart2}
+              label="Trades"
+              value={data.totalTrades || 0}
+              color="cyan"
             />
             <KpiBadge
               icon={Zap}
-              label="Sharpe Ratio"
-              value={(data.sharpeRatio || 0).toFixed(2)}
+              label="Profit Factor"
+              value={(data.profitFactor || 0).toFixed(2)}
               color="purple"
             />
             <KpiBadge
-              icon={Percent}
+              icon={TrendingDown}
+              label="Max Drawdown"
+              value={`${(data.drawdownMaximo || 0).toFixed(1)}%`}
+              color="red"
+            />
+            <KpiBadge
+              icon={Briefcase}
               label="Fondos Activos"
               value={tradersDisponibles.length}
-              color="cyan"
+              color="blue"
             />
             <KpiBadge
               icon={Activity}

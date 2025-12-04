@@ -317,13 +317,21 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
           setTraderStats({
             overview: {
               totalAUM: statsData.overview?.total_aum || 0,
+              masterBalance: statsData.overview?.master_balance || 0,
+              masterEquity: statsData.overview?.master_equity || 0,
               monthlyReturn: statsData.overview?.monthly_return || 0,
               totalFollowers: statsData.overview?.total_followers || 0,
               activeFollowers: statsData.overview?.active_followers || 0,
               totalCommissions: statsData.overview?.total_commissions || 0,
               monthlyCommissions: statsData.overview?.monthly_commissions || 0,
               riskScore: statsData.overview?.risk_score || 0,
-              maxDrawdown: statsData.overview?.max_drawdown || 0
+              maxDrawdown: statsData.overview?.max_drawdown || 0,
+              // Nuevas métricas desde account_metrics_mv
+              totalPnL: statsData.overview?.total_pnl || 0,
+              winRate: statsData.overview?.win_rate || 0,
+              totalTrades: statsData.overview?.total_trades || 0,
+              profitFactor: statsData.overview?.profit_factor || 0,
+              dataSource: statsData.overview?.data_source || 'unavailable'
             },
             performanceChart: statsData.performance_chart || [],
             topInvestors: statsData.followers_list || [],
@@ -681,7 +689,18 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Balance del Master - NUEVO */}
+            <EnhancedStatCard
+              icon={Briefcase}
+              iconColor="text-purple-400"
+              iconBg="bg-purple-500/20"
+              title="Mi Balance"
+              value={formatCurrency(traderStats.overview.masterBalance)}
+              subtitle={<><span className="text-purple-400">Equity: {formatCurrency(traderStats.overview.masterEquity)}</span></>}
+              trend={traderStats.overview.totalPnL >= 0 ? 1 : -1}
+            />
+
             {/* Capital de Terceros (AUM) - Enhanced */}
             <EnhancedStatCard
               icon={Users}
@@ -730,31 +749,43 @@ const Gestor = ({ setSelectedOption, navigationParams, setNavigationParams, scro
             />
           </div>
 
-          {/* KPI Badges adicionales */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+          {/* KPI Badges - Métricas Reales desde account_metrics_mv */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-6">
             <KpiBadge
               icon={Percent}
               label="Win Rate"
-              value={`${(traderStats.overview.riskScore * 10 || 75).toFixed(0)}%`}
+              value={`${(traderStats.overview.winRate || 0).toFixed(1)}%`}
               color="green"
+            />
+            <KpiBadge
+              icon={BarChart3}
+              label="Trades"
+              value={traderStats.overview.totalTrades || 0}
+              color="cyan"
+            />
+            <KpiBadge
+              icon={Zap}
+              label="Profit Factor"
+              value={(traderStats.overview.profitFactor || 0).toFixed(2)}
+              color="purple"
             />
             <KpiBadge
               icon={TrendingDown}
               label="Max DD"
-              value={`${traderStats.overview.maxDrawdown || 0}%`}
+              value={`${(traderStats.overview.maxDrawdown || 0).toFixed(1)}%`}
               color="red"
             />
             <KpiBadge
               icon={Users}
               label="Seguidores"
               value={traderStats.overview.totalFollowers || 0}
-              color="cyan"
+              color="blue"
             />
             <KpiBadge
-              icon={Zap}
-              label="Riesgo"
-              value={traderStats.overview.riskScore || 'N/A'}
-              color="yellow"
+              icon={DollarSign}
+              label="P&L Total"
+              value={`$${(traderStats.overview.totalPnL || 0).toFixed(2)}`}
+              color={traderStats.overview.totalPnL >= 0 ? 'green' : 'red'}
             />
           </div>
         </div>
