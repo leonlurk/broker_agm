@@ -365,7 +365,7 @@ class EmailService {
     <div class="email-wrapper">
         <div class="email-container">
             <div class="banner-section">
-                <img src="https://ukngiipxprielwdfuvln.supabase.co/storage/v1/object/public/emails/Banner%20Mail%20-%20AGM%20(2).png" 
+                <img src="https://ukngiipxprielwdfuvln.supabase.co/storage/v1/object/public/emails/Banner%20Mail%20-%20AGMB.png" 
                      alt="Alpha Global Markets" class="banner-image">
             </div>
             <div class="content-section">
@@ -665,7 +665,7 @@ class EmailService {
         <div class="email-container">
             <!-- Banner Section -->
             <div class="banner-section">
-                <img src="https://ukngiipxprielwdfuvln.supabase.co/storage/v1/object/public/emails/Banner%20Mail%20-%20AGM%20(2).png"
+                <img src="https://ukngiipxprielwdfuvln.supabase.co/storage/v1/object/public/emails/Banner%20Mail%20-%20AGMB.png"
                      alt="Alpha Global Markets"
                      class="banner-image">
             </div>
@@ -846,7 +846,7 @@ class EmailService {
         <div class="email-container">
             <!-- Banner Section -->
             <div class="banner-section">
-                <img src="https://ukngiipxprielwdfuvln.supabase.co/storage/v1/object/public/emails/Banner%20Mail%20-%20AGM%20(2).png"
+                <img src="https://ukngiipxprielwdfuvln.supabase.co/storage/v1/object/public/emails/Banner%20Mail%20-%20AGMB.png"
                      alt="Alpha Global Markets"
                      class="banner-image">
             </div>
