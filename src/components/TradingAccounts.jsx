@@ -1683,8 +1683,25 @@ const loadAccountMetrics = useCallback(async (account) => {
 
                   console.log('[WebSocket] Creating provisional for external close:', externalCloseProvisional);
 
-                  // Agregar a provisionalClosedPositions
+                  // PASO 1: Agregar a provisionalClosedPositions (estado local para UI inmediata)
                   setProvisionalClosedPositions(prev => [...prev, externalCloseProvisional]);
+
+                  // PASO 2: Persistir en Supabase (pending_closed_positions) para que sobreviva refresh
+                  (async () => {
+                    try {
+                      const { error: insertError } = await supabase
+                        .from('pending_closed_positions')
+                        .insert([externalCloseProvisional]);
+
+                      if (insertError) {
+                        console.error('[WebSocket] Error persisting external close to Supabase:', insertError);
+                      } else {
+                        console.log('[WebSocket] External close persisted to pending_closed_positions:', ticketStr);
+                      }
+                    } catch (err) {
+                      console.error('[WebSocket] Exception persisting external close:', err);
+                    }
+                  })();
 
                   // Marcar la posición como cerrada en realTradingOperations
                   setRealTradingOperations(prev => {
