@@ -2597,6 +2597,61 @@ const loadAccountMetrics = useCallback(async (account) => {
     };
   }, [realStatistics, provisionalClosedPositions, realBalanceHistory, currentSelectedAccount?.balance]);
 
+  // ============================================
+  // PASO 6: DURACIÓN PROMEDIO DE POSICIONES ABIERTAS
+  // Calcula en tiempo real usando liveOpenPositions
+  // ============================================
+  const averageOpenDuration = useMemo(() => {
+    if (!liveOpenPositions || liveOpenPositions.length === 0) {
+      return '00:00:00';
+    }
+
+    const now = Date.now();
+    let totalDurationMs = 0;
+    let validPositions = 0;
+
+    liveOpenPositions.forEach(pos => {
+      // timeCreate viene de MT5 como Unix timestamp (segundos)
+      const timeCreate = pos.timeCreate || pos.time_create || pos.openTime || pos.open_time;
+      if (timeCreate) {
+        let openTimeMs;
+        // Si es un número grande (> año 2000 en ms), ya está en milisegundos
+        // Si es un número pequeño (Unix seconds), convertir a ms
+        if (typeof timeCreate === 'number') {
+          openTimeMs = timeCreate > 1000000000000 ? timeCreate : timeCreate * 1000;
+        } else if (typeof timeCreate === 'string') {
+          // ISO string o timestamp string
+          const parsed = Date.parse(timeCreate);
+          if (!isNaN(parsed)) {
+            openTimeMs = parsed;
+          } else {
+            // Try as Unix timestamp
+            const ts = parseInt(timeCreate);
+            openTimeMs = ts > 1000000000000 ? ts : ts * 1000;
+          }
+        }
+
+        if (openTimeMs && openTimeMs < now) {
+          totalDurationMs += (now - openTimeMs);
+          validPositions++;
+        }
+      }
+    });
+
+    if (validPositions === 0) {
+      return '00:00:00';
+    }
+
+    const avgDurationMs = totalDurationMs / validPositions;
+    const avgDurationSec = Math.floor(avgDurationMs / 1000);
+
+    const hours = Math.floor(avgDurationSec / 3600);
+    const minutes = Math.floor((avgDurationSec % 3600) / 60);
+    const seconds = avgDurationSec % 60;
+
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }, [liveOpenPositions]);
+
   // Función para generar datos del gráfico de beneficio total con optimización móvil
   const generateBenefitChartData = () => {
     // Usar datos del balance history si están disponibles para el gráfico de beneficio
@@ -4399,7 +4454,7 @@ const loadAccountMetrics = useCallback(async (account) => {
               <CustomTooltip content={t('tooltips.averageDuration')}>
                 <div className="cursor-help">
                 <h3 className="text-gray-400 text-sm mb-1">{t('metrics.averageDuration')}</h3>
-                <span className="text-xl font-bold">{realStatistics?.average_trade_duration || '00:00:00'}</span>
+                <span className="text-xl font-bold">{averageOpenDuration}</span>
                   </div>
               </CustomTooltip>
               <div className="bg-[#2d2d2d] p-4 rounded-full">
