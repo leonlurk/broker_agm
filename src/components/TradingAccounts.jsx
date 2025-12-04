@@ -1694,7 +1694,10 @@ const loadAccountMetrics = useCallback(async (account) => {
 
                       const { error: insertError } = await supabase
                         .from('pending_closed_positions')
-                        .insert([dbRecord]);
+                        .upsert([dbRecord], {
+                          onConflict: 'account_number,ticket',
+                          ignoreDuplicates: true
+                        });
 
                       if (insertError) {
                         console.error('[WebSocket] Error persisting external close to Supabase:', insertError);
