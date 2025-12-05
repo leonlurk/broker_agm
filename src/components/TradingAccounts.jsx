@@ -2598,11 +2598,21 @@ const loadAccountMetrics = useCallback(async (account) => {
       ...provisionalClosedPositions.filter(pos => pos.open_time && pos.close_time)
     ];
 
+    // Debug: Ver qué operaciones tienen timestamps válidos
+    console.log('[Duration] allClosedOps count:', allClosedOps.length);
+    console.log('[Duration] provisionalClosedPositions:', provisionalClosedPositions.map(p => ({
+      ticket: p.ticket,
+      open_time: p.open_time,
+      close_time: p.close_time
+    })));
+
     const durations = allClosedOps
       .map(op => {
         const openTime = new Date(op.open_time).getTime();
         const closeTime = new Date(op.close_time).getTime();
-        return closeTime - openTime;
+        const duration = closeTime - openTime;
+        console.log('[Duration] ticket:', op.ticket, 'open:', op.open_time, 'close:', op.close_time, 'duration ms:', duration);
+        return duration;
       })
       .filter(d => d > 0); // Excluir duraciones inválidas (negativas o cero)
 
