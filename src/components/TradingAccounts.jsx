@@ -1473,7 +1473,11 @@ const loadAccountMetrics = useCallback(async (account) => {
           return newSet;
         });
 
-        setLiveOpenPositions(positions);
+        // Mapear open_time para cálculo de duración
+        setLiveOpenPositions(positions.map(p => ({
+          ...p,
+          open_time: p.open_time || p.timeCreate || p.time || new Date().toISOString()
+        })));
       });
 
       // Forzar reflow del DOM para asegurar que el browser procese los cambios
@@ -1564,7 +1568,9 @@ const loadAccountMetrics = useCallback(async (account) => {
               setLiveOpenPositions(positions.map(p => ({
                 ...p,
                 ticket: p.position || p.positionId || p.ticket,
-                profit: p.profit || 0
+                profit: p.profit || 0,
+                // Mapear timeCreate de MT5 a open_time para cálculo de duración
+                open_time: p.open_time || p.timeCreate || p.time || new Date().toISOString()
               })));
             }
             break;
@@ -1581,7 +1587,9 @@ const loadAccountMetrics = useCallback(async (account) => {
                 return [...prev, {
                   ...position,
                   ticket: position.id || position.positionId,
-                  profit: position.profit || 0
+                  profit: position.profit || 0,
+                  // Mapear timeCreate de MT5 a open_time para cálculo de duración
+                  open_time: position.open_time || position.timeCreate || position.time || new Date().toISOString()
                 }];
               });
             }
