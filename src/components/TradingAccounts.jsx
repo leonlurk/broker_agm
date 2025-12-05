@@ -2581,6 +2581,32 @@ const loadAccountMetrics = useCallback(async (account) => {
     // Calcular nuevo risk/reward ratio
     const newRiskRewardRatio = newAverageLoss > 0 ? newAverageWin / newAverageLoss : baseStats.risk_reward_ratio || 0;
 
+    // Calcular duración promedio de trades cerrados (optimista)
+    // Combina operaciones históricas + provisionalClosedPositions
+    const allClosedOps = [
+      ...(realTradingOperations?.operations || []).filter(op =>
+        op.close_time && op.open_time && (op.status === 'CLOSED' || !op.isOpen)
+      ),
+      ...provisionalClosedPositions.filter(pos => pos.open_time && pos.close_time)
+    ];
+
+    const durations = allClosedOps
+      .map(op => {
+        const openTime = new Date(op.open_time).getTime();
+        const closeTime = new Date(op.close_time).getTime();
+        return closeTime - openTime;
+      })
+      .filter(d => d > 0); // Excluir duraciones inválidas (negativas o cero)
+
+    let newAverageTradeDuration = baseStats.average_trade_duration || '00:00:00';
+    if (durations.length > 0) {
+      const avgMs = durations.reduce((a, b) => a + b, 0) / durations.length;
+      const hours = Math.floor(avgMs / 3600000);
+      const mins = Math.floor((avgMs % 3600000) / 60000);
+      const secs = Math.floor((avgMs % 60000) / 1000);
+      newAverageTradeDuration = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
     return {
       ...baseStats,
       total_trades: newTotalTrades,
@@ -2591,11 +2617,12 @@ const loadAccountMetrics = useCallback(async (account) => {
       average_loss: newAverageLoss,
       average_lot_size: newAverageLotSize,
       risk_reward_ratio: newRiskRewardRatio,
+      average_trade_duration: newAverageTradeDuration,
       // Marcar que hay ajustes optimistas pendientes
       _hasOptimisticAdjustments: provisionalClosedPositions.length > 0,
       _optimisticTradesCount: provisionalClosedPositions.length
     };
-  }, [realStatistics, provisionalClosedPositions, realBalanceHistory, currentSelectedAccount?.balance]);
+  }, [realStatistics, provisionalClosedPositions, realBalanceHistory, currentSelectedAccount?.balance, realTradingOperations?.operations]);
 
   // ============================================
   // PASO 6: DURACIÓN PROMEDIO DE POSICIONES ABIERTAS
