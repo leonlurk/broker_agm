@@ -2123,9 +2123,9 @@ const loadAccountMetrics = useCallback(async (account) => {
       'AUDJPY': 'https://flagcdn.com/w40/au.png',
       'EURGBP': 'https://flagcdn.com/w40/eu.png',
       'CADJPY': 'https://flagcdn.com/w40/ca.png',
-      'XAUUSD': 'https://cdn-icons-png.flaticon.com/512/2209/2209039.png', // Gold bar icon (golden color - Freepik)
-      'GOLD': 'https://cdn-icons-png.flaticon.com/512/2209/2209039.png',
-      'XAGUSD': 'https://cdn-icons-png.flaticon.com/512/861/861184.png', // Silver icon
+      'XAUUSD': 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFD700"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/><rect x="4" y="10" width="16" height="8" rx="1" fill="#FFD700" stroke="#DAA520" stroke-width="0.5"/><rect x="6" y="12" width="12" height="4" rx="0.5" fill="#FFC107"/></svg>'),
+      'GOLD': 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFD700"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/><rect x="4" y="10" width="16" height="8" rx="1" fill="#FFD700" stroke="#DAA520" stroke-width="0.5"/><rect x="6" y="12" width="12" height="4" rx="0.5" fill="#FFC107"/></svg>'),
+      'XAGUSD': 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="8" rx="1" fill="#C0C0C0" stroke="#A8A8A8" stroke-width="0.5"/><rect x="6" y="12" width="12" height="4" rx="0.5" fill="#D3D3D3"/></svg>'), // Silver icon
       'BTCUSD': 'https://cdn-icons-png.flaticon.com/512/1490/1490849.png', // Bitcoin icon
       'ETHUSD': 'https://cdn-icons-png.flaticon.com/512/7016/7016537.png', // Ethereum icon
     };
