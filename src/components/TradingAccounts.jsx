@@ -156,6 +156,103 @@ const normalizeInstrument = (instrument) => {
 const instrumentsMatch = (instrument1, instrument2) => {
   return normalizeInstrument(instrument1) === normalizeInstrument(instrument2);
 };
+
+// Helper function para calcular pips según el tipo de instrumento
+// Cubre: Forex (majors, minors, exotics), Metales, Crypto, Índices, Acciones
+const calculatePips = (symbol, openPrice, closePrice, isBuy) => {
+  if (!openPrice || !closePrice || openPrice === 0 || closePrice === 0) return 0;
+
+  const normalizedSymbol = normalizeInstrument(symbol);
+  const priceDiff = closePrice - openPrice;
+
+  let pips = 0;
+
+  // === METALES PRECIOSOS ===
+  // XAU (Gold): 1 pip = 0.1 (multiplicador 10)
+  if (normalizedSymbol === 'XAUUSD' || normalizedSymbol === 'GOLD' || normalizedSymbol.startsWith('XAU')) {
+    pips = Math.round(priceDiff * 10);
+  }
+  // XAG (Silver): 1 pip = 0.01 (multiplicador 100)
+  else if (normalizedSymbol === 'XAGUSD' || normalizedSymbol === 'SILVER' || normalizedSymbol.startsWith('XAG')) {
+    pips = Math.round(priceDiff * 100);
+  }
+  // XPT (Platinum), XPD (Palladium): 1 pip = 0.1 (multiplicador 10)
+  else if (normalizedSymbol.startsWith('XPT') || normalizedSymbol.startsWith('XPD')) {
+    pips = Math.round(priceDiff * 10);
+  }
+  // XCU (Copper): 1 pip = 0.0001 (multiplicador 10000)
+  else if (normalizedSymbol.startsWith('XCU')) {
+    pips = Math.round(priceDiff * 10000);
+  }
+
+  // === CRIPTOMONEDAS ===
+  // Para crypto, pips = diferencia de precio directa (redondeada)
+  else if (
+    normalizedSymbol.includes('BTC') || normalizedSymbol.includes('ETH') ||
+    normalizedSymbol.includes('LTC') || normalizedSymbol.includes('XRP') ||
+    normalizedSymbol.includes('BCH') || normalizedSymbol.includes('DOGE') ||
+    normalizedSymbol.includes('SOL') || normalizedSymbol.includes('ADA') ||
+    normalizedSymbol.includes('DOT') || normalizedSymbol.includes('LINK') ||
+    normalizedSymbol.includes('AVAX') || normalizedSymbol.includes('MATIC') ||
+    normalizedSymbol.includes('UNI') || normalizedSymbol.includes('SHIB')
+  ) {
+    pips = Math.round(priceDiff);
+  }
+
+  // === ÍNDICES ===
+  // La mayoría de índices: 1 pip = 1 punto
+  else if (
+    normalizedSymbol.includes('SPX') || normalizedSymbol.includes('US30') ||
+    normalizedSymbol.includes('NAS') || normalizedSymbol.includes('US100') ||
+    normalizedSymbol.includes('GER') || normalizedSymbol.includes('DAX') ||
+    normalizedSymbol.includes('UK100') || normalizedSymbol.includes('FTSE') ||
+    normalizedSymbol.includes('JPN') || normalizedSymbol.includes('JP225') ||
+    normalizedSymbol.includes('FRA') || normalizedSymbol.includes('CAC') ||
+    normalizedSymbol.includes('AUS') || normalizedSymbol.includes('ASX') ||
+    normalizedSymbol.includes('EU50') || normalizedSymbol.includes('STOXX')
+  ) {
+    pips = Math.round(priceDiff);
+  }
+
+  // === ACCIONES/STOCKS ===
+  // Acciones: 1 pip = 0.01 (centavos)
+  else if (
+    normalizedSymbol === 'AAPL' || normalizedSymbol === 'MSFT' ||
+    normalizedSymbol === 'GOOGL' || normalizedSymbol === 'GOOG' ||
+    normalizedSymbol === 'AMZN' || normalizedSymbol === 'TSLA' ||
+    normalizedSymbol === 'NVDA' || normalizedSymbol === 'JPM' ||
+    normalizedSymbol === 'V' || normalizedSymbol === 'XOM' ||
+    normalizedSymbol === 'GS' || normalizedSymbol === 'META' ||
+    normalizedSymbol === 'NFLX' || normalizedSymbol === 'DIS' ||
+    // Si parece un símbolo de acción (2-5 letras sin números y sin pares de divisas)
+    (normalizedSymbol.length >= 2 && normalizedSymbol.length <= 5 &&
+     !/\d/.test(normalizedSymbol) && !/USD|EUR|GBP|JPY|AUD|CAD|CHF|NZD/.test(normalizedSymbol))
+  ) {
+    pips = Math.round(priceDiff * 100);
+  }
+
+  // === FOREX ===
+  // Pares con JPY: 1 pip = 0.01 (multiplicador 100)
+  else if (normalizedSymbol.includes('JPY')) {
+    pips = Math.round(priceDiff * 100);
+  }
+  // Pares con HUF (Florín húngaro): 1 pip = 0.01 (multiplicador 100)
+  else if (normalizedSymbol.includes('HUF')) {
+    pips = Math.round(priceDiff * 100);
+  }
+  // Forex estándar (todos los demás pares): 1 pip = 0.0001 (multiplicador 10000)
+  // Incluye: EUR, USD, GBP, AUD, CAD, CHF, NZD, NOK, SEK, PLN, CZK, TRY, ZAR, SGD, HKD, MXN, etc.
+  else {
+    pips = Math.round(priceDiff * 10000);
+  }
+
+  // Invertir signo para posiciones SELL
+  if (!isBuy) {
+    pips = -pips;
+  }
+
+  return pips;
+};
 // --- End Instrument Lists ---
 
 // Options for custom dropdowns - will be translated inside component
@@ -2026,8 +2123,8 @@ const loadAccountMetrics = useCallback(async (account) => {
       'AUDJPY': 'https://flagcdn.com/w40/au.png',
       'EURGBP': 'https://flagcdn.com/w40/eu.png',
       'CADJPY': 'https://flagcdn.com/w40/ca.png',
-      'XAUUSD': 'https://cdn-icons-png.flaticon.com/512/3188/3188582.png', // Gold bar icon
-      'GOLD': 'https://cdn-icons-png.flaticon.com/512/3188/3188582.png',
+      'XAUUSD': 'https://cdn-icons-png.flaticon.com/512/4292/4292623.png', // Gold bar icon (golden color)
+      'GOLD': 'https://cdn-icons-png.flaticon.com/512/4292/4292623.png',
       'XAGUSD': 'https://cdn-icons-png.flaticon.com/512/861/861184.png', // Silver icon
       'BTCUSD': 'https://cdn-icons-png.flaticon.com/512/1490/1490849.png', // Bitcoin icon
       'ETHUSD': 'https://cdn-icons-png.flaticon.com/512/7016/7016537.png', // Ethereum icon
@@ -2070,49 +2167,18 @@ const loadAccountMetrics = useCallback(async (account) => {
   // Transformar operaciones de Supabase al formato de la tabla
   const transformTradingOperations = (operations) => {
     if (!operations || operations.length === 0) return [];
-    
+
     return operations.map(op => {
       const openTime = new Date(op.open_time);
       const closeTime = new Date(op.close_time);
       const duration = closeTime - openTime;
-      
-      // Calcular pips según el instrumento (usar símbolo normalizado para comparaciones)
-      let pips = 0;
+
+      // Calcular pips usando función centralizada
       const openPrice = parseFloat(op.open_price);
       const closePrice = parseFloat(op.close_price);
-      const normalizedSym = normalizeInstrument(op.symbol);
+      const isBuy = op.operation_type === 'BUY' || op.type === 'BUY';
+      const pips = calculatePips(op.symbol, openPrice, closePrice, isBuy);
 
-      // Crypto: BTCUSD, ETHUSD, LTCUSD, XRPUSD, etc. - pips = diferencia de precio directa
-      const isCrypto = normalizedSym && (
-        normalizedSym.includes('BTC') ||
-        normalizedSym.includes('ETH') ||
-        normalizedSym.includes('LTC') ||
-        normalizedSym.includes('XRP') ||
-        normalizedSym.includes('BCH') ||
-        normalizedSym.includes('DOGE') ||
-        normalizedSym.includes('SOL') ||
-        normalizedSym.includes('ADA')
-      );
-
-      if (isCrypto) {
-        // Para crypto, mostrar diferencia de precio directa (en USD)
-        pips = Math.round(closePrice - openPrice);
-      } else if (normalizedSym && normalizedSym.includes('JPY')) {
-        pips = Math.round((closePrice - openPrice) * 100);
-      } else if (normalizedSym === 'XAUUSD' || normalizedSym === 'GOLD') {
-        pips = Math.round((closePrice - openPrice) * 10);
-      } else if (normalizedSym === 'XAGUSD' || normalizedSym === 'SILVER') {
-        pips = Math.round((closePrice - openPrice) * 100);
-      } else {
-        // Forex estándar: 1 pip = 0.0001
-        pips = Math.round((closePrice - openPrice) * 10000);
-      }
-      
-      // Si es venta, invertir el signo de los pips
-      if (op.operation_type === 'SELL' || op.type === 'SELL') {
-        pips = -pips;
-      }
-      
       // Formatear duración
       const hours = Math.floor(duration / 3600000);
       const minutes = Math.floor((duration % 3600000) / 60000);
@@ -2213,6 +2279,11 @@ const loadAccountMetrics = useCallback(async (account) => {
         // NOTA: Backend divide profit por 100, multiplicamos para corregir
         const liveProfit = (parseFloat(livePos.profit) || 0) * 100;
         const livePrice = parseFloat(livePos.price_current) || 0;
+        const openPrice = parseFloat(op.open_price || op.precioApertura) || 0;
+        const isBuy = op.type === 'BUY' || op.tipo === t('positions.types.buy');
+
+        // Usar función centralizada de cálculo de pips
+        const updatedPips = calculatePips(op.symbol || op.instrumento, openPrice, livePrice, isBuy);
 
         return {
           ...op,
@@ -2221,7 +2292,8 @@ const loadAccountMetrics = useCallback(async (account) => {
           resultado: `$${liveProfit.toFixed(2)}`,
           resultadoColor: liveProfit >= 0 ? 'text-green-400' : 'text-red-400',
           precioCierre: livePrice.toFixed(5),
-          close_price: livePrice
+          close_price: livePrice,
+          pips: updatedPips
         };
       }
       return op;
@@ -2238,6 +2310,13 @@ const loadAccountMetrics = useCallback(async (account) => {
         // NOTA: Backend divide profit por 100, multiplicamos para corregir
         const profit = (parseFloat(pos.profit) || 0) * 100;
 
+        const openPrice = parseFloat(pos.price_open) || 0;
+        const currentPrice = parseFloat(pos.price_current) || 0;
+        const isBuy = pos.action === 0;
+
+        // Usar función centralizada de cálculo de pips
+        const livePips = calculatePips(pos.symbol, openPrice, currentPrice, isBuy);
+
         newPositions.push({
           fechaApertura: openTime.toLocaleDateString(),
           tiempoApertura: openTime.toLocaleTimeString(),
@@ -2247,23 +2326,23 @@ const loadAccountMetrics = useCallback(async (account) => {
           fechaISO: openTime.toISOString(),
           instrumento: pos.symbol || 'N/A',
           bandera: getInstrumentIcon(pos.symbol || 'N/A'),
-          tipo: pos.action === 0 ? t('positions.types.buy') : pos.action === 1 ? t('positions.types.sell') : 'N/A',
+          tipo: isBuy ? t('positions.types.buy') : pos.action === 1 ? t('positions.types.sell') : 'N/A',
           lotaje: (parseFloat(pos.volume) || 0).toFixed(2),
           stopLossFormatted: pos.sl ? parseFloat(pos.sl).toFixed(5) : '0.0',
           takeProfitFormatted: pos.tp ? parseFloat(pos.tp).toFixed(5) : '0.0',
-          precioApertura: (parseFloat(pos.price_open) || 0).toFixed(5),
-          precioCierre: (parseFloat(pos.price_current) || 0).toFixed(5),
-          pips: 0,
+          precioApertura: openPrice.toFixed(5),
+          precioCierre: currentPrice.toFixed(5),
+          pips: livePips,
           idPosicion: ticket,
           resultado: `$${profit.toFixed(2)}`,
           resultadoColor: profit >= 0 ? 'text-green-400' : 'text-red-400',
           ganancia: profit,
           ticket: ticket,
           symbol: pos.symbol,
-          type: pos.action === 0 ? 'BUY' : 'SELL',
+          type: isBuy ? 'BUY' : 'SELL',
           volume: parseFloat(pos.volume) || 0,
-          open_price: parseFloat(pos.price_open) || 0,
-          close_price: parseFloat(pos.price_current) || 0,
+          open_price: openPrice,
+          close_price: currentPrice,
           open_time: pos.open_time,
           profit: profit,
           status: 'OPEN'
@@ -2290,6 +2369,13 @@ const loadAccountMetrics = useCallback(async (account) => {
           const closeTime = pos.close_time ? new Date(pos.close_time) : new Date();
           const profit = parseFloat(pos.profit) || 0;
 
+          const openPrice = parseFloat(pos.open_price) || 0;
+          const closePrice = parseFloat(pos.close_price) || 0;
+          const isBuy = pos.type === 'BUY';
+
+          // Usar función centralizada de cálculo de pips
+          const provisionalPips = calculatePips(pos.symbol, openPrice, closePrice, isBuy);
+
           // NUNCA mostrar "Sincronizando..." - siempre mostrar valores optimistas
           // El trade se auto-reemplaza cuando llega la confirmación real del backend
 
@@ -2307,9 +2393,9 @@ const loadAccountMetrics = useCallback(async (account) => {
             lotaje: (parseFloat(pos.volume) || 0).toFixed(2),
             stopLossFormatted: pos.stop_loss ? parseFloat(pos.stop_loss).toFixed(5) : '0.0',
             takeProfitFormatted: pos.take_profit ? parseFloat(pos.take_profit).toFixed(5) : '0.0',
-            precioApertura: (parseFloat(pos.open_price) || 0).toFixed(5),
-            precioCierre: (parseFloat(pos.close_price) || 0).toFixed(5),
-            pips: 0,
+            precioApertura: openPrice.toFixed(5),
+            precioCierre: closePrice.toFixed(5),
+            pips: provisionalPips,
             idPosicion: pos.ticket,
             resultado: `$${profit.toFixed(2)}`,
             resultadoColor: profit >= 0 ? 'text-green-400' : 'text-red-400',
@@ -2318,8 +2404,8 @@ const loadAccountMetrics = useCallback(async (account) => {
             symbol: pos.symbol,
             type: pos.type,
             volume: parseFloat(pos.volume) || 0,
-            open_price: parseFloat(pos.open_price) || 0,
-            close_price: parseFloat(pos.close_price) || 0,
+            open_price: openPrice,
+            close_price: closePrice,
             open_time: pos.open_time,
             close_time: pos.close_time,
             profit: profit,
