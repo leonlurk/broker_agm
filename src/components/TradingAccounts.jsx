@@ -2123,8 +2123,8 @@ const loadAccountMetrics = useCallback(async (account) => {
       'AUDJPY': 'https://flagcdn.com/w40/au.png',
       'EURGBP': 'https://flagcdn.com/w40/eu.png',
       'CADJPY': 'https://flagcdn.com/w40/ca.png',
-      'XAUUSD': 'https://cdn-icons-png.flaticon.com/512/4292/4292623.png', // Gold bar icon (golden color)
-      'GOLD': 'https://cdn-icons-png.flaticon.com/512/4292/4292623.png',
+      'XAUUSD': 'https://cdn-icons-png.flaticon.com/512/2209/2209039.png', // Gold bar icon (golden color - Freepik)
+      'GOLD': 'https://cdn-icons-png.flaticon.com/512/2209/2209039.png',
       'XAGUSD': 'https://cdn-icons-png.flaticon.com/512/861/861184.png', // Silver icon
       'BTCUSD': 'https://cdn-icons-png.flaticon.com/512/1490/1490849.png', // Bitcoin icon
       'ETHUSD': 'https://cdn-icons-png.flaticon.com/512/7016/7016537.png', // Ethereum icon
